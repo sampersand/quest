@@ -1,7 +1,7 @@
 mod args;
 pub use self::args::Args;
 
-use crate::obj::{self, DataEnum, Mapping, Object, types::ObjectType};
+use crate::obj::{self, Mapping, Object, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
@@ -35,12 +35,6 @@ impl RustFn {
 
 	pub fn call(&self, args: &[&Object]) -> obj::Result<Object> {
 		(self.1)(Args::new(args))
-	}
-}
-
-impl From<RustFn> for DataEnum {
-	fn from(this: RustFn) -> DataEnum {
-		DataEnum::RustFn(this)
 	}
 }
 

@@ -1,4 +1,4 @@
-use crate::obj::{self, DataEnum, Mapping, Object, types::ObjectType};
+use crate::obj::{self, Mapping, Object, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
@@ -8,10 +8,6 @@ type BoolType = bool;
 pub struct Boolean(BoolType);
 
 impl Boolean {
-	pub fn new<T: Into<BoolType>>(num: T) -> Self {
-		Boolean(num.into())
-	}
-
 	pub fn into_inner(self) -> BoolType { 
 		self.0
 	}
@@ -23,11 +19,6 @@ impl From<BoolType> for Boolean {
 	}
 }
 
-impl From<Boolean> for DataEnum {
-	fn from(this: Boolean) -> DataEnum {
-		DataEnum::Boolean(this)
-	}
-}
 
 impl AsRef<BoolType> for Boolean {
 	fn as_ref(&self) -> &BoolType {

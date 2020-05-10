@@ -1,4 +1,4 @@
-use crate::obj::{self, Mapping, DataEnum, types::{self, ObjectType}};
+use crate::obj::{self, Mapping, types::{self, ObjectType}};
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};

@@ -1,4 +1,4 @@
-use crate::obj::{DataEnum, Mapping, Object, types::ObjectType};
+use crate::obj::{Mapping, Object, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
@@ -45,24 +45,6 @@ impl From<&'static str> for crate::obj::Object {
 	}
 }
 
-// impl Object {
-// 	pub fn call_into_text(&self) -> Result<String, Object> {
-// 		self.call("@text", &[])?.into_text().ok_or_else(|| "not a text".into())
-// 	}
-
-// 	pub fn as_text(&self) -> Option<&str> {
-// 		if let DataEnum::Text(ref t) = self.0.data_ {
-// 			Some(t.as_ref())
-// 		} else {
-// 			None
-// 		}
-// 	}
-
-// 	pub fn into_text(&self) -> Option<String> {
-// 		self.as_text().map(ToString::to_string)
-// 	}
-// }
-
 
 
 impl AsRef<str> for Text {
@@ -71,12 +53,6 @@ impl AsRef<str> for Text {
 			TextEnum::Owned(ref txt) => txt.as_ref(),
 			TextEnum::Static(ref txt) => txt.as_ref()
 		}
-	}
-}
-
-impl From<Text> for DataEnum {
-	fn from(this: Text) -> DataEnum {
-		DataEnum::Text(this)
 	}
 }
 

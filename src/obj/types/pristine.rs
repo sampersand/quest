@@ -1,19 +1,5 @@
-use crate::obj::DataEnum;
-
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pristine;
-
-impl Pristine {
-	pub fn new() -> Self {
-		Pristine
-	}
-}
-
-impl From<Pristine> for DataEnum {
-	fn from(_: Pristine) -> Self {
-		Self::Empty
-	}
-}
 
 impl_object_type!{for Pristine;
 	"__id__" => (|args| {

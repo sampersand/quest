@@ -1,21 +1,9 @@
-use crate::obj::{Object, DataEnum, Mapping, types::ObjectType};
+use crate::obj::{Object, Mapping, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Null;
-
-impl Null {
-	pub fn new() -> Self {
-		Null
-	}
-}
-
-impl From<Null> for DataEnum {
-	fn from(_: Null) -> Self {
-		Self::Null
-	}
-}
 
 impl From<()> for Object {
 	fn from(_: ()) -> Self {

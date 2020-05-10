@@ -72,19 +72,10 @@ macro_rules! impl_object_type {
 				unsafe {
 					if !HAS_CREATE_HAPPENED {
 						HAS_CREATE_HAPPENED = true;
-						CLASS_OBJECT.as_mut_ptr().write(Object::new_with_parent(
-							$crate::obj::DataEnum::Empty, None
-						));
+						// todo: change data type to be parent's
+						CLASS_OBJECT.as_mut_ptr().write(Object::new_with_parent((), None));
 					}
 				}
-
-				// static mut N: isize = 0;
-				// unsafe {
-				// 	N += 1;
-				// 	if N > 500 {
-				// 		panic!("N > 500 for: {:?}", stringify!($ty));
-				// 	}
-				// }
 
 				unsafe {
 					if !HAS_SETUP_HAPPENED {

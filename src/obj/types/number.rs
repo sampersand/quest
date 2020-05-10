@@ -1,4 +1,4 @@
-use crate::obj::{DataEnum, Object, Mapping, types::ObjectType};
+use crate::obj::{Object, Mapping, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
@@ -44,12 +44,6 @@ impl_from_integer!{
 	f32 f64
 }
 
-
-impl From<Number> for DataEnum {
-	fn from(this: Number) -> DataEnum {
-		DataEnum::Number(this)
-	}
-}
 
 impl AsRef<NumType> for Number {
 	fn as_ref(&self) -> &NumType {
