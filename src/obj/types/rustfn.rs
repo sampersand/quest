@@ -1,10 +1,14 @@
-use crate::obj::{DataEnum, Mapping, Result, Object, types::ObjectType};
+mod args;
+pub use self::args::Args;
+
+use crate::obj::{self, DataEnum, Mapping, Object, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
-type InternalRepr = fn(&Object, &[Object]) -> Result;
+type FnType = fn(Args) -> obj::Result;
 
-pub struct RustFn(&'static str, InternalRepr);
+#[derive(Clone, Copy)]
+pub struct RustFn(&'static str, FnType);
 
 impl Debug for RustFn {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -25,8 +29,12 @@ impl PartialEq for RustFn {
 
 
 impl RustFn {
-	pub fn new(name: &'static str, n: InternalRepr) -> Self {
+	pub fn new(name: &'static str, n: FnType) -> Self {
 		RustFn(name, n.into())
+	}
+
+	pub fn call(&self, args: &[&Object]) -> obj::Result {
+		(self.1)(Args::new(args))
 	}
 }
 
@@ -36,26 +44,18 @@ impl From<RustFn> for DataEnum {
 	}
 }
 
-impl ObjectType for RustFn {
-	fn mapping() -> Arc<RwLock<Mapping>> {
-		// use std::sync::Once;
-		static MAPPING: Mapping = {
-		let mut m = Mapping::new(None);
-		m.insert(
-			"()".to_owned().into(),
-			RustFn::new("()", (|x, a| panic!())).into());//x.x.call("clone", &[]))).into());
 
-		// m.insert(
-		// 	super::Text::new("+").into(),
-		// 	super::RustFn::new("+",
-		// 		(|x, y| Ok(x.clone()))
-		// 	).into()
-		// );
-		Arc::new(RwLock::new(m))
-		// m.insert()
-		// };
-
-		// MAPPING
-	
+impl AsRef<FnType> for RustFn {
+	fn as_ref(&self) -> &FnType {
+		&self.1
 	}
+}
+
+impl_object_conversions!(
+	RustFn "@rustfn" as_rustfn_obj(RustFn) as_rustfn into_rustfn try_as_rustfn try_into_rustfn call_into_rustfn FnType
+);
+
+
+impl_object_type!{for RustFn, super::Basic;
+	"()" => (|args| { unimplemented!() })
 }
