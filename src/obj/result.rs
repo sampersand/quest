@@ -1,3 +1,3 @@
 use super::Object;
 
-pub type Result = ::std::result::Result<Object, Object>;
+pub type Result<T> = ::std::result::Result<T, Object>;

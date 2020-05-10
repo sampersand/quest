@@ -2,7 +2,7 @@ use crate::obj::types::*;
 use std::fmt::{self, Debug, Formatter};
 
 #[non_exhaustive]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataEnum {
 	Empty,
 	Null,

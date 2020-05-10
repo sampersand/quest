@@ -9,7 +9,7 @@ pub mod boolean;
 pub mod basic;
 pub mod pristine;
 
-pub trait ObjectType : Into<super::DataEnum> + ::std::fmt::Debug + Send + Sync {
+pub trait ObjectType : Into<super::DataEnum> + ::std::fmt::Debug + Send + Sync + ::std::any::Any + Clone {
 	fn mapping() -> super::Object;
 }
 

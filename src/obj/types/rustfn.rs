@@ -5,7 +5,7 @@ use crate::obj::{self, DataEnum, Mapping, Object, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
-type FnType = fn(Args) -> obj::Result;
+type FnType = fn(Args) -> obj::Result<Object>;
 
 #[derive(Clone, Copy)]
 pub struct RustFn(&'static str, FnType);
@@ -33,7 +33,7 @@ impl RustFn {
 		RustFn(name, n.into())
 	}
 
-	pub fn call(&self, args: &[&Object]) -> obj::Result {
+	pub fn call(&self, args: &[&Object]) -> obj::Result<Object> {
 		(self.1)(Args::new(args))
 	}
 }
@@ -50,11 +50,6 @@ impl AsRef<FnType> for RustFn {
 		&self.1
 	}
 }
-
-impl_object_conversions!(
-	RustFn "@rustfn" as_rustfn_obj(RustFn) as_rustfn into_rustfn try_as_rustfn try_into_rustfn call_into_rustfn FnType
-);
-
 
 impl_object_type!{for RustFn, super::Basic;
 	"()" => (|args| { unimplemented!() })

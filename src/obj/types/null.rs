@@ -25,7 +25,7 @@ impl From<()> for Object {
 
 impl Object {
 	fn is_null(&self) -> bool {
-		self.0.data == DataEnum::Null
+		self.downcast_ref::<Null>().is_some()
 	}
 }
 

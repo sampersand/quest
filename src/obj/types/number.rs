@@ -11,8 +11,13 @@ impl Eq for Number {}
 
 
 impl Number {
-	pub fn new<T: Into<NumType>>(num: T) -> Self {
-		Number(num.into())
+	pub fn into_inner(self) -> NumType {
+		self.0
+	}
+}
+impl From<bool> for Number {
+	fn from(inp: bool) -> Number {
+		Number(if inp { 1.0 } else { 0.0 })
 	}
 }
 
@@ -62,43 +67,33 @@ impl Debug for Number {
 	}
 }
 
-impl_object_conversions!(
-	Number "@num" as_num_obj(Number) as_num into_num try_as_num try_into_num call_into_num NumType
-);
-
-macro_rules! assert_this_is_number {
-	($args:expr) => {{
-		let this = $args.get(0).unwrap();
-		assert!(this.as_num().is_some(), "bad `this` given: {:#?}", this);
-	}};
-}
+// impl_object_conversions!(
+// 	Number "@num" as_num_obj(Number) as_num into_num try_as_num try_into_num call_into_num NumType
+// );
 
 macro_rules! operator {
 	(binary $oper:tt) => {(|args| {
-		assert_this_is_number!(args);
-		Ok(Number::from(args.get(0)?.try_into_num()? $oper args.get(1)?.call_into_num()?).into())
+		Ok(Number::from(args.this::<Number>()?.into_inner() $oper
+			args.get(1)?.call("@num", &[])?.try_downcast_ref::<Number>()?.into_inner()).into())
 	})};
 	(unary $t:tt) => {(|args| unimplemented!())};
 }
+
 impl_object_type!{for Number, super::Basic;
 	"@num" => (|args| {
-		assert_this_is_number!(args);
-		args.get(0)?.call("clone", &[])
+		args.this_obj::<Number>()?.call("clone", &[])
 	}),
 
 	"@text" => (|args| {
-		assert_this_is_number!(args);
-		Ok(args.get(0)?.try_as_num()?.to_string().into())
+		Ok(Text::from(args.this::<Number>()?.as_ref().to_string()).into())
 	}),
 
 	"@bool" => (|args| {
-		assert_this_is_number!(args);
-		Ok((args.get(0)?.try_into_num()? != 0.0).into())
+		Ok(Boolean::from(args.this::<Number>()?.into_inner() != 0.0).into())
 	}),
 
 	"clone" => (|args| {
-		assert_this_is_number!(args);
-		Ok(Number::from(args.get(0)?.try_into_num()?).into())
+		Ok(args.this::<Number>()?.clone().into())
 	}),
 
 	"+" => operator!(binary +),

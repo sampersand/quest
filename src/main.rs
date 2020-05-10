@@ -10,8 +10,11 @@ fn main() {
 
 	// let num_class = twelve.call("__get_attr__", &[&"__parent__".into()]).unwrap();
 	// let basic_class = num_class.call("__get_attr__", &[&"__parent__".into()]).unwrap();
-
-	println!("==");
+	let text = Object::from("text");
+	println!("text: {:?}", text);
+	// (*text.downcast_mut::<obj::types::Text>().unwrap()).repl("A");
+	println!("text: {:?}", text);
+	// println!("==: {:?}", twelve.downcast::<obj::types::Text>().map(|x| x.clone()));
 	println!("{:?}", twelve.call("+", &[&twenty]).unwrap());
 	// println!("{:?}", basic_class.call("__get_attr__", &[&"name".into()]).unwrap());
 

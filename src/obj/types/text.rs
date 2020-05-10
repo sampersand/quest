@@ -45,23 +45,23 @@ impl From<&'static str> for crate::obj::Object {
 	}
 }
 
-impl Object {
-	pub fn call_into_text(&self) -> Result<String, Object> {
-		self.call("@text", &[])?.into_text().ok_or_else(|| "not a text".into())
-	}
+// impl Object {
+// 	pub fn call_into_text(&self) -> Result<String, Object> {
+// 		self.call("@text", &[])?.into_text().ok_or_else(|| "not a text".into())
+// 	}
 
-	pub fn as_text(&self) -> Option<&str> {
-		if let DataEnum::Text(ref t) = self.0.data {
-			Some(t.as_ref())
-		} else {
-			None
-		}
-	}
+// 	pub fn as_text(&self) -> Option<&str> {
+// 		if let DataEnum::Text(ref t) = self.0.data_ {
+// 			Some(t.as_ref())
+// 		} else {
+// 			None
+// 		}
+// 	}
 
-	pub fn into_text(&self) -> Option<String> {
-		self.as_text().map(ToString::to_string)
-	}
-}
+// 	pub fn into_text(&self) -> Option<String> {
+// 		self.as_text().map(ToString::to_string)
+// 	}
+// }
 
 
 
@@ -81,5 +81,5 @@ impl From<Text> for DataEnum {
 }
 
 impl_object_type!{for Text, super::Basic;
-	"==" => (|args| todo!())//	Ok(args[0].as_text().map(|x| x == this.as_text().unwrap()).unwrap_or(false).into()))
+	// "==" => (|args| todo!())//	Ok(args[0].as_text().map(|x| x == this.as_text().unwrap()).unwrap_or(false).into()))
 }

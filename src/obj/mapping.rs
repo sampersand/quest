@@ -1,4 +1,4 @@
-use crate::obj::{Object, Result};
+use crate::obj::{self, Object, types};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
@@ -44,14 +44,14 @@ impl Mapping {
 		Mapping { map: Default::default(), parent }
 	}
 
-	pub fn insert(&mut self, attr: Object, val: Object) -> Result {
-		if attr.call("==", &[&"__parent__".into()])?.into_bool().unwrap_or(false) {
+	pub fn insert(&mut self, attr: Object, val: Object) -> obj::Result<Object> {
+		if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
 			self.parent = Some(val.clone());
 			return Ok(val);
 		}
 
 		for (ref k, ref mut v) in self.map.iter_mut() {
-			if k.call("==", &[&attr])?.try_into_bool()? {
+			if k.call("==", &[&attr])?.downcast_ref::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
 				*v = val.clone();
 				return Ok(val);
 			}
@@ -61,13 +61,13 @@ impl Mapping {
 		Ok(val)
 	}
 
-	pub fn get(&self, attr: &Object) -> Result {
-		if attr.call("==", &[&"__parent__".into()])?.into_bool().unwrap_or(false) {
+	pub fn get(&self, attr: &Object) -> obj::Result<Object> {
+		if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
 			return self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
 		}
 
 		for (ref k, ref v) in self.map.iter() {
-			if attr.call("==", &[k])?.try_into_bool()? {
+			if attr.call("==", &[k])?.downcast_clone::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
 				return Ok(v.clone());
 			}
 		}
@@ -79,25 +79,21 @@ impl Mapping {
 		}
 	}
 
-	pub fn remove(&mut self, attr: &Object) -> Result {
-		if attr.call("==", &[&"__parent__".into()])?.into_bool().unwrap_or(false) {
+	pub fn remove(&mut self, attr: &Object) -> obj::Result<Object> {
+		todo!();
+		if attr.call("==", &[&"__parent__".into()])?.try_call_into_bool()? {
 			return self.parent.take().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
 		}
 
-		// let mut idx: usize;
 		for (idx, (ref k, ref v)) in self.map.iter().enumerate() {
-			if k.call("==", &[attr])?.try_into_bool()? {
+			if k.call("==", &[attr])?.try_call_into_bool()? {
 				return Ok(self.map.remove(idx).1);
 			}
 		}
 
 		Err(format!("attr {:?} does not exist.", attr).into())
 	}
-
 }
-
-
-
 
 
 

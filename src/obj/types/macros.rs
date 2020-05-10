@@ -1,42 +1,43 @@
-macro_rules! impl_object_conversions {
-	($enum:ident $conv_func:literal $as_obj:ident($ty:ty) $as:ident
-	 $into:ident $try_as:ident $try_into:ident $call_into:ident $ret:ty
-	) => {
-		impl $crate::obj::Object {
-			pub fn $call_into(&self) -> ::std::result::Result<$ret, $crate::obj::Object> {
-				self.call($conv_func, &[])?.$try_into()
-			}
+// macro_rules! impl_object_conversions {
+// 	($enum:ident $conv_func:literal $as_obj:ident($ty:ty) $as:ident
+// 	 $into:ident $try_as:ident $try_into:ident $call_into:ident $ret:ty
+// 	) => {
+// 		impl $crate::obj::Object {
+// 			pub fn $call_into(&self) -> ::std::result::Result<$ret, $crate::obj::Object> {
+// 				self.call($conv_func, &[])?.$try_into()
+// 			}
 
-			pub fn $try_into(&self) -> ::std::result::Result<$ret, $crate::obj::Object> {
-				self.$try_as().map(Clone::clone)
-			}
+// 			pub fn $try_into(&self) -> ::std::result::Result<$ret, $crate::obj::Object> {
+// 				self.$try_as().map(Clone::clone)
+// 			}
 
-			pub fn $into(&self) -> Option<$ret> {
-				self.$as().map(Clone::clone)
-			}
+// 			pub fn $into(&self) -> Option<$ret> {
+// 				self.$as().map(Clone::clone)
+// 			}
 
-			pub fn $try_as(&self) -> ::std::result::Result<&$ret, $crate::obj::Object> {
-				self.$as().ok_or_else(|| concat!("not a ", stringify!($ret)).into())
-			}
+// 			pub fn $try_as(&self) -> ::std::result::Result<&$ret, $crate::obj::Object> {
+// 				self.$as().ok_or_else(|| concat!("not a ", stringify!($ret)).into())
+// 			}
 
-			pub fn $as(&self) -> Option<&$ret> {
-				if let $crate::obj::DataEnum::$enum(ref t) = self.0.data {
-					Some(AsRef::<$ret>::as_ref(t))
-				} else {
-					None
-				}
-			}
+// 			pub fn $as(&self) -> Option<&$ret> {
+// 				if let Some(t) = self.downcast_ref::<$ret>() {
+// 				if let $crate::obj::DataEnum::$enum(ref t) = self.0.data_ {
+// 					Some(AsRef::<$ret>::as_ref(t))
+// 				} else {
+// 					None
+// 				}
+// 			}
 
-			pub fn $as_obj(&self) -> Option<&$ty> {
-				if let $crate::obj::DataEnum::$enum(ref t) = self.0.data {
-					Some(t)
-				} else {
-					None
-				}
-			}
-		}
-	}
-}
+// 			pub fn $as_obj(&self) -> Option<&$ty> {
+// 				if let $crate::obj::DataEnum::$enum(ref t) = self.0.data_ {
+// 					Some(t)
+// 				} else {
+// 					None
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 macro_rules! impl_object_type {
 	(for $ty:ty $(, $parent:ty)?; $($name:expr => $fn:expr),* $(,)?) => {
