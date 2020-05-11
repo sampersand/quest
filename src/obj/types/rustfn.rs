@@ -32,8 +32,8 @@ impl RustFn {
 		RustFn(name, n.into())
 	}
 
-	pub fn call(&self, args: &[&Object]) -> obj::Result<Object> {
-		(self.1)(Args::new(args))
+	pub fn call(&self, args: Args) -> obj::Result<Object> {
+		(self.1)(args)
 	}
 }
 
@@ -46,7 +46,7 @@ impl AsRef<FnType> for RustFn {
 
 impl_object_type!{for RustFn, super::Function;
 	"()" => (|args| {
-		args.this::<RustFn>()?.call(&args.get(1..)?)
+		args.this::<RustFn>()?.call(args.get_rng(1..)?)
 	}),
 
 	"@text" => (|args| {

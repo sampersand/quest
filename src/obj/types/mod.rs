@@ -15,7 +15,7 @@ pub mod function;
 pub use self::function::Function;
 
 pub mod rustfn;
-pub use self::rustfn::RustFn;
+pub use self::rustfn::{RustFn, Args};
 
 pub mod null;
 pub use self::null::Null;

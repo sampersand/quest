@@ -25,6 +25,7 @@ impl Text {
 		Text(Cow::Borrowed(txt))
 	}
 }
+
 impl From<&'static str> for Text {
 	fn from(txt: &'static str) -> Self {
 		Text::new_static(txt)
@@ -48,8 +49,6 @@ impl From<&'static str> for Object {
 		Text::from(txt).into()
 	}
 }
-
-
 
 impl AsRef<str> for Text {
 	fn as_ref(&self) -> &str {

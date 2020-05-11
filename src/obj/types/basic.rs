@@ -10,7 +10,7 @@ impl_object_type!{for Basic, super::Pristine;
 
 	"!=" => (|args| {
 		args.this_any()?
-			.call("==", &args.get(1..)?)?
+			.call("==", args.get_rng(1..)?)?
 			.call("!", &[])
 	}),
 
@@ -20,7 +20,7 @@ impl_object_type!{for Basic, super::Pristine;
 
 	"!" => (|args| {
 		args.this_any()?
-			.call("@bool", &args.get(1..)?)?
+			.call("@bool", args.get_rng(1..)?)?
 			.call("!", &[])
 	}),
 

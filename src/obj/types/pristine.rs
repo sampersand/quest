@@ -7,7 +7,7 @@ impl_object_type!{for Pristine, Pristine,; // trailing comma here is required
 	}),
 
 	"__call_attr__" => (|args| {
-		args.get(0)?.call_attr(args.get(1)?, args.get(2..).unwrap_or(&[]))
+		args.get(0)?.call_attr(args.get(1)?, args.get_rng(2..).unwrap_or_default())
 	}),
 
 	"__get_attr__" => (|args| {

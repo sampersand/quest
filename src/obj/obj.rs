@@ -1,4 +1,4 @@
-use crate::obj::{self, Mapping, types::{self, ObjectType}};
+use crate::obj::{self, Mapping, types::{self, Args, ObjectType}};
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
@@ -127,7 +127,13 @@ impl Object {
 		self.0.mapping.write().expect("cannot write").remove(attr)
 	}
 
-	pub fn call_attr(&self, attr: &Object, args: &[&Object]) -> obj::Result<Object> {
+
+	pub fn call_attr<'s, 'o: 's, T: Into<Args<'s, 'o>>>(&self, attr: &Object, args: T) -> obj::Result<Object> {
+		// self.call_attr(attr, args.into().as_ref())
+	// }
+
+	// pub fn call_attr(&self, attr: &Object, args: &[&Object]) -> obj::Result<Object> {
+		let args = args.into();
 		// static mut X: usize = 0;
 		// unsafe { if X > 100 { panic!("X too big");} X += 1;}
 		// println!("Object::call_attr(self={:?}, attr={:?}, args={:?})", self, attr, args);
@@ -139,21 +145,21 @@ impl Object {
 
 		if let Some(txt_attr) = attr.downcast_ref::<types::Text>() {
 			if (txt_attr.as_ref() == "==") {
-				if args.is_empty() {
+				if args.as_ref().is_empty() {
 					return Err(types::Text::from("need at least 1 arg for `==`").into())
 				} else if let (Some(lhs), Some(rhs)) = (self.downcast_ref::<types::Text>(),
-				                                        args[0].downcast_ref::<types::Text>()) {
+				                                        args.get_downcast::<types::Text>(0).ok()) {
 					return Ok(types::Boolean::from(*lhs == *rhs).into())
 				}
 			}
 		}
 
 		let mut v = vec![self];
-		v.extend_from_slice(args);
-		self.get_attr(attr)?.call("()", &v)
+		v.extend_from_slice(args.as_ref());
+		self.get_attr(attr)?.call("()", Args::new(v))
 	}
 
-	pub fn call(&self, txt: &'static str, args: &[&Object]) -> obj::Result<Object> {
+	pub fn call<'s, 'o: 's, T: Into<Args<'s, 'o>>>(&self, txt: &'static str, args: T) -> obj::Result<Object> {
 		self.call_attr(&txt.into(), args)
 	}
 }
