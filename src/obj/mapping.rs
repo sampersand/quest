@@ -45,13 +45,13 @@ impl Mapping {
 	}
 
 	pub fn insert(&mut self, attr: Object, val: Object) -> obj::Result<Object> {
-		if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
+		if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| bool::from(*x)).unwrap_or(false) {
 			self.parent = Some(val.clone());
 			return Ok(val);
 		}
 
 		for (ref k, ref mut v) in self.map.iter_mut() {
-			if k.call("==", &[&attr])?.downcast_ref::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
+			if k.call("==", &[&attr])?.downcast_ref::<types::Boolean>().map(|x| bool::from(*x)).unwrap_or(false) {
 				*v = val.clone();
 				return Ok(val);
 			}
@@ -62,12 +62,12 @@ impl Mapping {
 	}
 
 	pub fn get(&self, attr: &Object) -> obj::Result<Object> {
-		if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
+		if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| bool::from(*x)).unwrap_or(false) {
 			return self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
 		}
 
 		for (ref k, ref v) in self.map.iter() {
-			if attr.call("==", &[k])?.downcast_clone::<types::Boolean>().map(|x| x.into_inner()).unwrap_or(false) {
+			if attr.call("==", &[k])?.downcast_clone::<types::Boolean>().map(|x| bool::from(x)).unwrap_or(false) {
 				return Ok(v.clone());
 			}
 		}

@@ -1,65 +1,48 @@
-// macro_rules! impl_object_conversions {
-// 	($enum:ident $conv_func:literal $as_obj:ident($ty:ty) $as:ident
-// 	 $into:ident $try_as:ident $try_into:ident $call_into:ident $ret:ty
-// 	) => {
-// 		impl $crate::obj::Object {
-// 			pub fn $call_into(&self) -> ::std::result::Result<$ret, $crate::obj::Object> {
-// 				self.call($conv_func, &[])?.$try_into()
-// 			}
+macro_rules! impl_trait {
+	(IntoInner<Inner=$inner:ty> for $obj:ty) => {
+		impl $crate::util::IntoInner for Boolean {
+			type Inner = $inner;
 
-// 			pub fn $try_into(&self) -> ::std::result::Result<$ret, $crate::obj::Object> {
-// 				self.$try_as().map(Clone::clone)
-// 			}
+			fn into_inner(self) -> $inner { 
+				<$inner>::from(self)
+			}
+		}
+	};
 
-// 			pub fn $into(&self) -> Option<$ret> {
-// 				self.$as().map(Clone::clone)
-// 			}
+	(From<$inner:ty> for $obj:ty) => {
+		impl From<$inner> for $obj {
+			fn from(t: $inner) -> Self {
+				Self::new(t)
+			}
+		}
+	};
 
-// 			pub fn $try_as(&self) -> ::std::result::Result<&$ret, $crate::obj::Object> {
-// 				self.$as().ok_or_else(|| concat!("not a ", stringify!($ret)).into())
-// 			}
+	(From<$obj:ty, $inner:ty> for Object) => {
+		impl From<$inner> for $crate::obj::Object {
+			fn from(t: $inner) -> Self {
+				<$obj>::from(t).into()
+			}
+		}
+	};
 
-// 			pub fn $as(&self) -> Option<&$ret> {
-// 				if let Some(t) = self.downcast_ref::<$ret>() {
-// 				if let $crate::obj::DataEnum::$enum(ref t) = self.0.data_ {
-// 					Some(AsRef::<$ret>::as_ref(t))
-// 				} else {
-// 					None
-// 				}
-// 			}
+	(Into<$inner:ty> for $obj:ty) => {
+		impl From<$obj> for $inner {
+			fn from(t: $obj) -> Self {
+				t.0
+			}
+		}
+	};
 
-// 			pub fn $as_obj(&self) -> Option<&$ty> {
-// 				if let $crate::obj::DataEnum::$enum(ref t) = self.0.data_ {
-// 					Some(t)
-// 				} else {
-// 					None
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+	(AsRef<$inner:ty> for $obj:ty) => {
+		impl AsRef<$inner> for $obj {
+			fn as_ref(&self) -> &$inner {
+				&self.0
+			}
+		}
+	};
 
-macro_rules! impl_object_type {
-	(for $ty:ty $(, $parent:ty)?; $($name:expr => $fn:expr),* $(,)?) => {
-	// 	impl_object_type!(;
-	// 		$ty,
-	// 		$crate::obj::Object::new_with_parent::<$parent>(
-	// 			Default::default(),
-	// 		),
-	// 			Some(<$parent as $crate::obj::types::ObjectType>::mapping());
-	// 		$($name => $fn),*
-	// 	);
-	// };
-	// (for $ty:ty; $($name:expr => $fn:expr),*  $(,)?) => {
-	// 	impl_object_type!(;
-	// 		$ty,
-	// 		$crate::obj::Object::new_with_parent($crate::obj::DataEnum::Empty, None);
-	// 		$($name => $fn),*
-	// 	);
-	// };
-
-	// (; $ty:ty, $obj_init:expr, $parent_t:expr; $($name:expr => $fn:expr),*) => {
-		impl $crate::obj::types::ObjectType for $ty {
+	(ObjectType<parent=$parent:ty$(, @ $init_parent:ty)?> for $obj:ty { $($name:expr => $fn:expr),* $(,)? }) => {
+		impl $crate::obj::types::ObjectType for $obj {
 			fn mapping() -> $crate::obj::Object {
 				use std::mem::{self, MaybeUninit};
 				use std::sync::{Once, Arc, RwLock};
@@ -73,7 +56,7 @@ macro_rules! impl_object_type {
 					if !HAS_CREATE_HAPPENED {
 						HAS_CREATE_HAPPENED = true;
 						// todo: change data type to be parent's
-						CLASS_OBJECT.as_mut_ptr().write(Object::new_with_parent((), None));
+						CLASS_OBJECT.as_mut_ptr().write(Object::new_with_parent(<$parent as Default>::default(), None));
 					}
 				}
 
@@ -84,9 +67,9 @@ macro_rules! impl_object_type {
 						let class = (*CLASS_OBJECT.as_ptr()).clone();
 						use $crate::obj::{Object, types::*};
 						$(
-							class.set_attr("__parent__".into(), <$parent as $crate::obj::types::ObjectType>::mapping());
+							class.set_attr("__parent__".into(), <$init_parent as $crate::obj::types::ObjectType>::mapping());
 						)?
-						class.set_attr("name".into(), stringify!($ty).into());
+						class.set_attr("name".into(), stringify!($obj).into());
 						$({
 							class.set_attr($name.into(), $crate::obj::types::RustFn::new($name, $fn).into());
 						})*
@@ -98,6 +81,56 @@ macro_rules! impl_object_type {
 				}
 			}
 		}
+	}
+}
+
+macro_rules! impl_object_type {
+	(for $ty:ty, $parent:ty; $($name:expr => $fn:expr),* $(,)?) => {
+		impl_object_type!(for $ty, $parent, @$parent; $($name => $fn),*);
+	};
+
+	(for $ty:ty, $parent:ty, $( @ $init_parent:ty)?; $($name:expr => $fn:expr),* $(,)?) => {
+		impl_trait!(ObjectType<parent=$parent $(, @ $init_parent)?> for $ty { $($name => $fn),* });
+		// impl $crate::obj::types::ObjectType for $ty {
+		// 	fn mapping() -> $crate::obj::Object {
+		// 		use std::mem::{self, MaybeUninit};
+		// 		use std::sync::{Once, Arc, RwLock};
+		// 		use $crate::obj::{Object, Mapping};
+
+		// 		static mut CLASS_OBJECT: MaybeUninit<Object> = MaybeUninit::uninit();
+		// 		static mut HAS_SETUP_HAPPENED: bool = false;
+		// 		static mut HAS_CREATE_HAPPENED: bool = false; // todo: make sync-safe
+
+		// 		unsafe {
+		// 			if !HAS_CREATE_HAPPENED {
+		// 				HAS_CREATE_HAPPENED = true;
+		// 				// todo: change data type to be parent's
+		// 				CLASS_OBJECT.as_mut_ptr().write(Object::new_with_parent(<$parent as Default>::default(), None));
+		// 			}
+		// 		}
+
+		// 		unsafe {
+		// 			if !HAS_SETUP_HAPPENED {
+		// 				HAS_SETUP_HAPPENED = true;
+
+		// 				let class = (*CLASS_OBJECT.as_ptr()).clone();
+		// 				use $crate::obj::{Object, types::*};
+		// 				$(
+		// 					println!("setting parent for {:?}", stringify!($ty));
+		// 					class.set_attr("__parent__".into(), <$init_parent as $crate::obj::types::ObjectType>::mapping());
+		// 				)?
+		// 				class.set_attr("name".into(), stringify!($ty).into());
+		// 				$({
+		// 					class.set_attr($name.into(), $crate::obj::types::RustFn::new($name, $fn).into());
+		// 				})*
+		// 			}
+		// 		}
+
+		// 		unsafe {
+		// 			(*CLASS_OBJECT.as_ptr()).clone()
+		// 		}
+		// 	}
+		// }
 	};
 }
 

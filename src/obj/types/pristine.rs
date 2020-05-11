@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pristine;
 
-impl_object_type!{for Pristine;
+impl_object_type!{for Pristine, Pristine,;
 	"__id__" => (|args| {
 		Ok(Number::from(args.get(0)?.0.id).into())
 	}),

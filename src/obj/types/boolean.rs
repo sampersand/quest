@@ -1,34 +1,13 @@
-use crate::obj::{self, Mapping, Object, types::ObjectType};
+use crate::obj::{self, Object, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
-type BoolType = bool;
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Boolean(BoolType);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
+pub struct Boolean(bool);
 
 impl Boolean {
-	pub fn into_inner(self) -> BoolType { 
-		self.0
-	}
-}
-
-impl From<BoolType> for Boolean {
-	fn from(inp: BoolType) -> Boolean {
-		Boolean(inp)
-	}
-}
-
-
-impl AsRef<BoolType> for Boolean {
-	fn as_ref(&self) -> &BoolType {
-		&self.0
-	}
-}
-
-impl From<BoolType> for Object {
-	fn from(n: BoolType) -> Object {
-		Boolean::from(n).into()
+	pub fn new(t: bool) -> Self {
+		Boolean(t)
 	}
 }
 
@@ -44,18 +23,22 @@ impl Debug for Boolean {
 
 impl Object {
 	pub fn try_call_into_bool(&self) -> obj::Result<bool> {
-		self.call("@bool", &[]).map(|x| x.downcast_clone::<Boolean>().map(|x| x.into_inner()).unwrap_or(false))
+		Ok(self.call("@bool", &[])?.downcast_clone::<Boolean>().map(|x| x.0).unwrap_or(false))
 	}
 }
 
+impl_trait!(From<Boolean, bool> for Object);
+impl_trait!(From<bool> for Boolean);
+impl_trait!(Into<bool> for Boolean);
+impl_trait!(AsRef<bool> for Boolean);
 
-impl_object_type!{for Boolean, super::Basic;
+impl_trait!(ObjectType<parent=super::Basic> for Boolean {
 	"@num" => (|args| {
-		Ok(Number::from(args.this::<Boolean>()?.into_inner()).into())
+		Ok(Number::from(args.this::<Boolean>()?.0).into())
 	}),
 
 	"@text" => (|args| {
-		Ok(Text::from(args.this::<Boolean>()?.into_inner().to_string()).into())
+		Ok(args.this::<Boolean>()?.0.to_string().into())
 	}),
 
 	"@bool" => (|args| {
@@ -63,31 +46,39 @@ impl_object_type!{for Boolean, super::Basic;
 	}),
 
 	"==" => (|args| {
-		Ok(Boolean::from(
-			args.this::<Boolean>()?.into_inner() ==
-			args.get(1)?.try_downcast_ref::<Boolean>()?.into_inner()
-		).into())
+		if let Some(rhs) = args.get(1)?.downcast_ref::<Boolean>() {
+			Ok((args.this::<Boolean>()?.0 == rhs.0).into())
+		} else {
+			Ok(false.into())
+		}
 	}),
 
 	"clone" => (|args| {
-		Ok(args.this::<Boolean>()?.clone().into())
+		Ok(args.this::<Boolean>()?.0.into())
 	}),
 
 	"!" => (|args| {
-		Ok(Boolean::from(!args.this::<Boolean>()?.into_inner()).into())
+		Ok((!args.this::<Boolean>()?.0).into())
 	}),
 
 	"&" => (|args| {
 		Ok(Boolean::from(
-			args.this::<Boolean>()?.into_inner() &
-			args.get(1)?.call("@bool", &[])?.try_downcast_ref::<Boolean>()?.into_inner()).into())
+			args.this::<Boolean>()?.0
+			& args.get(1)?.try_call_into_bool()?
+		).into())
 	}),
 
 	"|" => (|args| {
-		Ok(Boolean::from(args.this::<Boolean>()?.into_inner() | args.get(1)?.call("@bool", &[])?.try_downcast_ref::<Boolean>()?.into_inner()).into())
+		Ok(Boolean::from(
+			args.this::<Boolean>()?.0
+			| args.get(1)?.try_call_into_bool()?
+		).into())
 	}),
 
 	"^" => (|args| {
-		Ok(Boolean::from(args.this::<Boolean>()?.into_inner() ^ args.get(1)?.call("@bool", &[])?.try_downcast_ref::<Boolean>()?.into_inner()).into())
+		Ok(Boolean::from(
+			args.this::<Boolean>()?.0
+			^ args.get(1)?.try_call_into_bool()?
+		).into())
 	})
-}
+});

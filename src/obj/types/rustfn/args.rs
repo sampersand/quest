@@ -20,8 +20,14 @@ impl<'a> Args<'a> {
 			.and_then(|thing| thing.try_downcast_ref::<T>())
 	}
 
+	pub fn this_any(&self) -> Result<&Object, Object> {
+		let ret = self.get(0);
+		assert!(ret.is_ok(), "invalid index given");
+		ret.map(|x| *x)
+	}
+
 	pub fn this_obj<T: Any>(&self) -> Result<&Object, Object> {
-		let ret = self.get(0)?;
+		let ret = self.this_any()?;
 		assert!(ret.is_type::<T>(), "invalid this encountered");
 		Ok(ret)
 	}

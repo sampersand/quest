@@ -57,5 +57,16 @@ impl AsRef<str> for Text {
 }
 
 impl_object_type!{for Text, super::Basic;
+	"@text" => (|args| {
+		args.this_obj::<Text>()?.call("clone", &[])
+	}),
+
+	// "@bool" => (|args| {
+		// Ok(Boolean::from(args.this::<Number>()?.into_inner() != 0.0).into())
+	// }),
+
+	"clone" => (|args| {
+		Ok(args.this::<Text>()?.clone().into())
+	}),
 	// "==" => (|args| todo!())//	Ok(args[0].as_text().map(|x| x == this.as_text().unwrap()).unwrap_or(false).into()))
 }

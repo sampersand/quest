@@ -2,12 +2,18 @@ use crate::obj::{Object, Mapping, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Null;
 
 impl From<()> for Object {
 	fn from(_: ()) -> Self {
-		Self::new(Null)
+		Null.into()
+	}
+}
+
+impl From<()> for Null {
+	fn from(_: ()) -> Self {
+		Null
 	}
 }
 
@@ -19,8 +25,7 @@ impl Object {
 
 macro_rules! assert_is_null {
 	($args:expr) => {{
-		let this = $args.get(0).unwrap();
-		assert!(this.is_null(), "bad `this` given: {:#?}", this);
+		$args.this_obj::<Null>()
 	}};
 }
 
