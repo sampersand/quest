@@ -1,5 +1,5 @@
-mod mapping;
 mod obj;
+mod mapping;
 mod result;
 
 pub mod types;

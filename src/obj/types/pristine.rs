@@ -1,9 +1,9 @@
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pristine;
 
-impl_object_type!{for Pristine, Pristine,;
+impl_object_type!{for Pristine, Pristine,; // trailing comma here is required 
 	"__id__" => (|args| {
-		Ok(Number::from(args.get(0)?.0.id).into())
+		Ok(Number::from(args.get(0)?.id()).into())
 	}),
 
 	"__call_attr__" => (|args| {
@@ -22,12 +22,3 @@ impl_object_type!{for Pristine, Pristine,;
 		args.get(0)?.del_attr(args.get(1)?)
 	})
 }
-
-
-
-
-
-
-
-
-

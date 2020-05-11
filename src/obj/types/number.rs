@@ -1,4 +1,4 @@
-use crate::obj::{Object, Mapping, types::ObjectType};
+use crate::obj::{self, Object, Mapping, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
@@ -7,20 +7,38 @@ type Inner = f64;
 type InnerInt = i64;
 
 pub const ZERO: Number = Number(0 as _);
-pub const  ONE: Number = Number(0 as _);
+pub const  ONE: Number = Number(1 as _);
 
 impl Eq for Number {}
 #[derive(Clone, Copy, PartialEq)]
 pub struct Number(Inner);
 
 impl Number {
-	fn to_int(&self) -> InnerInt {
+	pub fn try_to_int(&self) -> obj::Result<InnerInt> {
+		let int = self.to_int();
+		if self.0 == int as Inner {
+			Ok(int)
+		} else {
+			Err(format!("non-integer number {}", self.0).into())
+		}
+	}
+
+	pub fn to_int(&self) -> InnerInt {
 		self.0 as InnerInt
+	}
+
+	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, std::num::ParseIntError> {
+		InnerInt::from_str_radix(inp, radix).map(Number::from)
+	}
+
+	pub fn from_str(inp: &str) -> Result<Number, std::num::ParseFloatError> {
+		use std::str::FromStr;
+		Inner::from_str(inp).map(Number::from)
 	}
 }
 
 impl From<bool> for Number {
-	fn from(inp: bool) -> Number {
+	fn from(inp: bool) -> Self {
 		if inp {
 			ONE
 		} else {
@@ -75,7 +93,11 @@ macro_rules! operator {
 	})};
 
 	(binary int $oper:tt) => {(|args| {
-		Ok((args.this::<Number>()?.to_int() $oper getnum!(args).to_int()).into())
+		Ok((args.this::<Number>()?.try_to_int()? $oper getnum!(args).try_to_int()?).into())
+	})};
+
+	(binary int $oper:tt) => {(|args| {
+		Ok((args.this::<Number>()?.try_to_int()? $oper getnum!(args).try_to_int()?).into())
 	})};
 
 	(unary $unary:tt) => {(|args| {
@@ -99,7 +121,20 @@ impl_object_type!{for Number, super::Basic;
 	}),
 
 	"@text" => (|args| {
-		Ok(args.this::<Number>()?.0.to_string().into())
+		if let Some(arg) = args.get(1).ok() {
+			let this = args.this::<Number>()?.try_to_int()?;
+			let radix = arg.call("@num", &[])?.try_downcast_ref::<Number>()?.try_to_int()?;
+			match radix {
+            2 => Ok(format!("{:b}", this).into()),
+            8 => Ok(format!("{:o}", this).into()),
+            16 => Ok(format!("{:x}", this).into()),
+            10 => Ok(this.to_string().into()),
+            0 | 1 => Err(format!("invalid radix {}", radix).into()),
+            _ => todo!("unsupported radix {}", radix)
+			}
+		} else {
+			Ok(args.this::<Number>()?.0.to_string().into())
+		}
 	}),
 
 	"@bool" => (|args| {
@@ -130,20 +165,27 @@ impl_object_type!{for Number, super::Basic;
 		args.this_obj::<Number>()?.call("abs", &[])
 	}),
 	"~" => (|args| {
-		Ok((!args.this::<Number>()?.to_int()).into())
+		Ok((!args.this::<Number>()?.try_to_int()?).into())
 	}),
 	"abs" => (|args| {
 		Ok(args.this::<Number>()?.0.abs().into())
 	}),
 	"floor" => (|args| {
 		Ok(args.this::<Number>()?.to_int().into())
-	})
+	}),
+
+	"==" => (|args| {
+		Ok((args.this::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
+	}),
+
+	"<" => (|args| todo!("<")),
+	"<=" => (|args| todo!("<=")),
+	">" => (|args| todo!(">")),
+	">=" => (|args| todo!(">=")),
+	"<=>" => (|args| todo!("<=>")),
+	"idiv" => (|args| todo!("idiv")),
+	"is_integer" => (|args| todo!("is_integer")),
+	"ceil" => (|args| todo!("ceil")),
+	"round" => (|args| todo!("round")),
+	"is_integer" => (|args| todo!("is_integer")),
 }
-
-
-
-
-
-
-
-

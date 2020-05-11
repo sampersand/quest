@@ -27,12 +27,32 @@ impl Object {
 	}
 }
 
-impl_trait!(From<Boolean, bool> for Object);
-impl_trait!(From<bool> for Boolean);
-impl_trait!(Into<bool> for Boolean);
-impl_trait!(AsRef<bool> for Boolean);
+impl From<bool> for Object {
+	fn from(inp: bool) -> Self {
+		Boolean::from(inp).into()
+	}
+}
 
-impl_trait!(ObjectType<parent=super::Basic> for Boolean {
+impl From<bool> for Boolean {
+	fn from(b: bool) -> Self {
+		Boolean::new(b)
+	}
+}
+
+impl From<Boolean> for bool {
+	fn from(b: Boolean) -> Self {
+		b.0
+	}
+}
+
+impl AsRef<bool> for Boolean {
+	fn as_ref(&self) -> &bool {
+		&self.0
+	}
+}
+
+
+impl_object_type!{for Boolean, super::Basic;
 	"@num" => (|args| {
 		Ok(Number::from(args.this::<Boolean>()?.0).into())
 	}),
@@ -81,4 +101,4 @@ impl_trait!(ObjectType<parent=super::Basic> for Boolean {
 			^ args.get(1)?.try_call_into_bool()?
 		).into())
 	})
-});
+}

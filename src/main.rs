@@ -6,11 +6,18 @@ use obj::Object;
 
 fn main() {
 	let ref twelve = Object::from(12);
-	let ref twelve5 = Object::from(12.4);
-	let ref twenty = Object::from(20);
+	let ref twelve4 = Object::from(12.4);
+	let ref twenty = Object::from(16);
 
+	let ref add = twelve.call("__get_attr__", &[&"+".into()]).unwrap();
+	let ref call = add.call("__get_attr__", &[&"()".into()]).unwrap();
 
-	println!("{:?}", twelve5.call("floor", &[]));
+	println!("{:?}", call.call("()", &[add, twelve, twenty]));	
+	// println!("{:?}",
+	// 	Object::from("1a")
+	// 		.call("@num", &[&16.into()]).unwrap()
+	// 		.call("@text", &[&16.into()])
+	// );
 	// let ref rustfn = twelve.get_attr(&"+".into());
 	// println!("{:?}", rustfn);
 	// println!("{:?}", rustfn.unwrap().call("@text", &[]));

@@ -4,12 +4,12 @@ use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
 
 #[derive(Clone)]
-pub struct Object(pub(super) Arc<Internal>);
+pub struct Object(Arc<Internal>);
 
-pub(super) struct Internal {
+struct Internal {
 	mapping: Arc<RwLock<Mapping>>,
-	pub(super) id: usize,
-	pub(super) data: Arc<RwLock<dyn Any>>,
+	id: usize,
+	data: Arc<RwLock<dyn Any + Send + Sync>>,
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result
 }
 
@@ -41,8 +41,9 @@ impl<T: Any + ObjectType> From<T> for Object {
 		Object::new(data)
 	}
 }
+
 impl Object {
-	pub fn new_with_parent<T: Any + Debug>(data: T, parent: Option<Object>) -> Self {
+	pub fn new_with_parent<T: Any + Debug + Send + Sync>(data: T, parent: Option<Object>) -> Self {
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 		Object(Arc::new(Internal {
 			id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
@@ -52,11 +53,15 @@ impl Object {
 		}))
 	}
 
+	pub fn id(&self) -> usize {
+		self.0.id
+	}
+
 	pub fn new<T: ObjectType>(data: T) -> Self {
 		Object::new_with_parent(data, Some(T::mapping()))
 	}
 
-	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> Result<impl std::ops::Deref<Target = T> + 'a, Object> {
+	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::Deref<Target = T> + 'a> {
 		self.downcast_ref::<T>().ok_or_else(|| types::Text::from(format!("not a {:?}", TypeId::of::<T>())).into())
 	}
 
@@ -70,7 +75,7 @@ impl Object {
 
 	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl std::ops::Deref<Target=T> + 'a> {
 		use std::{sync::RwLockReadGuard, marker::PhantomData, ops::{Deref, DerefMut}};
-		struct Caster<'a, T>(RwLockReadGuard<'a, dyn Any>, PhantomData<T>);
+		struct Caster<'a, T>(RwLockReadGuard<'a, dyn Any + Send + Sync>, PhantomData<T>);
 		impl<'a, T: 'static> Deref for Caster<'a, T> {
 			type Target = T;
 			fn deref(&self) -> &T {
@@ -88,7 +93,7 @@ impl Object {
 
 	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl std::ops::DerefMut<Target=T> + 'a> {
 		use std::{sync::RwLockWriteGuard, marker::PhantomData, ops::{Deref, DerefMut}};
-		struct Caster<'a, T>(RwLockWriteGuard<'a, dyn Any>, PhantomData<T>);
+		struct Caster<'a, T>(RwLockWriteGuard<'a, dyn Any + Send + Sync>, PhantomData<T>);
 		impl<'a, T: 'static> std::ops::Deref for Caster<'a, T> {
 			type Target = T;
 			fn deref(&self) -> &T {

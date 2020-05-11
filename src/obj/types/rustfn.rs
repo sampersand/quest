@@ -27,7 +27,6 @@ impl PartialEq for RustFn {
 }
 
 
-
 impl RustFn {
 	pub fn new(name: &'static str, n: FnType) -> Self {
 		RustFn(name, n.into())
@@ -45,6 +44,12 @@ impl AsRef<FnType> for RustFn {
 	}
 }
 
-impl_object_type!{for RustFn, super::Basic;
-	"()" => (|args| { unimplemented!() })
+impl_object_type!{for RustFn, super::Function;
+	"()" => (|args| {
+		args.this::<RustFn>()?.call(&args.get(1..)?)
+	}),
+
+	"@text" => (|args| {
+		Ok(args.this::<RustFn>()?.0.into())
+	}),
 }
