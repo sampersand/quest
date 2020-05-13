@@ -100,6 +100,7 @@ impl_object_type!{for Text, super::Basic;
 
 	"chr" => (|args| todo!("chr")),
 	"len" => (|args| todo!("len")),
+	"+" => (|args| todo!("+")),
 	"[]" => (|args| todo!("[]")),
 	"[]=" => (|args| todo!("[]=")),
 	// "[]~" => (|args| todo!("[]~")),

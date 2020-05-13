@@ -158,6 +158,7 @@ impl_object_type!{for Number, super::Basic;
 	"^" => operator!(binary int ^),
 	"<<" => operator!(binary int <<),
 	">>" => operator!(binary int >>),
+
 	"-@" => (|args| {
 		Ok((-args.this::<Number>()?.0).into())
 	}),

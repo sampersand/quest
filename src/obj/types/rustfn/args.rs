@@ -66,7 +66,8 @@ impl<'o> Args<'_, 'o> {
 	// }
 
 	pub fn get_rng<'c, I>(&'c self, idx: I) -> obj::Result<Args<'_, 'o>>
-			where I: SliceIndex<[&'o Object], Output=[&'o Object]> + 'c
+	where
+		I: SliceIndex<[&'o Object], Output=[&'o Object]> + 'c
 	{
 		if let Some(rng) = self.args.get(idx) {
 			Ok(Args::from(rng))
