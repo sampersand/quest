@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use crate::obj::types;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -7,17 +8,14 @@ pub enum Operator {
 	Add, Sub, Mul, Div, Mod, Pow,
 	Not, Eql, Neq, Lth, Leq, Gth, Geq, Cmp, And, Or,
 	Lsh, Rsh, BNot, BAnd, BOr, Xor,
-	Dot, Comma, Endline,
-
-	Assign, DotAsn, DotDel,
+	Assign, Dot, DotAsn,
 	AddAsn, SubAsn, MulAsn, DivAsn, ModAsn, PowAsn, LshAsn, RshAsn, BAndAsn, BOrAsn, XorAsn,
-	Index, Call, IndexAsn, IndexDel
 }
 
-impl Display for Operator {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		use self::Operator::*;
-		write!(f, "{}", match self {
+impl From<Operator> for types::Text {
+	fn from(op: Operator) -> Self {
+		use Operator::*;
+		Self::from(match op {
 			Pos => "+@", Neg => "-@",
 			Add => "+", Sub => "-", Mul => "*", Div => "/", Mod => "%",
 			Pow => "**",
@@ -27,44 +25,39 @@ impl Display for Operator {
 			And => "&&", Or => "||",
 			BNot => "~", BAnd => "&",
 			Lsh => "<<", Rsh => ">>", BOr => "|", Xor => "^",
-			Dot => ".", Comma => ",", Endline => ";",
-			Assign => "=", DotAsn => ".=", DotDel => ".~",
+			Dot => ".",
+			Assign => "=", DotAsn => ".=",
 			AddAsn => "+=", SubAsn => "-=", MulAsn => "*=", DivAsn => "/=", ModAsn => "%=",
 			PowAsn => "**=", LshAsn => "<<=", RshAsn => ">>=", BAndAsn => "&=", BOrAsn => "|=",
 			XorAsn => "^=",
-			Call => "()",
-			Index => "[]",
-			IndexAsn => "[]=",
-			IndexDel => "[]~",
 		})
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Associativity {
 	LeftToRight,
 	RightToLeft,
 	UnaryOperOnLeft,
-	UnaryOperOnRight,
+	// UnaryOperOnRight,
 }
 
 impl Operator {
-	pub fn associativity(&self) -> Associativity {
+	pub fn assoc(&self) -> Associativity {
 		use Operator::*;
 		match self {
 			Pos | Neg | Not | BNot => Associativity::UnaryOperOnLeft,
-			Assign | DotAsn | DotDel | AddAsn | SubAsn | MulAsn | DivAsn
+			Assign | DotAsn | AddAsn | SubAsn | MulAsn | DivAsn
 				| ModAsn | PowAsn | LshAsn | RshAsn | BAndAsn | BOrAsn | XorAsn
 				=> Associativity::RightToLeft,
-			Index | IndexAsn | IndexDel => unreachable!(),
 			_ => Associativity::LeftToRight
 		}
 	}
 
 	pub fn arity(&self) -> usize {
-		match self.associativity() {
+		match self.assoc() {
 			Associativity::LeftToRight | Associativity::RightToLeft => 2,
-			Associativity::UnaryOperOnLeft | Associativity::UnaryOperOnRight => 1
+			Associativity::UnaryOperOnLeft /*| Associativity::UnaryOperOnRight*/ => 1
 		}
 	}
 
@@ -73,25 +66,20 @@ impl Operator {
 		// using ruby's precedence as a template.
 		match self {
 			Dot => 0,
-			Call => 1,
-			Not | BNot | Pos => 2,
-			Pow => 3,
-			Neg => 4,
-			Mul | Div | Mod => 5,
-			Add | Sub => 6,
-			Lsh | Rsh => 7,
-			BAnd => 8,
-			BOr | Xor => 9,
-			Lth | Leq | Gth | Geq => 10,
-			Cmp | Eql | Neq => 11,
-			And => 12,
-			Or => 13,
-			DotAsn | DotDel => 14, // do i want them here?
-			Assign | AddAsn | SubAsn | MulAsn | DivAsn | ModAsn
-				| PowAsn | LshAsn | RshAsn | BAndAsn | BOrAsn | XorAsn => 14,
-			Comma => 15,
-			Endline => 16,
-			Index | IndexAsn | IndexDel => todo!()
+			Not | BNot | Pos => 1,
+			Pow => 2,
+			Neg => 3,
+			Mul | Div | Mod => 4,
+			Add | Sub => 5,
+			Lsh | Rsh => 6,
+			BAnd => 7,
+			BOr | Xor => 8,
+			Lth | Leq | Gth | Geq => 9,
+			Cmp | Eql | Neq => 10,
+			And => 11,
+			Or => 12,
+			Assign | DotAsn | AddAsn | SubAsn | MulAsn | DivAsn | ModAsn
+				| PowAsn | LshAsn | RshAsn | BAndAsn | BOrAsn | XorAsn => 13
 		}
 	}
 }

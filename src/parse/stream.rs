@@ -9,7 +9,7 @@ use std::io::{self, Read, Bytes, BufReader, Seek, SeekFrom, Cursor};
 pub struct Stream<'a, S: Seek + Read> {
 	data: S,
 	file: Option<&'a Path>,
-	line: usize,
+	line: usize, // these are not used rn, but they will be in the future
 	col: usize,
 	row: usize,
 }
@@ -103,12 +103,12 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 							num.push('.');
 							num.push(digit);
 						},
-						Some(alnum) if alnum.is_alphanumeric() => {
-							self.unseek(alnum);
+						Some(chr) /*if chr.is_alphanumeric()*/ => {
+							self.unseek(chr);
 							self.unseek('.');
 							break;
 						},
-						Some(other) => parse_err!("trailing period: {:?}", num)
+						// Some(other) => parse_err!("trailing period: {:?}", num)
 					}
 				},
 				'e' | 'E' if stage != Stage::Exponent => {
@@ -184,9 +184,7 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 			'|' => following!(BOr '=' BOrAsn, '|' Or),
 			'^' => following!(Xor '=' XorAsn),
 
-			'.' => following!(Dot '=' DotAsn, '~' DotDel),
-			',' => following!(Comma),
-			';' => following!(Endline),
+			'.' => following!(Dot '=' DotAsn),
 
 			':' | '$' | '?' | '@' | '\\' | '`' => return Err(Error::UnknownTokenStart(first_chr)),
 			_ => unreachable!()
@@ -222,14 +220,16 @@ impl<'a, S: Seek + Read> Iterator for Stream<'a, S> {
 
 			'(' => Ok(Token::Left(token::ParenType::Paren)),
 			'[' => Ok(Token::Left(token::ParenType::Bracket)),
-			'{' => Ok(Token::Left(token::ParenType::Curly)),
+			'{' => Ok(Token::Left(token::ParenType::Brace)),
 			')' => Ok(Token::Right(token::ParenType::Paren)),
 			']' => Ok(Token::Right(token::ParenType::Bracket)),
-			'}' => Ok(Token::Right(token::ParenType::Curly)),
+			'}' => Ok(Token::Right(token::ParenType::Brace)),
 
 			'\\' => todo!("line continuation"),
+			',' => Ok(Token::Comma),
+			';' => Ok(Token::Endline),
 			// punctuation characters not covered before:
-			// 	! $ % & * + , - . / : ; < = > ? @ \ ^ ` , | ~
+			// 	! $ % & * + - . / : < = > ? @ \ ^ ` , | ~
 			// not all of them are actually used as variables
 			_ if chr.is_ascii_punctuation() => self.next_operator(chr),
 
