@@ -21,7 +21,7 @@ impl Text {
 		Text(Cow::Owned(txt))
 	}
 
-	pub fn new_static(txt: &'static str) -> Self {
+	pub const fn new_static(txt: &'static str) -> Self {
 		Text(Cow::Borrowed(txt))
 	}
 }

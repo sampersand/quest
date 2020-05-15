@@ -1,5 +1,6 @@
 pub mod operator;
 pub use self::operator::Operator;
+use std::fmt::{self, Debug, Formatter};
 use crate::obj::types;
 
 
@@ -19,7 +20,7 @@ impl From<ParenType> for types::Text {
 }
 
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 #[non_exhaustive] // we might want, eg, "time" literals or whatnot in the future?
 pub enum Literal {
 	Number(types::Number),
@@ -37,3 +38,16 @@ pub enum Token {
 	Left(ParenType),
 	Right(ParenType),
 }
+
+impl Debug for Literal {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		match self {
+			Literal::Number(num) => write!(f, "Literal::Number({:?})", num),
+			Literal::Text(txt) => write!(f, "Literal::Text({:?})", txt),
+			Literal::Variable(var) => write!(f, "Literal::Variable({:?})", var)
+		}
+	}
+}
+
+
+

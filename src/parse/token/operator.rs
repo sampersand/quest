@@ -8,8 +8,8 @@ pub enum Operator {
 	Add, Sub, Mul, Div, Mod, Pow,
 	Not, Eql, Neq, Lth, Leq, Gth, Geq, Cmp, And, Or,
 	Lsh, Rsh, BNot, BAnd, BOr, Xor,
-	Assign, Dot, DotAsn,
-	AddAsn, SubAsn, MulAsn, DivAsn, ModAsn, PowAsn, LshAsn, RshAsn, BAndAsn, BOrAsn, XorAsn,
+	Assign, Dot, DotAssign,
+	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign, LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
 }
 
 impl From<Operator> for types::Text {
@@ -26,10 +26,10 @@ impl From<Operator> for types::Text {
 			BNot => "~", BAnd => "&",
 			Lsh => "<<", Rsh => ">>", BOr => "|", Xor => "^",
 			Dot => ".",
-			Assign => "=", DotAsn => ".=",
-			AddAsn => "+=", SubAsn => "-=", MulAsn => "*=", DivAsn => "/=", ModAsn => "%=",
-			PowAsn => "**=", LshAsn => "<<=", RshAsn => ">>=", BAndAsn => "&=", BOrAsn => "|=",
-			XorAsn => "^=",
+			Assign => "=", DotAssign => ".=",
+			AddAssign => "+=", SubAssign => "-=", MulAssign => "*=", DivAssign => "/=", ModAssign => "%=",
+			PowAssign => "**=", LshAssign => "<<=", RshAssign => ">>=", BAndAssign => "&=", BOrAssign => "|=",
+			XorAssign => "^=",
 		})
 	}
 }
@@ -43,12 +43,29 @@ pub enum Associativity {
 }
 
 impl Operator {
+	pub fn into_unary_left(self) -> Self {
+		match self {
+			Operator::Add => Operator::Pos,
+			Operator::Sub => Operator::Neg,
+			_ => self
+		}
+	}
+
+	pub fn is_symbol_unary_left(&self) -> bool {
+		use Operator::*;
+
+		match self {
+			Pos | Neg | Add | Sub | Not | BNot => true,
+			_ => false
+		}
+	}
+
 	pub fn assoc(&self) -> Associativity {
 		use Operator::*;
 		match self {
 			Pos | Neg | Not | BNot => Associativity::UnaryOperOnLeft,
-			Assign | DotAsn | AddAsn | SubAsn | MulAsn | DivAsn
-				| ModAsn | PowAsn | LshAsn | RshAsn | BAndAsn | BOrAsn | XorAsn
+			Assign | DotAssign | AddAssign | SubAssign | MulAssign | DivAssign
+				| ModAssign | PowAssign | LshAssign | RshAssign | BAndAssign | BOrAssign | XorAssign
 				=> Associativity::RightToLeft,
 			_ => Associativity::LeftToRight
 		}
@@ -78,8 +95,8 @@ impl Operator {
 			Cmp | Eql | Neq => 10,
 			And => 11,
 			Or => 12,
-			Assign | DotAsn | AddAsn | SubAsn | MulAsn | DivAsn | ModAsn
-				| PowAsn | LshAsn | RshAsn | BAndAsn | BOrAsn | XorAsn => 13
+			Assign | DotAssign | AddAssign | SubAssign | MulAssign | DivAssign | ModAssign
+				| PowAssign | LshAssign | RshAssign | BAndAssign | BOrAssign | XorAssign => 13
 		}
 	}
 }

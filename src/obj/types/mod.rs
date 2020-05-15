@@ -6,6 +6,7 @@ pub trait ObjectType : ::std::fmt::Debug + Send + Sync + ::std::any::Any + Clone
 }
 
 pub mod pristine;
+pub mod kernel;
 pub mod basic;
 
 pub mod function;
@@ -20,6 +21,7 @@ pub mod list;
 pub mod map;
 
 pub use self::pristine::Pristine;
+pub use self::kernel::Kernel;
 pub use self::basic::Basic;
 pub use self::function::Function;
 pub use self::rustfn::{RustFn, Args};

@@ -1,5 +1,5 @@
 use std::iter::Peekable;
-use crate::parse::{Result, Error, token::{self, Literal}, Token};
+use crate::parse::{Result, Error, Literal, Token, token};
 use crate::obj::types;
 use std::path::Path;
 use std::fs::File;
@@ -168,23 +168,23 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 			};
 		}
 		Ok(Token::Operator(match first_chr {
-			'+' => following!(Add '=' AddAsn, '@' Pos),
-			'-' => following!(Sub '=' SubAsn, '@' Neg),
-			'*' => following!(Mul '=' MulAsn, '*' => following!(Pow '=' PowAsn)),
-			'%' => following!(Mod '=' ModAsn),
-			'/' => following!(Div '=' DivAsn),
+			'+' => following!(Add '=' AddAssign, '@' Pos),
+			'-' => following!(Sub '=' SubAssign, '@' Neg),
+			'*' => following!(Mul '=' MulAssign, '*' => following!(Pow '=' PowAssign)),
+			'%' => following!(Mod '=' ModAssign),
+			'/' => following!(Div '=' DivAssign),
 
 			'!' => following!(Not '=' Neq),
 			'=' => following!(Assign '=' Eql),
-			'<' => following!(Lth '=' => following!(Leq '>' Cmp), '<' => following!(Lsh '=' LshAsn)),
-			'>' => following!(Gth '=' Geq, '>' => following!(Rsh '=' RshAsn)),
+			'<' => following!(Lth '=' => following!(Leq '>' Cmp), '<' => following!(Lsh '=' LshAssign)),
+			'>' => following!(Gth '=' Geq, '>' => following!(Rsh '=' RshAssign)),
 
 			'~' => following!(BNot),
-			'&' => following!(BAnd '=' BAndAsn, '&' And),
-			'|' => following!(BOr '=' BOrAsn, '|' Or),
-			'^' => following!(Xor '=' XorAsn),
+			'&' => following!(BAnd '=' BAndAssign, '&' And),
+			'|' => following!(BOr '=' BOrAssign, '|' Or),
+			'^' => following!(Xor '=' XorAssign),
 
-			'.' => following!(Dot '=' DotAsn),
+			'.' => following!(Dot '=' DotAssign),
 
 			':' | '$' | '?' | '@' | '\\' | '`' => return Err(Error::UnknownTokenStart(first_chr)),
 			_ => unreachable!()

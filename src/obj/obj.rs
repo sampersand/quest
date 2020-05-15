@@ -1,10 +1,16 @@
-use crate::obj::{self, Mapping, types::{self, Args, ObjectType}};
+use crate::obj::{self, Mapping, Args, types::{self, ObjectType}};
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
 
 #[derive(Clone)]
 pub struct Object(Arc<Internal>);
+
+impl Default for Object {
+	fn default() -> Self {
+		Object::from(types::Null)
+	}
+}
 
 struct Internal {
 	mapping: Arc<RwLock<Mapping>>,
@@ -114,26 +120,25 @@ impl Object {
 		}
 	}
 
-	pub fn get_attr(&self, attr: &Object) -> obj::Result<Object> {
+	pub fn get_attr(&self, attr: &Object, binding: &Object) -> obj::Result<Object> {
 		// println!("Object::get_attr(self={:?}, attr={:?})", self, attr);
-		self.0.mapping.read().expect("cannot read").get(attr)
+		self.0.mapping.read().expect("cannot read").get(attr, binding)
 	}
 
-	pub fn set_attr(&self, attr: Object, val: Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").insert(attr, val)
+	pub fn set_attr(&self, attr: Object, val: Object, binding: &Object) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").insert(attr, val, binding)
 	}
 
-	pub fn del_attr(&self, attr: &Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").remove(attr)
+	pub fn del_attr(&self, attr: &Object, binding: &Object) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").remove(attr, binding)
 	}
 
 
-	pub fn call_attr<'s, 'o: 's, T: Into<Args<'s, 'o>>>(&self, attr: &Object, args: T) -> obj::Result<Object> {
+	pub fn call_attr<'a>(&'a self, attr: &Object, mut args: Args<'_, 'a>) -> obj::Result<Object> {
 		// self.call_attr(attr, args.into().as_ref())
 	// }
 
 	// pub fn call_attr(&self, attr: &Object, args: &[&Object]) -> obj::Result<Object> {
-		let args = args.into();
 		// static mut X: usize = 0;
 		// unsafe { if X > 100 { panic!("X too big");} X += 1;}
 		// println!("Object::call_attr(self={:?}, attr={:?}, args={:?})", self, attr, args);
@@ -154,12 +159,11 @@ impl Object {
 			}
 		}
 
-		let mut v = vec![self];
-		v.extend_from_slice(args.as_ref());
-		self.get_attr(attr)?.call("()", Args::new(v))
+		args.add_this(self);
+		self.get_attr(attr, args.binding())?.call("()", args)
 	}
 
-	pub fn call<'s, 'o: 's, T: Into<Args<'s, 'o>>>(&self, txt: &'static str, args: T) -> obj::Result<Object> {
+	pub fn call<'a>(&'a self, txt: &'static str, args: Args<'_, 'a>) -> obj::Result<Object> {
 		self.call_attr(&txt.into(), args)
 	}
 }

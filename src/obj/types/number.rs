@@ -2,18 +2,22 @@ use crate::obj::{self, Object, Mapping, types::ObjectType};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
-
 type Inner = f64;
 type InnerInt = i64;
 
-pub const ZERO: Number = Number(0 as _);
-pub const  ONE: Number = Number(1 as _);
+pub const ZERO: Number = Number::new(0 as _);
+pub const  ONE: Number = Number::new(1 as _);
+
 
 impl Eq for Number {}
 #[derive(Clone, Copy, PartialEq)]
 pub struct Number(Inner);
 
 impl Number {
+	pub const fn new(n: Inner) -> Self {
+		Number(n)
+	}
+
 	pub fn try_to_int(&self) -> obj::Result<InnerInt> {
 		let int = self.to_int();
 		if self.0 == int as Inner {
@@ -31,19 +35,23 @@ impl Number {
 		InnerInt::from_str_radix(inp, radix).map(Number::from)
 	}
 
+	pub fn abs(self) -> Number {
+		Number::from(self.0.abs())
+	}
+
+	pub fn pow(self, rhs: Number) -> Number {
+		self.0.powf(rhs.0).into()
+	}
+
 	pub fn from_str(inp: &str) -> Result<Number, std::num::ParseFloatError> {
 		use std::str::FromStr;
 		Inner::from_str(inp).map(Number::from)
 	}
 }
 
-impl From<bool> for Number {
-	fn from(inp: bool) -> Self {
-		if inp {
-			ONE
-		} else {
-			ZERO
-		}
+impl From<Number> for Inner {
+	fn from(num: Number) -> Self {
+		num.0
 	}
 }
 
@@ -87,43 +95,49 @@ impl Debug for Number {
 	}
 }
 
-macro_rules! operator {
-	(binary $oper:tt) => {(|args| {
-		Ok((args.this::<Number>()?.0 $oper getnum!(args).0).into())
-	})};
+macro_rules! impl_binary_op {
+	($($binary:ident $binary_method:ident)* ; $($bitwise:ident $bitwise_method:ident)*) => {
+		$(
+			impl std::ops::$binary for Number {
+				type Output = Self;
+				fn $binary_method(self, rhs: Self) -> Self::Output {
+					((self.0).$binary_method(rhs.0)).into()
+				}
+			}
+		)*
 
-	(binary int $oper:tt) => {(|args| {
-		Ok((args.this::<Number>()?.try_to_int()? $oper getnum!(args).try_to_int()?).into())
-	})};
-
-	(binary int $oper:tt) => {(|args| {
-		Ok((args.this::<Number>()?.try_to_int()? $oper getnum!(args).try_to_int()?).into())
-	})};
-
-	(unary $unary:tt) => {(|args| {
-		Ok(($unary args.this::<Number>()?.0).into())
-	})};
+		$(
+			impl std::ops::$bitwise for Number {
+				type Output = obj::Result<Self>;
+				fn $bitwise_method(self, rhs: Self) -> Self::Output {
+					Ok(self.try_to_int()?.$bitwise_method(rhs.try_to_int()?).into())
+				}
+			}
+		)*
+	};
 }
 
-macro_rules! getnum {
-	($args:expr) => {
-		getnum!($args, 1)
-	};
+impl_binary_op!(
+	Add add Sub sub Mul mul Div div Rem rem;
+	Shl shl Shr shr BitAnd bitand BitOr bitor BitXor bitxor
+);
 
-	($args:expr, $pos:expr) => {
-		$args.get($pos)?.call("@num", &[])?.try_downcast_ref::<Number>()?
-	};
+impl std::ops::Neg for Number {
+	type Output = Self;
+	fn neg(self) -> Self::Output {
+		Self::from(-Inner::from(self))
+	}
 }
 
 impl_object_type!{for Number, super::Basic;
 	"@num" => (|args| {
-		args.this_obj::<Number>()?.call("clone", &[])
+		args.this_obj::<Number>()?.call("clone", args.new_same_binding(&[] as &[_]))
 	}),
 
 	"@text" => (|args| {
 		if let Some(arg) = args.get(1).ok() {
 			let this = args.this::<Number>()?.try_to_int()?;
-			let radix = arg.call("@num", &[])?.try_downcast_ref::<Number>()?.try_to_int()?;
+			let radix = arg.call("@num", args.new_same_binding(&[] as &[_]))?.try_downcast_ref::<Number>()?.try_to_int()?;
 			match radix {
             2 => Ok(format!("{:b}", this).into()),
             8 => Ok(format!("{:o}", this).into()),
@@ -145,31 +159,67 @@ impl_object_type!{for Number, super::Basic;
 		Ok(args.this::<Number>()?.0.into())
 	}),
 
-	"+" => operator!(binary +),
-	"-" => operator!(binary -),
-	"*" => operator!(binary *),
-	"/" => operator!(binary /),
-	"%" => operator!(binary %),
-	"**" => (|args| {
-		Ok((args.this::<Number>()?.0.powf(getnum!(args).0)).into())
+	"+" => (|args| {
+		use std::ops::Add;
+		Ok(args.this::<Number>()?.add(*getarg!(Number; args)).into())
 	}),
-	"&" => operator!(binary int &),
-	"|" => operator!(binary int |),
-	"^" => operator!(binary int ^),
-	"<<" => operator!(binary int <<),
-	">>" => operator!(binary int >>),
+
+	"-" => (|args| {
+		use std::ops::Sub;
+		Ok(args.this::<Number>()?.sub(*getarg!(Number; args)).into())
+	}),
+
+	"*" => (|args| {
+		use std::ops::Mul;
+		Ok(args.this::<Number>()?.mul(*getarg!(Number; args)).into())
+	}),
+	"/" => (|args| {
+		use std::ops::Div;
+		Ok(args.this::<Number>()?.div(*getarg!(Number; args)).into())
+	}),
+	"%" => (|args| {
+		use std::ops::Rem;
+		Ok(args.this::<Number>()?.rem(*getarg!(Number; args)).into())
+	}),
+	"**" => (|args| {
+		Ok(args.this::<Number>()?.pow(*getarg!(Number; args)).into())
+	}),
+
+
+	"&" => (|args| {
+		use std::ops::BitAnd;
+		Ok(args.this::<Number>()?.bitand(*getarg!(Number; args))?.into())
+	}),
+	"|" => (|args| {
+		use std::ops::BitOr;
+		Ok(args.this::<Number>()?.bitor(*getarg!(Number; args))?.into())
+	}),
+	"^" => (|args| {
+		use std::ops::BitXor;
+		Ok(args.this::<Number>()?.bitxor(*getarg!(Number; args))?.into())
+	}),
+	"<<" => (|args| {
+		use std::ops::Shl;
+		Ok(args.this::<Number>()?.shl(*getarg!(Number; args))?.into())
+	}),
+	">>" => (|args| {
+		use std::ops::Shr;
+		Ok(args.this::<Number>()?.shr(*getarg!(Number; args))?.into())
+	}),
+
 
 	"-@" => (|args| {
-		Ok((-args.this::<Number>()?.0).into())
+		use std::ops::Neg;
+		Ok(args.this::<Number>()?.neg().into())
 	}),
 	"+@" => (|args| {
-		args.this_obj::<Number>()?.call("abs", &[])
+		args.this_obj::<Number>()?.call("abs", args.new_same_binding(&[] as &[_]))
 	}),
 	"~" => (|args| {
 		Ok((!args.this::<Number>()?.try_to_int()?).into())
 	}),
 	"abs" => (|args| {
-		Ok(args.this::<Number>()?.0.abs().into())
+		Ok(args.this::<Number>()?.abs().into())
 	}),
 	"floor" => (|args| {
 		Ok(args.this::<Number>()?.to_int().into())

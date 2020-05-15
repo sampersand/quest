@@ -3,49 +3,50 @@ use crate::obj::{self, Object};
 use std::any::Any;
 use std::borrow::Cow;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Args<'s, 'o: 's> {
 	// this: Option<&'o Object>,
+	binding: Object,
 	args: Cow<'s, [&'o Object]>
 }
 
-impl<'o> Args<'_, 'o> {
-	pub fn new(args: Vec<&'o Object>) -> Args<'_, 'o> {
-		Args {
-			// this: None,
-			args: Cow::Owned(args)
-		}
+impl<'s, 'o: 's> Args<'s, 'o> {
+	pub fn new<T: Into<Cow<'s, [&'o Object]>>>(binding: Object, args: T) -> Self {
+		Args { binding, args: args.into() }
+	}
+
+	pub fn new_same_binding<T: Into<Cow<'s, [&'o Object]>>>(&self, args: T) -> Self {
+		Args::new(self.binding.clone(), args)
+	}
+
+	pub fn add_this<'t: 'o>(&mut self, this: &'t Object)  {
+		self.args.to_mut().insert(0, this);
+	}
+
+	pub fn binding(&self) -> &Object {
+		&self.binding
 	}
 }
 
-impl<'s, 'o> Args<'s, 'o> {
-	pub fn new_shared(args: &'s [&'o Object]) -> Args<'s, 'o> {
-		Args {
-			// this: None,
-			args: Cow::Borrowed(args)
-		}
-	}
-}
+// impl<'s, 'o: 's> From<&'s [&'o Object]> for Args<'s, 'o> {
+// 	fn from(args: &'s [&'o Object]) -> Self {
+// 		Args::new(args)
+// 	}
+// }
 
-impl<'s, 'o: 's> From<&'s [&'o Object]> for Args<'s, 'o> {
-	fn from(args: &'s [&'o Object]) -> Self {
-		Args::new_shared(args)
-	}
-}
+// macro_rules! impl_from {
+// 	($($n:tt)*) => {
+// 		$(
+// 			impl<'s, 'o: 's> From<&'s [&'o Object; $n]> for Args<'s, 'o> {
+// 				fn from(args: &'s [&'o Object; $n]) -> Self {
+// 					Args::new_shared(args)
+// 				}
+// 			}
+// 		)*
+// 	};
+// }
 
-macro_rules! impl_from {
-	($($n:tt)*) => {
-		$(
-			impl<'s, 'o: 's> From<&'s [&'o Object; $n]> for Args<'s, 'o> {
-				fn from(args: &'s [&'o Object; $n]) -> Self {
-					Args::new_shared(args)
-				}
-			}
-		)*
-	};
-}
-
-impl_from!(0 1 2 3 4 5 6); // we're not going to pass more than 6 arguments...; if we do, just cast.
+// impl_from!(0 1 2 3 4 5 6); // we're not going to pass more than 6 arguments...; if we do, just cast.
 
 impl<'o> AsRef<[&'o Object]> for Args<'_, 'o> {
 	fn as_ref(&self) -> &[&'o Object] {
@@ -70,7 +71,7 @@ impl<'o> Args<'_, 'o> {
 		I: SliceIndex<[&'o Object], Output=[&'o Object]> + 'c
 	{
 		if let Some(rng) = self.args.get(idx) {
-			Ok(Args::from(rng))
+			Ok(Args::new(self.binding.clone(), rng))
 		} else {
 			Err(format!("index is invalid (len={})", self.args.len()).into())
 		}

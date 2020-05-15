@@ -1,27 +1,24 @@
 mod err;
+mod execute;
 pub use self::err::Error;
-use crate::parse::{Result, Token, token::{self, Literal, ParenType, Operator, operator::Associativity}};
+use crate::parse::{Result, Token, Literal, token::{self, ParenType, Operator, operator::Associativity}};
 use std::iter::Peekable;
+use std::fmt::{self, Debug, Formatter};
 
 
-#[derive(Debug)]
-struct Line(Vec<Expression>);
 
-#[derive(Debug)]
-pub struct Block {
-	paren: ParenType,
-	body: Vec<Line>,
-}
+#[derive(Debug, Clone)]
+pub struct Block(ParenType, Vec<Vec<Expression>>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
 	Literal(Literal),
 	Block(Block),
 	FunctionCall(Box<Expression>, Block),
 	PrefixOp(Operator, Box<Expression>),
-	InfixOp(Operator, Box<Expression>, Box<Expression>)
+	InfixOp(Operator, Box<Expression>, Box<Expression>),
+	TerninaryOp(Operator, Box<Expression>, Box<Expression>, Box<Expression>),
 }
-
 
 
 // expr -> primary | function_call | infix
@@ -36,11 +33,17 @@ pub enum Expression {
 
 impl Expression {
 	pub fn try_from_iter<I: Iterator<Item=Token>>(iter: &mut I) -> Result<Self> {
-		let ref mut iter = std::iter::once(Token::Left(ParenType::Paren)).chain(iter)
-			.chain(std::iter::once(Token::Right(ParenType::Paren))).peekable();
+		let ref mut iter = std::iter::once(Token::Left(ParenType::Paren))
+			.chain(iter)
+			.chain(std::iter::once(Token::Right(ParenType::Paren)))
+			.peekable();
 		let expr = next_expression(iter)?;
-		assert_eq!(iter.next(), None, "stuff remains in iter");
-		Ok(expr)
+
+		if iter.peek().is_some() {
+			Err(Error::MissingRightParen(ParenType::Paren).into())
+		} else {
+			Ok(expr)
+		}
 	}
 }
 
@@ -49,13 +52,23 @@ fn next_expression_bound<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, lhs: E
 		Some(Token::Left(paren)) => {
 			let paren = *paren;
 			assert_eq!(iter.next().unwrap(), Token::Left(paren));
-			Ok(Expression::FunctionCall(Box::new(lhs), next_block(iter, paren)?))
+			let func_call = Expression::FunctionCall(Box::new(lhs), next_block(iter, paren)?);
+			next_expression_bound(iter, func_call, None)
 		},
 		// <-- if we had postfix operators, they'd go here.
 		Some(Token::Operator(op)) if op.arity() == 2 && end.as_ref().map(|end| *op >= *end).unwrap_or(true) => {
 			let op = *op;
 			assert_eq!(iter.next().unwrap(), Token::Operator(op));
+			// TODO: order of operations here.
 			let mut rhs = next_expression(iter)?;
+			// 
+			if op == Operator::Dot {
+				if let Expression::InfixOp(Operator::Assign, rlhs, rrhs) = rhs {
+					return Ok(Expression::TerninaryOp(Operator::DotAssign,
+						Box::new(lhs), rlhs, rrhs
+					))
+				}
+			}
 			// let mut rhs = next_primary(iter)?;
 			// if let Some(Token::Operator(rop)) = iter.peek() {
 			// 	let rop = *rop;
@@ -90,8 +103,8 @@ fn next_expression<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Ex
 fn next_primary<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Expression> {
 	match iter.next().ok_or(Error::NoTokens)? {
 		Token::Literal(lit) => Ok(Expression::Literal(lit)),
-		Token::Operator(op) if op.assoc() == Associativity::UnaryOperOnLeft => Ok(
-			Expression::PrefixOp(op, Box::new(next_expression(iter)?))
+		Token::Operator(op) if op.is_symbol_unary_left() => Ok(
+			Expression::PrefixOp(op.into_unary_left(), Box::new(next_expression(iter)?))
 		),
 		Token::Left(paren) => Ok(Expression::Block(next_block(iter, paren)?)),
 		token => dbg!(Err(Error::UnexpectedToken(token).into()))
@@ -102,12 +115,12 @@ fn next_primary<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Expre
 // block_inner -> (block_line? ';')* block_line?
 // block_line -> (expr (',' expr)*)?
 fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType) -> Result<Block> {
-	let mut block = Block { paren, body: vec![] };
+let mut block = Block(paren, vec![]);
 
-	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Line> {
-		let mut args = Line(vec![]);
+	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Vec<Expression>> {
+		let mut args = vec![];
 		loop {
-			args.0.push(next_expression(iter)?);
+			args.push(next_expression(iter)?);
 			match iter.peek() {
 				Some(Token::Endline) | Some(Token::Right(..)) => break,
 				Some(Token::Comma) => assert_eq!(iter.next().unwrap(), Token::Comma),
@@ -122,84 +135,18 @@ fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType)
 		match iter.peek() {
 			None => return Err(Error::MissingRightParen(paren).into()),
 			Some(Token::Right(rparen)) =>
-				if *rparen == block.paren {
+				if *rparen == block.0 {
 					assert_eq!(iter.next().unwrap(), Token::Right(paren));
 					break;
 				} else {
 					return Err(Error::MismatchedParen(paren, *rparen).into());
 				},
 			Some(Token::Endline) => assert_eq!(iter.next().unwrap(), Token::Endline),
-			_ => block.body.push(next_line(iter)?)
+			_ => block.1.push(next_line(iter)?)
 		}
 	}
 
 	Ok(block)
 }
-
-
-
-
-
-
-// fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType) -> Result<Block> {
-// 	let mut block = Block { paren, body: vec![] };
-
-// 	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Line> {
-// 		let mut args = Line(vec![]);
-// 		loop {
-// 			args.0.push(next_expression(iter)?);
-// 			match iter.peek() {
-// 				Some(Token::Endline) | Some(Token::Right(..)) => break,
-// 				Some(Token::Comma) => assert_eq!(iter.next().unwrap(), Token::Comma),
-// 				_ => return dbg!(Err(Error::UnexpectedToken(iter.next().unwrap()).into()))
-// 			}
-// 		}
-
-// 		Ok(args)
-// 	}
-
-// 	loop {
-// 		match iter.peek() {
-// 			None => return Err(Error::MissingRightParen(paren).into()),
-// 			Some(Token::Right(rparen)) =>
-// 				if *rparen == block.paren {
-// 					assert_eq!(iter.next().unwrap(), Token::Right(paren));
-// 					break;
-// 				} else {
-// 					return Err(Error::MismatchedParen(paren, *rparen).into());
-// 				},
-// 			Some(Token::Endline) => assert_eq!(iter.next().unwrap(), Token::Endline),
-// 			_ => block.body.push(next_line(iter)?)
-// 		}
-// 	}
-
-// 	Ok(block)
-
-// 	// fn next_block_inner_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<BlockInnerLine> {
-// 	// 	let mut exprs = BlockInnerLine(vec![next_expression(iter)?]);
-// 	// 	while let Some(peek) = iter.peek() {
-// 	// 		if *peek == Token::Comma {
-// 	// 			exprs.0.push(next_expression(iter)?)
-// 	// 		} else {
-// 	// 			break;
-// 	// 		}
-// 	// 	}
-// 	// 	Ok(exprs)
-// 	// }
-// 	// let mut body = vec![];
-// 	// while let Some(token) = iter.peek() {
-// 	// 		Token::Right(rparen) if *rparen == paren => {
-// 	// 			let rparen = *rparen;
-// 	// 			assert_eq!(iter.next().unwrap(), Token::Right(paren));
-// 	// 			return Ok(Expression::Block(Block { paren, body }));
-// 	// 		},
-// 	// 		_ => body.push(next_block_inner_line(iter)?)
-// 	// 	}
-// 	// }
-// 	// unimplemented!()
-// }
-
-
-
 
 

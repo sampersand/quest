@@ -11,14 +11,14 @@ impl_object_type!{for Pristine, Pristine,; // trailing comma here is required
 	}),
 
 	"__get_attr__" => (|args| {
-		args.get(0)?.get_attr(args.get(1)?)
+		args.get(0)?.get_attr(args.get(1)?, args.binding())
 	}),
 
 	"__set_attr__" => (|args| {
-		args.get(0)?.set_attr((*args.get(1)?).clone(), (*args.get(2)?).clone())
+		args.get(0)?.set_attr((*args.get(1)?).clone(), (*args.get(2)?).clone(), args.binding())
 	}),
 
 	"__del_attr__" => (|args| {
-		args.get(0)?.del_attr(args.get(1)?)
+		args.get(0)?.del_attr(args.get(1)?, args.binding())
 	})
 }
