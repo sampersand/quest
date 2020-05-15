@@ -1,5 +1,5 @@
 mod args;
-pub use self::args::Args;
+pub use self::args::{Args, Binding};
 
 use crate::obj::{self, Mapping, Object, types::ObjectType};
 use std::sync::{Arc, RwLock};

@@ -3,24 +3,11 @@ mod execute;
 pub use self::err::Error;
 use crate::parse::{Result, Token, Literal, token::{self, ParenType, Operator, operator::Associativity}};
 use std::iter::Peekable;
+use crate::obj::types::{Block, block::Line};
 use std::fmt::{self, Debug, Formatter};
 
 
-
-#[derive(Debug, Clone)]
-pub enum Line {
-	Multiple(Vec<Expression>),
-	Singular(Expression)
-}
-
-#[derive(Debug, Clone)]
-pub struct Block {
-	paren: ParenType,
-	body: Vec<Line>,
-	returns: bool
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expression {
 	Literal(Literal),
 	Block(Block),
@@ -125,8 +112,6 @@ fn next_primary<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Expre
 // block_inner -> (block_line? ';')* block_line?
 // block_line -> (expr (',' expr)*)?
 fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType) -> Result<Block> {
-	let mut block = Block { paren, body: vec![], returns: false };
-
 	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Line> {
 		let mut args = vec![];
 		let mut is_multiple = false;
@@ -152,12 +137,14 @@ fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType)
 			Ok(Line::Singular(args.pop().unwrap()))
 		}
 	}
+	let mut body = vec![];
+	let mut returns = false;
 
 	loop {
 		match iter.peek() {
 			None => return Err(Error::MissingRightParen(paren).into()),
 			Some(Token::Right(rparen)) =>
-				if *rparen == block.paren {
+				if *rparen == paren {
 					assert_eq!(iter.next().unwrap(), Token::Right(paren));
 					break;
 				} else {
@@ -165,16 +152,16 @@ fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType)
 				},
 			Some(Token::Endline) => {
 				assert_eq!(iter.next().unwrap(), Token::Endline);
-				block.returns = false;
+				returns = false;
 			},
 			_ => {
-				block.body.push(next_line(iter)?);
-				block.returns = true;
+				body.push(next_line(iter)?);
+				returns = true;
 			}
 		}
 	}
 
-	Ok(block)
+	Ok(Block::new(paren, body, returns))
 }
 
 

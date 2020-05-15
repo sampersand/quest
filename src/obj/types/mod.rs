@@ -11,6 +11,7 @@ pub mod basic;
 
 pub mod function;
 pub mod rustfn;
+pub mod block;
 
 pub mod null;
 pub mod boolean;
@@ -25,6 +26,7 @@ pub use self::kernel::Kernel;
 pub use self::basic::Basic;
 pub use self::function::Function;
 pub use self::rustfn::{RustFn, Args};
+pub use self::block::Block;
 pub use self::null::Null;
 pub use self::boolean::Boolean;
 pub use self::number::Number;

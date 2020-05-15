@@ -8,9 +8,9 @@ mod parse;
 fn main() {
 	// let x = [0xff]
 	let mut stream = parse::Stream::from_str(r##"
-		"true" = 3;
-		name
 		#"x" = 1 + 2;
+		"a" = { 1 + 2 }();
+		a
  	"##);
 
 	let mut stream = stream.collect::<parse::Result<Vec<_>>>().unwrap().into_iter();
