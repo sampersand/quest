@@ -81,6 +81,14 @@ impl_object_type!{for Text, super::Basic;
 		}
 	}),
 
+	"()" => (|args| {
+		args.binding().get_attr(&args.this_obj::<Text>()?)
+	}),
+
+	"=" => (|args| {
+		args.binding().set_attr(args.this_obj::<Text>()?, getarg!(Object; args))
+	}),
+
 	"@list" => (|args| todo!("@list")),
 
 	"@bool" => (|args| {

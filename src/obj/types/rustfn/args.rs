@@ -28,6 +28,10 @@ impl<'s> Args<'s> {
 	pub fn add_this(&mut self, this: Object)  {
 		self.args.to_mut().insert(0, this);
 	}
+
+	pub fn binding(&self) -> &Binding {
+		&self.binding
+	}
 }
 
 // impl<'s, 'o: 's> From<&'s [&'o Object]> for Args<'s, 'o> {

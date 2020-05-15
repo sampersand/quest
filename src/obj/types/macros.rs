@@ -4,15 +4,19 @@ macro_rules! getarg {
 	};
 
 	(Number; $args:expr, $pos:expr) => {
-		$args.get($pos)?.call("@num", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Number>()?
+		getarg!(Object; $args, $pos).call("@num", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Number>()?
 	};
 	
 	(Boolean; $args:expr, $pos:expr) => {
-		$args.get($pos)?.call("@bool", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Boolean>()?
+		getarg!(Object; $args, $pos).call("@bool", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Boolean>()?
 	};
 
 	(Text; $args:expr, $pos:expr) => {
-		$args.get($pos)?.call("@text", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Text>()?
+		getarg!(Object; $args, $pos).call("@text", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Text>()?
+	};
+
+	(Object; $args:expr, $pos:expr) => {
+		$args.get($pos)?
 	};
 
 	($other:tt $args:expr, $pos:expr) => {

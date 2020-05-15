@@ -8,7 +8,8 @@ mod parse;
 fn main() {
 	// let x = [0xff]
 	let mut stream = parse::Stream::from_str(r##"
-		(1+2)(4)
+		"true" = 3;
+		name
 		#"x" = 1 + 2;
  	"##);
 
