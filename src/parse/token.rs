@@ -1,7 +1,7 @@
 pub mod operator;
 pub use self::operator::Operator;
 use std::fmt::{self, Debug, Formatter};
-use crate::obj::types;
+use crate::obj::{Object, types};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -9,9 +9,15 @@ pub enum ParenType {
 	Paren, Bracket, Brace
 }
 
+impl From<ParenType> for Object {
+	fn from(parentype: ParenType) -> Self {
+		Object::from(types::Text::from(parentype))
+	}
+}
+
 impl From<ParenType> for types::Text {
-	fn from(bracket: ParenType) -> Self {
-		match bracket {
+	fn from(parentype: ParenType) -> Self {
+		match parentype {
 			ParenType::Paren => types::Text::new_static("()"),
 			ParenType::Bracket => types::Text::new_static("[]"),
 			ParenType::Brace => types::Text::new_static("{}"),

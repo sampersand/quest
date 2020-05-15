@@ -161,13 +161,8 @@ impl Object {
 			}
 		}
 
-		println!("{:?}", args);
-
-		let mut args: Vec<Object> = args.as_ref().to_owned();
-		args.insert(0, self.clone());
-
-		// println!("attr: {:?}\nargs:{:?}\nself:{:?}", attr, args, self);
-		self.get_attr(attr)?.call("()", super::Args::new(args))
+		args.add_this(self.clone());
+		self.get_attr(attr)?.call("()", args)
 	}
 
 	pub fn call(&self, txt: &'static str, args: Args) -> obj::Result<Object> {

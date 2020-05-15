@@ -159,16 +159,19 @@ impl_object_type!{for Number, super::Basic;
 		Ok(args.this::<Number>()?.0.into())
 	}),
 
+
+	"()" => (|args| {
+		args.this_obj::<Number>()?.call("*", args.get_rng(1..)?)
+	}),
+
 	"+" => (|args| {
 		use std::ops::Add;
-		Ok(args.this::<Number>()?.add(*getarg!(Number; args)).into())
-	}),
+		Ok(args.this::<Number>()?.add(*getarg!(Number; args)).into())	}),
 
 	"-" => (|args| {
 		use std::ops::Sub;
 		Ok(args.this::<Number>()?.sub(*getarg!(Number; args)).into())
 	}),
-
 	"*" => (|args| {
 		use std::ops::Mul;
 		Ok(args.this::<Number>()?.mul(*getarg!(Number; args)).into())

@@ -24,6 +24,12 @@ impl List {
 	}
 }
 
+impl From<List> for Inner {
+	fn from(list: List) -> Self {
+		list.0
+	}
+}
+
 impl From<Inner> for List {
 	fn from(list: Inner) -> Self {
 		List::new(list)

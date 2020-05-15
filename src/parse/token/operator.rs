@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use crate::obj::types;
+use crate::obj::{Object, types};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10,6 +10,12 @@ pub enum Operator {
 	Lsh, Rsh, BNot, BAnd, BOr, Xor,
 	Assign, Dot, DotAssign,
 	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign, LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
+}
+
+impl From<Operator> for Object {
+	fn from(op: Operator) -> Self {
+		Object::from(types::Text::from(op))
+	}
 }
 
 impl From<Operator> for types::Text {

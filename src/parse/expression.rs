@@ -8,7 +8,17 @@ use std::fmt::{self, Debug, Formatter};
 
 
 #[derive(Debug, Clone)]
-pub struct Block(ParenType, Vec<Vec<Expression>>);
+pub enum Line {
+	Multiple(Vec<Expression>),
+	Singular(Expression)
+}
+
+#[derive(Debug, Clone)]
+pub struct Block {
+	paren: ParenType,
+	body: Vec<Line>,
+	returns: bool
+}
 
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -115,34 +125,52 @@ fn next_primary<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Expre
 // block_inner -> (block_line? ';')* block_line?
 // block_line -> (expr (',' expr)*)?
 fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType) -> Result<Block> {
-let mut block = Block(paren, vec![]);
+	let mut block = Block { paren, body: vec![], returns: false };
 
-	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Vec<Expression>> {
+	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Line> {
 		let mut args = vec![];
+		let mut is_multiple = false;
 		loop {
 			args.push(next_expression(iter)?);
 			match iter.peek() {
 				Some(Token::Endline) | Some(Token::Right(..)) => break,
-				Some(Token::Comma) => assert_eq!(iter.next().unwrap(), Token::Comma),
+				Some(Token::Comma) => {
+					assert_eq!(iter.next().unwrap(), Token::Comma);
+					is_multiple = true;
+					// we allow a trailing comma
+					if matches!(iter.peek(), Some(Token::Endline) | Some(Token::Right(..))) {
+						break;	
+					}
+				},
 				_ => return Err(Error::UnexpectedToken(iter.next().unwrap()).into())
 			}
 		}
-
-		Ok(args)
+		if is_multiple {
+			Ok(Line::Multiple(args))
+		} else {
+			assert_eq!(args.len(), 1);
+			Ok(Line::Singular(args.pop().unwrap()))
+		}
 	}
 
 	loop {
 		match iter.peek() {
 			None => return Err(Error::MissingRightParen(paren).into()),
 			Some(Token::Right(rparen)) =>
-				if *rparen == block.0 {
+				if *rparen == block.paren {
 					assert_eq!(iter.next().unwrap(), Token::Right(paren));
 					break;
 				} else {
 					return Err(Error::MismatchedParen(paren, *rparen).into());
 				},
-			Some(Token::Endline) => assert_eq!(iter.next().unwrap(), Token::Endline),
-			_ => block.1.push(next_line(iter)?)
+			Some(Token::Endline) => {
+				assert_eq!(iter.next().unwrap(), Token::Endline);
+				block.returns = false;
+			},
+			_ => {
+				block.body.push(next_line(iter)?);
+				block.returns = true;
+			}
 		}
 	}
 

@@ -45,7 +45,7 @@ impl Mapping {
 	}
 
 	pub fn insert(&mut self, attr: Object, val: Object) -> obj::Result<Object> {
-		if attr.call("==", super::Args::new(&["__parent__".into()] as &[_]))?
+		if attr.call("==", super::Args::_new(&["__parent__".into()] as &[_]))?
 				.downcast_ref::<types::Boolean>()
 				.map(|x| bool::from(*x))
 				.unwrap_or(false) {
@@ -54,7 +54,7 @@ impl Mapping {
 		}
 
 		for (ref k, ref mut v) in self.map.iter_mut() {
-			if attr.call("==", super::Args::new(&[k.clone()] as &[_]))?
+			if attr.call("==", super::Args::_new(&[k.clone()] as &[_]))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
 					.unwrap_or(false) {
@@ -68,7 +68,7 @@ impl Mapping {
 	}
 
 	pub fn get(&self, attr: &Object) -> obj::Result<Object> {
-		if attr.call("==", super::Args::new(&["__parent__".into()] as &[_]))?
+		if attr.call("==", super::Args::_new(&["__parent__".into()] as &[_]))?
 				.downcast_ref::<types::Boolean>()
 				.map(|x| bool::from(*x))
 				.unwrap_or(false) {
@@ -76,7 +76,7 @@ impl Mapping {
 		}
 
 		for (ref k, ref v) in self.map.iter() {
-			if attr.call("==", super::Args::new(&[k.clone()] as &[_]))?
+			if attr.call("==", super::Args::_new(&[k.clone()] as &[_]))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
 					.unwrap_or(false) {

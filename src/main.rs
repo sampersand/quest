@@ -8,7 +8,7 @@ mod parse;
 fn main() {
 	// let x = [0xff]
 	let mut stream = parse::Stream::from_str(r##"
-		true
+		(1+2)(4)
 		#"x" = 1 + 2;
  	"##);
 
@@ -18,11 +18,10 @@ fn main() {
 	// println!("{:#?}", obj::types::Number::mapping());
 	// return;
 	// println!("{:#?}", o);
-	println!("{:?}", o.get_attr(&"__parent__".into()).unwrap()
-			.get_attr(&"name".into())
-	);
-	return;
-	println!("{:?}", o.get_attr(&"true".into()));
+	// println!("{:?}", o.get_attr(&"__parent__".into()).unwrap()
+	// 		.get_attr(&"name".into())
+	// );
+	// println!("{:?}", o.get_attr(&"true".into()));
 	let expression = parse::Expression::try_from_iter(&mut stream).unwrap();
 	println!("{:#?}", expression.execute_default());
 }

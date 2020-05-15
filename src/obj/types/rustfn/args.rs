@@ -3,19 +3,25 @@ use crate::obj::{self, Object};
 use std::any::Any;
 use std::borrow::Cow;
 
+pub type Binding = Object;
+
 #[derive(Debug, Clone, Default)]
 pub struct Args<'s> {
-	// this: Option<&'o Object>,
+	binding: Binding,
 	args: Cow<'s, [Object]>
 }
 
 impl<'s> Args<'s> {
-	pub fn new<T: Into<Cow<'s, [Object]>>>(args: T) -> Self {
-		Args { args: args.into() }
+	pub fn _new<V: Into<Cow<'s, [Object]>>>(args: V) -> Self { 
+		Args::new(args, Default::default())
+	}
+
+	pub fn new<V: Into<Cow<'s, [Object]>>>(args: V, binding: Binding) -> Self {
+		Args { args: args.into(), binding }
 	}
 
 	pub fn new_args_slice<'a>(&self, args: &'a [Object]) -> Args<'a> {
-		Args { args: args.into() }
+		Args { args: args.into(), binding: self.binding.clone() }
 	}
 
 
@@ -26,7 +32,7 @@ impl<'s> Args<'s> {
 
 // impl<'s, 'o: 's> From<&'s [&'o Object]> for Args<'s, 'o> {
 // 	fn from(args: &'s [&'o Object]) -> Self {
-// 		Args::new(args)
+// 		Args::_new(args)
 // 	}
 // }
 
@@ -35,7 +41,7 @@ impl<'s> Args<'s> {
 // 		$(
 // 			impl<'s, 'o: 's> From<&'s [&'o Object; $n]> for Args<'s, 'o> {
 // 				fn from(args: &'s [&'o Object; $n]) -> Self {
-// 					Args::new_shared(args)
+// 					Args::_new_shared(args)
 // 				}
 // 			}
 // 		)*
@@ -66,7 +72,7 @@ impl Args<'_> {
 	where I: SliceIndex<[Object], Output=[Object]> + 'c
 	{
 		if let Some(rng) = self.args.get(idx) {
-			Ok(Args::new(rng))
+			Ok(Args::_new(rng))
 		} else {
 			Err(format!("index is invalid (len={})", self.args.len()).into())
 		}
