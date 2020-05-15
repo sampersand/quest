@@ -112,7 +112,7 @@ impl_object_type!{for Boolean, super::Basic;
 	}),
 
 	"@bool" => (|args| {
-		args.this_obj::<Boolean>()?.call("clone", args.new_same_binding(&[] as &[_]))
+		args.this_obj::<Boolean>()?.call("clone", args.new_args_slice(&[]))
 	}),
 
 	"==" => (|args| {

@@ -120,21 +120,21 @@ impl Object {
 		}
 	}
 
-	pub fn get_attr(&self, attr: &Object, binding: &Object) -> obj::Result<Object> {
+	pub fn get_attr(&self, attr: &Object) -> obj::Result<Object> {
 		// println!("Object::get_attr(self={:?}, attr={:?})", self, attr);
-		self.0.mapping.read().expect("cannot read").get(attr, binding)
+		self.0.mapping.read().expect("cannot read").get(attr)
 	}
 
-	pub fn set_attr(&self, attr: Object, val: Object, binding: &Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").insert(attr, val, binding)
+	pub fn set_attr(&self, attr: Object, val: Object) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").insert(attr, val)
 	}
 
-	pub fn del_attr(&self, attr: &Object, binding: &Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").remove(attr, binding)
+	pub fn del_attr(&self, attr: &Object) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").remove(attr)
 	}
 
 
-	pub fn call_attr<'a>(&'a self, attr: &Object, mut args: Args<'_, 'a>) -> obj::Result<Object> {
+	pub fn call_attr(&self, attr: &Object, mut args: Args) -> obj::Result<Object> {
 		// self.call_attr(attr, args.into().as_ref())
 	// }
 
@@ -149,21 +149,28 @@ impl Object {
 		}
 
 		if let Some(txt_attr) = attr.downcast_ref::<types::Text>() {
+			// println!("Object::call_attr(self={:?}, attr={:?}, args={:?}, txt_attr={:?})", self, attr, args, *txt_attr);
 			if (txt_attr.as_ref() == "==") {
 				if args.as_ref().is_empty() {
 					return Err(types::Text::from("need at least 1 arg for `==`").into())
 				} else if let (Some(lhs), Some(rhs)) = (self.downcast_ref::<types::Text>(),
 				                                        args.get_downcast::<types::Text>(0).ok()) {
+					// println!("downcast_ref: {:?} == {:?} ? = {:?}", *lhs, *rhs, types::Boolean::from(*lhs == *rhs));
 					return Ok(types::Boolean::from(*lhs == *rhs).into())
 				}
 			}
 		}
 
-		args.add_this(self);
-		self.get_attr(attr, args.binding())?.call("()", args)
+		println!("{:?}", args);
+
+		let mut args: Vec<Object> = args.as_ref().to_owned();
+		args.insert(0, self.clone());
+
+		// println!("attr: {:?}\nargs:{:?}\nself:{:?}", attr, args, self);
+		self.get_attr(attr)?.call("()", super::Args::new(args))
 	}
 
-	pub fn call<'a>(&'a self, txt: &'static str, args: Args<'_, 'a>) -> obj::Result<Object> {
+	pub fn call(&self, txt: &'static str, args: Args) -> obj::Result<Object> {
 		self.call_attr(&txt.into(), args)
 	}
 }

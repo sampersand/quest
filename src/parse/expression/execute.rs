@@ -10,8 +10,8 @@ impl Expression {
 			Expression::Literal(Literal::Number(num)) => Ok(num.into()),
 			Expression::Literal(Literal::Text(text)) => Ok(text.into()),
 			Expression::Literal(Literal::Variable(var)) => 
-				Object::new(var).call("()", Args::new(binding, vec![])),
-
+				// Object::new(var).call("()", Args::new(binding.clone(), vec![])),
+				unimplemented!(),
 			_ => unimplemented!()
 		}
 // 		execute

@@ -4,27 +4,23 @@ use std::any::Any;
 use std::borrow::Cow;
 
 #[derive(Debug, Clone, Default)]
-pub struct Args<'s, 'o: 's> {
+pub struct Args<'s> {
 	// this: Option<&'o Object>,
-	binding: Object,
-	args: Cow<'s, [&'o Object]>
+	args: Cow<'s, [Object]>
 }
 
-impl<'s, 'o: 's> Args<'s, 'o> {
-	pub fn new<T: Into<Cow<'s, [&'o Object]>>>(binding: Object, args: T) -> Self {
-		Args { binding, args: args.into() }
+impl<'s> Args<'s> {
+	pub fn new<T: Into<Cow<'s, [Object]>>>(args: T) -> Self {
+		Args { args: args.into() }
 	}
 
-	pub fn new_same_binding<T: Into<Cow<'s, [&'o Object]>>>(&self, args: T) -> Self {
-		Args::new(self.binding.clone(), args)
+	pub fn new_args_slice<'a>(&self, args: &'a [Object]) -> Args<'a> {
+		Args { args: args.into() }
 	}
 
-	pub fn add_this<'t: 'o>(&mut self, this: &'t Object)  {
+
+	pub fn add_this(&mut self, this: Object)  {
 		self.args.to_mut().insert(0, this);
-	}
-
-	pub fn binding(&self) -> &Object {
-		&self.binding
 	}
 }
 
@@ -48,14 +44,14 @@ impl<'s, 'o: 's> Args<'s, 'o> {
 
 // impl_from!(0 1 2 3 4 5 6); // we're not going to pass more than 6 arguments...; if we do, just cast.
 
-impl<'o> AsRef<[&'o Object]> for Args<'_, 'o> {
-	fn as_ref(&self) -> &[&'o Object] {
+impl AsRef<[Object]> for Args<'_> {
+	fn as_ref(&self) -> &[Object] {
 		self.args.as_ref()
 	}
 }
 
 
-impl<'o> Args<'_, 'o> {
+impl Args<'_> {
 	// pub fn bind(&mut self, this: &'o Object) {
 	// 	if let Some(x) = self.this.take() {
 	// 		println!("a `this` existed before: {:?}", x);
@@ -66,20 +62,19 @@ impl<'o> Args<'_, 'o> {
 	// 	self.this = Some(this);
 	// }
 
-	pub fn get_rng<'c, I>(&'c self, idx: I) -> obj::Result<Args<'_, 'o>>
-	where
-		I: SliceIndex<[&'o Object], Output=[&'o Object]> + 'c
+	pub fn get_rng<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>
+	where I: SliceIndex<[Object], Output=[Object]> + 'c
 	{
 		if let Some(rng) = self.args.get(idx) {
-			Ok(Args::new(self.binding.clone(), rng))
+			Ok(Args::new(rng))
 		} else {
 			Err(format!("index is invalid (len={})", self.args.len()).into())
 		}
 	}
 
-	pub fn get<'c>(&'c self, idx: usize) -> obj::Result<&'c Object> {
+	pub fn get(&self, idx: usize) -> obj::Result<Object> {
 		if let Some(obj) = self.args.get(idx) {
-			Ok(*obj)
+			Ok(obj.clone())
 		} else {
 			Err(format!("index is invalid (len={})", self.args.len()).into())
 		}
@@ -91,13 +86,13 @@ impl<'o> Args<'_, 'o> {
 			.and_then(|thing| thing.try_downcast_ref::<T>())
 	}
 
-	pub fn this_any<'c>(&'c self) -> obj::Result<&'c Object> {
+	pub fn this_any(&self) -> obj::Result<Object> {
 		let ret = self.get(0);
 		assert!(ret.is_ok(), "invalid index given");
 		ret
 	}
 
-	pub fn this_obj<'c, T: Any>(&'c self) -> obj::Result<&'c Object> {
+	pub fn this_obj<T: Any>(&self) -> obj::Result<Object> {
 		let ret = self.this_any()?;
 		assert!(ret.is_type::<T>(), "invalid this encountered");
 		Ok(ret)

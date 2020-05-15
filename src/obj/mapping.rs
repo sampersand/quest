@@ -44,22 +44,20 @@ impl Mapping {
 		Mapping { map: Default::default(), parent }
 	}
 
-	pub fn insert(&mut self, attr: Object, val: Object, binding: &Object) -> obj::Result<Object> {
-		if attr.call("==", super::Args::new(binding.clone(), &[&"__parent__".into()] as &[_]))?
+	pub fn insert(&mut self, attr: Object, val: Object) -> obj::Result<Object> {
+		if attr.call("==", super::Args::new(&["__parent__".into()] as &[_]))?
 				.downcast_ref::<types::Boolean>()
 				.map(|x| bool::from(*x))
-				.unwrap_or(false) 
-		{
+				.unwrap_or(false) {
 			self.parent = Some(val.clone());
 			return Ok(val);
 		}
 
 		for (ref k, ref mut v) in self.map.iter_mut() {
-			if attr.call("==", super::Args::new(binding.clone(), &[&attr] as &[_]))?
+			if attr.call("==", super::Args::new(&[k.clone()] as &[_]))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
-					.unwrap_or(false) 
-			{
+					.unwrap_or(false) {
 				*v = val.clone();
 				return Ok(val);
 			}
@@ -69,33 +67,31 @@ impl Mapping {
 		Ok(val)
 	}
 
-	pub fn get(&self, attr: &Object, binding: &Object) -> obj::Result<Object> {
-		if attr.call("==", super::Args::new(binding.clone(), &[&"__parent__".into()] as &[_]))?
+	pub fn get(&self, attr: &Object) -> obj::Result<Object> {
+		if attr.call("==", super::Args::new(&["__parent__".into()] as &[_]))?
 				.downcast_ref::<types::Boolean>()
 				.map(|x| bool::from(*x))
-				.unwrap_or(false) 
-		{
+				.unwrap_or(false) {
 			return self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
 		}
 
 		for (ref k, ref v) in self.map.iter() {
-			if attr.call("==", super::Args::new(binding.clone(), &[k] as &[_]))?
+			if attr.call("==", super::Args::new(&[k.clone()] as &[_]))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
-					.unwrap_or(false) 
-			{
+					.unwrap_or(false) {
 				return Ok(v.clone());
 			}
 		}
 
 		if let Some(ref parent) = self.parent {
-			parent.get_attr(attr, binding)
+			parent.get_attr(attr)
 		} else {
 			Err(format!("attr {:?} does not exist.", attr).into())
 		}
 	}
 
-	pub fn remove(&mut self, attr: &Object, binding: &Object) -> obj::Result<Object> {
+	pub fn remove(&mut self, attr: &Object) -> obj::Result<Object> {
 		todo!("remove");
 		// if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| bool::from(*x)).unwrap_or(false) {
 		// 	return self.parent.take().ok_or_else(|| "attr `__parent__` doesn't exist.".into());

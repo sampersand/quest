@@ -4,15 +4,15 @@ macro_rules! getarg {
 	};
 
 	(Number; $args:expr, $pos:expr) => {
-		$args.get($pos)?.call("@num", $args.new_same_binding(&[] as &[_]))?.try_downcast_ref::<$crate::obj::types::Number>()?
+		$args.get($pos)?.call("@num", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Number>()?
 	};
 	
 	(Boolean; $args:expr, $pos:expr) => {
-		$args.get($pos)?.call("@bool", $args.new_same_binding(&[] as &[_]))?.try_downcast_ref::<$crate::obj::types::Boolean>()?
+		$args.get($pos)?.call("@bool", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Boolean>()?
 	};
 
 	(Text; $args:expr, $pos:expr) => {
-		$args.get($pos)?.call("@text", $args.new_same_binding(&[] as &[_]))?.try_downcast_ref::<$crate::obj::types::Text>()?
+		$args.get($pos)?.call("@text", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Text>()?
 	};
 
 	($other:tt $args:expr, $pos:expr) => {
@@ -31,11 +31,11 @@ macro_rules! impl_object_type {
 	};
 
 	(SET_ATTR $class:ident $attr:literal, (expr $val:expr)) => {
-		$class.set_attr($attr.into(), $val.into(), &Object::default()); // TODO: binding
+		$class.set_attr($attr.into(), $val.into());
 	};
 
 	(SET_ATTR $class:ident $attr:literal, ($val:expr)) => {
-		$class.set_attr($attr.into(), $crate::obj::types::RustFn::new($attr, $val).into(), &Object::default()); // TODO: binding
+		$class.set_attr($attr.into(), $crate::obj::types::RustFn::new($attr, $val).into());
 	};
 
 	(SET_ATTR $_class:ident $attr:expr, $val:expr) => {
@@ -67,17 +67,9 @@ macro_rules! impl_object_type {
 						let class = (*CLASS_OBJECT.as_ptr()).clone();
 						use $crate::obj::{Object, types::*};
 						$(
-							class.set_attr(
-								"__parent__".into(),
-								<$init_parent as $crate::obj::types::ObjectType>::mapping(),
-								&Object::default() // TODO: what binding should be used when setting parent?
-							);
+							class.set_attr("__parent__".into(), <$init_parent as $crate::obj::types::ObjectType>::mapping());
 						)?
-						class.set_attr(
-							"name".into(),
-							stringify!($obj).into(),
-							&Object::default() // TODO: what binding should be used when setting name?
-						);
+						class.set_attr("name".into(), stringify!($obj).into());
 						$({
 							impl_object_type!(SET_ATTR class $attr, ($($val)*));
 						})*

@@ -58,14 +58,16 @@ impl AsRef<str> for Text {
 
 impl_object_type!{for Text, super::Basic;
 	"@text" => (|args| {
-		args.this_obj::<Text>()?.call("clone", &[])
+		args.this_obj::<Text>()?.call("clone", args.new_args_slice(&[]))
 	}),
 
 	"@num" => (|args| {
 		let this = args.this::<Text>()?;
 		if let Ok(radix_obj) = args.get(1) {
 			use std::convert::TryFrom;
-			let r = radix_obj.call("@num", &[])?.try_downcast_ref::<Number>()?.try_to_int()?;
+			let r = radix_obj.call("@num", args.new_args_slice(&[]))?
+				.try_downcast_ref::<Number>()?
+				.try_to_int()?;
 			match u32::try_from(r) {
 				Ok(radix) => Number::from_str_radix(this.as_ref(), radix)
 					.map(Into::into)

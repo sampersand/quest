@@ -7,18 +7,18 @@ impl_object_type!{for Pristine, Pristine,; // trailing comma here is required
 	}),
 
 	"__call_attr__" => (|args| {
-		args.get(0)?.call_attr(args.get(1)?, args.get_rng(2..).unwrap_or_default())
+		args.get(0)?.call_attr(&args.get(1)?, args.get_rng(2..).unwrap_or_default())
 	}),
 
 	"__get_attr__" => (|args| {
-		args.get(0)?.get_attr(args.get(1)?, args.binding())
+		args.get(0)?.get_attr(&args.get(1)?)
 	}),
 
 	"__set_attr__" => (|args| {
-		args.get(0)?.set_attr((*args.get(1)?).clone(), (*args.get(2)?).clone(), args.binding())
+		args.get(0)?.set_attr(args.get(1)?, args.get(2)?)
 	}),
 
 	"__del_attr__" => (|args| {
-		args.get(0)?.del_attr(args.get(1)?, args.binding())
+		args.get(0)?.del_attr(&args.get(1)?)
 	})
 }

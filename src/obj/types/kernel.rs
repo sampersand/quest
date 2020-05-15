@@ -4,7 +4,8 @@ pub struct Kernel;
 impl_object_type!{for Kernel, super::Pristine;
 	"true" => (expr boolean::TRUE),
 	"false" => (expr boolean::FALSE),
-	"null" => (expr null::NULL)
+	"null" => (expr null::NULL),
+	"bar" => (|args| { unimplemented!() })
 
 	// "==" => fn(|args| {
 	// 	args.this_any()?

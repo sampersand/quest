@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+use crate::obj::types::ObjectType;
+
 mod obj;
 mod parse;
 
@@ -12,8 +14,15 @@ fn main() {
 
 	let mut stream = stream.collect::<parse::Result<Vec<_>>>().unwrap().into_iter();
 
-	let o = obj::Object::from(12.0);
-	println!("{:?}", o.get_attr(&"true".into(), &().into()));
+	let o = obj::Object::from("a");
+	// println!("{:#?}", obj::types::Number::mapping());
+	// return;
+	// println!("{:#?}", o);
+	println!("{:?}", o.get_attr(&"__parent__".into()).unwrap()
+			.get_attr(&"name".into())
+	);
+	return;
+	println!("{:?}", o.get_attr(&"true".into()));
 	let expression = parse::Expression::try_from_iter(&mut stream).unwrap();
 	println!("{:#?}", expression.execute_default());
 }

@@ -131,13 +131,13 @@ impl std::ops::Neg for Number {
 
 impl_object_type!{for Number, super::Basic;
 	"@num" => (|args| {
-		args.this_obj::<Number>()?.call("clone", args.new_same_binding(&[] as &[_]))
+		args.this_obj::<Number>()?.call("clone", args.new_args_slice(&[]))
 	}),
 
 	"@text" => (|args| {
 		if let Some(arg) = args.get(1).ok() {
 			let this = args.this::<Number>()?.try_to_int()?;
-			let radix = arg.call("@num", args.new_same_binding(&[] as &[_]))?.try_downcast_ref::<Number>()?.try_to_int()?;
+			let radix = arg.call("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
 			match radix {
             2 => Ok(format!("{:b}", this).into()),
             8 => Ok(format!("{:o}", this).into()),
@@ -213,7 +213,7 @@ impl_object_type!{for Number, super::Basic;
 		Ok(args.this::<Number>()?.neg().into())
 	}),
 	"+@" => (|args| {
-		args.this_obj::<Number>()?.call("abs", args.new_same_binding(&[] as &[_]))
+		args.this_obj::<Number>()?.call("abs", args.new_args_slice(&[]))
 	}),
 	"~" => (|args| {
 		Ok((!args.this::<Number>()?.try_to_int()?).into())

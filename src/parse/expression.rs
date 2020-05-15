@@ -107,7 +107,7 @@ fn next_primary<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Expre
 			Expression::PrefixOp(op.into_unary_left(), Box::new(next_expression(iter)?))
 		),
 		Token::Left(paren) => Ok(Expression::Block(next_block(iter, paren)?)),
-		token => dbg!(Err(Error::UnexpectedToken(token).into()))
+		token => Err(Error::UnexpectedToken(token).into())
 	}
 }
 
@@ -124,7 +124,7 @@ let mut block = Block(paren, vec![]);
 			match iter.peek() {
 				Some(Token::Endline) | Some(Token::Right(..)) => break,
 				Some(Token::Comma) => assert_eq!(iter.next().unwrap(), Token::Comma),
-				_ => return dbg!(Err(Error::UnexpectedToken(iter.next().unwrap()).into()))
+				_ => return Err(Error::UnexpectedToken(iter.next().unwrap()).into())
 			}
 		}
 
