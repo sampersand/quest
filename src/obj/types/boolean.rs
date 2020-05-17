@@ -164,18 +164,19 @@ mod impls {
 	}
 }
 
-impl_object_type!{for;"@bool"; Boolean, super::Basic;
-	"@num"  => (impls::at_num),
-	"@text" => (impls::at_text),
-	"@bool" => (impls::at_bool),
-	"clone" => (impls::clone),
-	"=="    => (impls::eql),
-	"!"     => (impls::not),
-	"&"     => (impls::bitand),
-	"|"     => (impls::bitor),
-	"^"     => (impls::bitxor),
-	"<=>"   => (impls::cmp),
-	"hash"  => (impls::hash),
+impl_object_type!{
+	for Boolean [(convert "@bool")]:
+	"@num"  => impls::at_num,
+	"@text" => impls::at_text,
+	"@bool" => impls::at_bool,
+	"clone" => impls::clone,
+	"=="    => impls::eql,
+	"!"     => impls::not,
+	"&"     => impls::bitand,
+	"|"     => impls::bitor,
+	"^"     => impls::bitxor,
+	"<=>"   => impls::cmp,
+	"hash"  => impls::hash,
 }
 
 #[cfg(test)]
@@ -261,4 +262,12 @@ mod tests {
 			FALSE, bitxor(FALSE, FALSE) -> Boolean
 		);
 	}
+
+	#[test]
+	#[ignore]
+	fn cmp() { todo!(); }
+
+	#[test]
+	#[ignore]
+	fn hash() { todo!(); }
 }

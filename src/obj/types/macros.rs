@@ -1,15 +1,47 @@
 #[cfg(test)]
+macro_rules! dummy_object {
+	($vis:vis struct $obj:ident $(($($types:ty),*))?;) =>{
+		dummy_object!($vis struct $obj $(($($types),*))?; $crate::obj::types::Basic {});
+	};
+
+	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:ty) =>{
+		dummy_object!($vis struct $obj $(($($types),*))?; $parent {});
+	};
+
+	($vis:vis struct $obj:ident $(($($types:ty),*))?; { $($args:tt)* }) =>{
+		dummy_object!($vis struct $obj $(($($types),*))?; $crate::obj::types::Basic { $($args)* });
+	};
+
+	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:ty { $($args:tt)* }) =>{
+		#[derive(Debug, Clone)]
+		$vis struct $obj$(($($types),*))?;
+		impl_object_type_!(for $obj, $parent;
+			$($args)*
+		);
+	};
+}
+
+#[cfg(test)]
+macro_rules! call_impl {
+	($fnc:ident($this:expr $(,$args:expr)*) -> $ret:ty) => {{
+		use crate::obj::types::{self, *, rustfn::Args};
+		impls::$fnc({
+			let mut args = Args::new(vec![$($args.into()),*], Default::default());
+			args.add_this($this.into());
+			args
+		}).unwrap().downcast_ref::<$ret>().unwrap()
+	}};
+}
+#[cfg(test)]
 macro_rules! assert_call_eq {
-	(for $ty:ty; $($rhs:expr, $lhs:ident($this:expr $(,$args:expr)*) -> $ret:ty),* $(,)?) => {{
+	(for $ty:ty; $($lhs:expr, $rhs:ident($this:expr $(,$args:expr)*) -> $ret:ty),* $(,)?) => {{
 		use crate::obj::types::{self, *, rustfn::Args};
 		#[cfg(test)]
-		<$ty>::wait_for_setup_to_finish();
+		<$ty>::_wait_for_setup_to_finish();
+		let mut which = 1;
 		$(
-			assert_eq!(*impls::$lhs({
-				let mut args = Args::new(vec![$($args.into()),*], Default::default());
-				args.add_this($this.into());
-				args
-			}).unwrap().downcast_ref::<$ret>().unwrap(), $rhs);
+			assert_eq!($lhs, *call_impl!($rhs($this $(,$args)*) -> $ret), "Bad test #{}", which);
+			which += 1;
 		)*
 	}};
 }
@@ -42,15 +74,150 @@ macro_rules! getarg {
 
 
 macro_rules! impl_object_type {
-	(for;$convert_func:literal; $obj:ty, $parent:ty; $($args:tt)*) => {
-		impl_object_type!(SETUP $obj; $parent; $convert_func; $parent; $($args)*);
+	(@CONVERTIBLE $_obj:ty;) => {};
+	(@CONVERTIBLE $obj:ty; (convert $convert_func:expr) $($_rest:tt)*) => {
+		impl $crate::obj::types::Convertible for $obj {
+			const CONVERT_FUNC: &'static str = $convert_func;
+		}
 	};
-	(for $obj:ty, $parent:ty; $($args:tt)*) => {
-		impl_object_type!(SETUP $obj; $parent;; $parent; $($args)*);
+	(@CONVERTIBLE $obj:ty; $_b:tt $($rest:tt)*) => {
+		impl_object_type!(@CONVERTIBLE $obj; $($rest)*);
+	};
+	(@CONVERTIBLE $($tt:tt)*) => {
+		compile_error!(concat!("bad CONVERTIBLE: ", stringify!($($tt)*)))
 	};
 
-	(for $obj:ty $([$convert_func:literal])?, $parent:ty, $($init_parent:ty)?; $($args:tt)*) => {
-		impl_object_type!(SETUP $obj; $parent; $($convert_func)?; $($init_parent)?; $($args)*);
+	(@SETUP) => { IS_SETUP };
+	(@SETUP (setup $name:ident) $($_rest:tt)*) => { $name };
+	(@SETUP $_b:tt $($rest:tt)*) => {
+		impl_object_type!(@SETUP $($rest)*);
+	};
+
+	(@SETUP_INIT) => { impl_object_type!(@SETUP_INIT (setup IS_SETUP)); };
+	(@SETUP_INIT (setup $name:ident) $($_rest:tt)*) => {
+		static mut $name: std::sync::atomic::AtomicBool
+			= std::sync::atomic::AtomicBool::new(false);
+	};
+	(@SETUP_INIT $_b:tt $($rest:tt)*) => {
+		impl_object_type!(@SETUP_INIT $($rest)*);
+	};
+
+	(@PARENT_DEFAULT) => {
+		// compile_error!("A parent is needed to create an object");
+		impl_object_type!(@PARENT_DEFAULT $class (parent $crate::obj::types::Basic));
+	};
+	(@PARENT_DEFAULT (parent $parent:path) $($_rest:tt)*) => {
+		<$parent as Default>::default()
+	};
+	(@PARENT_DEFAULT $_b:tt $($rest:tt)*) => {
+		impl_object_type!(@PARENT_DEFAULT $($rest)*);
+	};
+
+	(@SET_PARENT $class:ident) => {
+		impl_object_type!(@SET_PARENT $class (init_parent $crate::obj::types::Basic));
+	};
+	(@SET_PARENT $class:ident (init_parent $($init_parent:path)?) $($_rest:tt)*) => {
+		$(
+			$class.set_attr(
+				"__parent__".into(),
+				<$init_parent as $crate::obj::types::ObjectType>::mapping(),
+				&Default::default() // TODO: actual binding everywhere
+			);
+		)?
+	};
+	(@SET_PARENT $class:ident (parent $parent:path) $($_rest:tt)*) => {
+		impl_object_type!(@SET_PARENT $class (init_parent $parent));
+	};
+
+	(@SET_PARENT $class:ident $_b:tt $($rest:tt)*) => {
+		impl_object_type!(@SET_PARENT $class $($rest)*)
+	};
+
+	(@SET_ATTRS $class:ident) => {};
+	(@SET_ATTRS $class:ident $attr:literal => const $val:expr $(, $($args:tt)*)?) => {{
+		$class.set_attr($attr.into(), $val.into(), &Default::default());
+		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
+	}};
+
+	(@SET_ATTRS $class:ident $attr:literal => $val:expr $(, $($args:tt)*)?) => {{
+		$class.set_attr(
+			$attr.into(),
+			$crate::obj::types::RustFn::new($attr, $val).into(),
+			&Default::default()
+		);
+		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
+	}};
+
+	(@SET_ATTRS $_class:ident $($tt:tt)*) => {
+		compile_error!(concat!("Bad attrs given:", stringify!($($tt)*)));
+	};
+
+
+	(for $obj:ty [ $($args:tt)* ]: $($body:tt)*/*$($attr:expr => ($($attr_val:tt)*)),* $(,)?*/) => {
+		impl_object_type!(@CONVERTIBLE $obj; $($args)* );
+
+		#[cfg(test)]
+		impl_object_type!(@SETUP_INIT $($args)*);
+
+		impl $crate::obj::types::ObjectType for $obj {
+			#[cfg(test)]
+			fn _wait_for_setup_to_finish() {
+				Self::mapping();
+				while unsafe {
+					impl_object_type!(@SETUP $($args)*)
+						.load(std::sync::atomic::Ordering::SeqCst) == false
+				} {
+					std::thread::yield_now();
+				}
+			}
+
+			fn mapping() -> $crate::obj::Object {
+				use std::mem::{self, MaybeUninit};
+				use std::sync::{Once, Arc, RwLock, atomic::{AtomicU8, Ordering}};
+				use $crate::obj::{Object, Mapping};
+
+				static mut CLASS_OBJECT: MaybeUninit<Object> = MaybeUninit::uninit();
+				static mut HAS_SETUP_HAPPENED: AtomicU8 = AtomicU8::new(0);
+				static HAS_CREATE_HAPPENED: Once = Once::new();
+
+				HAS_CREATE_HAPPENED.call_once(|| unsafe {
+					CLASS_OBJECT.as_mut_ptr().write(Object::new_with_parent(
+						impl_object_type!(@PARENT_DEFAULT $($args)*),
+						None
+					));
+				});
+
+				let class = unsafe { (*CLASS_OBJECT.as_ptr()).clone() };
+				
+				if unsafe { HAS_SETUP_HAPPENED.compare_and_swap(0, 1, Ordering::SeqCst) } == 0 {
+					use $crate::obj::{Object, types::*};
+					impl_object_type!(@SET_PARENT class $($args)*);
+
+					class.set_attr("name".into(), stringify!($obj).into(), &Default::default());
+					impl_object_type!(@SET_ATTRS class $($body)*);
+
+					#[cfg(test)]
+ 					unsafe {
+						impl_object_type!(@SETUP $($args)*)
+ 							.store(true, std::sync::atomic::Ordering::SeqCst);
+ 					}
+				}
+				class
+			}
+		}
+	};
+}
+macro_rules! impl_object_type_ {
+	(for;$convert_func:literal; $obj:ty, $parent:ty; $($args:tt)*) => {
+		impl_object_type_!(_SETUP $obj; $parent; $convert_func; $parent; $($args)*);
+	};
+
+	(for $obj:ty, $parent:ty; $($args:tt)*) => {
+		impl_object_type_!(_SETUP $obj; $parent;; $parent; $($args)*);
+	};
+
+	(for $($convert_func:literal)? $obj:ty, $parent:ty, $($init_parent:ty)?; $($args:tt)*) => {
+		impl_object_type_!(_SETUP $obj; $parent; $($convert_func)?; $($init_parent)?; $($args)*);
 	};
 
 	(SET_ATTR $class:ident $attr:literal, (expr $val:expr)) => {
@@ -64,7 +231,7 @@ macro_rules! impl_object_type {
 	(SET_ATTR $_class:ident $attr:expr, $val:expr) => {
 		compile_error!(concat!("Bad attr (", stringify!($attr), ") or val (", stringify!($val), ")"))
 	};
-	(SETUP $obj:ty; $parent:ty; $($convert_func:literal)?; $($init_parent:ty)?; $($attr:expr => ($($val:tt)*)),* $(,)?) => {
+	(_SETUP $obj:ty; $parent:ty; $($convert_func:literal)?; $($init_parent:ty)?; $($attr:expr => ($($val:tt)*)),* $(,)?) => {
 		$(
 			impl $crate::obj::types::Convertible for $obj {
 				const CONVERT_FUNC: &'static str = $convert_func;
@@ -76,7 +243,7 @@ macro_rules! impl_object_type {
 
 		impl $crate::obj::types::ObjectType for $obj {
 			#[cfg(test)]
-			fn wait_for_setup_to_finish() {
+			fn _wait_for_setup_to_finish() {
 				Self::mapping();
 				while unsafe { IS_SETUP.load(std::sync::atomic::Ordering::SeqCst) == false } {
 					std::thread::yield_now();
@@ -113,7 +280,7 @@ macro_rules! impl_object_type {
 
 					class.set_attr("name".into(), stringify!($obj).into(), &Default::default());
 					$({
-						impl_object_type!(SET_ATTR class $attr, ($($val)*));
+						impl_object_type_!(SET_ATTR class $attr, ($($val)*));
 					})*
 
 					#[cfg(test)]

@@ -26,7 +26,7 @@ mod impls {
 	}
 }
 
-impl_object_type!{for Pristine, Pristine,; // trailing comma here is required 
+impl_object_type_!{for Pristine, Pristine,; // trailing comma here is required 
 	"__id__" => (impls::__id__),
 	"__call_attr__" => (impls::__call_attr__),
 	"__get_attr__" => (impls::__get_attr__),

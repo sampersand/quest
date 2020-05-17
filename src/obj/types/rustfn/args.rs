@@ -65,7 +65,9 @@ impl Args<'_> {
 	pub fn args<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>
 	where I: SliceIndex<[Object], Output=[Object]> + 'c
 	{
-		if let Some(rng) = self.args.get(idx) {
+
+
+		if let Some(rng) = self.args.get(1..).and_then(|args| args.get(idx)) {
 			Ok(self.new_args_slice(rng))
 		} else {
 			Err(format!("index is invalid (len={})", self.args.len()).into())

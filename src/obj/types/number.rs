@@ -263,12 +263,14 @@ mod impls {
 	}
 
 	pub fn eql(args: Args) -> Result<Object> {
+		println!("x: {:?}", args);
 		Ok((args._this_downcast::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
 	}
 
 	pub fn cmp(args: Args) -> Result<Object> {
 		todo!("<=>");
 	}
+
 	pub fn idiv(args: Args) -> Result<Object> {
 		todo!("idiv");
 	}
@@ -285,7 +287,7 @@ mod impls {
 	}
 }
 
-impl_object_type!{for Number, super::Basic;
+impl_object_type_!{for Number, super::Basic;
 	"@num" => (impls::at_num),
 	"@text" => (impls::at_text),
 	"@bool" => (impls::at_bool),

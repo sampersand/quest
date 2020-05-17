@@ -103,7 +103,7 @@ mod impls {
 	}
 }
 
-impl_object_type!{for Map, super::Basic;
+impl_object_type_!{for Map, super::Basic;
 	"@text" => (impls::at_text),
 	"@bool" => (impls::at_bool),
 	"@map" => (impls::at_map),

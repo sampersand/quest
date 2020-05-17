@@ -89,7 +89,7 @@ mod impls {
 	}
 }
 
-impl_object_type!{for Null, super::Basic;
+impl_object_type_!{for Null, super::Basic;
 	"@bool" => (impls::at_bool),
 	"@num" => (impls::at_num),
 	"@text" => (impls::at_text),
@@ -130,14 +130,7 @@ mod tests {
 		);
 	}
 
-	#[derive(Debug)]
-	struct Dummy;
-
-	impl From<Dummy> for Object {
-		fn from(_: Dummy) -> Object {
-			Object::new_with_parent(Dummy, None)
-		}
-	}
+	dummy_object!(struct Dummy;);
 
 	#[test]
 	fn call() {

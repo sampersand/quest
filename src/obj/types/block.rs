@@ -71,10 +71,20 @@ mod impls {
 }
 
 
-impl_object_type!{for Block, super::Function;
+impl_object_type_!{for Block, super::Function;
 	"()" => (impls::call)
-	
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	#[ignore]
+	fn call() { todo!(); }
+}
+
+
 
 
 

@@ -16,8 +16,24 @@ mod impls {
 	}
 }
 
-impl_object_type!{for Function, super::Basic;
+impl_object_type_!{for Function, super::Basic;
 	"<<"    => (impls::lsh),
 	">>"    => (impls::rsh),
 	"curry" => (impls::curry)
+}
+
+mod tests {
+	use super::*;
+
+	#[test]
+	#[ignore]
+	fn lsh() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn rsh() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn curry() { todo!() }
 }

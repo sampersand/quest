@@ -8,9 +8,8 @@ mod parse;
 fn main() {
 	// let x = [0xff]
 	let mut stream = parse::Stream::from_str(r##"
-
-		$foo = 4.4**2;
-		(((foo."__get_attr__")(foo, "sqrt"))."call")(foo)
+		$kernel = Kernel;
+		kernel.$true
 
 # $name = prompt("name: ");
 # if(name == "lali", {

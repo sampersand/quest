@@ -63,6 +63,10 @@ impl Object {
 		self.0.id
 	}
 
+	pub fn is_identical(&self, rhs: &Object) -> bool {
+		Arc::ptr_eq(&self.0, &rhs.0)
+	}
+
 	pub fn new<T: ObjectType>(data: T) -> Self {
 		Object::new_with_parent(data, Some(T::mapping()))
 	}

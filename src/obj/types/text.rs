@@ -142,7 +142,7 @@ mod impls {
 	pub fn reverse(args: Args) -> Result<Object> { todo!("reverse") } // "reverse"
 }
 
-impl_object_type!{for Text, super::Basic;
+impl_object_type_!{for Text, super::Basic;
 	"@text" => (impls::at_text),
 	"@num" => (impls::at_num),
 	"()" => (impls::call),

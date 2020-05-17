@@ -118,23 +118,23 @@ mod impls {
 
 }
 
-impl_object_type!{for List, super::Basic;
-	"@text" => (impls::at_text),
-	"@bool" => (impls::at_bool),
-	"@map" => (impls::at_map),
-	"@list" => (impls::at_list),
-	"clone" => (impls::clone),
 
-	"does_include" => (impls::does_include),
-	"index_of" => (impls::index_of),
-	"is_empty" => (impls::is_empty),
-	"len" => (impls::len),
-	"[]" => (impls::index),
-	"[]=" => (impls::index_assign),
-	"join" => (impls::join),
-	"&" => (impls::bitand),
-	"|" => (impls::bitor),
-	"^" => (impls::bitxor),
-	"-" => (impls::sub)
+impl_object_type!{for List [(parent super::Basic) (convert "@list")]:
+	"@text" => impls::at_text,
+	"@map" => impls::at_map,
+	"@list" => impls::at_list,
+	"clone" => impls::clone,
+
+	"does_include" => impls::does_include,
+	"index_of" => impls::index_of,
+	"is_empty" => impls::is_empty,
+	"len" => impls::len,
+	"[]" => impls::index,
+	"[]=" => impls::index_assign,
+	"join" => impls::join,
+	"&" => impls::bitand,
+	"|" => impls::bitor,
+	"^" => impls::bitxor,
+	"-" => impls::sub
 }
 

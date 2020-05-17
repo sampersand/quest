@@ -6,14 +6,10 @@ mod impls {
 	// pub const TRUE: Object = Object::new(types::boolean::TRUE);
 
 	pub fn r#if(args: Args) -> Result<Object> {
-		let cond = args.get(0)?;
-		let if_true = args.get(1)?;
-		let if_false = args.get(2).unwrap_or_default();
-
-		if *cond.call("@bool", args.new_args_slice(&[]))?.try_downcast_ref::<types::Boolean>()?.as_ref() {
-			Ok(if_true)
+		if args.arg_call_into::<types::Boolean>(0)?.into() {
+			args.arg(1).map(Clone::clone)
 		} else {
-			Ok(if_false)
+			args.arg(2).map(Clone::clone)
 		}
 	}
 
@@ -67,10 +63,9 @@ mod impls {
 	pub fn open(args: Args) -> Result<Object> {
 		todo!("open")
 	}
-
 }
 
-impl_object_type!{for Kernel, super::Pristine;
+impl_object_type_!{for Kernel, super::Pristine;
 	"true" => (expr boolean::TRUE),
 	"false" => (expr boolean::FALSE),
 	"null" => (expr null::NULL),
@@ -100,4 +95,110 @@ impl_object_type!{for Kernel, super::Pristine;
 	"sleep" => (impls::sleep),
 	"open" => (impls::open),
 
+}
+
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn constants_exist() {
+		use crate::obj::{Object, types::*};
+
+		macro_rules! assert_exists_eq {
+			($($key:literal $val:expr),*) => {
+				$(
+					assert_eq!(
+						$val,
+						*Kernel::mapping()
+							.get_attr(&$key.into(), &Default::default())
+							.unwrap().downcast_ref().unwrap(),
+						"constant {:?} doesn't exist or is wrong value",
+						$key
+					);
+				)*
+			}
+		}
+
+		Kernel::_wait_for_setup_to_finish();
+
+		assert_exists_eq!(
+			"true" boolean::TRUE,
+			"false" boolean::FALSE,
+			"null" null::NULL
+		);
+	}
+
+	#[test]
+	fn classes_exist() {
+		use crate::obj::{Object, types::*};
+		Kernel::_wait_for_setup_to_finish();
+
+		macro_rules! assert_mapping_eq {
+			($($key:literal $class:ty),*) => {
+				$({
+					let expected = <$class as ObjectType>::mapping();
+					let got = Object::from(Kernel)
+						.get_attr(&$key.into(), &Default::default())
+						.unwrap();
+					assert!(
+						expected.is_identical(&got),
+						"class {:?} doesn't exist or is wrong (expected={:?}, got={:?})",
+						$key, expected, got
+					);
+				})*
+			}
+		}
+
+		assert_mapping_eq!(
+			"Basic" Basic, "Block" Block, "Boolean" Boolean, "Function" Function,
+			"Kernel" Kernel, "List" List, "Map" Map, "Null" Null, "Number" Number,
+			"Pristine" Pristine, "RustFn" RustFn, "Text" Text
+		);
+	}
+
+	#[test]
+	#[ignore]
+	fn r#if() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn disp() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn quit() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn system() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn rand() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn eval() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn prompt() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn r#while() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn r#for() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn sleep() { todo!() }
+
+	#[test]
+	#[ignore]
+	fn open() { todo!() }
 }
