@@ -42,20 +42,81 @@ impl AsRef<Inner> for Map {
 	}
 }
 
-impl_object_type!{for Map, super::Basic;
-	"@text" => (|args| todo!("@text")),
-	"@bool" => (|args| todo!("@bool")),
-	"@map" => (|args| todo!("@map")),
-	"@list" => (|args| todo!("@list")),
-	"@clone" => (|args| todo!("@clone")),
+mod impls {
+	use super::Map;
+	use crate::obj::{Object, Result, Args};
 
-	"len" => (|args| todo!("len")),
-	"index" => (|args| todo!("index")),
-	"[]" => (|args| todo!("[]")),
-	"[]=" => (|args| todo!("[]=")),
-	"[]~" => (|args| todo!("[]~")),
-	"&" => (|args| todo!("&")),
-	"|" => (|args| todo!("|")),
-	"^" => (|args| todo!("^")),
-	"-" => (|args| todo!("-")),
+	pub fn at_text(args: Args) -> Result<Object> {
+		todo!("Map::at_text")
+	}
+
+	pub fn at_bool(args: Args) -> Result<Object> {
+		todo!("Map::at_bool")
+	}
+
+	pub fn at_map(args: Args) -> Result<Object> {
+		todo!("Map::at_map")
+	}
+
+	pub fn at_list(args: Args) -> Result<Object> {
+		todo!("Map::at_list")
+	}
+
+	pub fn clone(args: Args) -> Result<Object> {
+		todo!("Map::clone")
+	}
+
+	pub fn len(args: Args) -> Result<Object> {
+		todo!("Map::len")
+	}
+
+	pub fn index_of(args: Args) -> Result<Object> {
+		todo!("Map::index_of")
+	}
+
+	pub fn index(args: Args) -> Result<Object> {
+		todo!("Map::index")
+	}
+
+	pub fn index_assign(args: Args) -> Result<Object> {
+		todo!("Map::index_assign")
+	}
+
+	pub fn index_del(args: Args) -> Result<Object> {
+		todo!("Map::index_del")
+	}
+
+	pub fn bitand(args: Args) -> Result<Object> {
+		todo!("Map::bitand")
+	}
+
+	pub fn bitor(args: Args) -> Result<Object> {
+		todo!("Map::bitor")
+	}
+
+	pub fn bitxor(args: Args) -> Result<Object> {
+		todo!("Map::bitxor")
+	}
+
+	pub fn sub(args: Args) -> Result<Object> {
+		todo!("Map::sub")
+	}
+}
+
+impl_object_type!{for Map, super::Basic;
+	"@text" => (impls::at_text),
+	"@bool" => (impls::at_bool),
+	"@map" => (impls::at_map),
+	"@list" => (impls::at_list),
+	"clone" => (impls::clone),
+
+	"len" => (impls::len),
+	"index_of" => (impls::index_of),
+	"[]" => (impls::index),
+	"[]=" => (impls::index_assign),
+	"[]~" => (impls::index_del),
+	"&" => (impls::bitand),
+	"|" => (impls::bitor),
+	"^" => (impls::bitxor),
+	"-" => (impls::sub),
 }

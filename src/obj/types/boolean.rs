@@ -99,51 +99,166 @@ impl From<Boolean> for obj::types::Text {
 	}
 }
 
+mod impls {
+	use super::*;
+	use std::ops::{Deref, BitAnd, BitOr, BitXor, Not};
+	use crate::obj::{Object, Result, Args, types};
 
+	fn call_into_boolean<'a>(args: &'a Args, index: usize) -> Result<Boolean> {
+		args.get(index)?
+			.call("@bool", args.new_args_slice(&[]))?
+			.downcast_clone::<Boolean>()
+			.ok_or_else(|| format!("argument {} is not a boolean", index).into())
+	}
 
+	pub fn at_num(args: Args) -> Result<Object> {
+		println!("at num");
+		Ok(types::Number::from(*args.this_downcast::<Boolean>()?).into())
+	}
 
-impl_object_type!{for Boolean, super::Basic;
-	"@num" => (|args| {
-		Ok(Number::from(*args.this::<Boolean>()?).into())
-	}),
+	pub fn at_text(args: Args) -> Result<Object> {
+		Ok(types::Text::from(*args.this_downcast::<Boolean>()?).into())
+	}
 
-	"@text" => (|args| {
-		Ok(Text::from(*args.this::<Boolean>()?).into())
-	}),
+	pub fn at_bool(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		debug_assert!(this.is_a::<Boolean>(), "bad `this` given");
+		this.call("clone", args.get_rng(1..)?)
+	}
 
-	"@bool" => (|args| {
-		args.this_obj::<Boolean>()?.call("clone", args.new_args_slice(&[]))
-	}),
+	pub fn clone(args: Args) -> Result<Object> {
+		Ok(args.this_downcast::<Boolean>()?.clone().into())
+	}
 
-	"==" => (|args| {
-		if let Some(ref rhs) = args.get(1)?.downcast_ref::<Boolean>() {
-			Ok(args.this::<Boolean>()?.eq(rhs).into())
+	pub fn eql(args: Args) -> Result<Object> {
+		if let Ok(rhs) = args.get_downcast::<Boolean>(1) {
+			Ok((*args._this_downcast::<Boolean>()? == *rhs).into())
 		} else {
-			Ok(false.into())
+			Ok(FALSE.into())
 		}
-	}),
+	}
 
-	"clone" => (|args| {
-		Ok(args.this::<Boolean>()?.clone().into())
-	}),
+	pub fn not(args: Args) -> Result<Object> {
+		Ok(args.this_downcast::<Boolean>()?.not().into())
+	}
 
-	"!" => (|args| {
-		use std::ops::Not;
-		Ok(args.this::<Boolean>()?.not().into())
-	}),
+	pub fn bitand(args: Args) -> Result<Object> {
+		Ok(args.this_downcast::<Boolean>()?.bitand(args.arg_call_into::<Boolean>(0)?).into())
+	}
 
-	"&" => (|args| {
-		use std::ops::BitAnd;
-		Ok(args.this::<Boolean>()?.bitand(*getarg!(Boolean; args)).into())
-	}),
+	pub fn bitor(args: Args) -> Result<Object> {
+		println!("args: {:?}", args);
+		Ok(args.this_downcast::<Boolean>()?.bitor(args.arg_call_into::<Boolean>(0)?).into())
+	}
 
-	"|" => (|args| {
-		use std::ops::BitOr;
-		Ok(args.this::<Boolean>()?.bitor(*getarg!(Boolean; args)).into())
-	}),
+	pub fn bitxor(args: Args) -> Result<Object> {
+		Ok(args.this_downcast::<Boolean>()?.bitxor(args.arg_call_into::<Boolean>(0)?).into())
+	}
 
-	"^" => (|args| {
-		use std::ops::BitXor;
-		Ok(args.this::<Boolean>()?.bitxor(*getarg!(Boolean; args)).into())
-	})
+	pub fn cmp(args: Args) -> Result<Object> {
+		todo!("cmp for Boolean")
+	}
+
+	pub fn hash(args: Args) -> Result<Object> {
+		todo!("hash for Boolean")
+	}
+}
+
+impl_object_type!{for;"@bool"; Boolean, super::Basic;
+	"@num"  => (impls::at_num),
+	"@text" => (impls::at_text),
+	"@bool" => (impls::at_bool),
+	"clone" => (impls::clone),
+	"=="    => (impls::eql),
+	"!"     => (impls::not),
+	"&"     => (impls::bitand),
+	"|"     => (impls::bitor),
+	"^"     => (impls::bitxor),
+	"<=>"   => (impls::cmp),
+	"hash"  => (impls::hash),
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn at_num() {
+		assert_call_eq!(for Boolean;
+			types::number::ONE, at_num(TRUE) -> Number,
+			types::number::ZERO, at_num(FALSE) -> Number
+		);
+	}
+
+	#[test]
+	fn at_text() {
+		assert_call_eq!(for Boolean;
+			Text::from("true"), at_text(TRUE) -> Text,
+			Text::from("false"), at_text(FALSE) -> Text
+		);
+	}
+
+	#[test]
+	fn at_bool() {
+		assert_call_eq!(for Boolean;
+			TRUE, at_bool(TRUE) -> Boolean,
+			FALSE, at_bool(FALSE) -> Boolean
+		);
+	}
+
+	#[test]
+	fn clone() {
+		assert_call_eq!(for Boolean;
+			TRUE, at_bool(TRUE) -> Boolean,
+			FALSE, at_bool(FALSE) -> Boolean
+		);
+	}
+
+	#[test]
+	fn eql() {
+		assert_call_eq!(for Boolean;
+			TRUE, eql(TRUE, TRUE) -> Boolean,
+			FALSE, eql(TRUE, FALSE) -> Boolean,
+			FALSE, eql(FALSE, TRUE) -> Boolean,
+			TRUE, eql(FALSE, FALSE) -> Boolean
+		);
+	}
+
+	#[test]
+	fn not() {
+		assert_call_eq!(for Boolean;
+			FALSE, not(TRUE) -> Boolean,
+			TRUE, not(FALSE) -> Boolean
+		);
+	}
+
+	#[test]
+	fn bitand() {
+		assert_call_eq!(for Boolean;
+			TRUE, bitand(TRUE, TRUE) -> Boolean,
+			FALSE, bitand(TRUE, FALSE) -> Boolean,
+			FALSE, bitand(FALSE, TRUE) -> Boolean,
+			FALSE, bitand(FALSE, FALSE) -> Boolean
+		);
+	}
+
+	#[test]
+	fn bitor() {
+		assert_call_eq!(for Boolean;
+			TRUE, bitor(TRUE, TRUE) -> Boolean,
+			TRUE, bitor(TRUE, FALSE) -> Boolean,
+			TRUE, bitor(FALSE, TRUE) -> Boolean,
+			FALSE, bitor(FALSE, FALSE) -> Boolean
+		);
+	}
+
+	#[test]
+	fn bitxor() {
+		assert_call_eq!(for Boolean;
+			FALSE, bitxor(TRUE, TRUE) -> Boolean,
+			TRUE, bitxor(TRUE, FALSE) -> Boolean,
+			TRUE, bitxor(FALSE, TRUE) -> Boolean,
+			FALSE, bitxor(FALSE, FALSE) -> Boolean
+		);
+	}
 }

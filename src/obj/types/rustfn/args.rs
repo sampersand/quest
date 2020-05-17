@@ -1,7 +1,8 @@
 use std::slice::SliceIndex;
-use crate::obj::{self, Object};
+use crate::obj::{self, Result,  Object, types::Convertible};
 use std::any::Any;
 use std::borrow::Cow;
+use std::ops::Deref;
 
 pub type Binding = Object;
 
@@ -11,12 +12,18 @@ pub struct Args<'s> {
 	args: Cow<'s, [Object]>
 }
 
+impl Binding {
+	pub fn child_binding(&self) -> Self {
+		Object::new_with_parent(obj::types::Pristine, Some(self.clone()))
+	}
+}
+
 impl<'s> Args<'s> {
-	pub fn _new<V: Into<Cow<'s, [Object]>>>(args: V) -> Self { 
-		Args::new(args, Default::default())
+	pub fn new<V: Into<Cow<'s, [Object]>>>(args: V, binding: Binding) -> Self {
+		Args { args: args.into(), binding }
 	}
 
-	pub fn new<V: Into<Cow<'s, [Object]>>>(args: V, binding: Binding) -> Self {
+	pub fn new_slice(args: &'s [Object], binding: Binding) -> Self {
 		Args { args: args.into(), binding }
 	}
 
@@ -34,26 +41,6 @@ impl<'s> Args<'s> {
 	}
 }
 
-// impl<'s, 'o: 's> From<&'s [&'o Object]> for Args<'s, 'o> {
-// 	fn from(args: &'s [&'o Object]) -> Self {
-// 		Args::_new(args)
-// 	}
-// }
-
-// macro_rules! impl_from {
-// 	($($n:tt)*) => {
-// 		$(
-// 			impl<'s, 'o: 's> From<&'s [&'o Object; $n]> for Args<'s, 'o> {
-// 				fn from(args: &'s [&'o Object; $n]) -> Self {
-// 					Args::_new_shared(args)
-// 				}
-// 			}
-// 		)*
-// 	};
-// }
-
-// impl_from!(0 1 2 3 4 5 6); // we're not going to pass more than 6 arguments...; if we do, just cast.
-
 impl AsRef<[Object]> for Args<'_> {
 	fn as_ref(&self) -> &[Object] {
 		self.args.as_ref()
@@ -62,26 +49,45 @@ impl AsRef<[Object]> for Args<'_> {
 
 
 impl Args<'_> {
-	// pub fn bind(&mut self, this: &'o Object) {
-	// 	if let Some(x) = self.this.take() {
-	// 		println!("a `this` existed before: {:?}", x);
-	// 		// self.args.to_mut().insert(0, x);
-	// 	}
-	// 	self.args.to_mut().insert(0, this);
+	pub fn arg<'s>(&'s self, index: usize) -> Result<&'s Object> {
+		self.args.get(index + 1)
+			.ok_or_else(|| format!("index `{}' is too big (args={:?})", index + 1, self).into())
+	}
 
-	// 	self.this = Some(this);
-	// }
+	pub fn arg_downcast<'s, T: Any>(&'s self, index: usize) -> Result<impl Deref<Target=T> + 's> {
+		self.arg(index)?.try_downcast_ref::<T>()
+	}
 
+	pub fn arg_call_into<T: Convertible>(&self, index: usize) -> Result<T> {
+		self.arg(index)?.downcast_call(&self.binding)
+	}
+
+	pub fn this<'s>(&'s self) -> Result<&'s Object> {
+		self.args.get(0)
+			.ok_or_else(|| format!("no `this` supplied (args={:?})", self).into())
+	}
+
+	pub fn this_downcast<'s, T: Any>(&'s self) -> Result<impl Deref<Target=T> + 's> {
+		self.this()?.try_downcast_ref::<T>()
+	}
+}
+
+
+
+
+impl Args<'_> {
+	#[deprecated]
 	pub fn get_rng<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>
 	where I: SliceIndex<[Object], Output=[Object]> + 'c
 	{
 		if let Some(rng) = self.args.get(idx) {
-			Ok(Args::_new(rng))
+			Ok(self.new_args_slice(rng))
 		} else {
 			Err(format!("index is invalid (len={})", self.args.len()).into())
 		}
 	}
 
+	#[deprecated]
 	pub fn get(&self, idx: usize) -> obj::Result<Object> {
 		if let Some(obj) = self.args.get(idx) {
 			Ok(obj.clone())
@@ -90,27 +96,28 @@ impl Args<'_> {
 		}
 	}
 
+	#[deprecated]
 	pub fn get_downcast<'c, T: Any>(&'c self, index: usize) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
 		self.args.get(index)
 			.ok_or_else(|| format!("index is invalid (len={})", self.args.len()).into())
 			.and_then(|thing| thing.try_downcast_ref::<T>())
 	}
 
-	pub fn this_any(&self) -> obj::Result<Object> {
+	pub fn _this(&self) -> obj::Result<Object> {
 		let ret = self.get(0);
-		assert!(ret.is_ok(), "invalid index given");
+		debug_assert!(ret.is_ok(), "invalid index given");
 		ret
 	}
 
-	pub fn this_obj<T: Any>(&self) -> obj::Result<Object> {
-		let ret = self.this_any()?;
-		assert!(ret.is_type::<T>(), "invalid this encountered");
+	pub fn _this_obj<T: Any>(&self) -> obj::Result<Object> {
+		let ret = self._this()?;
+		assert!(ret.is_a::<T>(), "invalid this encountered");
 		Ok(ret)
 	}
 
-	pub fn this<'c, T: Any>(&'c self) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
+	pub fn _this_downcast<'c, T: Any>(&'c self) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
 		let ret = self.get_downcast(0);
-		assert!(ret.is_ok(), "invalid this encountered");
+		debug_assert!(ret.is_ok(), "invalid `this` encountered");
 		ret
 	}
 }

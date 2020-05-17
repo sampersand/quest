@@ -67,6 +67,20 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 
 		Ok(Token::Literal(Literal::Variable(types::Text::new(var))))
 	}
+	fn next_variable_escaped(&mut self) -> Result<Token> {
+		let mut var = String::new();
+		while let Some(mut chr) = self.next_char()? {
+			if chr.is_whitespace() {
+				self.unseek(chr);
+				break;
+			} else if chr == '\\' {
+				chr = self.next_char()?.ok_or_else(|| Error::Message(format!("`\\` with nothing after")))?;
+			}
+			var.push(chr)
+		}
+
+		Ok(Token::Literal(Literal::Text(types::Text::new(var))))
+	}
 
 	fn next_number_radix(&mut self, radix: u32) -> Result<Token> {
 		todo!();
@@ -185,8 +199,15 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 			'^' => following!(Xor '=' XorAssign),
 
 			'.' => following!(Dot '=' DotAssign),
-
-			':' | '$' | '?' | '@' | '\\' | '`' => return Err(Error::UnknownTokenStart(first_chr)),
+			':' => match self.next_char()? {
+				Some(':') => super::token::Operator::ColonColon,
+				Some(other) => {
+					self.unseek(other);
+					return Err(Error::UnknownTokenStart(':'))
+				},
+				None => return Err(Error::UnknownTokenStart(':'))
+			},
+			'?' | '@' | '\\' | '`' => return Err(Error::UnknownTokenStart(first_chr)),
 			_ => unreachable!()
 		}))
 	}
@@ -216,6 +237,7 @@ impl<'a, S: Seek + Read> Iterator for Stream<'a, S> {
 
 			'0'..='9' => self.next_number(chr),
 			_ if chr.is_alphabetic() || chr == '_' => self.next_variable(chr),
+			'$' => self.next_variable_escaped(),
 			'\'' | '"' => self.next_text(chr),
 
 			'(' => Ok(Token::Left(token::ParenType::Paren)),

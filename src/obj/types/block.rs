@@ -1,5 +1,5 @@
 use crate::parse::{Expression, ParenType};
-use crate::obj::{Object, Result, types::{self, rustfn::Binding}};
+use crate::obj::{Object, Result, Args, types::{self, rustfn::Binding}};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Line {
@@ -35,12 +35,13 @@ impl Block {
 		self.paren
 	}
 
-	fn call(&self, binding: &Binding) -> Result<Object> {
+	fn call(&self, args: &Args) -> Result<Object> {
+		let ref child = args.binding().child_binding();
 		if let Some(last) = self.body.last() {
-			for line in &self.body {
-				line.execute(binding)?;
+			for line in &self.body[..self.body.len() - 1] {
+				line.execute(child)?;
 			}
-			last.execute(binding)
+			last.execute(child)
 		} else {
 			Ok(Object::default())
 		}
@@ -48,7 +49,7 @@ impl Block {
 
 	pub fn execute(&self, binding: &Binding) -> Result<Option<Object>> {
 		let ret = match self.paren {
-			ParenType::Paren => self.call(binding)?,
+			ParenType::Paren => self.call(&Args::new_slice(&[], binding.clone()))?,
 			ParenType::Brace => return Ok(Some(self.clone().into())),
 			ParenType::Bracket => todo!("ParenType::Bracket return value."),
 		};
@@ -61,12 +62,18 @@ impl Block {
 	}
 }
 
-impl_object_type!{for Block, super::Function;
-	"()" => (|args| {
-		// do something here do make a new binding with the specified args.
-		args.this::<Block>()?.call(args.binding())
-	}),
+mod impls {
+	use super::*;
 
+	pub fn call(args: Args) -> Result<Object> {
+		args.this_downcast::<Block>()?.call(&args)
+	}
+}
+
+
+impl_object_type!{for Block, super::Function;
+	"()" => (impls::call)
+	
 }
 
 

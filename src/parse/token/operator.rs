@@ -8,7 +8,7 @@ pub enum Operator {
 	Add, Sub, Mul, Div, Mod, Pow,
 	Not, Eql, Neq, Lth, Leq, Gth, Geq, Cmp, And, Or,
 	Lsh, Rsh, BNot, BAnd, BOr, Xor,
-	Assign, Dot, DotAssign,
+	Assign, Dot, DotAssign, ColonColon,
 	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign, LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
 }
 
@@ -31,7 +31,7 @@ impl From<Operator> for types::Text {
 			And => "&&", Or => "||",
 			BNot => "~", BAnd => "&",
 			Lsh => "<<", Rsh => ">>", BOr => "|", Xor => "^",
-			Dot => ".",
+			Dot => ".", ColonColon => "::",
 			Assign => "=", DotAssign => ".=",
 			AddAssign => "+=", SubAssign => "-=", MulAssign => "*=", DivAssign => "/=", ModAssign => "%=",
 			PowAssign => "**=", LshAssign => "<<=", RshAssign => ">>=", BAndAssign => "&=", BOrAssign => "|=",
@@ -88,7 +88,7 @@ impl Operator {
 		use Operator::*;
 		// using ruby's precedence as a template.
 		match self {
-			Dot => 0,
+			Dot | ColonColon => 0,
 			Not | BNot | Pos => 1,
 			Pow => 2,
 			Neg => 3,

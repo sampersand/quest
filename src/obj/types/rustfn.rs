@@ -46,10 +46,10 @@ impl AsRef<FnType> for RustFn {
 
 impl_object_type!{for RustFn, super::Function;
 	"()" => (|args| {
-		args.this::<RustFn>()?.call(args.get_rng(1..)?)
+		args._this_downcast::<RustFn>()?.call(args.get_rng(1..)?)
 	}),
 
 	"@text" => (|args| {
-		Ok(args.this::<RustFn>()?.0.into())
+		Ok(args._this_downcast::<RustFn>()?.0.into())
 	}),
 }

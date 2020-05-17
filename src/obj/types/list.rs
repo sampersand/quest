@@ -48,24 +48,93 @@ impl AsRef<[Object]> for List {
 	}
 }
 
-impl_object_type!{for List, super::Basic;
-	"@text" => (|args| todo!("@text")),
-	"@bool" => (|args| todo!("@bool")),
-	"@map" => (|args| todo!("@map")),
-	"@list" => (|args| todo!("@list")),
-	"@clone" => (|args| todo!("@clone")),
+mod impls {
+	use super::List;
+	use crate::obj::{Object, Result, Args};
 
-	"does_include" => (|args| todo!("does_include")),
-	"index" => (|args| todo!("index")),
-	"is_empty" => (|args| todo!("is_empty")),
-	"len" => (|args| todo!("len")),
-	"[]" => (|args| todo!("[]")),
-	"[]=" => (|args| todo!("[]=")),
-	"join" => (|args| todo!("join")),
-	"&" => (|args| todo!("&")),
-	"|" => (|args| todo!("|")),
-	"^" => (|args| todo!("^")),
-	"-" => (|args| todo!("-")),
-	// "[]~" => (|args| todo!("[]~")),
+	pub fn at_text(args: Args) -> Result<Object> {
+		todo!("List::at_text");
+	}
+
+	pub fn at_bool(args: Args) -> Result<Object> {
+		todo!("List::at_bool");
+	}
+
+	pub fn at_map(args: Args) -> Result<Object> {
+		todo!("List::at_map");
+	}
+
+	pub fn at_list(args: Args) -> Result<Object> {
+		todo!("List::at_list");
+	}
+
+	pub fn clone(args: Args) -> Result<Object> {
+		todo!("List::clone");
+	}
+
+	pub fn does_include(args: Args) -> Result<Object> {
+		todo!("List::does_include");
+	}
+
+	pub fn index_of(args: Args) -> Result<Object> {
+		todo!("List::index_of");
+	}
+
+	pub fn is_empty(args: Args) -> Result<Object> {
+		todo!("List::is_empty");
+	}
+
+	pub fn len(args: Args) -> Result<Object> {
+		todo!("List::len");
+	}
+
+	pub fn index(args: Args) -> Result<Object> {
+		todo!("List::index");
+	}
+
+	pub fn index_assign(args: Args) -> Result<Object> {
+		todo!("List::index_assign");
+	}
+
+	pub fn join(args: Args) -> Result<Object> {
+		todo!("List::join");
+	}
+
+	pub fn bitand(args: Args) -> Result<Object> {
+		todo!("List::bitand");
+	}
+
+	pub fn bitor(args: Args) -> Result<Object> {
+		todo!("List::bitor");
+	}
+
+	pub fn bitxor(args: Args) -> Result<Object> {
+		todo!("List::bitxor");
+	}
+
+	pub fn sub(args: Args) -> Result<Object> {
+		todo!("List::sub");
+	}
+
+}
+
+impl_object_type!{for List, super::Basic;
+	"@text" => (impls::at_text),
+	"@bool" => (impls::at_bool),
+	"@map" => (impls::at_map),
+	"@list" => (impls::at_list),
+	"clone" => (impls::clone),
+
+	"does_include" => (impls::does_include),
+	"index_of" => (impls::index_of),
+	"is_empty" => (impls::is_empty),
+	"len" => (impls::len),
+	"[]" => (impls::index),
+	"[]=" => (impls::index_assign),
+	"join" => (impls::join),
+	"&" => (impls::bitand),
+	"|" => (impls::bitor),
+	"^" => (impls::bitxor),
+	"-" => (impls::sub)
 }
 

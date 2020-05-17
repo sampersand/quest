@@ -1,21 +1,21 @@
-use crate::obj::{self, Mapping, Args, types::{self, ObjectType}};
+use crate::obj::{self, Mapping, Args, types::{self, ObjectType, rustfn::Binding}};
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
 
 #[derive(Clone)]
-pub struct Object(Arc<Internal>);
+pub struct Object(pub(super) Arc<Internal>);
 
 impl Default for Object {
 	fn default() -> Self {
-		Object::from(types::Null)
+		Object::new(types::null::NULL)
 	}
 }
 
-struct Internal {
+pub(super) struct Internal {
 	mapping: Arc<RwLock<Mapping>>,
 	id: usize,
-	data: Arc<RwLock<dyn Any + Send + Sync>>,
+	pub(super) data: Arc<RwLock<dyn Any + Send + Sync>>,
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result
 }
 
@@ -71,12 +71,16 @@ impl Object {
 		self.downcast_ref::<T>().ok_or_else(|| types::Text::from(format!("not a {:?}", TypeId::of::<T>())).into())
 	}
 
-	pub fn is_type<T: Any>(&self) -> bool {
+	pub fn is_a<T: Any>(&self) -> bool {
 		self.0.data.read().expect("poison error").is::<T>()
 	}
 
 	pub fn downcast_clone<T: Any + Clone>(&self) -> Option<T> {
 		self.downcast_ref::<T>().map(|x| x.clone())
+	}
+
+	pub fn try_downcast_clone<T: Any + Clone>(&self) -> obj::Result<T> {
+		self.downcast_ref::<T>().map(|x| x.clone()).ok_or_else(|| types::Text::from(format!("not a {:?}", TypeId::of::<T>())).into())
 	}
 
 	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl std::ops::Deref<Target=T> + 'a> {
@@ -120,17 +124,16 @@ impl Object {
 		}
 	}
 
-	pub fn get_attr(&self, attr: &Object) -> obj::Result<Object> {
-		// println!("Object::get_attr(self={:?}, attr={:?})", self, attr);
-		self.0.mapping.read().expect("cannot read").get(attr)
+	pub fn get_attr(&self, attr: &Object, binding: &Binding) -> obj::Result<Object> {
+		self.0.mapping.read().expect("cannot read").get(attr, binding, self)
 	}
 
-	pub fn set_attr(&self, attr: Object, val: Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").insert(attr, val)
+	pub fn set_attr(&self, attr: Object, val: Object, binding: &Binding) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").insert(attr, val, binding)
 	}
 
-	pub fn del_attr(&self, attr: &Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").remove(attr)
+	pub fn del_attr(&self, attr: &Object, binding: &Binding) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").remove(attr, binding)
 	}
 
 
@@ -155,14 +158,14 @@ impl Object {
 					return Err(types::Text::from("need at least 1 arg for `==`").into())
 				} else if let (Some(lhs), Some(rhs)) = (self.downcast_ref::<types::Text>(),
 				                                        args.get_downcast::<types::Text>(0).ok()) {
-					// println!("downcast_ref: {:?} == {:?} ? = {:?}", *lhs, *rhs, types::Boolean::from(*lhs == *rhs));
+					// println!("_downcast_ref: {:?} == {:?} ? = {:?}", *lhs, *rhs, types::Boolean::from(*lhs == *rhs));
 					return Ok(types::Boolean::from(*lhs == *rhs).into())
 				}
 			}
 		}
 
 		args.add_this(self.clone());
-		self.get_attr(attr)?.call("()", args)
+		self.get_attr(attr, args.binding())?.call("()", args)
 	}
 
 	pub fn call(&self, txt: &'static str, args: Args) -> obj::Result<Object> {

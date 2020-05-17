@@ -32,6 +32,12 @@ impl From<&'static str> for Text {
 	}
 }
 
+impl From<Text> for String {
+	fn from(txt: Text) -> Self {
+		txt.0.to_owned().to_string()
+	}
+}
+
 impl From<String> for Text {
 	fn from(txt: String) -> Self {
 		Text::new(txt)
@@ -58,11 +64,11 @@ impl AsRef<str> for Text {
 
 impl_object_type!{for Text, super::Basic;
 	"@text" => (|args| {
-		args.this_obj::<Text>()?.call("clone", args.new_args_slice(&[]))
+		args._this_obj::<Text>()?.call("clone", args.new_args_slice(&[]))
 	}),
 
 	"@num" => (|args| {
-		let this = args.this::<Text>()?;
+		let this = args._this_downcast::<Text>()?;
 		if let Ok(radix_obj) = args.get(1) {
 			use std::convert::TryFrom;
 			let r = radix_obj.call("@num", args.new_args_slice(&[]))?
@@ -82,35 +88,48 @@ impl_object_type!{for Text, super::Basic;
 	}),
 
 	"()" => (|args| {
-		args.binding().get_attr(&args.this_obj::<Text>()?)
+		match args._this_downcast::<Text>()?.as_ref() {
+			"__this__" => Ok(args.binding().clone()),
+			_ => args.binding()
+				.get_attr(&args._this_obj::<Text>()?, args.binding())
+		}
 	}),
 
 	"=" => (|args| {
-		args.binding().set_attr(args.this_obj::<Text>()?, getarg!(Object; args))
+		args.binding().set_attr(args._this_obj::<Text>()?, getarg!(Object; args), args.binding())
 	}),
 
 	"@list" => (|args| todo!("@list")),
 
 	"@bool" => (|args| {
-		Ok(args.this::<Text>()?.as_ref().is_empty().into())
+		Ok(args._this_downcast::<Text>()?.as_ref().is_empty().into())
 	}),
 
 	"clone" => (|args| {
-		Ok(args.this::<Text>()?.clone().into())
+		Ok(args._this_downcast::<Text>()?.clone().into())
 	}),
 
 	"==" => (|args| {
-		let this = args.this::<Text>()?;
+		let this = args._this_downcast::<Text>()?;
 		if let Ok(txt) = args.get_downcast::<Text>(1) {
 			Ok((this.0 == txt.0).into())
 		} else {
 			Ok(false.into())
 		}
 	}),
+	"+" => (|args| {
+		let mut this = args._this_downcast::<Text>()?.clone().0.into_owned();
+		let rhs = args.get(1)?;
+		this.push_str(
+			rhs.call("@text", args.new_args_slice(&[]))?
+			.try_downcast_ref::<Text>()?
+			.as_ref()
+		);
+		Ok(this.into())
+	}),
 
 	"chr" => (|args| todo!("chr")),
 	"len" => (|args| todo!("len")),
-	"+" => (|args| todo!("+")),
 	"[]" => (|args| todo!("[]")),
 	"[]=" => (|args| todo!("[]=")),
 	// "[]~" => (|args| todo!("[]~")),

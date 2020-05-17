@@ -1,5 +1,6 @@
-use crate::obj::{self, Object, Mapping, types::ObjectType};
+use crate::obj::{self, Object, Mapping, types};
 use std::sync::{Arc, RwLock};
+use std::convert::TryFrom;
 use std::fmt::{self, Debug, Formatter};
 
 type Inner = f64;
@@ -47,6 +48,18 @@ impl Number {
 		use std::str::FromStr;
 		Inner::from_str(inp).map(Number::from)
 	}
+
+	pub fn to_string_radix(&self, radix: Option<u32>) -> obj::Result<String> {
+		match radix {
+         Some(2) => Ok(format!("{:b}", self.try_to_int()?).into()),
+         Some(8) => Ok(format!("{:o}", self.try_to_int()?).into()),
+         Some(16) => Ok(format!("{:x}", self.try_to_int()?).into()),
+         Some(10) => Ok(format!("{}", self.try_to_int()?).into()),
+         Some(radix @ 0) | Some(radix @ 1) => Err(format!("invalid radix {}", radix).into()),
+         Some(other) => todo!("unsupported radix {}", other),
+         None => Ok(self.0.to_string().into()),
+		}
+	}
 }
 
 impl From<Number> for Inner {
@@ -77,7 +90,6 @@ impl_from_integer!{
 	u8 u16 u32 u64 u128 usize
 	f32 Inner
 }
-
 
 impl AsRef<Inner> for Number {
 	fn as_ref(&self) -> &Inner {
@@ -129,14 +141,20 @@ impl std::ops::Neg for Number {
 	}
 }
 
-impl_object_type!{for Number, super::Basic;
-	"@num" => (|args| {
-		args.this_obj::<Number>()?.call("clone", args.new_args_slice(&[]))
-	}),
 
-	"@text" => (|args| {
+mod impls {
+	use super::*;
+	use crate::obj::{Object, Result, Args};
+
+	pub fn at_num(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		debug_assert!(this.is_a::<Number>(), "bad `this` given");
+		this.call("clone", args.get_rng(1..)?)
+	}
+	
+	pub fn at_text(args: Args) -> Result<Object> {
 		if let Some(arg) = args.get(1).ok() {
-			let this = args.this::<Number>()?.try_to_int()?;
+			let this = args._this_downcast::<Number>()?.try_to_int()?;
 			let radix = arg.call("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
 			match radix {
             2 => Ok(format!("{:b}", this).into()),
@@ -147,99 +165,262 @@ impl_object_type!{for Number, super::Basic;
             _ => todo!("unsupported radix {}", radix)
 			}
 		} else {
-			Ok(args.this::<Number>()?.0.to_string().into())
+			Ok(args._this_downcast::<Number>()?.0.to_string().into())
 		}
-	}),
+	}
 
-	"@bool" => (|args| {
-		Ok((args.this::<Number>()?.0 != ZERO.0).into())
-	}),
+	pub fn at_bool(args: Args) -> Result<Object> {
+		Ok((args._this_downcast::<Number>()?.0 != ZERO.0).into())
+	}
 
-	"clone" => (|args| {
-		Ok(args.this::<Number>()?.0.into())
-	}),
+	pub fn clone(args: Args) -> Result<Object> {
+		Ok(args._this_downcast::<Number>()?.0.into())
+	}
 
 
-	"()" => (|args| {
-		args.this_obj::<Number>()?.call("*", args.get_rng(1..)?)
-	}),
+	pub fn call(args: Args) -> Result<Object> {
+		args._this_obj::<Number>()?.call("*", args.get_rng(1..)?)
+	}
 
-	"+" => (|args| {
+	pub fn add(args: Args) -> Result<Object> {
 		use std::ops::Add;
-		Ok(args.this::<Number>()?.add(*getarg!(Number; args)).into())	}),
+		Ok(args._this_downcast::<Number>()?.add(*getarg!(Number; args)).into())	}
 
-	"-" => (|args| {
+	pub fn sub(args: Args) -> Result<Object> {
 		use std::ops::Sub;
-		Ok(args.this::<Number>()?.sub(*getarg!(Number; args)).into())
-	}),
-	"*" => (|args| {
+		Ok(args._this_downcast::<Number>()?.sub(*getarg!(Number; args)).into())
+	}
+
+	pub fn mul(args: Args) -> Result<Object> {
 		use std::ops::Mul;
-		Ok(args.this::<Number>()?.mul(*getarg!(Number; args)).into())
-	}),
-	"/" => (|args| {
+		Ok(args._this_downcast::<Number>()?.mul(*getarg!(Number; args)).into())
+	}
+
+	pub fn div(args: Args) -> Result<Object> {
 		use std::ops::Div;
-		Ok(args.this::<Number>()?.div(*getarg!(Number; args)).into())
-	}),
-	"%" => (|args| {
+		Ok(args._this_downcast::<Number>()?.div(*getarg!(Number; args)).into())
+	}
+
+	pub fn r#mod(args: Args) -> Result<Object> {
 		use std::ops::Rem;
-		Ok(args.this::<Number>()?.rem(*getarg!(Number; args)).into())
-	}),
-	"**" => (|args| {
-		Ok(args.this::<Number>()?.pow(*getarg!(Number; args)).into())
-	}),
+		Ok(args._this_downcast::<Number>()?.rem(*getarg!(Number; args)).into())
+	}
+
+	pub fn pow(args: Args) -> Result<Object> {
+		Ok(args._this_downcast::<Number>()?.pow(*getarg!(Number; args)).into())
+	}
 
 
-	"&" => (|args| {
+	pub fn bitand(args: Args) -> Result<Object> {
 		use std::ops::BitAnd;
-		Ok(args.this::<Number>()?.bitand(*getarg!(Number; args))?.into())
-	}),
-	"|" => (|args| {
+		Ok(args._this_downcast::<Number>()?.bitand(*getarg!(Number; args))?.into())
+	}
+
+	pub fn bitor(args: Args) -> Result<Object> {
 		use std::ops::BitOr;
-		Ok(args.this::<Number>()?.bitor(*getarg!(Number; args))?.into())
-	}),
-	"^" => (|args| {
+		Ok(args._this_downcast::<Number>()?.bitor(*getarg!(Number; args))?.into())
+	}
+
+	pub fn bitxor(args: Args) -> Result<Object> {
 		use std::ops::BitXor;
-		Ok(args.this::<Number>()?.bitxor(*getarg!(Number; args))?.into())
-	}),
-	"<<" => (|args| {
+		Ok(args._this_downcast::<Number>()?.bitxor(*getarg!(Number; args))?.into())
+	}
+
+	pub fn shl(args: Args) -> Result<Object> {
 		use std::ops::Shl;
-		Ok(args.this::<Number>()?.shl(*getarg!(Number; args))?.into())
-	}),
-	">>" => (|args| {
+		Ok(args._this_downcast::<Number>()?.shl(*getarg!(Number; args))?.into())
+	}
+
+	pub fn shr(args: Args) -> Result<Object> {
 		use std::ops::Shr;
-		Ok(args.this::<Number>()?.shr(*getarg!(Number; args))?.into())
-	}),
+		Ok(args._this_downcast::<Number>()?.shr(*getarg!(Number; args))?.into())
+	}
 
 
-	"-@" => (|args| {
+	pub fn neg(args: Args) -> Result<Object> {
 		use std::ops::Neg;
-		Ok(args.this::<Number>()?.neg().into())
-	}),
-	"+@" => (|args| {
-		args.this_obj::<Number>()?.call("abs", args.new_args_slice(&[]))
-	}),
-	"~" => (|args| {
-		Ok((!args.this::<Number>()?.try_to_int()?).into())
-	}),
-	"abs" => (|args| {
-		Ok(args.this::<Number>()?.abs().into())
-	}),
-	"floor" => (|args| {
-		Ok(args.this::<Number>()?.to_int().into())
-	}),
+		Ok(args._this_downcast::<Number>()?.neg().into())
+	}
 
-	"==" => (|args| {
-		Ok((args.this::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
-	}),
+	pub fn pos(args: Args) -> Result<Object> {
+		args._this_obj::<Number>()?.call("abs", args.new_args_slice(&[]))
+	}
 
-	"<" => (|args| todo!("<")),
-	"<=" => (|args| todo!("<=")),
-	">" => (|args| todo!(">")),
-	">=" => (|args| todo!(">=")),
-	"<=>" => (|args| todo!("<=>")),
-	"idiv" => (|args| todo!("idiv")),
-	"is_integer" => (|args| todo!("is_integer")),
-	"ceil" => (|args| todo!("ceil")),
-	"round" => (|args| todo!("round")),
-	"is_integer" => (|args| todo!("is_integer")),
+	pub fn bitnot(args: Args) -> Result<Object> {
+		Ok((!args._this_downcast::<Number>()?.try_to_int()?).into())
+	}
+
+	pub fn abs(args: Args) -> Result<Object> {
+		Ok(args._this_downcast::<Number>()?.abs().into())
+	}
+
+	pub fn floor(args: Args) -> Result<Object> {
+		Ok(args._this_downcast::<Number>()?.to_int().into())
+	}
+
+	pub fn eql(args: Args) -> Result<Object> {
+		Ok((args._this_downcast::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
+	}
+
+	pub fn cmp(args: Args) -> Result<Object> {
+		todo!("<=>");
+	}
+	pub fn idiv(args: Args) -> Result<Object> {
+		todo!("idiv");
+	}
+
+	pub fn ceil(args: Args) -> Result<Object> {
+		todo!("ceil");
+	}
+	pub fn round(args: Args) -> Result<Object> {
+		todo!("round");
+	}
+
+	pub fn is_integer(args: Args) -> Result<Object> {
+		todo!("is_integer");
+	}
+}
+
+
+// 	"@num" => (|args| {
+// 		args._this_obj::<Number>()?.call("clone", args.new_args_slice(&[]))
+// 	}),
+
+// 	"@text" => (|args| {
+// 		if let Some(arg) = args.get(1).ok() {
+// 			let this = args._this_downcast::<Number>()?.try_to_int()?;
+// 			let radix = arg.call("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
+// 			match radix {
+//             2 => Ok(format!("{:b}", this).into()),
+//             8 => Ok(format!("{:o}", this).into()),
+//             16 => Ok(format!("{:x}", this).into()),
+//             10 => Ok(this.to_string().into()),
+//             0 | 1 => Err(format!("invalid radix {}", radix).into()),
+//             _ => todo!("unsupported radix {}", radix)
+// 			}
+// 		} else {
+// 			Ok(args._this_downcast::<Number>()?.0.to_string().into())
+// 		}
+// 	}),
+
+// 	"@bool" => (|args| {
+// 		Ok((args._this_downcast::<Number>()?.0 != ZERO.0).into())
+// 	}),
+
+// 	"clone" => (|args| {
+// 		Ok(args._this_downcast::<Number>()?.0.into())
+// 	}),
+
+
+// 	"()" => (|args| {
+// 		args._this_obj::<Number>()?.call("*", args.get_rng(1..)?)
+// 	}),
+
+// 	"+" => (|args| {
+// 		use std::ops::Add;
+// 		Ok(args._this_downcast::<Number>()?.add(*getarg!(Number; args)).into())	}),
+
+// 	"-" => (|args| {
+// 		use std::ops::Sub;
+// 		Ok(args._this_downcast::<Number>()?.sub(*getarg!(Number; args)).into())
+// 	}),
+// 	"*" => (|args| {
+// 		use std::ops::Mul;
+// 		Ok(args._this_downcast::<Number>()?.mul(*getarg!(Number; args)).into())
+// 	}),
+// 	"/" => (|args| {
+// 		use std::ops::Div;
+// 		Ok(args._this_downcast::<Number>()?.div(*getarg!(Number; args)).into())
+// 	}),
+// 	"%" => (|args| {
+// 		use std::ops::Rem;
+// 		Ok(args._this_downcast::<Number>()?.rem(*getarg!(Number; args)).into())
+// 	}),
+// 	"**" => (|args| {
+// 		Ok(args._this_downcast::<Number>()?.pow(*getarg!(Number; args)).into())
+// 	}),
+
+
+// 	"&" => (|args| {
+// 		use std::ops::BitAnd;
+// 		Ok(args._this_downcast::<Number>()?.bitand(*getarg!(Number; args))?.into())
+// 	}),
+// 	"|" => (|args| {
+// 		use std::ops::BitOr;
+// 		Ok(args._this_downcast::<Number>()?.bitor(*getarg!(Number; args))?.into())
+// 	}),
+// 	"^" => (|args| {
+// 		use std::ops::BitXor;
+// 		Ok(args._this_downcast::<Number>()?.bitxor(*getarg!(Number; args))?.into())
+// 	}),
+// 	"<<" => (|args| {
+// 		use std::ops::Shl;
+// 		Ok(args._this_downcast::<Number>()?.shl(*getarg!(Number; args))?.into())
+// 	}),
+// 	">>" => (|args| {
+// 		use std::ops::Shr;
+// 		Ok(args._this_downcast::<Number>()?.shr(*getarg!(Number; args))?.into())
+// 	}),
+
+
+// 	"-@" => (|args| {
+// 		use std::ops::Neg;
+// 		Ok(args._this_downcast::<Number>()?.neg().into())
+// 	}),
+// 	"+@" => (|args| {
+// 		args._this_obj::<Number>()?.call("abs", args.new_args_slice(&[]))
+// 	}),
+// 	"~" => (|args| {
+// 		Ok((!args._this_downcast::<Number>()?.try_to_int()?).into())
+// 	}),
+// 	"abs" => (|args| {
+// 		Ok(args._this_downcast::<Number>()?.abs().into())
+// 	}),
+// 	"floor" => (|args| {
+// 		Ok(args._this_downcast::<Number>()?.to_int().into())
+// 	}),
+
+// 	"==" => (|args| {
+// 		Ok((args._this_downcast::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
+// 	}),
+
+// 	"<" => (|args| todo!("<")),
+// 	"<=" => (|args| todo!("<=")),
+// 	">" => (|args| todo!(">")),
+// 	">=" => (|args| todo!(">=")),
+// 	"<=>" => (|args| todo!("<=>")),
+// 	"idiv" => (|args| todo!("idiv")),
+// 	"ceil" => (|args| todo!("ceil")),
+// 	"round" => (|args| todo!("round")),
+// 	"is_integer" => (|args| todo!("is_integer")),
+// }
+
+impl_object_type!{for Number, super::Basic;
+	"@num" => (impls::at_num),
+	"@text" => (impls::at_text),
+	"@bool" => (impls::at_bool),
+	"clone" => (impls::clone),
+	"()" => (impls::call),
+	"+" => (impls::add),
+	"-" => (impls::sub),
+	"*" => (impls::mul),
+	"/" => (impls::div),
+	"%" => (impls::r#mod),
+	"**" => (impls::pow),
+	"&" => (impls::bitand),
+	"|" => (impls::bitor),
+	"^" => (impls::bitxor),
+	"<<" => (impls::shl),
+	">>" => (impls::shr),
+	"-@" => (impls::neg),
+	"+@" => (impls::pos),
+	"~" => (impls::bitnot),
+	"==" => (impls::eql),
+	"<=>" => (impls::cmp),
+	"abs" => (impls::abs),
+	"idiv" => (impls::idiv),
+	"is_integer" => (impls::is_integer),
+	"round" => (impls::round),
+	"ceil" => (impls::ceil),
+	"floor" => (impls::floor)
 }

@@ -53,36 +53,106 @@ impl From<Null> for types::Text {
 }
 
 
-macro_rules! assert_is_null {
-	($args:expr) => {{
-		$args.this_obj::<Null>()
-	}};
+mod impls {
+	use super::Null;
+	use crate::obj::{Object, Result, Args, types};
+
+	pub fn at_bool(_args: Args) -> Result<Object> {
+		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
+		Ok(types::boolean::FALSE.into())
+	}
+
+	pub fn at_num(_args: Args) -> Result<Object> {
+		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
+		Ok(types::number::ZERO.into())
+	}
+
+	pub fn at_text(_args: Args) -> Result<Object> {
+		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
+		const NULL_TEXT: types::Text = types::Text::new_static("null");
+		Ok(NULL_TEXT.into())
+	}
+
+	pub fn call(_args: Args) -> Result<Object> {
+		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
+		Ok(Object::default())
+	}
+
+	pub fn eql(args: Args) -> Result<Object> {
+		debug_assert!(args.this().expect("bad this given").is_a::<Null>());
+		Ok(args.arg_downcast::<Null>(0).is_ok().into())
+	}
+
+	pub fn clone(_args: Args) -> Result<Object> {
+		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
+		Ok(Null.into())
+	}
 }
 
-
 impl_object_type!{for Null, super::Basic;
-	"()" => (|_args| {
-		assert_is_null!(_args);
-		Ok(Null.into())
-	}),
+	"@bool" => (impls::at_bool),
+	"@num" => (impls::at_num),
+	"@text" => (impls::at_text),
+	"clone" => (impls::clone),
+	"()" => (impls::call),
+	"==" => (impls::eql),
+}
 
-	"==" => (|args| {
-		Ok(args.this::<Null>()?.eq(&*args.get_downcast::<Null>(1)?).into())
-	}),
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-	"@bool" => (|args| {
-		Ok(Boolean::from(*args.this::<Null>()?).into())
-	}),
+	#[test]
+	fn at_bool() {
+		assert_call_eq!(for Boolean;
+			types::boolean::FALSE, at_bool(NULL) -> Boolean,
+		);
+	}
 
-	"@num" => (|args| {
-		Ok(Number::from(*args.this::<Null>()?).into())
-	}),
+	#[test]
+	fn at_num() {
+		assert_call_eq!(for Boolean;
+			types::number::ZERO, at_num(NULL) -> Number,
+		);
+	}
 
-	"@text" => (|args| {
-		Ok(Text::from(*args.this::<Null>()?).into())
-	}),
+	#[test]
+	fn at_text() {
+		assert_call_eq!(for Boolean;
+			Text::new_static("null"), at_text(NULL) -> Text,
+		);
+	}
 
-	"clone" => (|args| {
-		Ok(args.this::<Null>()?.clone().into())
-	})
+	#[test]
+	fn clone() {
+		assert_call_eq!(for Boolean;
+			NULL, clone(NULL) -> Null,
+		);
+	}
+
+	#[derive(Debug)]
+	struct Dummy;
+
+	impl From<Dummy> for Object {
+		fn from(_: Dummy) -> Object {
+			Object::new_with_parent(Dummy, None)
+		}
+	}
+
+	#[test]
+	fn call() {
+		assert_call_eq!(for Boolean;
+			NULL, call(NULL) -> Null,
+			NULL, call(NULL, Dummy) -> Null,
+			NULL, call(NULL, Dummy, Dummy) -> Null,
+		);
+	}
+
+	#[test]
+	fn eql() {
+		assert_call_eq!(for Boolean;
+			boolean::FALSE, eql(Null, Dummy) -> Boolean,
+			boolean::TRUE, eql(Null, Null) -> Boolean,
+		);
+	}
 }
