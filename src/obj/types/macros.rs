@@ -2,7 +2,7 @@
 macro_rules! assert_call_eq {
 	(for $ty:ty; $($rhs:expr, $lhs:ident($this:expr $(,$args:expr)*) -> $ret:ty),* $(,)?) => {{
 		use crate::obj::types::{self, *, rustfn::Args};
-
+		#[cfg(test)]
 		<$ty>::wait_for_setup_to_finish();
 		$(
 			assert_eq!(*impls::$lhs({
@@ -57,7 +57,7 @@ macro_rules! impl_object_type {
 		$class.set_attr($attr.into(), $val.into(), &Default::default());
 	};
 
-	(SET_ATTR $class:ident $attr:literal, ($val:expr)) => {
+	(SET_ATTR $class:ident $attr:literal, $val:expr) => {
 		$class.set_attr($attr.into(), $crate::obj::types::RustFn::new($attr, $val).into(), &Default::default());
 	};
 
@@ -71,8 +71,11 @@ macro_rules! impl_object_type {
 			}
 		)?
 
+		#[cfg(test)]
 		static mut IS_SETUP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 		impl $crate::obj::types::ObjectType for $obj {
+			#[cfg(test)]
 			fn wait_for_setup_to_finish() {
 				Self::mapping();
 				while unsafe { IS_SETUP.load(std::sync::atomic::Ordering::SeqCst) == false } {
@@ -113,6 +116,7 @@ macro_rules! impl_object_type {
 						impl_object_type!(SET_ATTR class $attr, ($($val)*));
 					})*
 
+					#[cfg(test)]
  					unsafe {
  						IS_SETUP.store(true, std::sync::atomic::Ordering::SeqCst);
  					}

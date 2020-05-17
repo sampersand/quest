@@ -61,6 +61,17 @@ impl Args<'_> {
 	pub fn arg_call_into<T: Convertible>(&self, index: usize) -> Result<T> {
 		self.arg(index)?.downcast_call(&self.binding)
 	}
+	
+	pub fn args<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>
+	where I: SliceIndex<[Object], Output=[Object]> + 'c
+	{
+		if let Some(rng) = self.args.get(idx) {
+			Ok(self.new_args_slice(rng))
+		} else {
+			Err(format!("index is invalid (len={})", self.args.len()).into())
+		}
+	}
+
 
 	pub fn this<'s>(&'s self) -> Result<&'s Object> {
 		self.args.get(0)

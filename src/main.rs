@@ -9,7 +9,9 @@ fn main() {
 	// let x = [0xff]
 	let mut stream = parse::Stream::from_str(r##"
 
-	true & false
+		$foo = 4.4**2;
+		(((foo."__get_attr__")(foo, "sqrt"))."call")(foo)
+
 # $name = prompt("name: ");
 # if(name == "lali", {
 # 	disp("<3 lali")
@@ -91,7 +93,7 @@ fn main() {
 	// println!("{:?}", co.get_attr(&"true".into()));
 	let expression = parse::Expression::try_from_iter(&mut stream).unwrap();
 	let result = expression.execute_default().unwrap();
-	println!("{:?}", result);
+	println!("{:#?}", result);
 	// println!("{:?}", result.call("@text", Default::default()));
 }
 

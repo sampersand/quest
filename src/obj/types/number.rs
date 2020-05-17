@@ -250,6 +250,10 @@ mod impls {
 		Ok((!args._this_downcast::<Number>()?.try_to_int()?).into())
 	}
 
+	pub fn sqrt(args: Args) -> Result<Object> {
+		Ok(Number::from(args.this_downcast::<Number>()?.0.sqrt()).into())
+	}
+
 	pub fn abs(args: Args) -> Result<Object> {
 		Ok(args._this_downcast::<Number>()?.abs().into())
 	}
@@ -281,120 +285,6 @@ mod impls {
 	}
 }
 
-
-// 	"@num" => (|args| {
-// 		args._this_obj::<Number>()?.call("clone", args.new_args_slice(&[]))
-// 	}),
-
-// 	"@text" => (|args| {
-// 		if let Some(arg) = args.get(1).ok() {
-// 			let this = args._this_downcast::<Number>()?.try_to_int()?;
-// 			let radix = arg.call("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
-// 			match radix {
-//             2 => Ok(format!("{:b}", this).into()),
-//             8 => Ok(format!("{:o}", this).into()),
-//             16 => Ok(format!("{:x}", this).into()),
-//             10 => Ok(this.to_string().into()),
-//             0 | 1 => Err(format!("invalid radix {}", radix).into()),
-//             _ => todo!("unsupported radix {}", radix)
-// 			}
-// 		} else {
-// 			Ok(args._this_downcast::<Number>()?.0.to_string().into())
-// 		}
-// 	}),
-
-// 	"@bool" => (|args| {
-// 		Ok((args._this_downcast::<Number>()?.0 != ZERO.0).into())
-// 	}),
-
-// 	"clone" => (|args| {
-// 		Ok(args._this_downcast::<Number>()?.0.into())
-// 	}),
-
-
-// 	"()" => (|args| {
-// 		args._this_obj::<Number>()?.call("*", args.get_rng(1..)?)
-// 	}),
-
-// 	"+" => (|args| {
-// 		use std::ops::Add;
-// 		Ok(args._this_downcast::<Number>()?.add(*getarg!(Number; args)).into())	}),
-
-// 	"-" => (|args| {
-// 		use std::ops::Sub;
-// 		Ok(args._this_downcast::<Number>()?.sub(*getarg!(Number; args)).into())
-// 	}),
-// 	"*" => (|args| {
-// 		use std::ops::Mul;
-// 		Ok(args._this_downcast::<Number>()?.mul(*getarg!(Number; args)).into())
-// 	}),
-// 	"/" => (|args| {
-// 		use std::ops::Div;
-// 		Ok(args._this_downcast::<Number>()?.div(*getarg!(Number; args)).into())
-// 	}),
-// 	"%" => (|args| {
-// 		use std::ops::Rem;
-// 		Ok(args._this_downcast::<Number>()?.rem(*getarg!(Number; args)).into())
-// 	}),
-// 	"**" => (|args| {
-// 		Ok(args._this_downcast::<Number>()?.pow(*getarg!(Number; args)).into())
-// 	}),
-
-
-// 	"&" => (|args| {
-// 		use std::ops::BitAnd;
-// 		Ok(args._this_downcast::<Number>()?.bitand(*getarg!(Number; args))?.into())
-// 	}),
-// 	"|" => (|args| {
-// 		use std::ops::BitOr;
-// 		Ok(args._this_downcast::<Number>()?.bitor(*getarg!(Number; args))?.into())
-// 	}),
-// 	"^" => (|args| {
-// 		use std::ops::BitXor;
-// 		Ok(args._this_downcast::<Number>()?.bitxor(*getarg!(Number; args))?.into())
-// 	}),
-// 	"<<" => (|args| {
-// 		use std::ops::Shl;
-// 		Ok(args._this_downcast::<Number>()?.shl(*getarg!(Number; args))?.into())
-// 	}),
-// 	">>" => (|args| {
-// 		use std::ops::Shr;
-// 		Ok(args._this_downcast::<Number>()?.shr(*getarg!(Number; args))?.into())
-// 	}),
-
-
-// 	"-@" => (|args| {
-// 		use std::ops::Neg;
-// 		Ok(args._this_downcast::<Number>()?.neg().into())
-// 	}),
-// 	"+@" => (|args| {
-// 		args._this_obj::<Number>()?.call("abs", args.new_args_slice(&[]))
-// 	}),
-// 	"~" => (|args| {
-// 		Ok((!args._this_downcast::<Number>()?.try_to_int()?).into())
-// 	}),
-// 	"abs" => (|args| {
-// 		Ok(args._this_downcast::<Number>()?.abs().into())
-// 	}),
-// 	"floor" => (|args| {
-// 		Ok(args._this_downcast::<Number>()?.to_int().into())
-// 	}),
-
-// 	"==" => (|args| {
-// 		Ok((args._this_downcast::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
-// 	}),
-
-// 	"<" => (|args| todo!("<")),
-// 	"<=" => (|args| todo!("<=")),
-// 	">" => (|args| todo!(">")),
-// 	">=" => (|args| todo!(">=")),
-// 	"<=>" => (|args| todo!("<=>")),
-// 	"idiv" => (|args| todo!("idiv")),
-// 	"ceil" => (|args| todo!("ceil")),
-// 	"round" => (|args| todo!("round")),
-// 	"is_integer" => (|args| todo!("is_integer")),
-// }
-
 impl_object_type!{for Number, super::Basic;
 	"@num" => (impls::at_num),
 	"@text" => (impls::at_text),
@@ -417,6 +307,7 @@ impl_object_type!{for Number, super::Basic;
 	"~" => (impls::bitnot),
 	"==" => (impls::eql),
 	"<=>" => (impls::cmp),
+	"sqrt" => (impls::sqrt),
 	"abs" => (impls::abs),
 	"idiv" => (impls::idiv),
 	"is_integer" => (impls::is_integer),

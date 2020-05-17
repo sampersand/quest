@@ -4,6 +4,7 @@ mod convert;
 
 pub trait ObjectType : std::fmt::Debug + std::any::Any + Send + Sync + Clone {
 	fn mapping() -> super::Object;
+	#[cfg(test)]
 	fn wait_for_setup_to_finish() {}
 }
 
