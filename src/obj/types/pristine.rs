@@ -36,10 +36,10 @@ for Pristine [(init_parent) (parent Pristine)]:
 	"::" => (impls::__get_attr__),
 	"." => (|args| {
 		let res = impls::__get_attr__(args.clone())?;
-		res.call("__set_attr__", args.new_args_slice(&[
-			"__bound_object__".into(),
-			args.this()?.clone()
-		]))?;
+		// res.call("__set_attr__", args.new_args_slice(&[
+		// 	"__bound_object__".into(),
+		// 	args.this()?.clone()
+		// ]))?;
 		Ok(res)
 	}),/*|args| {
 		args.get(0)?.call("__get_attr__", args.get_rng(1..)?)

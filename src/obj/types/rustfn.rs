@@ -32,13 +32,8 @@ impl RustFn {
 		RustFn(name, n.into())
 	}
 
-	pub fn call(&self, this: Option<Object>, mut args: Args) -> obj::Result<Object> {
-		if let Some(this) = this {
-			args.add_this(this);
-			(self.1)(args)
-		} else {
-			(self.1)(args)
-		}
+	pub fn call(&self, args: Args) -> obj::Result<Object> {
+		(self.1)(args)
 	}
 }
 
@@ -60,8 +55,9 @@ mod impls {
 	use crate::obj::{Object, Result, Args};
 
 	pub fn call(mut args: Args) -> Result<Object> {
-		// args.this()::<RustFn>()?.call(args)
-		unimplemented!()
+		let this = args.this_downcast::<RustFn>()?;
+		todo!("do we want args.args(..)?");
+		this.call(args)
 	}
 
 	pub fn at_text(args: Args) -> Result<Object> {

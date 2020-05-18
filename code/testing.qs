@@ -1,0 +1,3 @@
+$Person = {
+	disp("a", b)
+};

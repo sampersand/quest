@@ -142,29 +142,18 @@ impl Object {
 
 
 	pub fn call_attr(&self, attr: &Object, mut args: Args) -> obj::Result<Object> {
-		// self.call_attr(attr, args.into().as_ref())
-	// }
-
-	// pub fn call_attr(&self, attr: &Object, args: &[&Object]) -> obj::Result<Object> {
-		// static mut X: usize = 0;
-		// unsafe { if X > 100 { panic!("X too big");} X += 1;}
-		// println!("Object::call_attr(self={:?}, attr={:?}, args={:?})", self, attr, args);
 		if let (Some(rustfn), Some(txt_attr)) = (self.downcast_ref::<types::RustFn>(), attr.downcast_ref::<types::Text>()) {
 			if (txt_attr.as_ref() == "()") {
-				// let bound_object = self.get_attr(&"__bound_object__".into(), args.binding());
-				let bound_object: obj::Result<Object> = Err(self.clone());
-				return rustfn.call(bound_object.ok(), args)
+				return rustfn.call(args);
 			}
 		}
 
 		if let Some(txt_attr) = attr.downcast_ref::<types::Text>() {
-			// println!("Object::call_attr(self={:?}, attr={:?}, args={:?}, txt_attr={:?})", self, attr, args, *txt_attr);
 			if (txt_attr.as_ref() == "==") {
 				if args.as_ref().is_empty() {
 					return Err(types::Text::from("need at least 1 arg for `==`").into())
 				} else if let (Some(lhs), Some(rhs)) = (self.downcast_ref::<types::Text>(),
 				                                        args.get_downcast::<types::Text>(0).ok()) {
-					// println!("_downcast_ref: {:?} == {:?} ? = {:?}", *lhs, *rhs, types::Boolean::from(*lhs == *rhs));
 					return Ok(types::Boolean::from(*lhs == *rhs).into())
 				}
 			}

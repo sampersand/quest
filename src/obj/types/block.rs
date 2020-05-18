@@ -46,17 +46,8 @@ impl Block {
 		self.paren
 	}
 
-	fn call(&self, this: Option<Object>, args: &Args) -> Result<Object> {
-		let ref child = if let Some(mut this) = this {
-			this.set_attr(
-				"__args__".into(),
-				types::List::from(args.clone()).into(),
-				&args.binding()
-			)?;
-			this
-		} else {
-			args.child_binding()?
-		};
+	fn call(&self, args: &Args) -> Result<Object> {
+		let ref child = args.child_binding()?;
 
 		if let Some(last) = self.body.last() {
 			for line in &self.body[..self.body.len() - 1] {
@@ -70,11 +61,9 @@ impl Block {
 
 	pub fn execute(&self, binding: &Binding) -> Result<Option<Object>> {
 		let ret = match self.paren {
-			ParenType::Paren 
-			// not sure if we want to keep bracket here...
-				| ParenType::Bracket => self.call(None, &Args::new_slice(&[], binding.clone()))?,
+			ParenType::Paren => self.call(&Args::new_slice(&[], binding.clone()))?,
 			ParenType::Brace => return Ok(Some(self.clone().into())),
-			// ParenType::Bracket => todo!("ParenType::Bracket return value."),
+			ParenType::Bracket => todo!("ParenType::Bracket return value."),
 		};
 
 		if self.returns {
@@ -89,9 +78,7 @@ mod impls {
 	use super::*;
 
 	pub fn call(args: Args) -> Result<Object> {
-		let bound_object = args.this()?.get_attr(&"__bound_object__".into(), args.binding()).ok();
-
-		args.this_downcast_ref::<Block>()?.call(bound_object, &args.args(..)?)
+		args.this_downcast_ref::<Block>()?.call(&args.args(..)?)
 	}
 }
 
