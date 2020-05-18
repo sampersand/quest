@@ -94,6 +94,7 @@ mod impls {
 	pub fn call(args: Args) -> Result<Object> { // "()"
 		match args._this_downcast_ref::<Text>()?.as_ref() {
 			"__this__" => Ok(args.binding().clone()),
+			"__args__" => args.binding().get_attr(&"__args__".into(), args.binding()),
 			_ => args.binding()
 				.get_attr(&args._this_obj::<Text>()?, args.binding())
 		}
@@ -103,7 +104,9 @@ mod impls {
 		args.binding().set_attr(args._this_obj::<Text>()?, getarg!(Object; args), args.binding())
 	}
 
-	pub fn at_list(args: Args) -> Result<Object> { todo!("@list") } // "@list"
+	pub fn at_list(args: Args) -> Result<Object> {
+		todo!("@list")
+	}
 
 	pub fn at_bool(args: Args) -> Result<Object> { // "@bool"
 		Ok(args._this_downcast_ref::<Text>()?.as_ref().is_empty().into())
@@ -122,8 +125,8 @@ mod impls {
 		}
 	}
 	pub fn plus(args: Args) -> Result<Object> { // "+" 
-		let mut this = args._this_downcast_ref::<Text>()?.clone().0.into_owned();
-		let rhs = args.get(1)?;
+		let mut this = args.this_downcast::<Text>()?.0.to_owned().to_string();
+		let rhs = args.arg(0)?;
 		this.push_str(
 			rhs.call("@text", args.new_args_slice(&[]))?
 			.try_downcast_ref::<Text>()?
@@ -142,7 +145,8 @@ mod impls {
 	pub fn reverse(args: Args) -> Result<Object> { todo!("reverse") } // "reverse"
 }
 
-impl_object_type_!{for Text, super::Basic;
+impl_object_type!{
+for Text [(parent super::Basic) (convert "@text")]:
 	"@text" => (impls::at_text),
 	"@num" => (impls::at_num),
 	"()" => (impls::call),

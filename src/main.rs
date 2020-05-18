@@ -8,13 +8,48 @@ mod parse;
 fn main() {
 	// let x = [0xff]
 	let mut stream = parse::Stream::from_str(r##"
-		{
-			$y = 3;
-			{
-				y + 4
-			}
-		}()()
-__END__
+		$num = 12.3;
+		num."@text" = {
+			$t = __this__;
+			null
+		#	((t."floor")()."@text")()
+		};
+
+		(num."@text")(num)
+
+		#$x = 12.3;
+		#x."@text" = {
+		#	$t = __this__;
+		#	((t."floor")()."@text")()
+		#};
+		#$add = "a"."+";
+		#"a" + (x."@text")()
+#		$x = {__this__}();
+#		$Frac = {
+#			"()" = {
+#				x.$a = __args__;
+#				#$a = __args__;
+#				#disp(a);
+#				#$__parent__ = Frac;
+#				#$numer = __args__[2];
+#				#$denom = __args__[3];
+#				3
+#			};
+#
+#			"@num" = {
+#
+#			};
+#
+#			__this__
+#		}();
+#
+#		(Frac(3, 4)."@num")()
+
+#		#"foo" = {
+#			$l = __args__;
+#			(l."__id__")(l)
+#		};
+		#[foo(__this__, 4), __id__(__this__)]
 # $name = prompt("name: ");
 # if(name == "lali", {
 # 	disp("<3 lali")

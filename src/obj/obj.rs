@@ -151,7 +151,9 @@ impl Object {
 		// println!("Object::call_attr(self={:?}, attr={:?}, args={:?})", self, attr, args);
 		if let (Some(rustfn), Some(txt_attr)) = (self.downcast_ref::<types::RustFn>(), attr.downcast_ref::<types::Text>()) {
 			if (txt_attr.as_ref() == "()") {
-				return rustfn.call(args)
+				// let bound_object = self.get_attr(&"__bound_object__".into(), args.binding());
+				let bound_object: obj::Result<Object> = Err(self.clone());
+				return rustfn.call(bound_object.ok(), args)
 			}
 		}
 

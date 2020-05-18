@@ -1,5 +1,5 @@
 use std::slice::SliceIndex;
-use crate::obj::{self, Result,  Object, types::Convertible};
+use crate::obj::{self, Result,  Object, types::{self, Convertible}};
 use std::any::Any;
 use std::borrow::Cow;
 use std::ops::Deref;
@@ -12,9 +12,15 @@ pub struct Args<'s> {
 	args: Cow<'s, [Object]>
 }
 
-impl Binding {
-	pub fn child_binding(&self) -> Self {
-		Object::new_with_parent(obj::types::Pristine, Some(self.clone()))
+impl Args<'_> {
+	pub fn child_binding(&self) -> Result<Object> {
+		let obj = Object::new_with_parent(obj::types::Pristine, Some(self.binding.clone()));
+		obj.set_attr(
+			"__args__".into(),
+			types::List::from(self.clone()).into(),
+			&self.binding
+		)?;
+		Ok(obj)
 	}
 }
 
@@ -47,6 +53,11 @@ impl AsRef<[Object]> for Args<'_> {
 	}
 }
 
+impl From<Args<'_>> for types::List {
+	fn from(args: Args<'_>) -> Self {
+		types::List::from(args.args.to_vec())
+	}
+}
 
 impl Args<'_> {
 	pub fn arg<'s>(&'s self, index: usize) -> Result<&'s Object> {
@@ -136,7 +147,7 @@ impl Args<'_> {
 
 	pub fn _this_downcast_ref<'c, T: Any>(&'c self) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
 		let ret = self.get_downcast(0);
-		debug_assert!(ret.is_ok(), "invalid `this` encountered");
+		debug_assert!(ret.is_ok(), "invalid `this` encountered: {:?}, {:?}", self, ret.map(|x| {panic!(); 0i32}).unwrap_err());
 		ret
 	}
 }

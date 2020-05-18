@@ -69,10 +69,16 @@ impl Mapping {
 
 	pub fn get(&self, attr: &Object, binding: &Binding, obj: &Object) -> obj::Result<Object> {
 		if attr.call("==", Args::new_slice(&["__parent__".into()], binding.clone()))?
-				.downcast_ref::<types::Boolean>()
-				.map(|x| bool::from(*x))
+				.downcast_clone::<types::Boolean>()
+				.map(|x| bool::from(x))
 				.unwrap_or(false) {
 			return self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
+		}
+		if attr.call("==", Args::new_slice(&["__id__".into()], binding.clone()))?
+				.downcast_clone::<types::Boolean>()
+				.map(|x| bool::from(x))
+				.unwrap_or(false) {
+			return Ok(obj.id().into());
 		}
 
 		for (ref k, ref v) in self.map.iter() {

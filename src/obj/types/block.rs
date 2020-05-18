@@ -1,5 +1,6 @@
 use crate::parse::{Expression, ParenType};
 use crate::obj::{Object, Result, Args, types::{self, rustfn::Binding}};
+use std::fmt::{self, Debug, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Line {
@@ -7,11 +8,21 @@ pub enum Line {
 	Singular(Expression)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Block {
 	paren: ParenType,
 	body: Vec<Line>,
-	returns: bool
+	returns: bool,
+}
+
+impl Debug for Block {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		f.debug_struct("Block")
+			.field("paren", &self.paren)
+			.field("body", &format!("[{} line(s)]", self.body.len()))
+			.field("returns", &self.returns)
+			.finish()
+	}
 }
 
 impl Line {
@@ -35,8 +46,18 @@ impl Block {
 		self.paren
 	}
 
-	fn call(&self, args: &Args) -> Result<Object> {
-		let ref child = args.binding().child_binding();
+	fn call(&self, this: Option<Object>, args: &Args) -> Result<Object> {
+		let ref child = if let Some(mut this) = this {
+			this.set_attr(
+				"__args__".into(),
+				types::List::from(args.clone()).into(),
+				&args.binding()
+			)?;
+			this
+		} else {
+			args.child_binding()?
+		};
+
 		if let Some(last) = self.body.last() {
 			for line in &self.body[..self.body.len() - 1] {
 				line.execute(child)?;
@@ -49,9 +70,11 @@ impl Block {
 
 	pub fn execute(&self, binding: &Binding) -> Result<Option<Object>> {
 		let ret = match self.paren {
-			ParenType::Paren => self.call(&Args::new_slice(&[], binding.clone()))?,
+			ParenType::Paren 
+			// not sure if we want to keep bracket here...
+				| ParenType::Bracket => self.call(None, &Args::new_slice(&[], binding.clone()))?,
 			ParenType::Brace => return Ok(Some(self.clone().into())),
-			ParenType::Bracket => todo!("ParenType::Bracket return value."),
+			// ParenType::Bracket => todo!("ParenType::Bracket return value."),
 		};
 
 		if self.returns {
@@ -66,7 +89,9 @@ mod impls {
 	use super::*;
 
 	pub fn call(args: Args) -> Result<Object> {
-		args.this_downcast_ref::<Block>()?.call(&args)
+		let bound_object = args.this()?.get_attr(&"__bound_object__".into(), args.binding()).ok();
+
+		args.this_downcast_ref::<Block>()?.call(bound_object, &args.args(..)?)
 	}
 }
 

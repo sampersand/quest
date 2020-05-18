@@ -26,14 +26,22 @@ mod impls {
 	}
 }
 
-impl_object_type_!{for Pristine, Pristine,; // trailing comma here is required 
+impl_object_type!{
+for Pristine [(init_parent) (parent Pristine)]:
 	"__id__" => (impls::__id__),
 	"__call_attr__" => (impls::__call_attr__),
 	"__get_attr__" => (impls::__get_attr__),
 	"__set_attr__" => (impls::__set_attr__),
 	"__del_attr__" => (impls::__del_attr__),
 	"::" => (impls::__get_attr__),
-	"." => (impls::__get_attr__),/*|args| {
+	"." => (|args| {
+		let res = impls::__get_attr__(args.clone())?;
+		res.call("__set_attr__", args.new_args_slice(&[
+			"__bound_object__".into(),
+			args.this()?.clone()
+		]))?;
+		Ok(res)
+	}),/*|args| {
 		args.get(0)?.call("__get_attr__", args.get_rng(1..)?)
 	}),*/
 	".=" => (impls::__set_attr__)/*(|args| {

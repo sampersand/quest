@@ -50,7 +50,7 @@ impl AsRef<[Object]> for List {
 
 mod impls {
 	use super::List;
-	use crate::obj::{Object, Result, Args};
+	use crate::obj::{Object, Result, Args, types};
 
 	pub fn at_text(args: Args) -> Result<Object> {
 		todo!("List::at_text");
@@ -89,7 +89,9 @@ mod impls {
 	}
 
 	pub fn index(args: Args) -> Result<Object> {
-		todo!("List::index");
+		let this = args.this_downcast_ref::<List>()?;
+		let idx = args.arg_call_into::<types::Number>(0)?.to_int() as usize - 1;
+		Ok(this.0.get(idx).map(|x| x.clone()).unwrap_or_default())
 	}
 
 	pub fn index_assign(args: Args) -> Result<Object> {

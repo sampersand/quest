@@ -32,8 +32,13 @@ impl RustFn {
 		RustFn(name, n.into())
 	}
 
-	pub fn call(&self, args: Args) -> obj::Result<Object> {
-		(self.1)(args)
+	pub fn call(&self, this: Option<Object>, mut args: Args) -> obj::Result<Object> {
+		if let Some(this) = this {
+			args.add_this(this);
+			(self.1)(args)
+		} else {
+			(self.1)(args)
+		}
 	}
 }
 
@@ -54,8 +59,9 @@ mod impls {
 	use super::*;
 	use crate::obj::{Object, Result, Args};
 
-	pub fn call(args: Args) -> Result<Object> {
-		args.this_downcast_ref::<RustFn>()?.call(args.args(..)?)
+	pub fn call(mut args: Args) -> Result<Object> {
+		// args.this()::<RustFn>()?.call(args)
+		unimplemented!()
 	}
 
 	pub fn at_text(args: Args) -> Result<Object> {
@@ -63,7 +69,8 @@ mod impls {
 	}
 }
 
-impl_object_type_!{for RustFn, super::Function;
-	"@text" => (impls::at_text),
-	"()" => (impls::call),
+impl_object_type!{
+for RustFn [(parent super::Function)]:
+	"@text" => impls::at_text,
+	"()" => impls::call,
 }

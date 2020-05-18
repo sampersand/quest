@@ -36,8 +36,8 @@ impl Number {
 	}
 
 	pub fn to_int(&self) -> i64 {
-		// self.0 as i64
-		unimplemented!()
+		// unimplemented!()
+		self.0 as i64
 	}
 
 	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, std::num::ParseIntError> {
