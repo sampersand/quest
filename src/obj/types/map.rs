@@ -103,20 +103,21 @@ mod impls {
 	}
 }
 
-impl_object_type_!{for Map, super::Basic;
-	"@text" => (impls::at_text),
-	"@bool" => (impls::at_bool),
-	"@map" => (impls::at_map),
-	"@list" => (impls::at_list),
-	"clone" => (impls::clone),
+impl_object_type!{
+for Map [(parent super::Basic) (convert "@map")]:
+	"@text" => impls::at_text,
+	"@bool" => impls::at_bool,
+	"@map" => impls::at_map,
+	"@list" => impls::at_list,
+	"clone" => impls::clone,
 
-	"len" => (impls::len),
-	"index_of" => (impls::index_of),
-	"[]" => (impls::index),
-	"[]=" => (impls::index_assign),
-	"[]~" => (impls::index_del),
-	"&" => (impls::bitand),
-	"|" => (impls::bitor),
-	"^" => (impls::bitxor),
-	"-" => (impls::sub),
+	"len" => impls::len,
+	"index_of" => impls::index_of,
+	"[]" => impls::index,
+	"[]=" => impls::index_assign,
+	"[]~" => impls::index_del,
+	"&" => impls::bitand,
+	"|" => impls::bitor,
+	"^" => impls::bitxor,
+	"-" => impls::sub,
 }

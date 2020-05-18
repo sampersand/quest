@@ -119,7 +119,8 @@ mod impls {
 }
 
 
-impl_object_type!{for List [(parent super::Basic) (convert "@list")]:
+impl_object_type!{
+for List [(parent super::Basic) (convert "@list")]:
 	"@text" => impls::at_text,
 	"@map" => impls::at_map,
 	"@list" => impls::at_list,

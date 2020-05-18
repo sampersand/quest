@@ -66,13 +66,15 @@ mod impls {
 	use super::*;
 
 	pub fn call(args: Args) -> Result<Object> {
-		args.this_downcast::<Block>()?.call(&args)
+		args.this_downcast_ref::<Block>()?.call(&args)
 	}
 }
 
 
-impl_object_type_!{for Block, super::Function;
-	"()" => (impls::call)
+
+impl_object_type!{
+for Block [(parent super::Function)]:
+	"()" => impls::call
 }
 
 #[cfg(test)]

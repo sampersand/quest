@@ -8,9 +8,13 @@ mod parse;
 fn main() {
 	// let x = [0xff]
 	let mut stream = parse::Stream::from_str(r##"
-		$kernel = Kernel;
-		kernel.$true
-
+		{
+			$y = 3;
+			{
+				y + 4
+			}
+		}()()
+__END__
 # $name = prompt("name: ");
 # if(name == "lali", {
 # 	disp("<3 lali")

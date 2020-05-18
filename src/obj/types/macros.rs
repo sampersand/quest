@@ -103,8 +103,7 @@ macro_rules! impl_object_type {
 	};
 
 	(@PARENT_DEFAULT) => {
-		// compile_error!("A parent is needed to create an object");
-		impl_object_type!(@PARENT_DEFAULT $class (parent $crate::obj::types::Basic));
+		compile_error!("A parent is needed to create an object");
 	};
 	(@PARENT_DEFAULT (parent $parent:path) $($_rest:tt)*) => {
 		<$parent as Default>::default()
@@ -114,7 +113,7 @@ macro_rules! impl_object_type {
 	};
 
 	(@SET_PARENT $class:ident) => {
-		impl_object_type!(@SET_PARENT $class (init_parent $crate::obj::types::Basic));
+		compile_error!("parent should have been checked for earlier");
 	};
 	(@SET_PARENT $class:ident (init_parent $($init_parent:path)?) $($_rest:tt)*) => {
 		$(

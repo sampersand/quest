@@ -54,8 +54,12 @@ impl Args<'_> {
 			.ok_or_else(|| format!("index `{}' is too big (args={:?})", index + 1, self).into())
 	}
 
-	pub fn arg_downcast<'s, T: Any>(&'s self, index: usize) -> Result<impl Deref<Target=T> + 's> {
+	pub fn arg_downcast_ref<'s, T: Any>(&'s self, index: usize) -> Result<impl Deref<Target=T> + 's> {
 		self.arg(index)?.try_downcast_ref::<T>()
+	}
+
+	pub fn arg_downcast<T: Any + Clone>(&self, index: usize) -> Result<T> {
+		self.arg_downcast_ref::<T>(index).map(|x| (*x).clone())
 	}
 
 	pub fn arg_call_into<T: Convertible>(&self, index: usize) -> Result<T> {
@@ -65,8 +69,6 @@ impl Args<'_> {
 	pub fn args<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>
 	where I: SliceIndex<[Object], Output=[Object]> + 'c
 	{
-
-
 		if let Some(rng) = self.args.get(1..).and_then(|args| args.get(idx)) {
 			Ok(self.new_args_slice(rng))
 		} else {
@@ -80,8 +82,12 @@ impl Args<'_> {
 			.ok_or_else(|| format!("no `this` supplied (args={:?})", self).into())
 	}
 
-	pub fn this_downcast<'s, T: Any>(&'s self) -> Result<impl Deref<Target=T> + 's> {
+	pub fn this_downcast_ref<'s, T: Any>(&'s self) -> Result<impl Deref<Target=T> + 's> {
 		self.this()?.try_downcast_ref::<T>()
+	}
+
+	pub fn this_downcast<T: Any + Clone>(&self) -> Result<T> {
+		self.this_downcast_ref::<T>().map(|x| (*x).clone())
 	}
 }
 
@@ -128,7 +134,7 @@ impl Args<'_> {
 		Ok(ret)
 	}
 
-	pub fn _this_downcast<'c, T: Any>(&'c self) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
+	pub fn _this_downcast_ref<'c, T: Any>(&'c self) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
 		let ret = self.get_downcast(0);
 		debug_assert!(ret.is_ok(), "invalid `this` encountered");
 		ret

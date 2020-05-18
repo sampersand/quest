@@ -65,35 +65,36 @@ mod impls {
 	}
 }
 
-impl_object_type_!{for Kernel, super::Pristine;
-	"true" => (expr boolean::TRUE),
-	"false" => (expr boolean::FALSE),
-	"null" => (expr null::NULL),
+impl_object_type!{
+for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be pristine?
+	"true" => const Boolean::new(true),
+	"false" => const Boolean::new(false),
+	"null" => const Null::new(),
 
-	"Basic" => (expr super::Basic::mapping()),
-	"Block" => (expr super::Block::mapping()),
-	"Boolean" => (expr super::Boolean::mapping()),
-	"Function" => (expr super::Function::mapping()),
-	"Kernel" => (expr Kernel::mapping()),
-	"List" => (expr super::List::mapping()),
-	"Map" => (expr super::Map::mapping()),
-	"Null" => (expr super::Null::mapping()),
-	"Number" => (expr super::Number::mapping()),
-	"Pristine" => (expr super::Pristine::mapping()),
-	"RustFn" => (expr super::RustFn::mapping()),
-	"Text" => (expr super::Text::mapping()),
+	"Basic" => const super::Basic::mapping(),
+	"Block" => const super::Block::mapping(),
+	"Boolean" => const super::Boolean::mapping(),
+	"Function" => const super::Function::mapping(),
+	"Kernel" => const Kernel::mapping(),
+	"List" => const super::List::mapping(),
+	"Map" => const super::Map::mapping(),
+	"Null" => const super::Null::mapping(),
+	"Number" => const super::Number::mapping(),
+	"Pristine" => const super::Pristine::mapping(),
+	"RustFn" => const super::RustFn::mapping(),
+	"Text" => const super::Text::mapping(),
 
-	"if" => (impls::r#if), 
-	"disp" => (impls::disp),
-	"quit" => (impls::quit),
-	"system" => (impls::system),
-	"rand" => (impls::rand),
-	"eval" => (impls::eval),
-	"prompt" => (impls::prompt),
-	"while" => (impls::r#while),
-	"for" => (impls::r#for),
-	"sleep" => (impls::sleep),
-	"open" => (impls::open),
+	"if" => impls::r#if, 
+	"disp" => impls::disp,
+	"quit" => impls::quit,
+	"system" => impls::system,
+	"rand" => impls::rand,
+	"eval" => impls::eval,
+	"prompt" => impls::prompt,
+	"while" => impls::r#while,
+	"for" => impls::r#for,
+	"sleep" => impls::sleep,
+	"open" => impls::open,
 
 }
 
@@ -124,9 +125,9 @@ mod tests {
 		Kernel::_wait_for_setup_to_finish();
 
 		assert_exists_eq!(
-			"true" boolean::TRUE,
-			"false" boolean::FALSE,
-			"null" null::NULL
+			"true" Boolean::new(true),
+			"false" Boolean::new(false),
+			"null" Null::new()
 		);
 	}
 

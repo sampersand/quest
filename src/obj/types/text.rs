@@ -72,7 +72,7 @@ mod impls {
 	}
 
 	pub fn at_num(args: Args) -> Result<Object> { // "@num"
-		let this = args._this_downcast::<Text>()?;
+		let this = args._this_downcast_ref::<Text>()?;
 		if let Ok(radix_obj) = args.get(1) {
 			use std::convert::TryFrom;
 			let r = radix_obj.call("@num", args.new_args_slice(&[]))?
@@ -92,7 +92,7 @@ mod impls {
 	}
 
 	pub fn call(args: Args) -> Result<Object> { // "()"
-		match args._this_downcast::<Text>()?.as_ref() {
+		match args._this_downcast_ref::<Text>()?.as_ref() {
 			"__this__" => Ok(args.binding().clone()),
 			_ => args.binding()
 				.get_attr(&args._this_obj::<Text>()?, args.binding())
@@ -106,15 +106,15 @@ mod impls {
 	pub fn at_list(args: Args) -> Result<Object> { todo!("@list") } // "@list"
 
 	pub fn at_bool(args: Args) -> Result<Object> { // "@bool"
-		Ok(args._this_downcast::<Text>()?.as_ref().is_empty().into())
+		Ok(args._this_downcast_ref::<Text>()?.as_ref().is_empty().into())
 	}
 
 	pub fn clone(args: Args) -> Result<Object> { // "clone"
-		Ok(args._this_downcast::<Text>()?.clone().into())
+		Ok(args._this_downcast_ref::<Text>()?.clone().into())
 	}
 
 	pub fn eql(args: Args) -> Result<Object> { // "==" 
-		let this = args._this_downcast::<Text>()?;
+		let this = args._this_downcast_ref::<Text>()?;
 		if let Ok(txt) = args.get_downcast::<Text>(1) {
 			Ok((this.0 == txt.0).into())
 		} else {
@@ -122,7 +122,7 @@ mod impls {
 		}
 	}
 	pub fn plus(args: Args) -> Result<Object> { // "+" 
-		let mut this = args._this_downcast::<Text>()?.clone().0.into_owned();
+		let mut this = args._this_downcast_ref::<Text>()?.clone().0.into_owned();
 		let rhs = args.get(1)?;
 		this.push_str(
 			rhs.call("@text", args.new_args_slice(&[]))?
@@ -166,7 +166,7 @@ impl_object_type_!{for Text, super::Basic;
 // 	}),
 
 // 	"@num" => (|args| {
-// 		let this = args._this_downcast::<Text>()?;
+// 		let this = args._this_downcast_ref::<Text>()?;
 // 		if let Ok(radix_obj) = args.get(1) {
 // 			use std::convert::TryFrom;
 // 			let r = radix_obj.call("@num", args.new_args_slice(&[]))?
@@ -186,7 +186,7 @@ impl_object_type_!{for Text, super::Basic;
 // 	}),
 
 // 	"()" => (|args| {
-// 		match args._this_downcast::<Text>()?.as_ref() {
+// 		match args._this_downcast_ref::<Text>()?.as_ref() {
 // 			"__this__" => Ok(args.binding().clone()),
 // 			_ => args.binding()
 // 				.get_attr(&args._this_obj::<Text>()?, args.binding())
@@ -200,15 +200,15 @@ impl_object_type_!{for Text, super::Basic;
 // 	"@list" => (|args| todo!("@list")),
 
 // 	"@bool" => (|args| {
-// 		Ok(args._this_downcast::<Text>()?.as_ref().is_empty().into())
+// 		Ok(args._this_downcast_ref::<Text>()?.as_ref().is_empty().into())
 // 	}),
 
 // 	"clone" => (|args| {
-// 		Ok(args._this_downcast::<Text>()?.clone().into())
+// 		Ok(args._this_downcast_ref::<Text>()?.clone().into())
 // 	}),
 
 // 	"==" => (|args| {
-// 		let this = args._this_downcast::<Text>()?;
+// 		let this = args._this_downcast_ref::<Text>()?;
 // 		if let Ok(txt) = args.get_downcast::<Text>(1) {
 // 			Ok((this.0 == txt.0).into())
 // 		} else {
@@ -216,7 +216,7 @@ impl_object_type_!{for Text, super::Basic;
 // 		}
 // 	}),
 // 	"+" => (|args| {
-// 		let mut this = args._this_downcast::<Text>()?.clone().0.into_owned();
+// 		let mut this = args._this_downcast_ref::<Text>()?.clone().0.into_owned();
 // 		let rhs = args.get(1)?;
 // 		this.push_str(
 // 			rhs.call("@text", args.new_args_slice(&[]))?

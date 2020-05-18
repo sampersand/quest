@@ -8,7 +8,7 @@ pub struct Object(pub(super) Arc<Internal>);
 
 impl Default for Object {
 	fn default() -> Self {
-		Object::new(types::null::NULL)
+		Object::new(types::Null::new())
 	}
 }
 

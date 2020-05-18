@@ -16,10 +16,11 @@ mod impls {
 	}
 }
 
-impl_object_type_!{for Function, super::Basic;
-	"<<"    => (impls::lsh),
-	">>"    => (impls::rsh),
-	"curry" => (impls::curry)
+impl_object_type!{
+for Function [(parent super::Basic)]:
+	"<<"    => impls::lsh,
+	">>"    => impls::rsh,
+	"curry" => impls::curry
 }
 
 mod tests {

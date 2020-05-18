@@ -96,7 +96,7 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 				Some('o') | Some('O') => return self.next_number_radix(8),
 				Some('d') | Some('D') => return self.next_number_radix(10),
 				Some('x') | Some('X') => return self.next_number_radix(16),
-				None => return Ok(Token::Literal(Literal::Number(types::number::ZERO))),
+				None => return Ok(Token::Literal(Literal::Number(types::Number::ZERO))),
 				Some(chr) => self.unseek(chr)?
 			}
 		}

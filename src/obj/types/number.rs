@@ -1,52 +1,66 @@
+mod numbertype;
+use self::numbertype::{NumberType, Integer, Rational};
+
 use crate::obj::{self, Object, Mapping, types};
 use std::sync::{Arc, RwLock};
 use std::convert::TryFrom;
-use std::fmt::{self, Debug, Formatter};
-
-type Inner = f64;
-type InnerInt = i64;
-
-pub const ZERO: Number = Number::new(0 as _);
-pub const  ONE: Number = Number::new(1 as _);
-
+use std::fmt::{self, Debug, Display, Formatter};
 
 impl Eq for Number {}
 #[derive(Clone, Copy, PartialEq)]
-pub struct Number(Inner);
+pub struct Number(f64);
 
 impl Number {
-	pub const fn new(n: Inner) -> Self {
-		Number(n)
+	pub const fn new_integer(n: Integer) -> Self {
+		Number(n as _)
+		// Number(NumberType::Integer(n))
 	}
 
-	pub fn try_to_int(&self) -> obj::Result<InnerInt> {
-		let int = self.to_int();
-		if self.0 == int as Inner {
-			Ok(int)
-		} else {
-			Err(format!("non-integer number {}", self.0).into())
-		}
+	pub const fn new_rational(n: Rational) -> Self {
+		Number(n as _)
+		// Number(NumberType::Rational(n))
 	}
 
-	pub fn to_int(&self) -> InnerInt {
-		self.0 as InnerInt
+
+	pub const ZERO: Number = Number::new_integer(0);
+	pub const  ONE: Number = Number::new_integer(1);
+	pub const   PI: Number = Number::new_rational(std::f64::consts::PI);
+	pub const    E: Number = Number::new_rational(std::f64::consts::E);
+	pub const  NAN: Number = Number::new_rational(f64::NAN);
+	pub const  INF: Number = Number::new_rational(f64::INFINITY);
+
+	pub fn try_to_int(&self) -> obj::Result<Integer> {
+		unimplemented!()
+		// self.0.try_into()
+			// .ok_or_else(|| format!("non-integer number {}", self.0).into())
+	}
+
+	pub fn to_int(&self) -> i64 {
+		// self.0 as i64
+		unimplemented!()
 	}
 
 	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, std::num::ParseIntError> {
-		InnerInt::from_str_radix(inp, radix).map(Number::from)
+		// i64::from_str_radix(inp, radix).map(Number::from)
+		unimplemented!()
+
 	}
 
 	pub fn abs(self) -> Number {
-		Number::from(self.0.abs())
+		// Number::from(self.0.abs())
+		unimplemented!()
+
 	}
 
 	pub fn pow(self, rhs: Number) -> Number {
-		self.0.powf(rhs.0).into()
+		unimplemented!()
+		// self.0.powf(rhs.0).into()
 	}
 
 	pub fn from_str(inp: &str) -> Result<Number, std::num::ParseFloatError> {
 		use std::str::FromStr;
-		Inner::from_str(inp).map(Number::from)
+		// unimplemented!()
+		f64::from_str(inp).map(Number::from)
 	}
 
 	pub fn to_string_radix(&self, radix: Option<u32>) -> obj::Result<String> {
@@ -62,9 +76,26 @@ impl Number {
 	}
 }
 
-impl From<Number> for Inner {
+impl Debug for Number {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		if f.alternate() {
+			write!(f, "Number({:?})", self.0)
+		} else {
+			Debug::fmt(&self.0, f)
+		}
+	}
+}
+
+impl Display for Number {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		write!(f, "{}", self.0)
+	}
+}
+
+impl From<Number> for f64 {
 	fn from(num: Number) -> Self {
-		num.0
+		unimplemented!()
+		// num.0
 	}
 }
 
@@ -73,6 +104,7 @@ macro_rules! impl_from_integer {
 		$(
 			impl From<$ty> for Number {
 				fn from(num: $ty) -> Self {
+					// unimplemented!()
 					Number(num as _)
 				}
 			}
@@ -88,22 +120,13 @@ macro_rules! impl_from_integer {
 impl_from_integer!{
 	i8 i16 i32 i64 i128 isize
 	u8 u16 u32 u64 u128 usize
-	f32 Inner
+	f32 f64
 }
 
-impl AsRef<Inner> for Number {
-	fn as_ref(&self) -> &Inner {
-		&self.0
-	}
-}
-
-impl Debug for Number {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		if f.alternate() {
-			write!(f, "Number({:?})", self.0)
-		} else {
-			Debug::fmt(&self.0, f)
-		}
+impl AsRef<f64> for Number {
+	fn as_ref(&self) -> &f64 {
+		unimplemented!()
+		// &self.0
 	}
 }
 
@@ -113,6 +136,7 @@ macro_rules! impl_binary_op {
 			impl std::ops::$binary for Number {
 				type Output = Self;
 				fn $binary_method(self, rhs: Self) -> Self::Output {
+		// unimplemented!()
 					((self.0).$binary_method(rhs.0)).into()
 				}
 			}
@@ -122,6 +146,7 @@ macro_rules! impl_binary_op {
 			impl std::ops::$bitwise for Number {
 				type Output = obj::Result<Self>;
 				fn $bitwise_method(self, rhs: Self) -> Self::Output {
+					// unimplemented!()
 					Ok(self.try_to_int()?.$bitwise_method(rhs.try_to_int()?).into())
 				}
 			}
@@ -137,7 +162,8 @@ impl_binary_op!(
 impl std::ops::Neg for Number {
 	type Output = Self;
 	fn neg(self) -> Self::Output {
-		Self::from(-Inner::from(self))
+		unimplemented!()
+		// Self::from(-f64::from(self))
 	}
 }
 
@@ -154,7 +180,7 @@ mod impls {
 	
 	pub fn at_text(args: Args) -> Result<Object> {
 		if let Some(arg) = args.get(1).ok() {
-			let this = args._this_downcast::<Number>()?.try_to_int()?;
+			let this = args._this_downcast_ref::<Number>()?.try_to_int()?;
 			let radix = arg.call("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
 			match radix {
             2 => Ok(format!("{:b}", this).into()),
@@ -165,16 +191,17 @@ mod impls {
             _ => todo!("unsupported radix {}", radix)
 			}
 		} else {
-			Ok(args._this_downcast::<Number>()?.0.to_string().into())
+			Ok(args._this_downcast_ref::<Number>()?.0.to_string().into())
 		}
 	}
 
 	pub fn at_bool(args: Args) -> Result<Object> {
-		Ok((args._this_downcast::<Number>()?.0 != ZERO.0).into())
+		Ok((args._this_downcast_ref::<Number>()?.0 != Number::ZERO.0).into())
 	}
 
 	pub fn clone(args: Args) -> Result<Object> {
-		Ok(args._this_downcast::<Number>()?.0.into())
+		// unimplemented!()
+		Ok(args._this_downcast_ref::<Number>()?.0.into())
 	}
 
 
@@ -184,62 +211,62 @@ mod impls {
 
 	pub fn add(args: Args) -> Result<Object> {
 		use std::ops::Add;
-		Ok(args._this_downcast::<Number>()?.add(*getarg!(Number; args)).into())	}
+		Ok(args._this_downcast_ref::<Number>()?.add(*getarg!(Number; args)).into())	}
 
 	pub fn sub(args: Args) -> Result<Object> {
 		use std::ops::Sub;
-		Ok(args._this_downcast::<Number>()?.sub(*getarg!(Number; args)).into())
+		Ok(args._this_downcast_ref::<Number>()?.sub(*getarg!(Number; args)).into())
 	}
 
 	pub fn mul(args: Args) -> Result<Object> {
 		use std::ops::Mul;
-		Ok(args._this_downcast::<Number>()?.mul(*getarg!(Number; args)).into())
+		Ok(args._this_downcast_ref::<Number>()?.mul(*getarg!(Number; args)).into())
 	}
 
 	pub fn div(args: Args) -> Result<Object> {
 		use std::ops::Div;
-		Ok(args._this_downcast::<Number>()?.div(*getarg!(Number; args)).into())
+		Ok(args._this_downcast_ref::<Number>()?.div(*getarg!(Number; args)).into())
 	}
 
 	pub fn r#mod(args: Args) -> Result<Object> {
 		use std::ops::Rem;
-		Ok(args._this_downcast::<Number>()?.rem(*getarg!(Number; args)).into())
+		Ok(args._this_downcast_ref::<Number>()?.rem(*getarg!(Number; args)).into())
 	}
 
 	pub fn pow(args: Args) -> Result<Object> {
-		Ok(args._this_downcast::<Number>()?.pow(*getarg!(Number; args)).into())
+		Ok(args._this_downcast_ref::<Number>()?.pow(*getarg!(Number; args)).into())
 	}
 
 
 	pub fn bitand(args: Args) -> Result<Object> {
 		use std::ops::BitAnd;
-		Ok(args._this_downcast::<Number>()?.bitand(*getarg!(Number; args))?.into())
+		Ok(args._this_downcast_ref::<Number>()?.bitand(*getarg!(Number; args))?.into())
 	}
 
 	pub fn bitor(args: Args) -> Result<Object> {
 		use std::ops::BitOr;
-		Ok(args._this_downcast::<Number>()?.bitor(*getarg!(Number; args))?.into())
+		Ok(args._this_downcast_ref::<Number>()?.bitor(*getarg!(Number; args))?.into())
 	}
 
 	pub fn bitxor(args: Args) -> Result<Object> {
 		use std::ops::BitXor;
-		Ok(args._this_downcast::<Number>()?.bitxor(*getarg!(Number; args))?.into())
+		Ok(args._this_downcast_ref::<Number>()?.bitxor(*getarg!(Number; args))?.into())
 	}
 
 	pub fn shl(args: Args) -> Result<Object> {
 		use std::ops::Shl;
-		Ok(args._this_downcast::<Number>()?.shl(*getarg!(Number; args))?.into())
+		Ok(args._this_downcast_ref::<Number>()?.shl(*getarg!(Number; args))?.into())
 	}
 
 	pub fn shr(args: Args) -> Result<Object> {
 		use std::ops::Shr;
-		Ok(args._this_downcast::<Number>()?.shr(*getarg!(Number; args))?.into())
+		Ok(args._this_downcast_ref::<Number>()?.shr(*getarg!(Number; args))?.into())
 	}
 
 
 	pub fn neg(args: Args) -> Result<Object> {
 		use std::ops::Neg;
-		Ok(args._this_downcast::<Number>()?.neg().into())
+		Ok(args._this_downcast_ref::<Number>()?.neg().into())
 	}
 
 	pub fn pos(args: Args) -> Result<Object> {
@@ -247,24 +274,25 @@ mod impls {
 	}
 
 	pub fn bitnot(args: Args) -> Result<Object> {
-		Ok((!args._this_downcast::<Number>()?.try_to_int()?).into())
+		Ok((!args._this_downcast_ref::<Number>()?.try_to_int()?).into())
 	}
 
 	pub fn sqrt(args: Args) -> Result<Object> {
-		Ok(Number::from(args.this_downcast::<Number>()?.0.sqrt()).into())
+		unimplemented!()
+		// Ok(Number::from(args.this_downcast_ref::<Number>()?.0.sqrt()).into())
 	}
 
 	pub fn abs(args: Args) -> Result<Object> {
-		Ok(args._this_downcast::<Number>()?.abs().into())
+		Ok(args._this_downcast_ref::<Number>()?.abs().into())
 	}
 
 	pub fn floor(args: Args) -> Result<Object> {
-		Ok(args._this_downcast::<Number>()?.to_int().into())
+		Ok(args._this_downcast_ref::<Number>()?.to_int().into())
 	}
 
 	pub fn eql(args: Args) -> Result<Object> {
 		println!("x: {:?}", args);
-		Ok((args._this_downcast::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
+		Ok((args._this_downcast_ref::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
 	}
 
 	pub fn cmp(args: Args) -> Result<Object> {
@@ -287,33 +315,39 @@ mod impls {
 	}
 }
 
-impl_object_type_!{for Number, super::Basic;
-	"@num" => (impls::at_num),
-	"@text" => (impls::at_text),
-	"@bool" => (impls::at_bool),
-	"clone" => (impls::clone),
-	"()" => (impls::call),
-	"+" => (impls::add),
-	"-" => (impls::sub),
-	"*" => (impls::mul),
-	"/" => (impls::div),
-	"%" => (impls::r#mod),
-	"**" => (impls::pow),
-	"&" => (impls::bitand),
-	"|" => (impls::bitor),
-	"^" => (impls::bitxor),
-	"<<" => (impls::shl),
-	">>" => (impls::shr),
-	"-@" => (impls::neg),
-	"+@" => (impls::pos),
-	"~" => (impls::bitnot),
-	"==" => (impls::eql),
-	"<=>" => (impls::cmp),
-	"sqrt" => (impls::sqrt),
-	"abs" => (impls::abs),
-	"idiv" => (impls::idiv),
-	"is_integer" => (impls::is_integer),
-	"round" => (impls::round),
-	"ceil" => (impls::ceil),
-	"floor" => (impls::floor)
+impl_object_type!{
+for Number [(parent super::Basic) (convert "@num")]:
+	"PI" => const Number::PI,
+	"E" => const Number::E,
+	"NAN" => const Number::NAN,
+	"INF" => const Number::INF,
+
+	"@num" => impls::at_num,
+	"@text" => impls::at_text,
+	"@bool" => impls::at_bool,
+	"clone" => impls::clone,
+	"()" => impls::call,
+	"+" => impls::add,
+	"-" => impls::sub,
+	"*" => impls::mul,
+	"/" => impls::div,
+	"%" => impls::r#mod,
+	"**" => impls::pow,
+	"&" => impls::bitand,
+	"|" => impls::bitor,
+	"^" => impls::bitxor,
+	"<<" => impls::shl,
+	">>" => impls::shr,
+	"-@" => impls::neg,
+	"+@" => impls::pos,
+	"~" => impls::bitnot,
+	"==" => impls::eql,
+	"<=>" => impls::cmp,
+	"sqrt" => impls::sqrt,
+	"abs" => impls::abs,
+	"idiv" => impls::idiv,
+	"is_integer" => impls::is_integer,
+	"round" => impls::round,
+	"ceil" => impls::ceil,
+	"floor" => impls::floor
 }

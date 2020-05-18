@@ -55,11 +55,11 @@ mod impls {
 	use crate::obj::{Object, Result, Args};
 
 	pub fn call(args: Args) -> Result<Object> {
-		args.this_downcast::<RustFn>()?.call(args.args(..)?)
+		args.this_downcast_ref::<RustFn>()?.call(args.args(..)?)
 	}
 
 	pub fn at_text(args: Args) -> Result<Object> {
-		Ok(types::Text::from(*args.this_downcast::<RustFn>()?).into())
+		Ok(types::Text::from(*args.this_downcast_ref::<RustFn>()?).into())
 	}
 }
 
