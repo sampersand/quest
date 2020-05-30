@@ -6,7 +6,7 @@ mod obj;
 mod parse;
 
 fn main() {
-	let filename = std::env::args().skip(1).next().unwrap_or("code/testing.qs".to_string());
+	let filename = std::env::args().skip(1).next().unwrap_or("code/test.qs".to_string());
 	let mut stream = parse::Stream::from_file(filename.as_ref())
 		.expect("couldn't open file")
 		.collect::<parse::Result<Vec<_>>>()

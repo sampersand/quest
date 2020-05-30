@@ -3,16 +3,21 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
+mod key;
+// mod object_map;
+pub use self::key::Key;
+// use self::object_map::ObjectMap;
+
 // this is totally hacky, and shouldbe replaced with something better in the future.
 #[derive(Clone, Default)]
 pub struct Mapping {
-	map: Vec<(Object, Object)>,
+	map: Vec<(Key, Object)>,
 	parent: Option<Object>
 }
 
 impl Debug for Mapping {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		struct Map<'a>(&'a [(Object, Object)]);
+		struct Map<'a>(&'a [(Key, Object)]);
 		impl Debug for Map<'_> {
 			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 				f.debug_map()
@@ -39,6 +44,7 @@ impl Debug for Mapping {
 	}
 }
 
+
 impl Mapping {
 	pub fn new(parent: Option<Object>) -> Self {
 		Mapping { map: Default::default(), parent }
@@ -54,7 +60,7 @@ impl Mapping {
 		}
 
 		for (ref k, ref mut v) in self.map.iter_mut() {
-			if attr.call("==", Args::new_slice(&[k.clone()], binding.clone()))?
+			if attr.call("==", Args::new_slice(&[k.clone().into()], binding.clone()))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
 					.unwrap_or(false) {
@@ -63,7 +69,7 @@ impl Mapping {
 			}
 		}
 
-		self.map.push((attr, val.clone()));
+		self.map.push((Key::Object(attr), val.clone()));
 		Ok(val)
 	}
 
@@ -82,7 +88,7 @@ impl Mapping {
 		}
 
 		for (ref k, ref v) in self.map.iter() {
-			if attr.call("==", Args::new_slice(&[k.clone()], binding.clone()))?
+			if attr.call("==", Args::new_slice(&[k.clone().into()], binding.clone()))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
 					.unwrap_or(false) {

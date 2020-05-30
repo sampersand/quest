@@ -69,6 +69,7 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 	}
 	fn next_variable_escaped(&mut self) -> Result<Token> {
 		let mut var = String::new();
+
 		// TODO: make this interpret "$var)" as `var` + RPAREN, not `$var)`
 		while let Some(mut chr) = self.next_char()? {
 			if chr.is_whitespace() {

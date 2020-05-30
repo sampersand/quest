@@ -1,3 +1,4 @@
+
 $first = 'Sam'; $last = 'Westerman';
 
 # Create a person class. Classes are created by executing a block that returns

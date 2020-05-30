@@ -1,4 +1,4 @@
-use crate::obj::{self, Mapping, Args, types::{self, ObjectType, rustfn::Binding}};
+use crate::obj::{self, mapping, Mapping, Args, types::{self, ObjectType, rustfn::Binding}};
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
@@ -60,6 +60,10 @@ impl Object {
 		}))
 	}
 
+	pub fn new<T: ObjectType>(data: T) -> Self {
+		Object::new_with_parent(data, Some(T::mapping()))
+	}
+
 	pub fn id(&self) -> usize {
 		self.0.id
 	}
@@ -68,9 +72,14 @@ impl Object {
 		Arc::ptr_eq(&self.0, &rhs.0)
 	}
 
-	pub fn new<T: ObjectType>(data: T) -> Self {
-		Object::new_with_parent(data, Some(T::mapping()))
+
+	pub fn equals(&self, rhs: &Object, binding: &Binding) -> obj::Result<bool> {
+		Ok(self.call("==", Args::new_slice(&[rhs.clone()], binding.clone()))?
+			.downcast_ref::<types::Boolean>()
+			.map(|x| bool::from(*x))
+			.unwrap_or(false))
 	}
+
 
 	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::Deref<Target = T> + 'a> {
 		self.downcast_ref::<T>().ok_or_else(||
