@@ -95,6 +95,14 @@ mod impls {
 		match args._this_downcast_ref::<Text>()?.as_ref() {
 			"__this__" => Ok(args.binding().clone()),
 			"__args__" => args.binding().get_attr(&"__args__".into(), args.binding()),
+			num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
+				use std::str::FromStr;
+				args.binding().get_attr(&"__args__".into(), args.binding())?
+					.call("[]", args.new_args_slice(&[
+						types::Number::from_str(&num.chars().skip(1).collect::<String>())
+							.expect("bad string?").into()
+					]))
+			},
 			_ => args.binding()
 				.get_attr(&args._this_obj::<Text>()?, args.binding())
 		}

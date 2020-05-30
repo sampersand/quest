@@ -24,9 +24,10 @@ mod impls {
 
 	pub fn eql(args: Args) -> Result<Object> {
 		// TODO: do we want the `id` here to be overridable?
-		let lhs_id = args.this()?.call("__id__", args.new_args_slice(&[]))?;
-		let rhs_id = args.arg(0)?.call("__id__", args.new_args_slice(&[]))?;
-		lhs_id.call("==", args.new_args_slice(&[rhs_id]))
+		// let lhs_id = args.this()?.call("__id__", args.new_args_slice(&[]))?;
+		// let rhs_id = args.arg(0)?.call("__id__", args.new_args_slice(&[]))?;
+		// lhs_id.call("==", args.new_args_slice(&[rhs_id]))
+		Ok((args.this()?.id() == args.arg(0)?.id()).into())
 	}
 
 	pub fn neq(args: Args) -> Result<Object> {
@@ -40,15 +41,26 @@ mod impls {
 			.call("@bool", args.args(..)?)?
 			.call("!", args.new_args_slice(&[]))
 	}
+	// pub fn and(args: Args) -> Result<Object> {
+	// 	args.this()?
+	// 		.call("@bool", args.args(..)?)?
+	// }
+	// pub fn not(args: Args) -> Result<Object> {
+	// 	args.this()?
+	// 		.call("@bool", args.args(..)?)?
+	// 		.call("!", args.new_args_slice(&[]))
+	// }
 }
 
 impl_object_type!{
-for Basic [(parent super::Pristine)]:
+for Basic [(parent super::Kernel)]:
 	"@bool" => impls::at_bool,
 	"@text" => impls::at_text,
 	"=="    => impls::eql,
 	"!="    => impls::neq,
 	"!"     => impls::not,
+	// "||"    => impls::or,
+	// "&&"    => impls::and,
 	"ancestors" => (|args| todo!()) // this is just a reminder to update `__parent__`...
 }
 

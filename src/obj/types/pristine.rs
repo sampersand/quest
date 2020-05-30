@@ -6,7 +6,7 @@ mod impls {
 	use crate::obj::{Object, Result, Args, types};
 
 	pub fn __id__(args: Args) -> Result<Object> {
-		Ok(types::Number::from(args.get(0)?.id()).into())
+		Ok(types::Number::from(args.this()?.id()).into())
 	}
 
 	pub fn __call_attr__(args: Args) -> Result<Object> {

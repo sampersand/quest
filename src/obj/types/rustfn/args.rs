@@ -14,7 +14,7 @@ pub struct Args<'s> {
 
 impl Args<'_> {
 	pub fn child_binding(&self) -> Result<Object> {
-		let obj = Object::new_with_parent(obj::types::Pristine, Some(self.binding.clone()));
+		let obj = Object::new_with_parent((), Some(self.binding.clone()));
 		obj.set_attr(
 			"__args__".into(),
 			types::List::from(self.clone()).into(),

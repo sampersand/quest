@@ -94,8 +94,8 @@ impl Display for Number {
 
 impl From<Number> for f64 {
 	fn from(num: Number) -> Self {
-		unimplemented!()
-		// num.0
+		// unimplemented!()
+		num.0
 	}
 }
 
@@ -162,8 +162,8 @@ impl_binary_op!(
 impl std::ops::Neg for Number {
 	type Output = Self;
 	fn neg(self) -> Self::Output {
-		unimplemented!()
-		// Self::from(-f64::from(self))
+		// unimplemented!()
+		Self::from(-f64::from(self))
 	}
 }
 
@@ -291,12 +291,18 @@ mod impls {
 	}
 
 	pub fn eql(args: Args) -> Result<Object> {
-		println!("x: {:?}", args);
 		Ok((args._this_downcast_ref::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
 	}
 
 	pub fn cmp(args: Args) -> Result<Object> {
-		todo!("<=>");
+		let this = args.this_downcast_ref::<Number>()?;
+		let rhs = args.arg_call_into::<Number>(0)?;
+		use std::cmp::Ord;
+		match this.0.partial_cmp(&rhs.0).ok_or_else(Object::default)? {
+			std::cmp::Ordering::Greater => Ok(1.into()),
+			std::cmp::Ordering::Equal => Ok(0.into()),
+			std::cmp::Ordering::Less => Ok((-1).into())
+		}
 	}
 
 	pub fn idiv(args: Args) -> Result<Object> {

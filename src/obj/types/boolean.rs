@@ -130,7 +130,7 @@ mod impls {
 	pub fn eql(args: Args) -> Result<Object> {
 		let this = args.this_downcast::<Boolean>()?;
 		Ok(args.arg_downcast::<Boolean>(0)
-				.map(|rhs| this | rhs)
+				.map(|rhs| (this == rhs).into())
 				.unwrap_or(Boolean::FALSE)
 				.into())
 	}

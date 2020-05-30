@@ -46,22 +46,25 @@ impl Block {
 		self.paren
 	}
 
-	fn call(&self, args: &Args) -> Result<Object> {
-		let ref child = args.child_binding()?;
+	fn call(&self, args: &Args, child: bool) -> Result<Object> {
+		let ref child = if child { args.child_binding()? } else { args.binding().clone() };
 
 		if let Some(last) = self.body.last() {
 			for line in &self.body[..self.body.len() - 1] {
 				line.execute(child)?;
 			}
-			last.execute(child)
-		} else {
-			Ok(Object::default())
+			let ret = last.execute(child)?;
+			if self.returns {
+				return Ok(ret)
+			}
 		}
+
+		Ok(Object::default())
 	}
 
 	pub fn execute(&self, binding: &Binding) -> Result<Option<Object>> {
 		let ret = match self.paren {
-			ParenType::Paren => self.call(&Args::new_slice(&[], binding.clone()))?,
+			ParenType::Paren => self.call(&Args::new_slice(&[], binding.clone()), false)?,
 			ParenType::Brace => return Ok(Some(self.clone().into())),
 			ParenType::Bracket => todo!("ParenType::Bracket return value."),
 		};
@@ -78,7 +81,7 @@ mod impls {
 	use super::*;
 
 	pub fn call(args: Args) -> Result<Object> {
-		args.this_downcast_ref::<Block>()?.call(&args.args(..)?)
+		args.this_downcast_ref::<Block>()?.call(&args.args(..)?, true)
 	}
 }
 

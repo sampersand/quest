@@ -51,8 +51,9 @@ impl<T: Any + ObjectType> From<T> for Object {
 impl Object {
 	pub fn new_with_parent<T: Any + Debug + Send + Sync>(data: T, parent: Option<Object>) -> Self {
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
+		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
 		Object(Arc::new(Internal {
-			id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
+			id: id,
 			mapping: Arc::new(RwLock::new(Mapping::new(parent))),
 			data: Arc::new(RwLock::new(data)),
 			dbg: (|x, f| <T as Debug>::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f))
@@ -72,7 +73,9 @@ impl Object {
 	}
 
 	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::Deref<Target = T> + 'a> {
-		self.downcast_ref::<T>().ok_or_else(|| types::Text::from(format!("not a {:?}", TypeId::of::<T>())).into())
+		self.downcast_ref::<T>().ok_or_else(||
+			types::Text::from(format!("{:?} is not a {:?}", self, TypeId::of::<T>())).into()
+		)
 	}
 
 	pub fn is_a<T: Any>(&self) -> bool {

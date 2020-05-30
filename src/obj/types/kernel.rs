@@ -25,6 +25,9 @@ mod impls {
 				.collect::<Vec<_>>()
 				.join(", ")
 		);
+		use std::io::Write;
+		std::io::stdout().flush()
+			.map_err(|err| Object::from(format!("couldn't flush: {}", err)))?;
 		Ok(Object::default())
 	}
 
