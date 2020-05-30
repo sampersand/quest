@@ -24,7 +24,7 @@ macro_rules! call_impl {
 	($fnc:ident($this:expr $(,$args:expr)*) -> $ret:ty) => {{
 		use crate::obj::types::{self, *, rustfn::Args};
 		impls::$fnc({
-			let mut args = Args::new(vec![$($args.into()),*], Default::default());
+			let mut args = Args::new(vec![$($args.into()),*]);
 			args.add_this($this.into());
 			args
 		}).unwrap().downcast_ref::<$ret>().unwrap()
@@ -118,7 +118,6 @@ macro_rules! impl_object_type {
 			$class.set_attr(
 				"__parent__".into(),
 				<$init_parent as $crate::obj::types::ObjectType>::mapping(),
-				&Default::default() // TODO: actual binding everywhere
 			);
 		)?
 	};
@@ -132,16 +131,12 @@ macro_rules! impl_object_type {
 
 	(@SET_ATTRS $class:ident) => {};
 	(@SET_ATTRS $class:ident $attr:literal => const $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr($attr.into(), $val.into(), &Default::default());
+		$class.set_attr($attr.into(), $val.into());
 		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
 	}};
 
 	(@SET_ATTRS $class:ident $attr:literal => $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr(
-			$attr.into(),
-			$crate::obj::types::RustFn::new($attr, $val).into(),
-			&Default::default()
-		);
+		$class.set_attr($attr.into(), $crate::obj::types::RustFn::new($attr, $val).into());
 		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
 	}};
 
@@ -190,7 +185,7 @@ macro_rules! impl_object_type {
 					use $crate::obj::{Object, types::*};
 					impl_object_type!(@SET_PARENT class $($args)*);
 
-					class.set_attr("name".into(), stringify!($obj).into(), &Default::default());
+					class.set_attr("name".into(), stringify!($obj).into());
 					impl_object_type!(@SET_ATTRS class $($body)*);
 
 					#[cfg(test)]

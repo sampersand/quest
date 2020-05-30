@@ -26,11 +26,11 @@ impl Debug for Block {
 }
 
 impl Line {
-	fn execute(&self, binding: &Binding) -> Result<Object> {
+	fn execute(&self) -> Result<Object> {
 		match self {
-			Line::Singular(line) => line.execute(binding),
+			Line::Singular(line) => line.execute(),
 			Line::Multiple(args) => args.iter()
-				.map(|arg| arg.execute(binding))
+				.map(|arg| arg.execute())
 				.collect::<Result<Vec<_>>>()
 				.map(|args| types::List::from(args).into())
 		}
@@ -46,14 +46,13 @@ impl Block {
 		self.paren
 	}
 
-	fn call(&self, args: &Args, child: bool) -> Result<Object> {
-		let ref child = if child { args.child_binding()? } else { args.binding().clone() };
-
+	fn run_block(&self) -> Result<Object> {
 		if let Some(last) = self.body.last() {
 			for line in &self.body[..self.body.len() - 1] {
-				line.execute(child)?;
+				line.execute()?;
 			}
-			let ret = last.execute(child)?;
+
+			let ret = last.execute()?;
 			if self.returns {
 				return Ok(ret)
 			}
@@ -62,17 +61,20 @@ impl Block {
 		Ok(Object::default())
 	}
 
-	pub fn execute(&self, binding: &Binding) -> Result<Option<Object>> {
-		let ret = match self.paren {
-			ParenType::Paren => self.call(&Args::new_slice(&[], binding.clone()), false)?,
+	fn call(&self, args: Args) -> Result<Object> {
+		Binding::new_stackframe(args, (|_binding| {
+			self.run_block()
+		}))
+	}
+
+	pub fn execute(&self) -> Result<Option<Object>> {
+		match self.paren {
+			ParenType::Paren => {
+				let ret = self.run_block()?;
+				if self.returns { Ok(Some(ret)) } else { Ok(None) }
+			},
 			ParenType::Brace => return Ok(Some(self.clone().into())),
 			ParenType::Bracket => todo!("ParenType::Bracket return value."),
-		};
-
-		if self.returns {
-			Ok(Some(ret))
-		} else {
-			Ok(None)
 		}
 	}
 }
@@ -81,7 +83,7 @@ mod impls {
 	use super::*;
 
 	pub fn call(args: Args) -> Result<Object> {
-		args.this_downcast_ref::<Block>()?.call(&args.args(..)?, true)
+		args.this_downcast_ref::<Block>()?.call(args.args(..)?)
 	}
 }
 

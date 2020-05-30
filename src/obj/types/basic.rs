@@ -12,8 +12,8 @@ mod impls {
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args._this()?;
 		Ok(format!("<{}:{}>",
-			this.get_attr(&"__parent__".into(), args.binding())?
-				.get_attr(&"name".into(), args.binding())
+			this.get_attr(&"__parent__".into())?
+				.get_attr(&"name".into())
 				.and_then(|x| x.call("@text", args.new_args_slice(&[])))
 				.unwrap_or_else(|_| "<unknown name>".into())
 				.try_downcast_ref::<types::Text>()?

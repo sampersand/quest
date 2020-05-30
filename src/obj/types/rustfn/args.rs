@@ -4,7 +4,7 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::ops::Deref;
 
-pub type Binding = Object;
+use crate::obj::types::rustfn::Binding;
 
 #[derive(Debug, Clone, Default)]
 pub struct Args<'s> {
@@ -13,24 +13,25 @@ pub struct Args<'s> {
 }
 
 impl Args<'_> {
-	pub fn child_binding(&self) -> Result<Object> {
-		let obj = Object::new_with_parent((), Some(self.binding.clone()));
-		obj.set_attr(
-			"__args__".into(),
-			types::List::from(self.clone()).into(),
-			&self.binding
-		)?;
-		Ok(obj)
+	pub fn child_binding(&self) -> Result<Binding> {
+		unimplemented!()
+		// let obj = Object::new_with_parent((), Some(self.binding.clone()));
+		// obj.set_attr(
+		// 	"__args__".into(),
+		// 	types::List::from(self.clone()).into(),
+		// 	&self.binding
+		// )?;
+		// Ok(obj)
 	}
 }
 
 impl<'s> Args<'s> {
-	pub fn new<V: Into<Cow<'s, [Object]>>>(args: V, binding: Binding) -> Self {
-		Args { args: args.into(), binding }
+	pub fn new<V: Into<Cow<'s, [Object]>>>(args: V) -> Self {
+		Args { args: args.into(), binding: Binding::instance() }
 	}
 
-	pub fn new_slice(args: &'s [Object], binding: Binding) -> Self {
-		Args { args: args.into(), binding }
+	pub fn new_slice(args: &'s [Object]) -> Self {
+		Args { args: args.into(), binding: Binding::instance() }
 	}
 
 	pub fn new_args_slice<'a>(&self, args: &'a [Object]) -> Args<'a> {
@@ -74,7 +75,7 @@ impl Args<'_> {
 	}
 
 	pub fn arg_call_into<T: Convertible>(&self, index: usize) -> Result<T> {
-		self.arg(index)?.downcast_call(&self.binding)
+		self.arg(index)?.downcast_call()
 	}
 	
 	pub fn args<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>

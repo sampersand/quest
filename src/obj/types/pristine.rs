@@ -14,15 +14,15 @@ mod impls {
 	}
 
 	pub fn __get_attr__(args: Args) -> Result<Object> {
-		args.this()?.get_attr(args.arg(0)?, args.binding())
+		args.this()?.get_attr(args.arg(0)?)
 	}
 
 	pub fn __set_attr__(args: Args) -> Result<Object> {
-		args.this()?.set_attr(args.arg(0)?.clone(), args.arg(1)?.clone(), args.binding())
+		args.this()?.set_attr(args.arg(0)?.clone(), args.arg(1)?.clone())
 	}
 
 	pub fn __del_attr__(args: Args) -> Result<Object> {
-		args.this()?.del_attr(args.arg(0)?, args.binding())
+		args.this()?.del_attr(args.arg(0)?)
 	}
 }
 

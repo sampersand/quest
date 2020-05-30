@@ -15,6 +15,7 @@ impl Default for Object {
 pub(super) struct Internal {
 	mapping: Arc<RwLock<Mapping>>,
 	id: usize,
+	// binding: Binding,
 	pub(super) data: Arc<RwLock<dyn Any + Send + Sync>>,
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result
 }
@@ -49,11 +50,13 @@ impl<T: Any + ObjectType> From<T> for Object {
 }
 
 impl Object {
-	pub fn new_with_parent<T: Any + Debug + Send + Sync>(data: T, parent: Option<Object>) -> Self {
+	pub fn new_with_parent<T>(data: T, parent: Option<Object>) -> Self 
+	where T: Any + Debug + Send + Sync {
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
 		Object(Arc::new(Internal {
 			id: id,
+			// binding: Binding::instance(),
 			mapping: Arc::new(RwLock::new(Mapping::new(parent))),
 			data: Arc::new(RwLock::new(data)),
 			dbg: (|x, f| <T as Debug>::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f))
@@ -73,8 +76,8 @@ impl Object {
 	}
 
 
-	pub fn equals(&self, rhs: &Object, binding: &Binding) -> obj::Result<bool> {
-		Ok(self.call("==", Args::new_slice(&[rhs.clone()], binding.clone()))?
+	pub fn equals(&self, rhs: &Object) -> obj::Result<bool> {
+		Ok(self.call("==", Args::new_slice(&[rhs.clone()]))?
 			.downcast_ref::<types::Boolean>()
 			.map(|x| bool::from(*x))
 			.unwrap_or(false))
@@ -140,16 +143,16 @@ impl Object {
 		}
 	}
 
-	pub fn get_attr(&self, attr: &Object, binding: &Binding) -> obj::Result<Object> {
-		self.0.mapping.read().expect("cannot read").get(attr, binding, self)
+	pub fn get_attr(&self, attr: &Object) -> obj::Result<Object> {
+		self.0.mapping.read().expect("cannot read").get(attr, self)
 	}
 
-	pub fn set_attr(&self, attr: Object, val: Object, binding: &Binding) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").insert(attr, val, binding)
+	pub fn set_attr(&self, attr: Object, val: Object) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").insert(attr, val)
 	}
 
-	pub fn del_attr(&self, attr: &Object, binding: &Binding) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").remove(attr, binding)
+	pub fn del_attr(&self, attr: &Object) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").remove(attr)
 	}
 
 
@@ -172,7 +175,7 @@ impl Object {
 		}
 
 		args.add_this(self.clone());
-		self.get_attr(attr, args.binding())?.call("()", args)
+		self.get_attr(attr)?.call("()", args)
 	}
 
 	pub fn call(&self, txt: &'static str, args: Args) -> obj::Result<Object> {

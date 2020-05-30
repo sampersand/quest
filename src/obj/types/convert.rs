@@ -10,8 +10,8 @@ pub trait Convertible : Any + Sized + Clone {
 }
 
 impl Object {
-	pub fn downcast_call<T: Convertible>(&self, binding: &Binding) -> Result<T> {
-		self.call(T::CONVERT_FUNC, Args::new_slice(&[], binding.clone()))
+	pub fn downcast_call<T: Convertible>(&self) -> Result<T> {
+		self.call(T::CONVERT_FUNC, Args::default())
 			.and_then(|o| o.try_downcast_clone())
 	}
 }

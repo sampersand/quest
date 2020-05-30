@@ -14,7 +14,7 @@ fn main() {
 		.into_iter();
 
 	let expression = parse::Expression::try_from_iter(&mut stream).unwrap();
-	let result = expression.execute_default().unwrap();
+	let result = expression.execute().unwrap();
 	// println!("{:#?}", result);
 }
 

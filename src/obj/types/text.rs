@@ -93,23 +93,23 @@ mod impls {
 
 	pub fn call(args: Args) -> Result<Object> { // "()"
 		match args._this_downcast_ref::<Text>()?.as_ref() {
-			"__this__" => Ok(args.binding().clone()),
-			"__args__" => args.binding().get_attr(&"__args__".into(), args.binding()),
+			"__this__" => Ok(args.binding().as_ref().clone()),
+			"__args__" => args.binding().get_attr(&"__args__".into()),
 			num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
 				use std::str::FromStr;
-				args.binding().get_attr(&"__args__".into(), args.binding())?
+				args.binding().get_attr(&"__args__".into())?
 					.call("[]", args.new_args_slice(&[
 						types::Number::from_str(&num.chars().skip(1).collect::<String>())
 							.expect("bad string?").into()
 					]))
 			},
 			_ => args.binding()
-				.get_attr(&args._this_obj::<Text>()?, args.binding())
+				.get_attr(&args._this_obj::<Text>()?)
 		}
 	}
 
 	pub fn assign(args: Args) -> Result<Object> { // "=" 
-		args.binding().set_attr(args._this_obj::<Text>()?, getarg!(Object; args), args.binding())
+		args.binding().set_attr(args._this_obj::<Text>()?, getarg!(Object; args))
 	}
 
 	pub fn at_list(args: Args) -> Result<Object> {

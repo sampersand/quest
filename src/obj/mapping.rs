@@ -1,4 +1,4 @@
-use crate::obj::{self, Object, Args, types::{self, rustfn::Binding}};
+use crate::obj::{self, Object, Args, types};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
@@ -50,8 +50,8 @@ impl Mapping {
 		Mapping { map: Default::default(), parent }
 	}
 
-	pub fn insert(&mut self, attr: Object, val: Object, binding: &Binding) -> obj::Result<Object> {
-		if attr.call("==", Args::new_slice(&["__parent__".into()], binding.clone()))?
+	pub fn insert(&mut self, attr: Object, val: Object) -> obj::Result<Object> {
+		if attr.call("==", Args::new_slice(&["__parent__".into()]))?
 				.downcast_ref::<types::Boolean>()
 				.map(|x| bool::from(*x))
 				.unwrap_or(false) {
@@ -60,7 +60,7 @@ impl Mapping {
 		}
 
 		for (ref k, ref mut v) in self.map.iter_mut() {
-			if attr.call("==", Args::new_slice(&[k.clone().into()], binding.clone()))?
+			if attr.call("==", Args::new_slice(&[k.clone().into()]))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
 					.unwrap_or(false) {
@@ -73,14 +73,14 @@ impl Mapping {
 		Ok(val)
 	}
 
-	pub fn get(&self, attr: &Object, binding: &Binding, obj: &Object) -> obj::Result<Object> {
-		if attr.call("==", Args::new_slice(&["__parent__".into()], binding.clone()))?
+	pub fn get(&self, attr: &Object, obj: &Object) -> obj::Result<Object> {
+		if attr.call("==", Args::new_slice(&["__parent__".into()]))?
 				.downcast_clone::<types::Boolean>()
 				.map(|x| bool::from(x))
 				.unwrap_or(false) {
 			return self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
 		}
-		if attr.call("==", Args::new_slice(&["__id__".into()], binding.clone()))?
+		if attr.call("==", Args::new_slice(&["__id__".into()]))?
 				.downcast_clone::<types::Boolean>()
 				.map(|x| bool::from(x))
 				.unwrap_or(false) {
@@ -88,7 +88,7 @@ impl Mapping {
 		}
 
 		for (ref k, ref v) in self.map.iter() {
-			if attr.call("==", Args::new_slice(&[k.clone().into()], binding.clone()))?
+			if attr.call("==", Args::new_slice(&[k.clone().into()]))?
 					.downcast_ref::<types::Boolean>()
 					.map(|x| bool::from(*x))
 					.unwrap_or(false) {
@@ -97,13 +97,13 @@ impl Mapping {
 		}
 
 		if let Some(ref parent) = self.parent {
-			parent.get_attr(attr, binding)
+			parent.get_attr(attr)
 		} else {
 			Err(format!("attr {:?} does not exist for {:?}.", attr, obj).into())
 		}
 	}
 
-	pub fn remove(&mut self, attr: &Object, binding: &Binding) -> obj::Result<Object> {
+	pub fn remove(&mut self, attr: &Object) -> obj::Result<Object> {
 		todo!("remove");
 		// if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| bool::from(*x)).unwrap_or(false) {
 		// 	return self.parent.take().ok_or_else(|| "attr `__parent__` doesn't exist.".into());

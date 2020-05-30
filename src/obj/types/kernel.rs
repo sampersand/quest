@@ -116,7 +116,7 @@ mod tests {
 					assert_eq!(
 						$val,
 						*Kernel::mapping()
-							.get_attr(&$key.into(), &Default::default())
+							.get_attr(&$key.into())
 							.unwrap().downcast_ref().unwrap(),
 						"constant {:?} doesn't exist or is wrong value",
 						$key
@@ -144,7 +144,7 @@ mod tests {
 				$({
 					let expected = <$class as ObjectType>::mapping();
 					let got = Object::from(Kernel)
-						.get_attr(&$key.into(), &Default::default())
+						.get_attr(&$key.into())
 						.unwrap();
 					assert!(
 						expected.is_identical(&got),
