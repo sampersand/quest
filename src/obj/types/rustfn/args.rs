@@ -147,9 +147,10 @@ impl Args<'_> {
 	}
 
 	pub fn _this_downcast_ref<'c, T: Any>(&'c self) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
-		let ret = self.get_downcast(0);
-		debug_assert!(ret.is_ok(), "invalid `this` encountered: {:?}, {:?}", self, ret.map(|x| {panic!(); 0i32}).unwrap_err());
-		ret
+		self.this_downcast_ref()
+		// let ret = self.get_downcast(0);
+		// debug_assert!(ret.is_ok(), "invalid `this` encountered: {:?}, {:?}", self, ret.map(|x| {panic!(); 0i32}).unwrap_err());
+		// ret
 	}
 }
 

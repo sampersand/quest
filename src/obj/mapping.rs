@@ -62,9 +62,12 @@ impl Mapping {
 			Ok(obj.id().into())
 		} else if let Some(obj) = self.map.get(attr)? {
 			Ok(obj)
-		} else if let Some(ref parent) = self.parent {
-			parent.get_attr(attr)
 		} else {
+			if let Some(ref parent) = self.parent {
+				if let Ok(val) = parent.get_attr(attr) {
+					return Ok(val);
+				}
+			}
 			Err(format!("attr {:?} does not exist for {:?}.", attr, obj).into())
 		}
 	}

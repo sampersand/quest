@@ -87,6 +87,7 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"RustFn" => const super::RustFn::mapping(),
 	"Text" => const super::Text::mapping(),
 
+	"@text" => (|args| args.this()?.get_attr("name")),
 	"if" => impls::r#if, 
 	"disp" => impls::disp,
 	"quit" => impls::quit,

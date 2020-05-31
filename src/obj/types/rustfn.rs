@@ -9,7 +9,7 @@ use std::fmt::{self, Debug, Formatter};
 
 type FnType = fn(Args) -> obj::Result<Object>;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct RustFn(&'static str, FnType);
 
 impl Debug for RustFn {
