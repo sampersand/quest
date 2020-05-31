@@ -103,7 +103,7 @@ impl From<Boolean> for types::Text {
 mod impls {
 	use super::*;
 	use std::ops::{Deref, BitAnd, BitOr, BitXor, Not};
-	use crate::obj::{Object, Result, Args, types};
+	use crate::obj::{Object, Result, Args, types, literals};
 
 	pub fn at_num(args: Args) -> Result<Object> {
 		let this = args.this_downcast::<Boolean>()?;
@@ -119,7 +119,7 @@ mod impls {
 		let this = args.this()?;
 		debug_assert!(this.is_a::<Boolean>(), "bad `this` given");
 		// TODO: forwarding args, make sure `self` is updated.
-		this.call("clone", args.args(..)?)
+		this.call_attr(&literals::CLONE, args.args(..)?)
 	}
 
 	pub fn clone(args: Args) -> Result<Object> {
@@ -169,17 +169,17 @@ mod impls {
 
 impl_object_type!{
 for Boolean [(parent super::Basic) (convert "@bool")]:
-	"@num"  => impls::at_num,
-	"@text" => impls::at_text,
-	"@bool" => impls::at_bool,
-	"clone" => impls::clone,
-	"=="    => impls::eql,
-	"!"     => impls::not,
-	"&"     => impls::bitand,
-	"|"     => impls::bitor,
-	"^"     => impls::bitxor,
-	"<=>"   => impls::cmp,
-	"hash"  => impls::hash,
+	literals::AT_NUM  => impls::at_num,
+	literals::AT_TEXT => impls::at_text,
+	literals::AT_BOOL => impls::at_bool,
+	literals::CLONE   => impls::clone,
+	literals::EQL     => impls::eql,
+	literals::NOT     => impls::not,
+	literals::BAND    => impls::bitand,
+	literals::BOR     => impls::bitor,
+	literals::BXOR    => impls::bitxor,
+	literals::CMP     => impls::cmp,
+	literals::HASH    => impls::hash,
 }
 
 #[cfg(test)]

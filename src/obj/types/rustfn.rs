@@ -9,7 +9,7 @@ use std::fmt::{self, Debug, Formatter};
 
 type FnType = fn(Args) -> obj::Result<Object>;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct RustFn(&'static str, FnType);
 
 impl Debug for RustFn {
@@ -24,7 +24,9 @@ impl Debug for RustFn {
 impl Eq for RustFn {}
 impl PartialEq for RustFn {
 	fn eq(&self, rhs: &RustFn) -> bool {
-		self.0 == rhs.0 && (self.1 as usize) == (rhs.1 as usize)
+		let eql = (self.1 as usize) == (rhs.1 as usize);
+		assert_eq!(eql, self.0 == rhs.0);
+		eql
 	}
 }
 

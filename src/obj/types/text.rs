@@ -68,14 +68,14 @@ mod impls {
 	// "[]~" => (|args| todo!("[]~")),
 	// "clear" => (|args| todo!("clear")),
 	pub fn at_text(args: Args) -> Result<Object> { // "@text"
-		args._this_obj::<Text>()?.call("clone", args.new_args_slice(&[]))
+		args._this_obj::<Text>()?.call_attr("clone", args.new_args_slice(&[]))
 	}
 
 	pub fn at_num(args: Args) -> Result<Object> { // "@num"
 		let this = args._this_downcast_ref::<Text>()?;
 		if let Ok(radix_obj) = args.get(1) {
 			use std::convert::TryFrom;
-			let r = radix_obj.call("@num", args.new_args_slice(&[]))?
+			let r = radix_obj.call_attr("@num", args.new_args_slice(&[]))?
 				.try_downcast_ref::<types::Number>()?
 				.try_to_int()?;
 			match u32::try_from(r) {
@@ -94,11 +94,11 @@ mod impls {
 	pub fn call(args: Args) -> Result<Object> { // "()"
 		match args._this_downcast_ref::<Text>()?.as_ref() {
 			"__this__" => Ok(args.binding().as_ref().clone()),
-			"__args__" => args.binding().get_attr(&"__args__".into()),
+			"__args__" => args.binding().get_attr("__args__"),
 			num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
 				use std::str::FromStr;
-				args.binding().get_attr(&"__args__".into())?
-					.call("[]", args.new_args_slice(&[
+				args.binding().get_attr("__args__")?
+					.call_attr("[]", args.new_args_slice(&[
 						types::Number::from_str(&num.chars().skip(1).collect::<String>())
 							.expect("bad string?").into()
 					]))
@@ -136,7 +136,7 @@ mod impls {
 		let mut this = args.this_downcast::<Text>()?.0.to_owned().to_string();
 		let rhs = args.arg(0)?;
 		this.push_str(
-			rhs.call("@text", args.new_args_slice(&[]))?
+			rhs.call_attr("@text", args.new_args_slice(&[]))?
 			.try_downcast_ref::<Text>()?
 			.as_ref()
 		);

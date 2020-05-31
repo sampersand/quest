@@ -102,20 +102,20 @@ mod impls {
 		todo!("List::join");
 	}
 
-	pub fn bitand(args: Args) -> Result<Object> {
-		todo!("List::bitand");
+	pub fn intersect(args: Args) -> Result<Object> {
+		todo!("List::intersect");
 	}
 
-	pub fn bitor(args: Args) -> Result<Object> {
-		todo!("List::bitor");
+	pub fn union(args: Args) -> Result<Object> {
+		todo!("List::union");
 	}
 
-	pub fn bitxor(args: Args) -> Result<Object> {
-		todo!("List::bitxor");
+	pub fn not_shared(args: Args) -> Result<Object> {
+		todo!("List::not_shared");
 	}
 
-	pub fn sub(args: Args) -> Result<Object> {
-		todo!("List::sub");
+	pub fn difference(args: Args) -> Result<Object> {
+		todo!("List::difference");
 	}
 
 }
@@ -135,9 +135,9 @@ for List [(parent super::Basic) (convert "@list")]:
 	"[]" => impls::index,
 	"[]=" => impls::index_assign,
 	"join" => impls::join,
-	"&" => impls::bitand,
-	"|" => impls::bitor,
-	"^" => impls::bitxor,
-	"-" => impls::sub
+	"&" => impls::intersect,
+	"|" => impls::union,
+	"^" => impls::not_shared,
+	"-" => impls::difference
 }
 

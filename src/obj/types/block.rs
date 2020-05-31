@@ -91,7 +91,7 @@ mod impls {
 
 impl_object_type!{
 for Block [(parent super::Function)]:
-	"()" => impls::call
+	literals::CALL => impls::call
 }
 
 #[cfg(test)]

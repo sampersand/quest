@@ -1,31 +1,22 @@
-use crate::obj::{self, Object, Args, types};
+use crate::obj::{self, Object, EqResult, Args, types};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
 mod key;
-// mod object_map;
+mod object_map;
 pub use self::key::Key;
-// use self::object_map::ObjectMap;
+use self::object_map::ObjectMap;
 
 // this is totally hacky, and shouldbe replaced with something better in the future.
 #[derive(Clone, Default)]
 pub struct Mapping {
-	map: Vec<(Key, Object)>,
+	map: ObjectMap,
 	parent: Option<Object>
 }
 
 impl Debug for Mapping {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		struct Map<'a>(&'a [(Key, Object)]);
-		impl Debug for Map<'_> {
-			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-				f.debug_map()
-					.entries(self.0.iter().map(|&(ref k, ref v)| (k, v)))
-					.finish()
-			}
-		}
-
 		struct Parent(bool);
 		impl Debug for Parent {
 			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -38,72 +29,48 @@ impl Debug for Mapping {
 		}
 
 		f.debug_struct("Mapping")
-			.field("map", &Map(self.map.as_slice()))
+			.field("map", &self.map)
 			.field("parent", &Parent(self.parent.is_some()))
 			.finish()
 	}
 }
 
 
+const PARENT_KEY: Key = Key::Literal("__parent__");
+const ID_KEY: Key = Key::Literal("__id__");
+
 impl Mapping {
 	pub fn new(parent: Option<Object>) -> Self {
 		Mapping { map: Default::default(), parent }
 	}
 
-	pub fn insert(&mut self, attr: Object, val: Object) -> obj::Result<Object> {
-		if attr.call("==", Args::new_slice(&["__parent__".into()]))?
-				.downcast_ref::<types::Boolean>()
-				.map(|x| bool::from(*x))
-				.unwrap_or(false) {
+	pub fn insert(&mut self, attr: Key, val: Object) -> obj::Result<Object> {
+		if attr.equals(&PARENT_KEY)? {
 			self.parent = Some(val.clone());
-			return Ok(val);
+		} else {
+			self.map.insert(attr.into(), val.clone())?;
 		}
 
-		for (ref k, ref mut v) in self.map.iter_mut() {
-			if attr.call("==", Args::new_slice(&[k.clone().into()]))?
-					.downcast_ref::<types::Boolean>()
-					.map(|x| bool::from(*x))
-					.unwrap_or(false) {
-				*v = val.clone();
-				return Ok(val);
-			}
-		}
-
-		self.map.push((Key::Object(attr), val.clone()));
 		Ok(val)
 	}
 
-	pub fn get(&self, attr: &Object, obj: &Object) -> obj::Result<Object> {
-		if attr.call("==", Args::new_slice(&["__parent__".into()]))?
-				.downcast_clone::<types::Boolean>()
-				.map(|x| bool::from(x))
-				.unwrap_or(false) {
-			return self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
-		}
-		if attr.call("==", Args::new_slice(&["__id__".into()]))?
-				.downcast_clone::<types::Boolean>()
-				.map(|x| bool::from(x))
-				.unwrap_or(false) {
-			return Ok(obj.id().into());
-		}
-
-		for (ref k, ref v) in self.map.iter() {
-			if attr.call("==", Args::new_slice(&[k.clone().into()]))?
-					.downcast_ref::<types::Boolean>()
-					.map(|x| bool::from(*x))
-					.unwrap_or(false) {
-				return Ok(v.clone());
-			}
-		}
-
-		if let Some(ref parent) = self.parent {
+	pub fn get<K>(&self, attr: &K, obj: &Object) -> obj::Result<Object>
+	where K: Debug + ?Sized, Key: EqResult<K> {
+		if PARENT_KEY.equals(attr)? {
+			self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into())
+		} else if ID_KEY.equals(attr)? {
+			Ok(obj.id().into())
+		} else if let Some(obj) = self.map.get(attr)? {
+			Ok(obj)
+		} else if let Some(ref parent) = self.parent {
 			parent.get_attr(attr)
 		} else {
 			Err(format!("attr {:?} does not exist for {:?}.", attr, obj).into())
 		}
 	}
 
-	pub fn remove(&mut self, attr: &Object) -> obj::Result<Object> {
+	pub fn remove<K>(&mut self, attr: &K) -> obj::Result<Object>
+	where K: Debug + ?Sized, Key: EqResult<K> {
 		todo!("remove");
 		// if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| bool::from(*x)).unwrap_or(false) {
 		// 	return self.parent.take().ok_or_else(|| "attr `__parent__` doesn't exist.".into());

@@ -3,7 +3,7 @@ pub struct Basic;
 
 mod impls {
 	use super::Basic;
-	use crate::obj::{Object, Result, Args, types};
+	use crate::obj::{Object, Result, Args, types, literals};
 
 	pub fn at_bool(_: Args) -> Result<Object> {
 		Ok(true.into())
@@ -12,11 +12,10 @@ mod impls {
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args._this()?;
 		Ok(format!("<{}:{}>",
-			this.get_attr(&"__parent__".into())?
-				.get_attr(&"name".into())
-				.and_then(|x| x.call("@text", args.new_args_slice(&[])))
+			this.get_attr(&literals::PARENT)?
+				.get_attr("name")
+				.and_then(|x| x.downcast_call::<types::Text>())
 				.unwrap_or_else(|_| "<unknown name>".into())
-				.try_downcast_ref::<types::Text>()?
 				.as_ref(),
 			this.id()
 		).into())
@@ -32,14 +31,13 @@ mod impls {
 
 	pub fn neq(args: Args) -> Result<Object> {
 		args.this()?
-			.call("==", args.args(..)?)?
-			.call("!", args.new_args_slice(&[]))
+			.call_attr(&literals::EQL, args.args(..)?)?
+			.call_attr(&literals::NOT, args.new_args_slice(&[]))
 	}
 
 	pub fn not(args: Args) -> Result<Object> {
-		args.this()?
-			.call("@bool", args.args(..)?)?
-			.call("!", args.new_args_slice(&[]))
+		args.this()?.downcast_convert::<types::Boolean>()?
+			.call_attr(&literals::NOT, args.new_args_slice(&[]))
 	}
 	// pub fn and(args: Args) -> Result<Object> {
 	// 	args.this()?
@@ -54,14 +52,14 @@ mod impls {
 
 impl_object_type!{
 for Basic [(parent super::Kernel)]:
-	"@bool" => impls::at_bool,
-	"@text" => impls::at_text,
-	"=="    => impls::eql,
-	"!="    => impls::neq,
-	"!"     => impls::not,
+	literals::AT_BOOL => impls::at_bool,
+	literals::AT_TEXT => impls::at_text,
+	literals::EQL => impls::eql,
+	literals::NEQ => impls::neq,
+	literals::NOT => impls::not,
 	// "||"    => impls::or,
 	// "&&"    => impls::and,
-	"ancestors" => (|args| todo!()) // this is just a reminder to update `__parent__`...
+	Key::Literal("ancestors") => (|args| todo!()) // this is just a reminder to update `__parent__`...
 }
 
 

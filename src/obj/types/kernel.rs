@@ -17,7 +17,7 @@ mod impls {
 		println!("{}",
 			args.as_ref()
 				.iter()
-				.map(|arg| arg.call("@text", args.new_args_slice(&[]))?
+				.map(|arg| arg.call_attr("@text", args.new_args_slice(&[]))?
 					.try_downcast_ref::<types::Text>().map(|x| (*x).clone()))
 				.collect::<Result<Vec<_>>>()?
 				.into_iter()
@@ -98,7 +98,6 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"for" => impls::r#for,
 	"sleep" => impls::sleep,
 	"open" => impls::open,
-
 }
 
 
@@ -116,7 +115,7 @@ mod tests {
 					assert_eq!(
 						$val,
 						*Kernel::mapping()
-							.get_attr(&$key.into())
+							.get_attr(&Object::from($key))
 							.unwrap().downcast_ref().unwrap(),
 						"constant {:?} doesn't exist or is wrong value",
 						$key
@@ -144,7 +143,7 @@ mod tests {
 				$({
 					let expected = <$class as ObjectType>::mapping();
 					let got = Object::from(Kernel)
-						.get_attr(&$key.into())
+						.get_attr(&Object::from($key))
 						.unwrap();
 					assert!(
 						expected.is_identical(&got),

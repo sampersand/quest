@@ -1,10 +1,22 @@
-use crate::obj::{Object, Result, types};
+use std::convert::TryFrom;
 
+use crate::obj::{Object, Result, types, EqResult};
 
 #[derive(Debug, Clone)]
 pub enum Key {
 	Object(Object),
 	Literal(&'static str)
+}
+
+
+impl TryFrom<Key> for &'static str {
+	type Error = ();
+	fn try_from(key: Key) -> std::result::Result<Self, Self::Error> {
+		match key {
+			Key::Object(_) => Err(()),
+			Key::Literal(lit) => Ok(lit)
+		}
+	}
 }
 
 impl From<Object> for Key {
@@ -28,29 +40,40 @@ impl From<Key> for Object {
 	}
 }
 
-impl Key {
-	pub fn equals(&self, rhs: &Key) -> Result<bool> {
+impl EqResult<str> for Object {
+	fn equals(&self, rhs: &str) -> Result<bool> {
+		Ok(self.downcast_ref::<types::Text>()
+			.map(|txt| txt.as_ref() == rhs)
+			.unwrap_or(false))
+	}
+}
+
+impl EqResult for Key {
+	fn equals(&self, rhs: &Key) -> Result<bool> {
+		use Key::*;
 		match (self, rhs) {
 			(Key::Literal(lit_lhs), Key::Literal(lit_rhs)) => Ok(lit_lhs == lit_rhs),
 			(Key::Object(obj_lhs), Key::Object(obj_rhs)) => obj_lhs.equals(obj_rhs),
-			(Key::Literal(lit), Key::Object(obj)) | (Key::Object(obj), Key::Literal(lit)) => {
-				Ok(obj.downcast_ref::<types::Text>()
-					.map(|text| text.as_ref() == *lit)
-					.unwrap_or(false))
-			}
+			(Key::Literal(lit), Key::Object(obj))
+				| (Key::Object(obj), Key::Literal(lit)) => obj.equals(*lit)
 		}
 	}
 }
 
+impl EqResult<str> for Key {
+	fn equals(&self, rhs: &str) -> Result<bool> {
+		match self {
+			Key::Literal(lit) => Ok(*lit == rhs),
+			Key::Object(obj) => obj.equals(rhs)
+		}
+	}
+}
 
-// impl Key {
-// 	fn does_eql(&self, rhs: &Object) -> obj::Result<bool> {
-// 		Ok(match self {
-// 			Key::Object(o) => o.call("==", Args::new_slice(&[k.clone().into()], Default::default()))?
-// 					.downcast_ref::<types::Boolean>()
-// 					.map(|x| bool::from(*x))
-// 					.unwrap_or(false),
-// 			Key::Literal(l) => {}
-// 		})
-// 	}
-// }
+impl EqResult<Object> for Key {
+	fn equals(&self, rhs: &Object) -> Result<bool> {
+		match self {
+			Key::Object(obj) => rhs.equals(obj),
+			Key::Literal(lit) => rhs.equals(*lit)
+		}
+	}
+}

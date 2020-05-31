@@ -1,4 +1,7 @@
-use crate::obj::{self, mapping, Mapping, Args, types::{self, ObjectType, rustfn::Binding}};
+use crate::obj::{self, literals,
+	Result, EqResult, mapping::{self, Key}, Mapping, Args,
+	types::{self, ObjectType, rustfn::Binding}
+};
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
@@ -49,6 +52,17 @@ impl<T: Any + ObjectType> From<T> for Object {
 	}
 }
 
+impl EqResult for Object {
+	fn equals(&self, rhs: &Object) -> Result<bool> {
+		Ok(self.call_attr(&literals::EQL, Args::new_slice(&[rhs.clone()]))?
+			.downcast_ref::<types::Boolean>()
+			.map(|x| bool::from(*x))
+			.unwrap_or(false))
+	}
+}
+
+
+
 impl Object {
 	pub fn new_with_parent<T>(data: T, parent: Option<Object>) -> Self 
 	where T: Any + Debug + Send + Sync {
@@ -74,15 +88,6 @@ impl Object {
 	pub fn is_identical(&self, rhs: &Object) -> bool {
 		Arc::ptr_eq(&self.0, &rhs.0)
 	}
-
-
-	pub fn equals(&self, rhs: &Object) -> obj::Result<bool> {
-		Ok(self.call("==", Args::new_slice(&[rhs.clone()]))?
-			.downcast_ref::<types::Boolean>()
-			.map(|x| bool::from(*x))
-			.unwrap_or(false))
-	}
-
 
 	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::Deref<Target = T> + 'a> {
 		self.downcast_ref::<T>().ok_or_else(||
@@ -143,46 +148,40 @@ impl Object {
 		}
 	}
 
-	pub fn get_attr(&self, attr: &Object) -> obj::Result<Object> {
+	pub fn get_attr<K>(&self, attr: &K) -> obj::Result<Object>
+	where K: Debug + ?Sized, Key: EqResult<K> {
 		self.0.mapping.read().expect("cannot read").get(attr, self)
 	}
 
-	pub fn set_attr(&self, attr: Object, val: Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").insert(attr, val)
+	pub fn set_attr<K: Into<Key>>(&self, attr: K, val: Object) -> obj::Result<Object> {
+		self.0.mapping.write().expect("cannot write").insert(attr.into(), val)
 	}
 
-	pub fn del_attr(&self, attr: &Object) -> obj::Result<Object> {
+	pub fn del_attr<K>(&self, attr: &K) -> obj::Result<Object>
+	where K: Debug + ?Sized, Key: EqResult<K> {
 		self.0.mapping.write().expect("cannot write").remove(attr)
 	}
 
 
-	pub fn call_attr(&self, attr: &Object, mut args: Args) -> obj::Result<Object> {
-		if let (Some(rustfn), Some(txt_attr)) = (self.downcast_ref::<types::RustFn>(), attr.downcast_ref::<types::Text>()) {
-			if (txt_attr.as_ref() == "()") {
-				return rustfn.call(args);
+	pub fn call_attr<K>(&self, attr: &K, mut args: Args) -> obj::Result<Object>
+	where K: Debug + ?Sized, Key: EqResult<K> {
+		if let Some(rustfn) = self.downcast_ref::<types::RustFn>() {
+			if literals::CALL.equals(attr)? {
+				return rustfn.call(args);	
 			}
 		}
 
-		if let Some(txt_attr) = attr.downcast_ref::<types::Text>() {
-			if (txt_attr.as_ref() == "==") {
-				if args.as_ref().is_empty() {
-					return Err(types::Text::from("need at least 1 arg for `==`").into())
-				} else if let (Some(lhs), Some(rhs)) = (self.downcast_ref::<types::Text>(),
-				                                        args.get_downcast::<types::Text>(0).ok()) {
-					return Ok(types::Boolean::from(*lhs == *rhs).into())
-				}
+		if literals::EQL.equals(attr)? {
+			if args.as_ref().is_empty() {
+				return Err(types::Text::from("need at least 1 arg for `==`").into())
+			} else if let (Some(lhs), Some(rhs)) = (self.downcast_ref::<types::Text>(),
+			                                        args.get_downcast::<types::Text>(0).ok()) {
+				return Ok(types::Boolean::from(*lhs == *rhs).into())
 			}
 		}
 
 		args.add_this(self.clone());
-		self.get_attr(attr)?.call("()", args)
+		Object::call_attr::<Key>(&self.get_attr(attr)?, &literals::CALL, args)
 	}
 
-	pub fn call(&self, txt: &'static str, args: Args) -> obj::Result<Object> {
-		self.call_attr(&txt.into(), args)
-	}
 }
-
-
-
-

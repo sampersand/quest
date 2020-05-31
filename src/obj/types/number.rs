@@ -175,13 +175,13 @@ mod impls {
 	pub fn at_num(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		debug_assert!(this.is_a::<Number>(), "bad `this` given");
-		this.call("clone", args.get_rng(1..)?)
+		this.call_attr("clone", args.get_rng(1..)?)
 	}
 	
 	pub fn at_text(args: Args) -> Result<Object> {
 		if let Some(arg) = args.get(1).ok() {
 			let this = args._this_downcast_ref::<Number>()?.try_to_int()?;
-			let radix = arg.call("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
+			let radix = arg.call_attr("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
 			match radix {
             2 => Ok(format!("{:b}", this).into()),
             8 => Ok(format!("{:o}", this).into()),
@@ -206,12 +206,13 @@ mod impls {
 
 
 	pub fn call(args: Args) -> Result<Object> {
-		args._this_obj::<Number>()?.call("*", args.get_rng(1..)?)
+		args._this_obj::<Number>()?.call_attr("*", args.get_rng(1..)?)
 	}
 
 	pub fn add(args: Args) -> Result<Object> {
 		use std::ops::Add;
-		Ok(args._this_downcast_ref::<Number>()?.add(*getarg!(Number; args)).into())	}
+		Ok(args._this_downcast_ref::<Number>()?.add(*getarg!(Number; args)).into())
+	}
 
 	pub fn sub(args: Args) -> Result<Object> {
 		use std::ops::Sub;
@@ -270,7 +271,7 @@ mod impls {
 	}
 
 	pub fn pos(args: Args) -> Result<Object> {
-		args._this_obj::<Number>()?.call("abs", args.new_args_slice(&[]))
+		args._this_obj::<Number>()?.call_attr("abs", args.new_args_slice(&[]))
 	}
 
 	pub fn bitnot(args: Args) -> Result<Object> {

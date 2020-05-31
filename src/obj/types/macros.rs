@@ -50,15 +50,15 @@ macro_rules! getarg {
 	};
 
 	(Number; $args:expr, $pos:expr) => {
-		getarg!(Object; $args, $pos).call("@num", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Number>()?
+		getarg!(Object; $args, $pos).call_attr("@num", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Number>()?
 	};
 	
 	(Boolean; $args:expr, $pos:expr) => {
-		getarg!(Object; $args, $pos).call("@bool", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Boolean>()?
+		getarg!(Object; $args, $pos).call_attr("@bool", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Boolean>()?
 	};
 
 	(Text; $args:expr, $pos:expr) => {
-		getarg!(Object; $args, $pos).call("@text", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Text>()?
+		getarg!(Object; $args, $pos).call_attr("@text", $args.new_args_slice(&[]))?.try_downcast_ref::<$crate::obj::types::Text>()?
 	};
 
 	(Object; $args:expr, $pos:expr) => {
@@ -116,7 +116,7 @@ macro_rules! impl_object_type {
 	(@SET_PARENT $class:ident (init_parent $($init_parent:path)?) $($_rest:tt)*) => {
 		$(
 			$class.set_attr(
-				"__parent__".into(),
+				"__parent__",
 				<$init_parent as $crate::obj::types::ObjectType>::mapping(),
 			);
 		)?
@@ -130,13 +130,16 @@ macro_rules! impl_object_type {
 	};
 
 	(@SET_ATTRS $class:ident) => {};
-	(@SET_ATTRS $class:ident $attr:literal => const $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr($attr.into(), $val.into());
+	(@SET_ATTRS $class:ident $attr:expr => const $val:expr $(, $($args:tt)*)?) => {{
+		$class.set_attr($attr, $val.into());
 		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
 	}};
 
-	(@SET_ATTRS $class:ident $attr:literal => $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr($attr.into(), $crate::obj::types::RustFn::new($attr, $val).into());
+	(@SET_ATTRS $class:ident $attr:expr => $val:expr $(, $($args:tt)*)?) => {{
+		$class.set_attr($attr, $crate::obj::types::RustFn::new(
+			{ use std::convert::TryInto; $attr.try_into() }.unwrap(),
+			$val).into()
+		);
 		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
 	}};
 
@@ -166,7 +169,7 @@ macro_rules! impl_object_type {
 			fn mapping() -> $crate::obj::Object {
 				use std::mem::{self, MaybeUninit};
 				use std::sync::{Once, Arc, RwLock, atomic::{AtomicU8, Ordering}};
-				use $crate::obj::{Object, Mapping};
+				use $crate::obj::{Object, Mapping, mapping::Key, literals};
 
 				static mut CLASS_OBJECT: MaybeUninit<Object> = MaybeUninit::uninit();
 				static mut HAS_SETUP_HAPPENED: AtomicU8 = AtomicU8::new(0);
@@ -185,7 +188,7 @@ macro_rules! impl_object_type {
 					use $crate::obj::{Object, types::*};
 					impl_object_type!(@SET_PARENT class $($args)*);
 
-					class.set_attr("name".into(), stringify!($obj).into());
+					class.set_attr("name", stringify!($obj).into());
 					impl_object_type!(@SET_ATTRS class $($body)*);
 
 					#[cfg(test)]
