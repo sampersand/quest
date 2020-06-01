@@ -27,10 +27,27 @@ impl ObjectMap  {
 		Ok(None)
 	}
 
+	pub fn remove<K>(&mut self, key: &K) -> Result<Option<Value>>
+	where K: Debug + ?Sized + EqResult<Key> {
+		let mut index = None;
+		for (i, (ref k, _)) in self.0.iter().enumerate() {
+			if key.equals(k)? {
+				index = Some(i);
+				break;
+			}
+		}
+
+		if let Some(index) = index {
+			Ok(Some(self.0.remove(index).1))
+		}  else {
+			Ok(None)
+		}
+	}
+
 	pub fn get<K>(&self, key: &K) -> Result<Option<Value>>
-	where K: Debug + ?Sized, Key: EqResult<K> {
+	where K: Debug + ?Sized + EqResult<Key> {
 		for (ref k, ref v) in self.0.iter() {
-			if k.equals(key)? {
+			if key.equals(k)? {
 				return Ok(Some(v.clone()));
 			}
 		}

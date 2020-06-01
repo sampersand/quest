@@ -17,11 +17,17 @@ pub struct Block {
 
 impl Debug for Block {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		f.debug_struct("Block")
-			.field("paren", &self.paren)
-			.field("body", &format!("[{} line(s)]", self.body.len()))
-			.field("returns", &self.returns)
-			.finish()
+		if f.alternate() {
+			f.debug_struct("Block")
+				.field("paren", &self.paren)
+				.field("body", &format!("[{} line(s)]", self.body.len()))
+				.field("returns", &self.returns)
+				.finish()
+		} else {
+			f.debug_tuple("Block")
+				.field(&format!("[{} line(s)]", self.body.len()))
+				.finish()
+		}
 	}
 }
 
@@ -62,18 +68,13 @@ impl Block {
 	}
 
 	fn call(&self, args: Args) -> Result<Object> {
-		Binding::new_stackframe(args, (|_binding| {
-			self.run_block()
-		}))
+		Binding::new_stackframe(args, (|_binding| self.run_block()))
 	}
 
 	pub fn execute(&self) -> Result<Option<Object>> {
 		match self.paren {
-			ParenType::Paren => {
-				let ret = self.run_block()?;
-				if self.returns { Ok(Some(ret)) } else { Ok(None) }
-			},
-			ParenType::Brace => return Ok(Some(self.clone().into())),
+			ParenType::Paren => self.run_block().map(|x| if self.returns { Some(x) } else { None }),
+			ParenType::Brace => Ok(Some(self.clone().into())),
 			ParenType::Bracket => todo!("ParenType::Bracket return value."),
 		}
 	}
@@ -83,7 +84,7 @@ mod impls {
 	use super::*;
 
 	pub fn call(args: Args) -> Result<Object> {
-		args.this_downcast_ref::<Block>()?.call(args.args(..)?)
+		args.this()?.try_downcast_ref::<Block>()?.call(args.args(..)?)
 	}
 }
 
@@ -91,7 +92,7 @@ mod impls {
 
 impl_object_type!{
 for Block [(parent super::Function)]:
-	literals::CALL => impls::call
+	"()" => impls::call
 }
 
 #[cfg(test)]

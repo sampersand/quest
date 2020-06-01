@@ -13,6 +13,7 @@ pub mod kernel;
 pub mod basic;
 
 pub mod function;
+pub mod bound_function;
 pub mod rustfn;
 pub mod block;
 
@@ -28,6 +29,7 @@ pub use self::convert::Convertible;
 pub use self::pristine::Pristine;
 pub use self::kernel::Kernel;
 pub use self::basic::Basic;
+pub use self::bound_function::BoundFunction;
 pub use self::function::Function;
 pub use self::rustfn::{RustFn, Args};
 pub use self::block::Block;

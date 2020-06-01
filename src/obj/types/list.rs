@@ -89,8 +89,8 @@ mod impls {
 	}
 
 	pub fn index(args: Args) -> Result<Object> {
-		let this = args.this_downcast_ref::<List>()?;
-		let idx = args.arg_call_into::<types::Number>(0)?.to_int() as usize - 1;
+		let this = args.this()?.try_downcast_ref::<List>()?;
+		let idx = args.arg(0)?.try_downcast_ref::<types::Number>()?.to_int() as usize - 1;
 		Ok(this.0.get(idx).map(|x| x.clone()).unwrap_or_default())
 	}
 

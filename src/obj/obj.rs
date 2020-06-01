@@ -40,6 +40,7 @@ impl Debug for Object {
 				.finish()
 		} else {
 			f.debug_tuple("Object")
+				.field(&self.0.id)
 				.field(&DataDebug(&*self.0.data.read().expect("poisoned"), self.0.dbg))
 				.finish()
 		}
@@ -54,13 +55,26 @@ impl<T: Any + ObjectType> From<T> for Object {
 
 impl EqResult for Object {
 	fn equals(&self, rhs: &Object) -> Result<bool> {
-		Ok(self.call_attr(&literals::EQL, Args::new_slice(&[rhs.clone()]))?
+		Ok(self.call_attr(literals::EQL, vec![rhs.clone()])?
 			.downcast_ref::<types::Boolean>()
 			.map(|x| bool::from(*x))
 			.unwrap_or(false))
 	}
+
+	fn into_object(&self) -> Object {
+		self.clone()
+	}
 }
 
+impl EqResult<Key> for Object {
+	fn equals(&self, rhs: &Key) -> Result<bool> {
+		rhs.equals(self)
+	}
+
+	fn into_object(&self) -> Object {
+		self.clone()
+	}
+}
 
 
 impl Object {
@@ -68,6 +82,7 @@ impl Object {
 	where T: Any + Debug + Send + Sync {
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
+		//println!("making object ({}) = {:?}", id, data);
 		Object(Arc::new(Internal {
 			id: id,
 			// binding: Binding::instance(),
@@ -88,23 +103,26 @@ impl Object {
 	pub fn is_identical(&self, rhs: &Object) -> bool {
 		Arc::ptr_eq(&self.0, &rhs.0)
 	}
+}
 
-	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::Deref<Target = T> + 'a> {
-		self.downcast_ref::<T>().ok_or_else(||
-			types::Text::from(format!("{:?} is not a {:?}", self, TypeId::of::<T>())).into()
-		)
-	}
-
+impl Object {
 	pub fn is_a<T: Any>(&self) -> bool {
 		self.0.data.read().expect("poison error").is::<T>()
+	}
+
+	pub fn try_downcast_clone<T: Any + Clone>(&self) -> obj::Result<T> {
+		self.downcast_clone().ok_or_else(|| types::Text::from(format!("not a {:?}", TypeId::of::<T>())).into())
 	}
 
 	pub fn downcast_clone<T: Any + Clone>(&self) -> Option<T> {
 		self.downcast_ref::<T>().map(|x| x.clone())
 	}
 
-	pub fn try_downcast_clone<T: Any + Clone>(&self) -> obj::Result<T> {
-		self.downcast_ref::<T>().map(|x| x.clone()).ok_or_else(|| types::Text::from(format!("not a {:?}", TypeId::of::<T>())).into())
+	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::Deref<Target = T> + 'a> {
+		self.downcast_ref::<T>().ok_or_else(||
+			panic!()
+			// types::Text::from(format!("{:?} is not a {:?}", self, TypeId::of::<T>())).into()
+		)
 	}
 
 	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl std::ops::Deref<Target=T> + 'a> {
@@ -148,8 +166,22 @@ impl Object {
 		}
 	}
 
+	pub fn dot_get_attr<K>(&self, attr: &K) -> obj::Result<Object>
+	where K: Debug + ?Sized + EqResult<Key> {
+		let result = self.get_attr(attr)?;
+		if result.is_a::<types::RustFn>() || result.is_a::<types::Block>() ||
+				result.is_a::<types::BoundFunction>() {
+			let bound_res = Object::new(crate::obj::types::BoundFunction);
+			bound_res.set_attr("__bound_object_owner__", self.clone())?;
+			bound_res.set_attr("__bound_object__", result);
+			Ok(bound_res)	
+		} else {
+			Ok(result)
+		}
+	}
+
 	pub fn get_attr<K>(&self, attr: &K) -> obj::Result<Object>
-	where K: Debug + ?Sized, Key: EqResult<K> {
+	where K: Debug + ?Sized + EqResult<Key> {
 		self.0.mapping.read().expect("cannot read").get(attr, self)
 	}
 
@@ -158,30 +190,62 @@ impl Object {
 	}
 
 	pub fn del_attr<K>(&self, attr: &K) -> obj::Result<Object>
-	where K: Debug + ?Sized, Key: EqResult<K> {
-		self.0.mapping.write().expect("cannot write").remove(attr)
+	where K: Debug + ?Sized + EqResult<Key> {
+		self.0.mapping.write().expect("cannot write").remove(attr, self)
 	}
 
 
-	pub fn call_attr<K>(&self, attr: &K, mut args: Args) -> obj::Result<Object>
-	where K: Debug + ?Sized, Key: EqResult<K> {
+	pub fn call_attr<'a, K, A>(&self, attr: &K, mut args: A) -> obj::Result<Object>
+	where K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>> {
+		static mut INDENT: usize = 0;
+		// for i in 0..unsafe{ INDENT } {
+		// 	print!("\t");
+		// }
+		unsafe { INDENT += 1; }
+		let args = args.into();
+		let s = format!("Object::call_attr({:?}, {:?}, {:?})", self, attr, args);
+		//println!("{}=...", s);
+		let res = self.call_attr1(attr, args);
+		unsafe { INDENT -= 1 };
+		// for i in 0..unsafe{ INDENT } {
+		// 	print!("\t");
+		// }
+		//println!("{}={:?}", s, res);
+		res
+	}
+
+	pub fn call_attr1<'a, K, A>(&self, attr: &K, mut args: A) -> obj::Result<Object>
+	where K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>> {
+		let mut args = args.into();
+		// if let Some(boundfn) = self.downcast_ref::<types::BoundFunction>() {
+		// 	if attr.equals(&"()".into())? {
+		// 		println!("hi");
+		// 		args.add_this(self.clone());
+		// 		return crate::obj::types::bound_function::impls::call(args);
+		// 	}
+		// }
+
 		if let Some(rustfn) = self.downcast_ref::<types::RustFn>() {
-			if literals::CALL.equals(attr)? {
+			if attr.equals(&"()".into())? {
 				return rustfn.call(args);	
 			}
 		}
 
-		if literals::EQL.equals(attr)? {
-			if args.as_ref().is_empty() {
-				return Err(types::Text::from("need at least 1 arg for `==`").into())
-			} else if let (Some(lhs), Some(rhs)) = (self.downcast_ref::<types::Text>(),
-			                                        args.get_downcast::<types::Text>(0).ok()) {
-				return Ok(types::Boolean::from(*lhs == *rhs).into())
-			}
-		}
+		// if attr.equals(&".".into())? {
+		// 	return unimplemented!();
+		// }
+		// self.call_attr("."), vec![attr.into_object()])?
+		// 	.call_attr("()", args)
+		Object::call_attr::<Key, Args>(&self.get_attr(attr)?, &"()".into(), args)
+		// args.add_this(self.clone());
+		// let result = self.get_attr(attr)?;
+		// let bound_res = Object::new(crate::obj::types::BoundFunction);
+		// bound_res.set_attr("__bound_object_owner__", self.clone())?;
+		// bound_res.set_attr("__bound_object__", result);
+		// bound_res.call_attr("()", args.args(..)?)
 
-		args.add_this(self.clone());
-		Object::call_attr::<Key>(&self.get_attr(attr)?, &literals::CALL, args)
+		// println!(">> {:?} {:?} {:?}", self, attr, self.get_attr(attr));
+		// Object::call_attr::<Key, Args>(&self.get_attr(attr)?, &"()".into(), args)
 	}
 
 }

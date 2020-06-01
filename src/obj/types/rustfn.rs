@@ -16,7 +16,7 @@ impl Debug for RustFn {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		f.debug_tuple("RustFn")
 			.field(&self.0)
-			.field(&(self.1 as usize as *const ()))
+			// .field(&(self.1 as usize as *const ()))
 			.finish()
 	}
 }
@@ -59,13 +59,13 @@ mod impls {
 	use crate::obj::{Object, Result, Args};
 
 	pub fn call(mut args: Args) -> Result<Object> {
-		let this = args.this_downcast::<RustFn>()?;
-		todo!("do we want args.args(..)?");
-		this.call(args)
+		let this = args.this()?.try_downcast_ref::<RustFn>()?;
+		this.call(args.clone())
 	}
 
 	pub fn at_text(args: Args) -> Result<Object> {
-		Ok(types::Text::from(*args.this_downcast_ref::<RustFn>()?).into())
+		let this = *args.this()?.try_downcast_ref::<RustFn>()?;
+		Ok(types::Text::from(this).into())
 	}
 }
 

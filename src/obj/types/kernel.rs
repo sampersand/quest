@@ -6,7 +6,7 @@ mod impls {
 	// pub const TRUE: Object = Object::new(types::boolean::TRUE);
 
 	pub fn r#if(args: Args) -> Result<Object> {
-		if args.arg_call_into::<types::Boolean>(0)?.into() {
+		if args.arg(0)?.downcast_call::<types::Boolean>()?.into() {
 			args.arg(1).map(Clone::clone)
 		} else {
 			args.arg(2).map(Clone::clone)
@@ -17,22 +17,26 @@ mod impls {
 		println!("{}",
 			args.as_ref()
 				.iter()
-				.map(|arg| arg.call_attr("@text", args.new_args_slice(&[]))?
-					.try_downcast_ref::<types::Text>().map(|x| (*x).clone()))
+				.map(|arg| arg.downcast_call::<types::Text>())
 				.collect::<Result<Vec<_>>>()?
 				.into_iter()
 				.map(|arg| arg.as_ref().to_string())
 				.collect::<Vec<_>>()
-				.join(", ")
+				.join("")
 		);
 		use std::io::Write;
-		std::io::stdout().flush()
-			.map_err(|err| Object::from(format!("couldn't flush: {}", err)))?;
+		std::io::stdout().flush().map_err(|err| Object::from(format!("couldn't flush: {}", err)))?;
 		Ok(Object::default())
 	}
 
 	pub fn r#while(args: Args) -> Result<Object> {
-		todo!("r#while")
+		let cond = args.arg(0)?;
+		let body = args.arg(1)?;
+		let mut result = Object::default();
+		while cond.call_attr("()", Args::default())?.downcast_call::<types::Boolean>()?.into() {
+			result = body.call_attr("()", Args::default())?;
+		}
+		Ok(result)
 	}
 
 	pub fn r#for(args: Args) -> Result<Object> {

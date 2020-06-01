@@ -80,7 +80,7 @@ mod impls {
 
 	pub fn eql(args: Args) -> Result<Object> {
 		debug_assert!(args.this().expect("bad this given").is_a::<Null>());
-		Ok(args.arg_downcast_ref::<Null>(0).is_ok().into())
+		Ok(args.arg(0)?.is_a::<Null>().into())
 	}
 
 	pub fn clone(_args: Args) -> Result<Object> {

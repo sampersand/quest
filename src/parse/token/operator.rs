@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use crate::obj::{Object, types};
+use crate::obj::{self, Object, mapping::Key, types, EqResult};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,12 +12,40 @@ pub enum Operator {
 	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign, LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
 }
 
+
 impl From<Operator> for Object {
 	fn from(op: Operator) -> Self {
 		Object::from(types::Text::from(op))
 	}
 }
 
+impl EqResult<Key> for Operator {
+	fn equals(&self, rhs: &Key) -> obj::Result<bool> {
+		self.to_string().as_str().equals(rhs)
+	}
+}
+
+impl Display for Operator {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		use Operator::*;
+		write!(f, "{}", match self {
+			Pos => "+@", Neg => "-@",
+			Add => "+", Sub => "-", Mul => "*", Div => "/", Mod => "%",
+			Pow => "**",
+			Not => "!", Eql => "==", Neq => "!=",
+			Lth => "<", Leq => "<=", Gth => ">", Geq => ">=",
+			Cmp => "<=>",
+			And => "&&", Or => "||",
+			BNot => "~", BAnd => "&",
+			Lsh => "<<", Rsh => ">>", BOr => "|", Xor => "^",
+			Dot => ".", ColonColon => "::",
+			Assign => "=", DotAssign => ".=",
+			AddAssign => "+=", SubAssign => "-=", MulAssign => "*=", DivAssign => "/=", ModAssign => "%=",
+			PowAssign => "**=", LshAssign => "<<=", RshAssign => ">>=", BAndAssign => "&=", BOrAssign => "|=",
+			XorAssign => "^=",
+		})
+	}
+}
 impl From<Operator> for types::Text {
 	fn from(op: Operator) -> Self {
 		use Operator::*;

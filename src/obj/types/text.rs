@@ -64,52 +64,61 @@ impl AsRef<str> for Text {
 
 mod impls {
 	use super::*;
-	use crate::obj::{Object, Result, Args};
+	use crate::obj::{Object, Result, Args, types};
 	// "[]~" => (|args| todo!("[]~")),
 	// "clear" => (|args| todo!("clear")),
 	pub fn at_text(args: Args) -> Result<Object> { // "@text"
-		args._this_obj::<Text>()?.call_attr("clone", args.new_args_slice(&[]))
+		let this = args.this()?;
+		this.call_attr("clone", args.clone())
 	}
 
 	pub fn at_num(args: Args) -> Result<Object> { // "@num"
-		let this = args._this_downcast_ref::<Text>()?;
-		if let Ok(radix_obj) = args.get(1) {
-			use std::convert::TryFrom;
-			let r = radix_obj.call_attr("@num", args.new_args_slice(&[]))?
-				.try_downcast_ref::<types::Number>()?
-				.try_to_int()?;
-			match u32::try_from(r) {
-				Ok(radix) => types::Number::from_str_radix(this.as_ref(), radix)
+		use std::convert::TryFrom;
+
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		let radix = 
+			args.arg(0)
+				.ok()
+				.map(|obj| obj.downcast_call::<types::Number>()
+						.and_then(|n| n.try_to_int())
+						.and_then(|r| u32::try_from(r)
+								.map_err(|err| format!("invalid radix {}: {}", r, err).into())));
+		match radix {
+			Some(Ok(radix)) => 
+				types::Number::from_str_radix(this.as_ref(), radix)
 					.map(Into::into)
 					.map_err(|err| err.to_string().into()),
-				Err(err) => Err(format!("invalid radix {}: {}", r, err).into())
-			}
-		} else {
-			types::Number::from_str(this.as_ref())
-				.map(Into::into)
-				.map_err(|err| err.to_string().into())
+			Some(Err(err)) => Err(err),
+			None => 
+				types::Number::from_str(this.as_ref())
+					.map(Into::into)
+					.map_err(|err| err.to_string().into())
 		}
 	}
 
 	pub fn call(args: Args) -> Result<Object> { // "()"
-		match args._this_downcast_ref::<Text>()?.as_ref() {
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		match this.as_ref() {
 			"__this__" => Ok(args.binding().as_ref().clone()),
 			"__args__" => args.binding().get_attr("__args__"),
 			num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
 				use std::str::FromStr;
 				args.binding().get_attr("__args__")?
 					.call_attr("[]", args.new_args_slice(&[
-						types::Number::from_str(&num.chars().skip(1).collect::<String>())
-							.expect("bad string?").into()
+						(-f64::from(types::Number::from_str(&num.chars().skip(1).collect::<String>())
+							.expect("bad string?"))
+							 - 1.0f64)
+						.into()
 					]))
 			},
-			_ => args.binding()
-				.get_attr(&args._this_obj::<Text>()?)
+			other => args.binding().get_attr(other)
 		}
 	}
 
 	pub fn assign(args: Args) -> Result<Object> { // "=" 
-		args.binding().set_attr(args._this_obj::<Text>()?, getarg!(Object; args))
+		let this = args.this()?;
+		let rhs = args.arg(0)?;
+		args.binding().set_attr(this.clone(), rhs.clone())
 	}
 
 	pub fn at_list(args: Args) -> Result<Object> {
@@ -117,30 +126,29 @@ mod impls {
 	}
 
 	pub fn at_bool(args: Args) -> Result<Object> { // "@bool"
-		Ok(args._this_downcast_ref::<Text>()?.as_ref().is_empty().into())
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		Ok(this.as_ref().is_empty().into())
 	}
 
 	pub fn clone(args: Args) -> Result<Object> { // "clone"
-		Ok(args._this_downcast_ref::<Text>()?.clone().into())
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		Ok(this.clone().into())
 	}
 
-	pub fn eql(args: Args) -> Result<Object> { // "==" 
-		let this = args._this_downcast_ref::<Text>()?;
-		if let Ok(txt) = args.get_downcast::<Text>(1) {
-			Ok((this.0 == txt.0).into())
-		} else {
-			Ok(false.into())
+	pub fn eql(args: Args) -> Result<Object> { // "=="
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		let rhs_opt = args.arg(0)?.downcast_ref::<Text>();
+		match rhs_opt {
+			Some(rhs_txt) => Ok((*this == *rhs_txt).into()),
+			None => Ok(types::Boolean::FALSE.into())
 		}
 	}
+
 	pub fn plus(args: Args) -> Result<Object> { // "+" 
-		let mut this = args.this_downcast::<Text>()?.0.to_owned().to_string();
-		let rhs = args.arg(0)?;
-		this.push_str(
-			rhs.call_attr("@text", args.new_args_slice(&[]))?
-			.try_downcast_ref::<Text>()?
-			.as_ref()
-		);
-		Ok(this.into())
+		let mut this_str = args.this()?.try_downcast_ref::<Text>()?.0.to_owned().to_string();
+		let rhs = args.arg(0)?.downcast_call::<Text>()?;
+		this_str.push_str(rhs.as_ref());
+		Ok(this_str.into())
 	}
 
 	pub fn chr(args: Args) -> Result<Object> { todo!("chr") } // "chr"
@@ -173,83 +181,3 @@ for Text [(parent super::Basic) (convert "@text")]:
 	"split" => (impls::split),
 	"reverse" => (impls::reverse)
 }
-// 	"@text" => (|args| {
-// 		args._this_obj::<Text>()?.call("clone", args.new_args_slice(&[]))
-// 	}),
-
-// 	"@num" => (|args| {
-// 		let this = args._this_downcast_ref::<Text>()?;
-// 		if let Ok(radix_obj) = args.get(1) {
-// 			use std::convert::TryFrom;
-// 			let r = radix_obj.call("@num", args.new_args_slice(&[]))?
-// 				.try_downcast_ref::<Number>()?
-// 				.try_to_int()?;
-// 			match u32::try_from(r) {
-// 				Ok(radix) => Number::from_str_radix(this.as_ref(), radix)
-// 					.map(Into::into)
-// 					.map_err(|err| err.to_string().into()),
-// 				Err(err) => Err(format!("invalid radix {}: {}", r, err).into())
-// 			}
-// 		} else {
-// 			Number::from_str(this.as_ref())
-// 				.map(Into::into)
-// 				.map_err(|err| err.to_string().into())
-// 		}
-// 	}),
-
-// 	"()" => (|args| {
-// 		match args._this_downcast_ref::<Text>()?.as_ref() {
-// 			"__this__" => Ok(args.binding().clone()),
-// 			_ => args.binding()
-// 				.get_attr(&args._this_obj::<Text>()?, args.binding())
-// 		}
-// 	}),
-
-// 	"=" => (|args| {
-// 		args.binding().set_attr(args._this_obj::<Text>()?, getarg!(Object; args), args.binding())
-// 	}),
-
-// 	"@list" => (|args| todo!("@list")),
-
-// 	"@bool" => (|args| {
-// 		Ok(args._this_downcast_ref::<Text>()?.as_ref().is_empty().into())
-// 	}),
-
-// 	"clone" => (|args| {
-// 		Ok(args._this_downcast_ref::<Text>()?.clone().into())
-// 	}),
-
-// 	"==" => (|args| {
-// 		let this = args._this_downcast_ref::<Text>()?;
-// 		if let Ok(txt) = args.get_downcast::<Text>(1) {
-// 			Ok((this.0 == txt.0).into())
-// 		} else {
-// 			Ok(false.into())
-// 		}
-// 	}),
-// 	"+" => (|args| {
-// 		let mut this = args._this_downcast_ref::<Text>()?.clone().0.into_owned();
-// 		let rhs = args.get(1)?;
-// 		this.push_str(
-// 			rhs.call("@text", args.new_args_slice(&[]))?
-// 			.try_downcast_ref::<Text>()?
-// 			.as_ref()
-// 		);
-// 		Ok(this.into())
-// 	}),
-
-// 	"chr" => (|args| todo!("chr")),
-// 	"len" => (|args| todo!("len")),
-// 	"[]" => (|args| todo!("[]")),
-// 	"[]=" => (|args| todo!("[]=")),
-// 	// "[]~" => (|args| todo!("[]~")),
-// 	// "clear" => (|args| todo!("clear")),
-// 	"is_empty" => (|args| todo!("is_empty")),
-// 	"index" => (|args| todo!("index")),
-// 	"split" => (|args| todo!("split")),
-// 	"reverse" => (|args| todo!("reverse")),
-// }
-
-
-
-

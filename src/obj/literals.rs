@@ -3,7 +3,7 @@ use crate::obj::mapping::Key;
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
 		$(
-			pub const $name: Key = Key::Literal($key);
+			pub const $name: &'static str = $key;
 		)*
 	};
 }

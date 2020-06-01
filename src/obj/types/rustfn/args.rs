@@ -6,22 +6,15 @@ use std::ops::Deref;
 
 use crate::obj::types::rustfn::Binding;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Args<'s> {
 	binding: Binding,
 	args: Cow<'s, [Object]>
 }
-
-impl Args<'_> {
-	pub fn child_binding(&self) -> Result<Binding> {
-		unimplemented!()
-		// let obj = Object::new_with_parent((), Some(self.binding.clone()));
-		// obj.set_attr(
-		// 	"__args__".into(),
-		// 	types::List::from(self.clone()).into(),
-		// 	&self.binding
-		// )?;
-		// Ok(obj)
+use std::fmt::{self, Debug, Formatter};
+impl Debug for Args<'_> {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		Debug::fmt(&self.args, f)
 	}
 }
 
@@ -38,13 +31,24 @@ impl<'s> Args<'s> {
 		Args { args: args.into(), binding: self.binding.clone() }
 	}
 
-
 	pub fn add_this(&mut self, this: Object)  {
 		self.args.to_mut().insert(0, this);
 	}
 
 	pub fn binding(&self) -> &Binding {
 		&self.binding
+	}
+}
+
+impl From<Args<'_>> for Vec<Object> {
+	fn from(args: Args) -> Self {
+		args.args.to_vec()
+	}
+}
+
+impl From<Vec<Object>> for Args<'static> {
+	fn from(args: Vec<Object>) -> Self {
+		Args::new(args)
 	}
 }
 
@@ -64,20 +68,8 @@ impl Args<'_> {
 	pub fn arg<'s>(&'s self, index: usize) -> Result<&'s Object> {
 		self.args.get(index + 1)
 			.ok_or_else(|| format!("index `{}' is too big (args={:?})", index + 1, self).into())
-	}
+	}	
 
-	pub fn arg_downcast_ref<'s, T: Any>(&'s self, index: usize) -> Result<impl Deref<Target=T> + 's> {
-		self.arg(index)?.try_downcast_ref::<T>()
-	}
-
-	pub fn arg_downcast<T: Any + Clone>(&self, index: usize) -> Result<T> {
-		self.arg_downcast_ref::<T>(index).map(|x| (*x).clone())
-	}
-
-	pub fn arg_call_into<T: Convertible>(&self, index: usize) -> Result<T> {
-		self.arg(index)?.downcast_call()
-	}
-	
 	pub fn args<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>
 	where I: SliceIndex<[Object], Output=[Object]> + 'c
 	{
@@ -93,18 +85,10 @@ impl Args<'_> {
 		self.args.get(0)
 			.ok_or_else(|| format!("no `this` supplied (args={:?})", self).into())
 	}
-
-	pub fn this_downcast_ref<'s, T: Any>(&'s self) -> Result<impl Deref<Target=T> + 's> {
-		self.this()?.try_downcast_ref::<T>()
-	}
-
-	pub fn this_downcast<T: Any + Clone>(&self) -> Result<T> {
-		self.this_downcast_ref::<T>().map(|x| (*x).clone())
-	}
 }
 
 
-
+/*
 
 impl Args<'_> {
 	#[deprecated]
@@ -154,12 +138,4 @@ impl Args<'_> {
 	}
 }
 
-
-
-
-
-
-
-
-
-
+*/

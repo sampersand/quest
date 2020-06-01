@@ -1,13 +1,13 @@
 use std::convert::TryFrom;
+use std::any::Any;
 
 use crate::obj::{Object, Result, types, EqResult};
 
 #[derive(Debug, Clone)]
 pub enum Key {
 	Object(Object),
-	Literal(&'static str)
+	Literal(&'static str),
 }
-
 
 impl TryFrom<Key> for &'static str {
 	type Error = ();
@@ -60,11 +60,12 @@ impl EqResult for Key {
 	}
 }
 
-impl EqResult<str> for Key {
-	fn equals(&self, rhs: &str) -> Result<bool> {
-		match self {
-			Key::Literal(lit) => Ok(*lit == rhs),
-			Key::Object(obj) => obj.equals(rhs)
+
+impl EqResult<Key> for str {
+	fn equals(&self, rhs: &Key) -> Result<bool> {
+		match rhs {
+			Key::Literal(lit) => Ok(lit == &self),
+			Key::Object(obj) => obj.equals(self)
 		}
 	}
 }

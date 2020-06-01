@@ -129,21 +129,21 @@ macro_rules! impl_object_type {
 		impl_object_type!(@SET_PARENT $class $($rest)*)
 	};
 
-	(@SET_ATTRS $class:ident) => {};
-	(@SET_ATTRS $class:ident $attr:expr => const $val:expr $(, $($args:tt)*)?) => {{
+	(@SET_ATTRS $class:ident $obj:ty;) => {};
+	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => const $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $val.into());
-		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
+		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
-	(@SET_ATTRS $class:ident $attr:expr => $val:expr $(, $($args:tt)*)?) => {{
+	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $crate::obj::types::RustFn::new(
-			{ use std::convert::TryInto; $attr.try_into() }.unwrap(),
+			concat!(stringify!($obj), "::", $attr),
 			$val).into()
 		);
-		impl_object_type!(@SET_ATTRS $class $($($args)*)?);
+		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
-	(@SET_ATTRS $_class:ident $($tt:tt)*) => {
+	(@SET_ATTRS $_class:ident $_obj:ty; $($tt:tt)*) => {
 		compile_error!(concat!("Bad attrs given:", stringify!($($tt)*)));
 	};
 
@@ -189,7 +189,7 @@ macro_rules! impl_object_type {
 					impl_object_type!(@SET_PARENT class $($args)*);
 
 					class.set_attr("name", stringify!($obj).into());
-					impl_object_type!(@SET_ATTRS class $($body)*);
+					impl_object_type!(@SET_ATTRS class $obj; $($body)*);
 
 					#[cfg(test)]
  					unsafe {

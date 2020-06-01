@@ -18,9 +18,9 @@ mod impls {
 
 impl_object_type!{
 for Function [(parent super::Basic)]:
-	literals::SHL => impls::lsh,
-	literals::SHR => impls::rsh,
-	Key::Literal("curry") => impls::curry
+	"<<" => impls::lsh,
+	">>" => impls::rsh,
+	"curry" => impls::curry
 }
 
 mod tests {

@@ -55,10 +55,10 @@ impl Mapping {
 	}
 
 	pub fn get<K>(&self, attr: &K, obj: &Object) -> obj::Result<Object>
-	where K: Debug + ?Sized, Key: EqResult<K> {
-		if PARENT_KEY.equals(attr)? {
+	where K: Debug + ?Sized + EqResult<Key> {
+		if attr.equals(&PARENT_KEY)? {
 			self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into())
-		} else if ID_KEY.equals(attr)? {
+		} else if attr.equals(&ID_KEY)? {
 			Ok(obj.id().into())
 		} else if let Some(obj) = self.map.get(attr)? {
 			Ok(obj)
@@ -72,20 +72,15 @@ impl Mapping {
 		}
 	}
 
-	pub fn remove<K>(&mut self, attr: &K) -> obj::Result<Object>
-	where K: Debug + ?Sized, Key: EqResult<K> {
-		todo!("remove");
-		// if attr.call("==", &[&"__parent__".into()])?.downcast_ref::<types::Boolean>().map(|x| bool::from(*x)).unwrap_or(false) {
-		// 	return self.parent.take().ok_or_else(|| "attr `__parent__` doesn't exist.".into());
-		// }
-
-		// for (idx, (ref k, ref v)) in self.map.iter().enumerate() {
-		// 	if attr.call("==", &[k])?.downcast_clone::<types::Boolean>().map(|x| bool::from(x)).unwrap_or(false) {
-		// 		return Ok(self.map.remove(idx).1);
-		// 	}
-		// }
-
-		// Err(format!("attr {:?} does not exist.", attr).into())
+	pub fn remove<K>(&mut self, attr: &K, obj: &Object) -> obj::Result<Object>
+	where K: Debug + ?Sized + EqResult<Key> {
+		if attr.equals(&PARENT_KEY)? {
+			return Ok(self.parent.take().unwrap_or_default());
+		} else if let Some(old) = self.map.remove(attr)? {
+			Ok(old)
+		} else {
+			Err(format!("attr {:?} does not exist for {:?}.", attr, obj).into())
+		}
 	}
 }
 

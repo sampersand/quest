@@ -10,9 +10,9 @@ mod impls {
 	}
 
 	pub fn at_text(args: Args) -> Result<Object> {
-		let this = args._this()?;
+		let this = args.this()?;
 		Ok(format!("<{}:{}>",
-			this.get_attr(&literals::PARENT)?
+			this.get_attr(literals::PARENT)?
 				.get_attr("name")
 				.and_then(|x| x.downcast_call::<types::Text>())
 				.unwrap_or_else(|_| "<unknown name>".into())
@@ -31,13 +31,13 @@ mod impls {
 
 	pub fn neq(args: Args) -> Result<Object> {
 		args.this()?
-			.call_attr(&literals::EQL, args.args(..)?)?
-			.call_attr(&literals::NOT, args.new_args_slice(&[]))
+			.call_attr(literals::EQL, args.args(..)?)?
+			.call_attr(literals::NOT, args.new_args_slice(&[]))
 	}
 
 	pub fn not(args: Args) -> Result<Object> {
 		args.this()?.downcast_convert::<types::Boolean>()?
-			.call_attr(&literals::NOT, args.new_args_slice(&[]))
+			.call_attr(literals::NOT, args.new_args_slice(&[]))
 	}
 	// pub fn and(args: Args) -> Result<Object> {
 	// 	args.this()?
@@ -52,14 +52,14 @@ mod impls {
 
 impl_object_type!{
 for Basic [(parent super::Kernel)]:
-	literals::AT_BOOL => impls::at_bool,
-	literals::AT_TEXT => impls::at_text,
-	literals::EQL => impls::eql,
-	literals::NEQ => impls::neq,
-	literals::NOT => impls::not,
+	"@bool" => impls::at_bool,
+	"@text" => impls::at_text,
+	"==" => impls::eql,
+	"!=" => impls::neq,
+	"!" => impls::not,
 	// "||"    => impls::or,
 	// "&&"    => impls::and,
-	Key::Literal("ancestors") => (|args| todo!()) // this is just a reminder to update `__parent__`...
+	"ancestors" => (|args| todo!()) // this is just a reminder to update `__parent__`...
 }
 
 
@@ -106,9 +106,9 @@ mod tests {
 	fn neq() {
 		dummy_object!(struct DummyEqlOverride(i32, bool); {
 			"==" => (|args| Ok({
-				let this = args.this_downcast_ref::<DummyEqlOverride>()?;
+				let this = args.this()?.try_downcast_ref::<DummyEqlOverride>()?;
 				if this.1 {
-					this.0 == args.arg_downcast_ref::<DummyEqlOverride>(0)?.0
+					this.0 == args.arg(0)?.try_downcast_ref::<DummyEqlOverride>()?.0
 				} else {
 					false
 				}
@@ -143,7 +143,7 @@ mod tests {
 	fn not() {
 		dummy_object!(struct DummyBoolOverride(bool); crate::obj::types::Basic {
 			"@bool" => (|args| {
-				Ok(args.this_downcast_ref::<DummyBoolOverride>()?.0.into())
+				Ok(args.this()?.try_downcast_ref::<DummyBoolOverride>()?.0.into())
 			})
 		});
 

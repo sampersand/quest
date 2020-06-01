@@ -6,23 +6,48 @@ mod impls {
 	use crate::obj::{Object, Result, Args, types};
 
 	pub fn __id__(args: Args) -> Result<Object> {
-		Ok(types::Number::from(args.this()?.id()).into())
+		let this = args.this()?;
+		Ok(types::Number::from(this.id()).into())
 	}
 
 	pub fn __call_attr__(args: Args) -> Result<Object> {
-		args.this()?.call_attr(args.arg(0)?, args.args(1..).unwrap_or_default())
+		let this = args.this()?;
+		let attr = args.arg(0)?;
+		let rest = args.args(1..).unwrap_or_default();
+		this.call_attr(attr, rest)
 	}
 
 	pub fn __get_attr__(args: Args) -> Result<Object> {
-		args.this()?.get_attr(args.arg(0)?)
+		let this = args.this()?;
+		let attr = args.arg(0)?;
+		this.get_attr(attr)
 	}
 
 	pub fn __set_attr__(args: Args) -> Result<Object> {
-		args.this()?.set_attr(args.arg(0)?.clone(), args.arg(1)?.clone())
+		let this = args.this()?;
+		let attr = args.arg(0)?;
+		let val = args.arg(1)?;
+		this.set_attr(attr.clone(), val.clone())
 	}
 
 	pub fn __del_attr__(args: Args) -> Result<Object> {
-		args.this()?.del_attr(args.arg(0)?)
+		let this = args.this()?;
+		let attr = args.arg(0)?;
+		this.del_attr(attr)
+	}
+
+	pub fn dot_get_attr(args: Args) -> Result<Object> {
+		let this = args.this()?.clone();
+		let result = __get_attr__(args)?;
+		if result.is_a::<types::RustFn>() || result.is_a::<types::Block>() ||
+				result.is_a::<types::BoundFunction>() {
+			let bound_res = Object::new(crate::obj::types::BoundFunction);
+			bound_res.set_attr("__bound_object_owner__", this)?;
+			bound_res.set_attr("__bound_object__", result);
+			Ok(bound_res)	
+		} else {
+			Ok(result)
+		}
 	}
 }
 
@@ -34,17 +59,9 @@ for Pristine [(init_parent) (parent Pristine)]:
 	"__set_attr__" => (impls::__set_attr__),
 	"__del_attr__" => (impls::__del_attr__),
 	"::" => (impls::__get_attr__),
-	"." => (|args| {
-		let res = impls::__get_attr__(args.clone())?;
-		// res.call("__set_attr__", args.new_args_slice(&[
-		// 	"__bound_object__".into(),
-		// 	args.this()?.clone()
-		// ]))?;
-		Ok(res)
-	}),/*|args| {
-		args.get(0)?.call("__get_attr__", args.get_rng(1..)?)
-	}),*/
-	".=" => (impls::__set_attr__)/*(|args| {
-		args.get(0)?.call("__set_attr__", args.get_rng(1..)?)
-	}),*/
+	"." => impls::dot_get_attr,
+	".=" => (impls::__set_attr__)
 }
+
+
+

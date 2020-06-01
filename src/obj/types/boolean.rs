@@ -1,7 +1,6 @@
 use crate::obj::{self, Object, types};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Display, Formatter};
-use std::ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct Boolean(bool);
@@ -56,34 +55,6 @@ impl AsRef<bool> for Boolean {
 	}
 }
 
-impl ops::Not for Boolean {
-	type Output = Self;
-	fn not(self) -> Self::Output {
-		Boolean::new(!self.0)
-	}
-}
-
-impl ops::BitAnd for Boolean {
-	type Output = Self;
-	fn bitand(self, rhs: Self) -> Self::Output {
-		Boolean::new(self.0 & rhs.0)
-	}
-}
-
-impl ops::BitOr for Boolean {
-	type Output = Self;
-	fn bitor(self, rhs: Self) -> Self::Output {
-		Boolean::new(self.0 | rhs.0)
-	}
-}
-
-impl ops::BitXor for Boolean {
-	type Output = Self;
-	fn bitxor(self, rhs: Self) -> Self::Output {
-		Boolean::new(self.0 ^ rhs.0)
-	}
-}
-
 impl From<Boolean> for types::Number {
 	fn from(b: Boolean) -> Self {
 		const TRUE_NUMBER: types::Number = types::Number::ONE;
@@ -106,55 +77,54 @@ mod impls {
 	use crate::obj::{Object, Result, Args, types, literals};
 
 	pub fn at_num(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
-		Ok(types::Number::from(this).into())
+		let this = args.this()?.try_downcast_ref::<Boolean>()?;
+		Ok(types::Number::from(*this).into())
 	}
 
 	pub fn at_text(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
-		Ok(types::Text::from(this).into())
+		let this = args.this()?.try_downcast_ref::<Boolean>()?;
+		Ok(types::Text::from(*this).into())
 	}
 
 	pub fn at_bool(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		debug_assert!(this.is_a::<Boolean>(), "bad `this` given");
 		// TODO: forwarding args, make sure `self` is updated.
-		this.call_attr(&literals::CLONE, args.args(..)?)
+		this.call_attr(literals::CLONE, args.args(..)?)
 	}
 
 	pub fn clone(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
+		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
 		Ok(this.into())
 	}
 
 	pub fn eql(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
-		Ok(args.arg_downcast::<Boolean>(0)
-				.map(|rhs| (this == rhs).into())
-				.unwrap_or(Boolean::FALSE)
-				.into())
+		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
+		// let rhs_obj = args.arg_downcast_ref::<Boolean>(0);
+		let rhs = args.arg(0)?.try_downcast_ref::<Boolean>().map(|x| x.0);
+		Ok(rhs.map(|rhs| (this == rhs).into()).unwrap_or(Boolean::FALSE).into())
 	}
 
 	pub fn not(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
+		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
 		Ok((!this).into())
 	}
 
 	pub fn bitand(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
-		let rhs = args.arg_call_into::<Boolean>(0)?;
+		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
+		let rhs = args.arg(0)?.downcast_call::<Boolean>()?.0;
 		Ok((this & rhs).into())
 	}
 
 	pub fn bitor(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
-		let rhs = args.arg_call_into::<Boolean>(0)?;
+		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
+		let rhs = args.arg(0)?.downcast_call::<Boolean>()?.0;
 		Ok((this | rhs).into())
 	}
 
 	pub fn bitxor(args: Args) -> Result<Object> {
-		let this = args.this_downcast::<Boolean>()?;
-		let rhs = args.arg_call_into::<Boolean>(0)?;
+		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
+		let rhs = args.arg(0)?.downcast_call::<Boolean>()?.0;
 		Ok((this ^ rhs).into())
 	}
 
@@ -169,17 +139,17 @@ mod impls {
 
 impl_object_type!{
 for Boolean [(parent super::Basic) (convert "@bool")]:
-	literals::AT_NUM  => impls::at_num,
-	literals::AT_TEXT => impls::at_text,
-	literals::AT_BOOL => impls::at_bool,
-	literals::CLONE   => impls::clone,
-	literals::EQL     => impls::eql,
-	literals::NOT     => impls::not,
-	literals::BAND    => impls::bitand,
-	literals::BOR     => impls::bitor,
-	literals::BXOR    => impls::bitxor,
-	literals::CMP     => impls::cmp,
-	literals::HASH    => impls::hash,
+	"@num"  => impls::at_num,
+	"@text" => impls::at_text,
+	"@bool" => impls::at_bool,
+	"clone" => impls::clone,
+	"=="    => impls::eql,
+	"!"     => impls::not,
+	"&"     => impls::bitand,
+	"|"     => impls::bitor,
+	"^"     => impls::bitxor,
+	"<=>"   => impls::cmp,
+	"hash"  => impls::hash,
 }
 
 #[cfg(test)]

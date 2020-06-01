@@ -53,8 +53,7 @@ impl Number {
 	}
 
 	pub fn pow(self, rhs: Number) -> Number {
-		unimplemented!()
-		// self.0.powf(rhs.0).into()
+		self.0.powf(rhs.0).into()
 	}
 
 	pub fn from_str(inp: &str) -> Result<Number, std::num::ParseFloatError> {
@@ -159,6 +158,12 @@ impl_binary_op!(
 	Shl shl Shr shr BitAnd bitand BitOr bitor BitXor bitxor
 );
 
+impl PartialOrd for Number {
+	fn partial_cmp(&self, rhs: &Number) -> Option<std::cmp::Ordering> {
+		self.0.partial_cmp(&rhs.0)
+	}
+}
+
 impl std::ops::Neg for Number {
 	type Output = Self;
 	fn neg(self) -> Self::Output {
@@ -175,13 +180,16 @@ mod impls {
 	pub fn at_num(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		debug_assert!(this.is_a::<Number>(), "bad `this` given");
-		this.call_attr("clone", args.get_rng(1..)?)
+		this.call_attr("clone", args.clone())
 	}
 	
 	pub fn at_text(args: Args) -> Result<Object> {
-		if let Some(arg) = args.get(1).ok() {
-			let this = args._this_downcast_ref::<Number>()?.try_to_int()?;
-			let radix = arg.call_attr("@num", args.new_args_slice(&[]))?.try_downcast_ref::<Number>()?.try_to_int()?;
+		let this = args.this()?.try_downcast_ref::<Number>()?;
+
+		if let Some(arg) = args.arg(0).ok() {
+			let radix = arg.downcast_call::<Number>()?.try_to_int()?;
+			let this = this.try_to_int()?;
+
 			match radix {
             2 => Ok(format!("{:b}", this).into()),
             8 => Ok(format!("{:o}", this).into()),
@@ -191,91 +199,108 @@ mod impls {
             _ => todo!("unsupported radix {}", radix)
 			}
 		} else {
-			Ok(args._this_downcast_ref::<Number>()?.0.to_string().into())
+			Ok(this.0.to_string().into())
 		}
 	}
 
 	pub fn at_bool(args: Args) -> Result<Object> {
-		Ok((args._this_downcast_ref::<Number>()?.0 != Number::ZERO.0).into())
+		let this = args.this()?.try_downcast_ref::<Number>()?;
+		Ok((this.0 != Number::ZERO.0).into())
 	}
 
 	pub fn clone(args: Args) -> Result<Object> {
-		// unimplemented!()
-		Ok(args._this_downcast_ref::<Number>()?.0.into())
+		let this = args.this()?.try_downcast_ref::<Number>()?;
+		Ok(this.clone().into())
 	}
 
 
 	pub fn call(args: Args) -> Result<Object> {
-		args._this_obj::<Number>()?.call_attr("*", args.get_rng(1..)?)
+		let this = args.this()?;
+		this.call_attr("*", args.clone())
 	}
 
 	pub fn add(args: Args) -> Result<Object> {
-		use std::ops::Add;
-		Ok(args._this_downcast_ref::<Number>()?.add(*getarg!(Number; args)).into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		Ok((this + rhs).into())
 	}
 
 	pub fn sub(args: Args) -> Result<Object> {
-		use std::ops::Sub;
-		Ok(args._this_downcast_ref::<Number>()?.sub(*getarg!(Number; args)).into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		Ok((this - rhs).into())
 	}
 
 	pub fn mul(args: Args) -> Result<Object> {
-		use std::ops::Mul;
-		Ok(args._this_downcast_ref::<Number>()?.mul(*getarg!(Number; args)).into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		Ok((this * rhs).into())
 	}
 
 	pub fn div(args: Args) -> Result<Object> {
-		use std::ops::Div;
-		Ok(args._this_downcast_ref::<Number>()?.div(*getarg!(Number; args)).into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		Ok((this / rhs).into())
 	}
 
 	pub fn r#mod(args: Args) -> Result<Object> {
-		use std::ops::Rem;
-		Ok(args._this_downcast_ref::<Number>()?.rem(*getarg!(Number; args)).into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		Ok((this % rhs).into())
 	}
 
 	pub fn pow(args: Args) -> Result<Object> {
-		Ok(args._this_downcast_ref::<Number>()?.pow(*getarg!(Number; args)).into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		Ok(this.pow(rhs).into())
 	}
 
 
 	pub fn bitand(args: Args) -> Result<Object> {
-		use std::ops::BitAnd;
-		Ok(args._this_downcast_ref::<Number>()?.bitand(*getarg!(Number; args))?.into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		(this & rhs).map(Object::from)
 	}
 
 	pub fn bitor(args: Args) -> Result<Object> {
-		use std::ops::BitOr;
-		Ok(args._this_downcast_ref::<Number>()?.bitor(*getarg!(Number; args))?.into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		(this | rhs).map(Object::from)
 	}
 
 	pub fn bitxor(args: Args) -> Result<Object> {
-		use std::ops::BitXor;
-		Ok(args._this_downcast_ref::<Number>()?.bitxor(*getarg!(Number; args))?.into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		(this ^ rhs).map(Object::from)
 	}
 
 	pub fn shl(args: Args) -> Result<Object> {
-		use std::ops::Shl;
-		Ok(args._this_downcast_ref::<Number>()?.shl(*getarg!(Number; args))?.into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		(this << rhs).map(Object::from)
 	}
 
 	pub fn shr(args: Args) -> Result<Object> {
-		use std::ops::Shr;
-		Ok(args._this_downcast_ref::<Number>()?.shr(*getarg!(Number; args))?.into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		(this >> rhs).map(Object::from)
 	}
 
 
 	pub fn neg(args: Args) -> Result<Object> {
-		use std::ops::Neg;
-		Ok(args._this_downcast_ref::<Number>()?.neg().into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		Ok((-this).into())
 	}
 
 	pub fn pos(args: Args) -> Result<Object> {
-		args._this_obj::<Number>()?.call_attr("abs", args.new_args_slice(&[]))
+		let this = args.this()?;
+		this.call_attr("abs", args.clone())
 	}
 
 	pub fn bitnot(args: Args) -> Result<Object> {
-		Ok((!args._this_downcast_ref::<Number>()?.try_to_int()?).into())
+		unimplemented!()
+		// let this = *args.this()?.try_downcast_ref::<Number>()?;
+		// Ok((!this.0).into())
 	}
 
 	pub fn sqrt(args: Args) -> Result<Object> {
@@ -284,22 +309,26 @@ mod impls {
 	}
 
 	pub fn abs(args: Args) -> Result<Object> {
-		Ok(args._this_downcast_ref::<Number>()?.abs().into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		Ok(this.abs().into())
 	}
 
 	pub fn floor(args: Args) -> Result<Object> {
-		Ok(args._this_downcast_ref::<Number>()?.to_int().into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		Ok(this.to_int().into())
 	}
 
 	pub fn eql(args: Args) -> Result<Object> {
-		Ok((args._this_downcast_ref::<Number>()?.0 == args.get_downcast::<Number>(1)?.0).into())
+		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = *args.arg(0)?.try_downcast_ref::<Number>()?;
+		Ok((this == rhs).into())
 	}
 
 	pub fn cmp(args: Args) -> Result<Object> {
-		let this = args.this_downcast_ref::<Number>()?;
-		let rhs = args.arg_call_into::<Number>(0)?;
-		use std::cmp::Ord;
-		match this.0.partial_cmp(&rhs.0).ok_or_else(Object::default)? {
+		let this = args.this()?.try_downcast_ref::<Number>()?;
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		match this.partial_cmp(&rhs).ok_or_else(Object::default)? {
 			std::cmp::Ordering::Greater => Ok(1.into()),
 			std::cmp::Ordering::Equal => Ok(0.into()),
 			std::cmp::Ordering::Less => Ok((-1).into())
