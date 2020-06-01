@@ -185,6 +185,11 @@ impl Object {
 		self.0.mapping.read().expect("cannot read").get(attr, self)
 	}
 
+	pub fn has_attr<K>(&self, attr: &K) -> obj::Result<Object>
+	where K: Debug + ?Sized + EqResult<Key> {
+		Ok(self.0.mapping.read().expect("cannot read").has(attr, self).into())
+	}
+
 	pub fn set_attr<K: Into<Key>>(&self, attr: K, val: Object) -> obj::Result<Object> {
 		self.0.mapping.write().expect("cannot write").insert(attr.into(), val)
 	}

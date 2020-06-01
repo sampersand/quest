@@ -54,6 +54,11 @@ impl Mapping {
 		Ok(val)
 	}
 
+	pub fn has<K>(&self, attr: &K, obj: &Object) -> bool
+	where K: Debug + ?Sized + EqResult<Key> {
+		self.get(attr, obj).is_ok()
+	}
+
 	pub fn get<K>(&self, attr: &K, obj: &Object) -> obj::Result<Object>
 	where K: Debug + ?Sized + EqResult<Key> {
 		if attr.equals(&PARENT_KEY)? {

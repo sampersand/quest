@@ -6,10 +6,11 @@ mod impls {
 	// pub const TRUE: Object = Object::new(types::boolean::TRUE);
 
 	pub fn r#if(args: Args) -> Result<Object> {
-		if args.arg(0)?.downcast_call::<types::Boolean>()?.into() {
-			args.arg(1).map(Clone::clone)
+		// a hack because rustfns don't accept a `this` param
+		if args.this()?.downcast_call::<types::Boolean>()?.into() {
+			args.arg(0).map(Clone::clone)
 		} else {
-			args.arg(2).map(Clone::clone)
+			args.arg(1).map(Clone::clone)
 		}
 	}
 
@@ -22,7 +23,7 @@ mod impls {
 				.into_iter()
 				.map(|arg| arg.as_ref().to_string())
 				.collect::<Vec<_>>()
-				.join("")
+				.join(" ")
 		);
 		use std::io::Write;
 		std::io::stdout().flush().map_err(|err| Object::from(format!("couldn't flush: {}", err)))?;
@@ -91,7 +92,6 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"RustFn" => const super::RustFn::mapping(),
 	"Text" => const super::Text::mapping(),
 
-	"@text" => (|args| args.this()?.get_attr("name")),
 	"if" => impls::r#if, 
 	"disp" => impls::disp,
 	"quit" => impls::quit,

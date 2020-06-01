@@ -1,4 +1,4 @@
-use crate::obj::{Mapping, Object, types};
+use crate::obj::{Mapping, Object, types::{self, rustfn::Binding}};
 use std::sync::{Arc, RwLock};
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Formatter};
@@ -118,7 +118,11 @@ mod impls {
 	pub fn assign(args: Args) -> Result<Object> { // "=" 
 		let this = args.this()?;
 		let rhs = args.arg(0)?;
-		args.binding().set_attr(this.clone(), rhs.clone())
+		if this.downcast_ref::<Text>().map(|x| x.as_ref() == "__this__").unwrap_or(false) {
+			Ok(Binding::set_binding(rhs.clone()).as_ref().clone())
+		} else {
+			args.binding().set_attr(this.clone(), rhs.clone())
+		}
 	}
 
 	pub fn at_list(args: Args) -> Result<Object> {

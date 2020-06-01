@@ -16,6 +16,7 @@ pub mod function;
 pub mod bound_function;
 pub mod rustfn;
 pub mod block;
+pub mod scope;
 
 pub mod null;
 pub mod boolean;
@@ -33,6 +34,7 @@ pub use self::bound_function::BoundFunction;
 pub use self::function::Function;
 pub use self::rustfn::{RustFn, Args};
 pub use self::block::Block;
+pub use self::scope::Scope;
 pub use self::null::Null;
 pub use self::boolean::Boolean;
 pub use self::number::Number;

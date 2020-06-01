@@ -24,8 +24,18 @@ impl Binding {
 		})
 	}
 
+	pub fn set_binding(new: Object) -> Binding {
+		let new = Binding(new);
+		Binding::with_stack(|stack| {
+			let mut stack = stack.write().expect("stack poisoned");
+			assert!(stack.pop().is_some());
+			stack.push(new.clone());
+			new
+		})
+	}
+
 	fn new_child(&self) -> Binding {
-		Binding(Object::new_with_parent(types::Kernel, Some(self.0.clone())))
+		Binding(Object::new_with_parent(types::Scope, Some(self.0.clone())))
 	}
 
 	pub fn new_stackframe<F: FnOnce(&Binding) -> Result<Object>>(args: Args, func: F) -> Result<Object> {
@@ -36,7 +46,8 @@ impl Binding {
 				match stack.pop() {
 					None => eprintln!("nothing left to pop?"),
 					Some(binding) if binding.0.is_identical(self.1.as_ref()) => {},
-					Some(binding) => eprintln!("bindings don't match: {:?}", binding)
+					// this is now ok, as you can set __this__.
+					Some(binding) => {/*eprintln!("bindings don't match: {:?}", binding)*/}
 				}
 			}
 		}
@@ -58,7 +69,7 @@ impl Binding {
 
 	fn with_stack<F: FnOnce(&RwLock<Stack>) -> R, R>(func: F) -> R {
 		thread_local!(
-			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Kernel))]);
+			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Scope))]);
 		);
 
 		STACK.with(func)
