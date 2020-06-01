@@ -14,14 +14,17 @@ impl Default for Binding {
 }
 
 impl Binding {
-	pub fn instance() -> Binding {
+	pub fn try_instance() -> Option<Binding> {
 		Binding::with_stack(|stack| {
 			stack.read()
 				.expect("stack poisoned")
 				.last()
-				.expect("we should always have a stackframe")
-				.clone()
+				.map(|x| x.clone())
 		})
+	}
+
+	pub fn instance() -> Binding {
+		Binding::try_instance().expect("we should always have a stackframe")
 	}
 
 	pub fn set_binding(new: Object) -> Binding {
@@ -69,6 +72,7 @@ impl Binding {
 
 	fn with_stack<F: FnOnce(&RwLock<Stack>) -> R, R>(func: F) -> R {
 		thread_local!(
+			// static STACK: RwLock<Stack> = RwLock::new(vec![]);
 			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Scope))]);
 		);
 

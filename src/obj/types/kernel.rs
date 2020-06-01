@@ -14,8 +14,8 @@ mod impls {
 		}
 	}
 
-	pub fn disp(args: Args) -> Result<Object> {
-		println!("{}",
+	pub fn disp(args: Args, print_end: bool) -> Result<Object> {
+		print!("{}",
 			args.as_ref()
 				.iter()
 				.map(|arg| arg.downcast_call::<types::Text>())
@@ -25,14 +25,17 @@ mod impls {
 				.collect::<Vec<_>>()
 				.join(" ")
 		);
+		if print_end {
+			println!();
+		}
 		use std::io::Write;
 		std::io::stdout().flush().map_err(|err| Object::from(format!("couldn't flush: {}", err)))?;
 		Ok(Object::default())
 	}
 
 	pub fn r#while(args: Args) -> Result<Object> {
-		let cond = args.arg(0)?;
-		let body = args.arg(1)?;
+		let cond = args.this()?;
+		let body = args.arg(0)?;
 		let mut result = Object::default();
 		while cond.call_attr("()", Args::default())?.downcast_call::<types::Boolean>()?.into() {
 			result = body.call_attr("()", Args::default())?;
@@ -45,23 +48,68 @@ mod impls {
 	}
 
 	pub fn quit(args: Args) -> Result<Object> {
-		todo!("quit")
+		let code = args.this()
+			.and_then(|x| x.downcast_call::<types::Number>())
+			.map(|x| x.to_int())
+			.unwrap_or(1);
+
+		if let Some(msg) = args.arg(0).ok() {
+			disp(vec![msg.clone()].into(), true);
+		}
+
+		std::process::exit(code as i32)
 	}
 
 	pub fn system(args: Args) -> Result<Object> {
-		todo!("system")
+		use std::process::Command;
+		let this = args.this()?.downcast_call::<types::Text>()?;
+		let mut command = Command::new(this.as_ref());
+		for arg in args.args(..)?.as_ref() {
+			command.arg(arg.downcast_call::<types::Text>()?.as_ref());
+		}
+		let output = command.output().map_err(|err| format!("couldnt spawn proc: {}", err))?;
+		Ok(String::from_utf8_lossy(&output.stdout).to_string().into())
 	}
 
 	pub fn rand(args: Args) -> Result<Object> {
-		todo!("rand")
+		let mut start: f64 = 0.0;
+		let mut end: f64 = 1.0;
+
+		if let Some(start_num) = args.this().ok() {
+			start = start_num.downcast_call::<types::Number>()?.into();
+
+			if let Some(end_num) = args.arg(0).ok() {
+				end = end_num.downcast_call::<types::Number>()?.into();
+			} else {
+				end = start;
+				start = 0.0;
+			}
+		}
+		Ok((rand::random::<f64>() * (end - start) + start).into())
 	}
 
 	pub fn eval(args: Args) -> Result<Object> {
+		// use std::thread::Thread;
 		todo!("eval")
 	}
 
 	pub fn prompt(args: Args) -> Result<Object> {
-		todo!("prompt")
+		if let Some(prompt) = args.this().ok() {
+			disp(vec![prompt.clone()].into(), false);
+		}
+		use std::io::{self, Read};
+		let mut buf = String::new();
+
+		match io::stdin().read_line(&mut buf) {
+			Ok(_) => {
+				if buf.chars().last() == Some('\n') {
+					buf.pop(); // remove trailing newline; only on unix lol
+				}
+
+				Ok(buf.into())
+			},
+			Err(err) => Err(format!("couldn't read from stdin: {}", err).into())
+		}
 	}
 
 	pub fn sleep(args: Args) -> Result<Object> {
@@ -93,7 +141,7 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"Text" => const super::Text::mapping(),
 
 	"if" => impls::r#if, 
-	"disp" => impls::disp,
+	"disp" => (|a| impls::disp(a, true)),
 	"quit" => impls::quit,
 	"system" => impls::system,
 	"rand" => impls::rand,

@@ -152,7 +152,7 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 		while let Some(chr) = self.next_char()? {
 			txt.push(match chr {
 				'\\' => match self.next_char()?.ok_or(Error::UnterminatedQuote)? {
-					chr @ '\\' | chr @ '\'' | chr @ '\"' => '\\',
+					chr @ '\\' | chr @ '\'' | chr @ '\"' => chr,
 					'n' => '\n',
 					't' => '\t',
 					'r' => '\r',

@@ -99,11 +99,11 @@ mod impls {
 	pub fn call(args: Args) -> Result<Object> { // "()"
 		let this = args.this()?.try_downcast_ref::<Text>()?;
 		match this.as_ref() {
-			"__this__" => Ok(args.binding().as_ref().clone()),
-			"__args__" => args.binding().get_attr("__args__"),
+			"__this__" => Ok(args.binding().unwrap().as_ref().clone()),
+			"__args__" => args.binding().unwrap().get_attr("__args__"),
 			num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
 				use std::str::FromStr;
-				args.binding().get_attr("__args__")?
+				args.binding().unwrap().get_attr("__args__")?
 					.call_attr("[]", vec![
 						((types::Number::from_str(&num.chars().skip(1).collect::<String>())
 							.expect("bad string?"))
@@ -111,7 +111,7 @@ mod impls {
 						.into()
 					])
 			},
-			other => args.binding().get_attr(other)
+			other => args.binding().unwrap().get_attr(other)
 		}
 	}
 
@@ -121,7 +121,7 @@ mod impls {
 		if this.downcast_ref::<Text>().map(|x| x.as_ref() == "__this__").unwrap_or(false) {
 			Ok(Binding::set_binding(rhs.clone()).as_ref().clone())
 		} else {
-			args.binding().set_attr(this.clone(), rhs.clone())
+			args.binding().unwrap().set_attr(this.clone(), rhs.clone())
 		}
 	}
 

@@ -7,8 +7,7 @@
 	};
 
 	"@text" = {
-		disp(__this__);
-		(_1::'first') + " " + (_1::'last')
+		(_1.'first') + " " + (_1.'last')
 	};
 
 	__this__

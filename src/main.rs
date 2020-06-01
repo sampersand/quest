@@ -1,4 +1,5 @@
 #![allow(unused, deprecated)]
+extern crate rand;
 
 use crate::obj::types::ObjectType;
 
@@ -14,8 +15,16 @@ fn main() {
 		.into_iter();
 
 	let expression = parse::Expression::try_from_iter(&mut stream).unwrap();
-	let result = expression.execute();//.unwrap();
-	println!("{:?}", result.unwrap());
+	let args = std::env::args()
+		.skip(1)
+		.map(|x| obj::Object::from(String::from(x)))
+		.collect::<Vec<_>>().into();
+	let result = obj::Binding::new_stackframe(args, |_| expression.execute());
+	if cfg!(debug) {
+		println!("{:?}", result);
+	} else {
+		result.unwrap();
+	}
 }
 
 //	let mut stream = parse::Stream::from_str(r##"

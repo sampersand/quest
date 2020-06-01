@@ -8,7 +8,7 @@ use crate::obj::types::rustfn::Binding;
 
 #[derive(Clone, Default)]
 pub struct Args<'s> {
-	binding: Binding,
+	binding: Option<Binding>,
 	args: Cow<'s, [Object]>
 }
 use std::fmt::{self, Debug, Formatter};
@@ -20,11 +20,11 @@ impl Debug for Args<'_> {
 
 impl<'s> Args<'s> {
 	pub fn new<V: Into<Cow<'s, [Object]>>>(args: V) -> Self {
-		Args { args: args.into(), binding: Binding::instance() }
+		Args { args: args.into(), binding: Binding::try_instance() }
 	}
 
 	pub fn new_slice(args: &'s [Object]) -> Self {
-		Args { args: args.into(), binding: Binding::instance() }
+		Args { args: args.into(), binding: Binding::try_instance() }
 	}
 
 	pub fn new_args_slice<'a>(&self, args: &'a [Object]) -> Args<'a> {
@@ -35,8 +35,8 @@ impl<'s> Args<'s> {
 		self.args.to_mut().insert(0, this);
 	}
 
-	pub fn binding(&self) -> &Binding {
-		&self.binding
+	pub fn binding(&self) -> Option<&Binding> {
+		self.binding.as_ref()
 	}
 }
 

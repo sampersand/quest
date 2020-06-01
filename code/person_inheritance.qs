@@ -51,8 +51,8 @@ $Child = {
 		$__parent__ = _1::$instance_methods ;
 
 		$@text = {
-			$super = (((_1.'__parent__').'__parent__')::'@text');
-			"Baby " + super(_1)
+			$super = ((_1.'__parent__').'__parent__')::'@text';
+			"Baby " + super(_1);
 		};
 
 		$says_what = "Waa! I want food!";
