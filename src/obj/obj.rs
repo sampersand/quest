@@ -217,6 +217,8 @@ impl Object {
 	pub fn call_attr1<'a, K, A>(&self, attr: &K, mut args: A) -> obj::Result<Object>
 	where K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>> {
 		let mut args = args.into();
+
+
 		// if let Some(boundfn) = self.downcast_ref::<types::BoundFunction>() {
 		// 	if attr.equals(&"()".into())? {
 		// 		println!("hi");
@@ -231,12 +233,16 @@ impl Object {
 			}
 		}
 
+		let attr = self.get_attr(attr)?;
+		args.add_this(self.clone());
+		attr.call_attr("()", args)
+
 		// if attr.equals(&".".into())? {
 		// 	return unimplemented!();
 		// }
 		// self.call_attr("."), vec![attr.into_object()])?
 		// 	.call_attr("()", args)
-		Object::call_attr::<Key, Args>(&self.get_attr(attr)?, &"()".into(), args)
+		// Object::call_attr::<Key, Args>(&self.get_attr(attr)?, &"()".into(), args)
 		// args.add_this(self.clone());
 		// let result = self.get_attr(attr)?;
 		// let bound_res = Object::new(crate::obj::types::BoundFunction);

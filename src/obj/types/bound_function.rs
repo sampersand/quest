@@ -11,7 +11,6 @@ pub mod impls {
 	}
 
 	pub fn get_attr(args: Args) -> Result<Object> {
-		unimplemented!();
 		parent_call_attr(args, "__get_attr__")
 	}
 
