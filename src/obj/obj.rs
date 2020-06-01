@@ -218,14 +218,15 @@ impl Object {
 	where K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>> {
 		let mut args = args.into();
 
+		// println!("{:?}, {:?}, {:?}", self, attr, args);
 
-		// if let Some(boundfn) = self.downcast_ref::<types::BoundFunction>() {
-		// 	if attr.equals(&"()".into())? {
-		// 		println!("hi");
-		// 		args.add_this(self.clone());
-		// 		return crate::obj::types::bound_function::impls::call(args);
-		// 	}
-		// }
+		if let Some(boundfn) = self.downcast_ref::<types::BoundFunction>() {
+			if attr.equals(&"()".into())? {
+				// println!("hi");
+				args.add_this(self.clone());
+				return crate::obj::types::bound_function::impls::call(args);
+			}
+		}
 
 		if let Some(rustfn) = self.downcast_ref::<types::RustFn>() {
 			if attr.equals(&"()".into())? {
@@ -233,9 +234,12 @@ impl Object {
 			}
 		}
 
-		let attr = self.get_attr(attr)?;
-		args.add_this(self.clone());
-		attr.call_attr("()", args)
+		let bound_attr = Object::new(crate::obj::types::BoundFunction);
+		bound_attr.set_attr("__bound_object_owner__", self.clone())?;
+		bound_attr.set_attr("__bound_object__", self.get_attr(attr)?)?;
+		bound_attr.call_attr("()", args)
+		// args.add_this(self.clone());
+		// attr.call_attr("()", args)
 
 		// if attr.equals(&".".into())? {
 		// 	return unimplemented!();

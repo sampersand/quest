@@ -104,12 +104,12 @@ mod impls {
 			num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
 				use std::str::FromStr;
 				args.binding().get_attr("__args__")?
-					.call_attr("[]", args.new_args_slice(&[
-						(-f64::from(types::Number::from_str(&num.chars().skip(1).collect::<String>())
+					.call_attr("[]", vec![
+						((types::Number::from_str(&num.chars().skip(1).collect::<String>())
 							.expect("bad string?"))
-							 - 1.0f64)
+							)
 						.into()
-					]))
+					])
 			},
 			other => args.binding().get_attr(other)
 		}

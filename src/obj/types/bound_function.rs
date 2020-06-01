@@ -31,9 +31,9 @@ pub mod impls {
 		let bound_object_owner = this.get_attr("__bound_object_owner__")?;
 		let bound_object = this.get_attr("__bound_object__")?;
 		let mut args = Vec::from(args.args(..)?);
-		// print!("BoundObject::call(\nthis={:?}, \n__bound_object_owner__={:?}", this.id(), bound_object_owner.id());
+		// print!("BoundObject::call(this={:?}, __bound_object_owner__={:?}", this.id(), bound_object_owner.id());
 		args.insert(0, bound_object_owner);
-		// println!(",\nargs={:?},\n__bound_object__={:?})", args, this.get_attr("__bound_object__")?.id());
+		// println!(", args={:?}, __bound_object__={:?})", args, this.get_attr("__bound_object__")?.id());
 		// args.insert(0, bound_object.clone());
 		// bound_object.get_attr("()")?.call_attr("()", args)
 		this.get_attr("__bound_object__")?.call_attr("()", args)
