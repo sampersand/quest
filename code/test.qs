@@ -1,4 +1,4 @@
-12.'round'
+(12.'**')(2)
 # Kernel.$factorial = {
 # 	$memo = {$__parent__ = Pristine; __this__}();
 # 	{
