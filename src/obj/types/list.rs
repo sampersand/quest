@@ -53,23 +53,32 @@ mod impls {
 	use crate::obj::{Object, Result, Args, types};
 
 	pub fn at_text(args: Args) -> Result<Object> {
-		todo!("List::at_text");
+		let this = args.this()?.try_downcast_ref::<List>()?;
+		let mut l = vec![];
+		for item in this.0.iter() {
+			l.push(item.downcast_call::<types::Text>()?.as_ref().to_string());
+		}
+		Ok(format!("[{}]", l.join(", ")).into())
 	}
 
 	pub fn at_bool(args: Args) -> Result<Object> {
-		todo!("List::at_bool");
+		let this = args.this()?;
+		this.call_attr("len", args.clone())?
+			.call_attr("@bool", vec![])
 	}
 
 	pub fn at_map(args: Args) -> Result<Object> {
 		todo!("List::at_map");
 	}
 
-	pub fn at_list(args: Args) -> Result<Object> {
-		todo!("List::at_list");
+	pub fn at_list(args: Args) -> Result<Object> { // "@list"
+		let this = args.this()?;
+		this.call_attr("clone", args.clone())
 	}
 
 	pub fn clone(args: Args) -> Result<Object> {
-		todo!("List::clone");
+		let this = args.this()?.try_downcast_ref::<List>()?;
+		Ok(this.clone().into())
 	}
 
 	pub fn does_include(args: Args) -> Result<Object> {
@@ -80,18 +89,63 @@ mod impls {
 		todo!("List::index_of");
 	}
 
-	pub fn is_empty(args: Args) -> Result<Object> {
-		todo!("List::is_empty");
+	pub fn len(args: Args) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<List>()?;
+		Ok(this.0.len().into())
 	}
 
-	pub fn len(args: Args) -> Result<Object> {
-		todo!("List::len");
+
+	fn correct_index(idx: isize, len: usize) -> Result<Option<usize>> {
+		if idx.is_positive() {
+			let idx = (idx - 1) as usize;
+			if idx < len {
+				Ok(Some(idx))
+			} else {
+				Ok(None)
+			}
+		} else if idx.is_negative() {
+			let idx = (-idx) as usize;
+			if idx < len {
+				Ok(Some(len - idx))
+			} else {
+				Ok(None)
+			}
+		} else {
+			Err("indexing by 0 isn't allowed".into())
+		}
 	}
 
 	pub fn index(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
-		let idx = args.arg(0)?.try_downcast_ref::<types::Number>()?.to_int() as usize - 1;
-		Ok(this.0.get(idx).map(|x| x.clone()).unwrap_or_default())
+
+		let len = this.0.len();
+		let start = args.arg(0)?
+			.try_downcast_ref::<types::Number>()?
+			.to_int() as isize;
+		let end = args.arg(1)
+			.ok()
+			.map(Object::downcast_call::<types::Number>)
+			.transpose()?
+			.map(|x| x.to_int() as isize);
+
+		let start =
+			if let Some(start) = correct_index(start, len)? {
+				start
+			} else {
+				return Ok(Object::default())
+			};
+
+		match end {
+			None => Ok(this.0[start].clone()),
+			Some(end) => {
+				let end = correct_index(end, len)?.map(|x| x + 1).unwrap_or(len);
+				if end < start {
+					Ok(Object::default())
+				} else {
+					Ok(this.0[start..end].to_owned().into())
+				}
+			}
+		}
 	}
 
 	pub fn index_assign(args: Args) -> Result<Object> {
@@ -100,6 +154,26 @@ mod impls {
 
 	pub fn join(args: Args) -> Result<Object> {
 		todo!("List::join");
+	}
+
+	pub fn add(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		this.call_attr("clone", vec![])?
+			.call_attr("+=", args.args(..)?)
+	}
+
+	pub fn add_assign(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		this.try_downcast_mut::<List>()?.0.append(&mut rhs.clone().0);
+		Ok(this.clone())
+	}
+
+	pub fn push(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		let rhs = args.arg(0)?;
+		this.try_downcast_mut::<List>()?.0.push(rhs.clone());
+		Ok(this.clone())
 	}
 
 	pub fn intersect(args: Args) -> Result<Object> {
@@ -130,11 +204,13 @@ for List [(parent super::Basic) (convert "@list")]:
 
 	"does_include" => impls::does_include,
 	"index_of" => impls::index_of,
-	"is_empty" => impls::is_empty,
 	"len" => impls::len,
 	"[]" => impls::index,
 	"[]=" => impls::index_assign,
 	"join" => impls::join,
+	"<<" => impls::push,
+	"+" => impls::add,
+	"+=" => impls::add_assign,
 	"&" => impls::intersect,
 	"|" => impls::union,
 	"^" => impls::not_shared,

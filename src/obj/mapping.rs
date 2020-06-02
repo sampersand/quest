@@ -73,6 +73,14 @@ impl Mapping {
 					return Ok(val);
 				}
 			}
+
+			if let Some(mixins) = self.map.get("__mixins__")? {
+				for mixin in mixins.downcast_call::<types::List>()?.as_ref() {
+					if let Some(val) = mixin.get_attr(attr).ok() {
+						return Ok(val);
+					}
+				}
+			}
 			Err(format!("attr {:?} does not exist for {:?}.", attr, obj).into())
 		}
 	}

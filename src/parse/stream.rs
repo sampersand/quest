@@ -209,7 +209,7 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 				},
 				None => return Err(Error::UnknownTokenStart(':'))
 			},
-			'?' | '@' | '\\' | '`' => return Err(Error::UnknownTokenStart(first_chr)),
+			'?' | '\\' | '`' => return Err(Error::UnknownTokenStart(first_chr)),
 			_ => unreachable!()
 		}))
 	}
@@ -238,7 +238,7 @@ impl<'a, S: Seek + Read> Iterator for Stream<'a, S> {
 			},
 
 			'0'..='9' => self.next_number(chr),
-			_ if chr.is_alphabetic() || chr == '_' => self.next_variable(chr),
+			_ if chr.is_alphabetic() || chr == '_' || chr == '@' => self.next_variable(chr),
 			'$' => self.next_variable_escaped(),
 			'\'' | '"' => self.next_text(chr),
 
@@ -253,7 +253,7 @@ impl<'a, S: Seek + Read> Iterator for Stream<'a, S> {
 			',' => Ok(Token::Comma),
 			';' => Ok(Token::Endline),
 			// punctuation characters not covered before:
-			// 	! $ % & * + - . / : < = > ? @ \ ^ ` , | ~
+			// 	! $ % & * + - . / : < = > ? \ ^ ` , | ~
 			// not all of them are actually used as variables
 			_ if chr.is_ascii_punctuation() => self.next_operator(chr),
 

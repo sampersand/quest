@@ -107,7 +107,7 @@ mod impls {
 					.call_attr("[]", vec![
 						((types::Number::from_str(&num.chars().skip(1).collect::<String>())
 							.expect("bad string?"))
-							)
+							+ types::Number::ONE)
 						.into()
 					])
 			},

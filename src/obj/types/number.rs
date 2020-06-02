@@ -319,9 +319,12 @@ mod impls {
 	}
 
 	pub fn eql(args: Args) -> Result<Object> {
-		let this = *args.this()?.try_downcast_ref::<Number>()?;
-		let rhs = *args.arg(0)?.try_downcast_ref::<Number>()?;
-		Ok((this == rhs).into())
+		let this = args.this()?.try_downcast_ref::<Number>()?;
+		if let Some(rhs) = args.arg(0)?.downcast_ref::<Number>() {
+			Ok((*this == *rhs).into())
+		} else {
+			Ok(false.into())
+		}
 	}
 
 	pub fn cmp(args: Args) -> Result<Object> {
@@ -379,6 +382,9 @@ for Number [(parent super::Basic) (convert "@num")]:
 	"~" => impls::bitnot,
 	"==" => impls::eql,
 	"<=>" => impls::cmp,
+	"<" => (|args| args.this()?
+			.call_attr("<=>", args.args(..)?)?
+			.call_attr("==", vec![(-1).into()])),
 	"sqrt" => impls::sqrt,
 	"abs" => impls::abs,
 	"idiv" => impls::idiv,

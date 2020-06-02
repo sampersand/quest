@@ -32,10 +32,12 @@ $Person = {
 			(_1.$first ) + ' ' + _1.$last
 		};
 
-		$says_what = 'hi';
+		# define what it means for a person to speak
+		$says_what = 'hi!';
 
 		$speak = {
-			disp(((_1.'@text')() + ": ") + (_1.'says_what'))
+			# speaking is `<name>: <message>`
+			_1.$@text() + ': ' + _1.$says_what
 		};
 
 		# Return this as the last argument, so we can use it as a parent.
@@ -45,27 +47,42 @@ $Person = {
 	__this__
 }();
 
+# Now we make a child that inherits from parent
 $Child = {
+	# All the things parent defines we now have
 	$__parent__ = Person;
-	$instance_methods = {
-		$__parent__ = _1::$instance_methods ;
 
+	$name = "Child";
+
+	# A child will have its own instance methods.
+	$instance_methods = {
+		# We want these instance methods to inherit from the Parent's instance methods
+		$__parent__ = _1::$instance_methods;
+
+		# Redefine what it means to convert a child to text.
 		$@text = {
-			$super = ((_1.'__parent__').'__parent__')::'@text';
-			"Baby " + super(_1)
+			# Get the `super` method. `_1.$__parent__` is simply the child's instance methods,
+			# So to get the "super", you need to get the Child's parent's version of `@text`.
+			# By using the `::` operator, we don't leave `@text` unbound.
+			$super = _1.$__parent__.$__parent__::$@text;
+
+			# Since the text method was unbound, it work shere
+			'Baby ' + super(_1)
 		};
 
-		$says_what = "Waa! I want food!";
+		# Children want food.
+		$says_what = 'Waa! I want food!';
 
 		__this__
 	}(__this__);
+
 	__this__
 }();
 
 $sam = Person('Sam', 'W');
 $child = Child('Jace', 'B');
-(sam.'speak')();
-(child.'speak')();
+sam.$speak(); # => "Sam W: hi!"
+child.$speak(); # => "Baby Jace B: Waa! I want food!"
 
 
 

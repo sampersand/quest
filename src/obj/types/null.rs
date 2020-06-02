@@ -40,6 +40,13 @@ impl From<Null> for types::Boolean {
 	}
 }
 
+impl From<Null> for types::List {
+	#[inline]
+	fn from(_: Null) -> Self {
+		types::List::new(vec![])
+	}
+}
+
 impl From<Null> for types::Number {
 	fn from(_: Null) -> Self {
 		types::Number::ZERO
@@ -61,6 +68,11 @@ mod impls {
 	pub fn at_bool(_args: Args) -> Result<Object> {
 		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
 		Ok(types::Boolean::from(Null).into())
+	}
+
+	pub fn at_list(_args: Args) -> Result<Object> {
+		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
+		Ok(types::List::from(Null).into())
 	}
 
 	pub fn at_num(_args: Args) -> Result<Object> {
@@ -92,6 +104,7 @@ mod impls {
 impl_object_type!{
 for Null [(parent super::Basic)]:
 	"@bool" => impls::at_bool,
+	"@list" => impls::at_list,
 	"@num" => impls::at_num,
 	"@text" => impls::at_text,
 	"clone" => impls::clone,

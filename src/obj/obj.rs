@@ -16,7 +16,7 @@ impl Default for Object {
 }
 
 pub(super) struct Internal {
-	mapping: Arc<RwLock<Mapping>>,
+	pub(super) mapping: Arc<RwLock<Mapping>>,
 	id: usize,
 	// binding: Binding,
 	pub(super) data: Arc<RwLock<dyn Any + Send + Sync>>,
@@ -120,8 +120,7 @@ impl Object {
 
 	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::Deref<Target = T> + 'a> {
 		self.downcast_ref::<T>().ok_or_else(||
-			panic!()
-			// types::Text::from(format!("{:?} is not a {:?}", self, TypeId::of::<T>())).into()
+			types::Text::from(format!("{:?} is not a {:?}", self, std::any::type_name::<T>())).into()
 		)
 	}
 
@@ -142,6 +141,12 @@ impl Object {
 			None
 		}
 	}
+	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::DerefMut<Target = T> + 'a> {
+		self.downcast_mut::<T>().ok_or_else(||
+			types::Text::from(format!("{:?} is not a {:?}", self, std::any::type_name::<T>())).into()
+		)
+	}
+
 
 	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl std::ops::DerefMut<Target=T> + 'a> {
 		use std::{sync::RwLockWriteGuard, marker::PhantomData, ops::{Deref, DerefMut}};
@@ -197,6 +202,20 @@ impl Object {
 	pub fn del_attr<K>(&self, attr: &K) -> obj::Result<Object>
 	where K: Debug + ?Sized + EqResult<Key> {
 		self.0.mapping.write().expect("cannot write").remove(attr, self)
+	}
+
+	pub fn add_mixin(&self, val: Object) -> obj::Result<Object> {
+		let mixin =
+			match self.get_attr("__mixins__") {
+				Ok(mixin) => mixin, 
+				Err(_) => {
+					let mixin: Object = vec![].into();
+					self.set_attr("__mixins__", mixin.clone())?;
+					mixin
+				}
+			};
+
+		mixin.call_attr("<<", vec![val])
 	}
 
 

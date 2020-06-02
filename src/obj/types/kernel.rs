@@ -36,9 +36,14 @@ mod impls {
 	pub fn r#while(args: Args) -> Result<Object> {
 		let cond = args.this()?;
 		let body = args.arg(0)?;
+		let call_args = 
+			match args.arg(1) {
+				Ok(arg) => Vec::from(arg.downcast_call::<types::List>()?).into(),
+				Err(_) => Args::default()
+			};
 		let mut result = Object::default();
-		while cond.call_attr("()", Args::default())?.downcast_call::<types::Boolean>()?.into() {
-			result = body.call_attr("()", Args::default())?;
+		while cond.call_attr("()", call_args.clone())?.downcast_call::<types::Boolean>()?.into() {
+			result = body.call_attr("()", call_args.clone())?;
 		}
 		Ok(result)
 	}
@@ -130,6 +135,7 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"Basic" => const super::Basic::mapping(),
 	"Block" => const super::Block::mapping(),
 	"Boolean" => const super::Boolean::mapping(),
+	"BoundFunction" => const super::BoundFunction::mapping(),
 	"Function" => const super::Function::mapping(),
 	"Kernel" => const Kernel::mapping(),
 	"List" => const super::List::mapping(),
@@ -138,6 +144,7 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"Number" => const super::Number::mapping(),
 	"Pristine" => const super::Pristine::mapping(),
 	"RustFn" => const super::RustFn::mapping(),
+	"Scope" => const super::Scope::mapping(),
 	"Text" => const super::Text::mapping(),
 
 	"if" => impls::r#if, 
@@ -151,6 +158,9 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"for" => impls::r#for,
 	"sleep" => impls::sleep,
 	"open" => impls::open,
+
+	// "&&" => impls::and,
+	// "||" => impls::or,
 }
 
 

@@ -37,8 +37,10 @@ impl Binding {
 		})
 	}
 
-	fn new_child(&self) -> Binding {
-		Binding(Object::new_with_parent(types::Scope, Some(self.0.clone())))
+	fn new_child(&self, binding: Binding) -> Result<Binding> {
+		let new_scope = Object::from(types::Scope);
+		new_scope.add_mixin(binding.as_ref().clone())?;
+		Ok(Binding(new_scope))
 	}
 
 	pub fn new_stackframe<F: FnOnce(&Binding) -> Result<Object>>(args: Args, func: F) -> Result<Object> {
@@ -57,12 +59,17 @@ impl Binding {
 
 		Binding::with_stack(|stack| {
 			let binding = {
-				let mut stack = stack.write().expect("stack poisoned");
-				let binding = stack.last().expect("we should always have a stackframe")
-					.new_child();
+				let binding = Object::from(types::Scope);
+				if let Some(caller) = args.this().ok() {
+					binding.set_attr("__caller__", caller.clone());
+				}
 				binding.set_attr("__args__", Vec::from(args).into())?;
+				Binding(binding)
+			};
+
+			{
+				let mut stack = stack.write().expect("stack poisoned");
 				stack.push(binding.clone());
-				binding
 			};
 
 			let guard = StackGuard(stack, &binding);
@@ -77,6 +84,12 @@ impl Binding {
 		);
 
 		STACK.with(func)
+	}
+}
+
+impl From<Object> for Binding {
+	fn from(obj: Object) -> Self {
+		Binding(obj)
 	}
 }
 

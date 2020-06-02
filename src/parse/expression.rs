@@ -112,9 +112,9 @@ fn next_primary<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Expre
 // block_inner -> (block_line? ';')* block_line?
 // block_line -> (expr (',' expr)*)?
 fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType) -> Result<Block> {
-	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>) -> Result<Line> {
+	fn next_line<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType) -> Result<Line> {
 		let mut args = vec![];
-		let mut is_multiple = false;
+		let mut is_multiple = paren == ParenType::Bracket;
 		loop {
 			args.push(next_expression(iter)?);
 			match iter.peek() {
@@ -138,7 +138,7 @@ fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType)
 		}
 	}
 	let mut body = vec![];
-	let mut returns = false;
+	let mut returns = true;
 
 	loop {
 		match iter.peek() {
@@ -155,7 +155,7 @@ fn next_block<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, paren: ParenType)
 				returns = false;
 			},
 			_ => {
-				body.push(next_line(iter)?);
+				body.push(next_line(iter, paren)?);
 				returns = true;
 			}
 		}

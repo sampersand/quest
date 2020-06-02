@@ -52,7 +52,7 @@ impl Block {
 		self.paren
 	}
 
-	fn run_block(&self) -> Result<Object> {
+	fn run_block(&self) -> Result<Option<Object>> {
 		if let Some(last) = self.body.last() {
 			for line in &self.body[..self.body.len() - 1] {
 				line.execute()?;
@@ -60,22 +60,35 @@ impl Block {
 
 			let ret = last.execute()?;
 			if self.returns {
-				return Ok(ret)
+				return Ok(Some(ret))
 			}
 		}
 
-		Ok(Object::default())
+		Ok(None)
 	}
 
 	fn call(&self, args: Args) -> Result<Object> {
-		Binding::new_stackframe(args, (|_binding| self.run_block()))
+		Binding::new_stackframe(args, (|_binding| {
+			self.run_block().map(Option::unwrap_or_default)
+		}))
 	}
 
 	pub fn execute(&self) -> Result<Option<Object>> {
 		match self.paren {
-			ParenType::Paren => self.run_block().map(|x| if self.returns { Some(x) } else { None }),
-			ParenType::Brace => Ok(Some(self.clone().into())),
-			ParenType::Bracket => todo!("ParenType::Bracket return value."),
+			ParenType::Paren => self.run_block().map(|x| {
+				let x = x.unwrap_or_default();
+				if self.returns { Some(x) } else { None }
+			}),
+			ParenType::Bracket => self.run_block().map(|x| {
+				let x = x.unwrap_or_else(|| vec![].into());
+				if self.returns { Some(x) } else { None }
+			}),
+			ParenType::Brace => {
+				let block = Object::from(self.clone());
+				block.add_mixin(Binding::instance().as_ref().clone())?;
+				Ok(Some(block))
+			},
+			// ParenType::Bracket => todo!("ParenType::Bracket return value."),
 		}
 	}
 }
@@ -83,8 +96,9 @@ impl Block {
 mod impls {
 	use super::*;
 
-	pub fn call(args: Args) -> Result<Object> {
-		args.this()?.try_downcast_ref::<Block>()?.call(args.args(..)?)
+	pub fn call(mut args: Args) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<Block>()?.clone();
+		this.call(args)
 	}
 }
 

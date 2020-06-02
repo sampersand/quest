@@ -20,11 +20,11 @@ fn main() {
 		.map(|x| obj::Object::from(String::from(x)))
 		.collect::<Vec<_>>().into();
 	let result = obj::Binding::new_stackframe(args, |_| expression.execute());
-	if cfg!(debug) {
+	// if cfg!(debug) {
 		println!("{:?}", result);
-	} else {
-		result.unwrap();
-	}
+	// } else {
+	// 	result.unwrap();
+	// }
 }
 
 //	let mut stream = parse::Stream::from_str(r##"
