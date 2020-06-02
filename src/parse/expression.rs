@@ -53,7 +53,7 @@ fn next_expression_bound<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, lhs: E
 			next_expression_bound(iter, func_call, None)
 		},
 		// <-- if we had postfix operators, they'd go here.
-		Some(Token::Operator(op)) if op.arity() == 2 && end.as_ref().map(|end| *op >= *end).unwrap_or(true) => {
+		Some(Token::Operator(op)) if op.arity() == 2 && end.as_ref().map(|end| *op > *end).unwrap_or(true) => {
 			let op = *op;
 			assert_eq!(iter.next().unwrap(), Token::Operator(op));
 			// TODO: order of operations here.
