@@ -1,5 +1,5 @@
 use crate::obj::{self, literals,
-	Result, mapping::{self, Key}, Mapping, Args,
+	Result, mapping::{self, Key, Value}, Mapping, Args,
 	types::{self, ObjectType, rustfn::Binding},
 	traits::*
 };
@@ -206,9 +206,13 @@ impl Object {
 		Ok(self.0.mapping.read().expect("cannot read").has(attr).into())
 	}
 
-	pub fn set_attr<K: Into<Key>>(&self, attr: K, val: Object) -> obj::Result<Object> {
+	pub fn set_attr<K, V>(&self, attr: K, value: V) -> obj::Result<Object>
+	where
+		K: Into<Key>,
+		V: Into<Value>
+	{
 		self.0.mapping.write().expect("cannot write")
-			.insert(attr.into(), val)
+			.insert(attr.into(), value)
 	}
 
 	pub fn del_attr<K>(&self, attr: &K) -> obj::Result<Object>

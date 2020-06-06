@@ -131,14 +131,14 @@ macro_rules! impl_object_type {
 
 	(@SET_ATTRS $class:ident $obj:ty;) => {};
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => const $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr($attr, $val.into());
+		$class.set_attr($attr, Object::from($val));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $crate::obj::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
-			$val).into()
+			$val)
 		);
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
@@ -188,7 +188,7 @@ macro_rules! impl_object_type {
 					use $crate::obj::{Object, types::*};
 					impl_object_type!(@SET_PARENT class $($args)*);
 
-					class.set_attr("name", stringify!($obj).into());
+					class.set_attr("name", Object::from(stringify!($obj)));
 					impl_object_type!(@SET_ATTRS class $obj; $($body)*);
 
 					#[cfg(test)]

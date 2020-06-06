@@ -1,20 +1,38 @@
-$'≤' = 3;
+Kernel.$Frac = {
+	$name = 'Frac';
+	$() = {
+		# parens are needed bc I don't have syntax parser perfectly done
+		$__parent__ = (_1.$instance_methods);
+		$numer = _2;
+		$denom = _3;
+		__this__
+	};
 
-disp(Text::"()"(1))
-# $list = ['sam', 22, true];
-# $map = { $name = 'sam'; $age = 22; $male = true; __this__ }();
+	$instance_methods = {
+		$class = _1;
 
-# $longhand_list = {
-# 	__this__.1 = 'sam';
-# 	__this__.2 = 22;
-# 	__this__.3 = true;
-# 	__this__ # return value is the list we've made
-# }();
+		$+ = {
+			$lhs = _1;
+			$rhs = _2.$@num();
+		# parens are needed bc I don't have syntax parser perfectly done
+			Frac((lhs.$numer) + rhs * (lhs.$denom), lhs.$denom)
+		};
 
-# $longhand_map = {
-# 	__this__.'name' = 'sam';
-# 	__this__.'age' = 22;
-# 	__this__.'male' = true;
-# 	__this__ # return value is the map we've made
-# }();
+		$@text = {
+		# parens are needed bc I don't have syntax parser perfectly done
+			'' + (_1.$numer) + '/' + (_1.$denom)
+		};
 
+		$@num = {
+		# parens are needed bc I don't have syntax parser perfectly done
+			(_1.$numer) / (_1.$denom)
+		};
+
+		__this__
+	}(__this__);
+
+	__this__
+}();
+
+$three_quarters = Frac(3, 4);
+disp(three_quarters + 4.3);
