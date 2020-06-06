@@ -140,7 +140,6 @@ for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be prist
 	"Function" => const super::Function::mapping(),
 	"Kernel" => const Kernel::mapping(),
 	"List" => const super::List::mapping(),
-	"Map" => const super::Map::mapping(),
 	"Null" => const super::Null::mapping(),
 	"Number" => const super::Number::mapping(),
 	"Pristine" => const super::Pristine::mapping(),

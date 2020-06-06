@@ -24,7 +24,6 @@ pub mod number;
 pub mod text;
 
 pub mod list;
-pub mod map;
 
 pub use self::convert::Convertible;
 pub use self::pristine::Pristine;
@@ -40,4 +39,3 @@ pub use self::boolean::Boolean;
 pub use self::number::Number;
 pub use self::text::Text;
 pub use self::list::List;
-pub use self::map::Map;
