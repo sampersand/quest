@@ -1,10 +1,12 @@
 use crate::obj::{self, literals,
-	Result, EqResult, mapping::{self, Key}, Mapping, Args,
-	types::{self, ObjectType, rustfn::Binding}
+	Result, mapping::{self, Key}, Mapping, Args,
+	types::{self, ObjectType, rustfn::Binding},
+	traits::*
 };
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
+use std::ops::Deref;
 
 #[derive(Clone)]
 pub struct Object(pub(super) Arc<Internal>);
@@ -79,7 +81,9 @@ impl EqResult<Key> for Object {
 
 impl Object {
 	pub fn new_with_parent<T>(data: T, parent: Option<Object>) -> Self 
-	where T: Any + Debug + Send + Sync {
+	where
+		T: Any + Debug + Send + Sync
+	{
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
 		//println!("making object ({}) = {:?}", id, data);
@@ -141,6 +145,7 @@ impl Object {
 			None
 		}
 	}
+
 	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> obj::Result<impl std::ops::DerefMut<Target = T> + 'a> {
 		self.downcast_mut::<T>().ok_or_else(||
 			types::Text::from(format!("{:?} is not a {:?}", self, std::any::type_name::<T>())).into()
@@ -172,7 +177,9 @@ impl Object {
 	}
 
 	pub fn dot_get_attr<K>(&self, attr: &K) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key> {
+	where
+		K: Debug + ?Sized + EqResult<Key>
+	{
 		let result = self.get_attr(attr)?;
 		if result.is_a::<types::RustFn>() || result.is_a::<types::Block>() ||
 				result.is_a::<types::BoundFunction>() {
@@ -186,22 +193,29 @@ impl Object {
 	}
 
 	pub fn get_attr<K>(&self, attr: &K) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key> {
-		self.0.mapping.read().expect("cannot read").get(attr, self)
+	where
+		K: Debug + ?Sized + EqResult<Key>
+	{
+		self.0.mapping.read().expect("cannot read").get(attr)
 	}
 
 	pub fn has_attr<K>(&self, attr: &K) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key> {
-		Ok(self.0.mapping.read().expect("cannot read").has(attr, self).into())
+	where
+		K: Debug + ?Sized + EqResult<Key>
+	{
+		Ok(self.0.mapping.read().expect("cannot read").has(attr).into())
 	}
 
 	pub fn set_attr<K: Into<Key>>(&self, attr: K, val: Object) -> obj::Result<Object> {
-		self.0.mapping.write().expect("cannot write").insert(attr.into(), val)
+		self.0.mapping.write().expect("cannot write")
+			.insert(attr.into(), val)
 	}
 
 	pub fn del_attr<K>(&self, attr: &K) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key> {
-		self.0.mapping.write().expect("cannot write").remove(attr, self)
+	where
+		K: Debug + ?Sized + EqResult<Key>
+	{
+		self.0.mapping.write().expect("cannot write").remove(attr)
 	}
 
 	pub fn add_mixin(&self, val: Object) -> obj::Result<Object> {
@@ -220,7 +234,9 @@ impl Object {
 
 
 	pub fn call_attr<'a, K, A>(&self, attr: &K, mut args: A) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>> {
+	where
+		K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>>
+	{
 		static mut INDENT: usize = 0;
 		// for i in 0..unsafe{ INDENT } {
 		// 	print!("\t");
@@ -239,7 +255,9 @@ impl Object {
 	}
 
 	pub fn call_attr1<'a, K, A>(&self, attr: &K, mut args: A) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>> {
+	where
+		K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>>
+	{
 		let mut args = args.into();
 
 		// println!("{:?}, {:?}, {:?}", self, attr, args);

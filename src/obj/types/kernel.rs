@@ -219,7 +219,7 @@ mod tests {
 
 		assert_mapping_eq!(
 			"Basic" Basic, "Block" Block, "Boolean" Boolean, "Function" Function,
-			"Kernel" Kernel, "List" List, "Map" Map, "Null" Null, "Number" Number,
+			"Kernel" Kernel, "List" List, "Null" Null, "Number" Number,
 			"Pristine" Pristine, "RustFn" RustFn, "Text" Text
 		);
 	}

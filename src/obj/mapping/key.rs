@@ -1,7 +1,5 @@
-use std::convert::TryFrom;
-use std::any::Any;
-
 use crate::obj::{Object, Result, types, EqResult};
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub enum Key {
@@ -9,12 +7,28 @@ pub enum Key {
 	Literal(&'static str),
 }
 
-impl TryFrom<Key> for &'static str {
-	type Error = ();
-	fn try_from(key: Key) -> std::result::Result<Self, Self::Error> {
-		match key {
-			Key::Object(_) => Err(()),
-			Key::Literal(lit) => Ok(lit)
+impl Key {
+	pub fn try_as_str<'a>(&'a self) -> Option<impl Deref<Target=str> + 'a> {
+		enum KeyDeref<'a> {
+			Literal(&'static str),
+			Text(Box<dyn Deref<Target=types::Text> + 'a>)
+		}
+
+		impl<'a> Deref for KeyDeref<'a> {
+			type Target = str;
+			fn deref(&self) -> &str {
+				match self {
+					KeyDeref::Literal(lit) => lit,
+					KeyDeref::Text(t) => t.deref().as_ref()
+				}
+			}
+		}
+
+		match self {
+			Key::Literal(lit) => Some(KeyDeref::Literal(lit)),
+			Key::Object(obj) =>
+				obj.downcast_ref::<types::Text>()
+					.map(|x| KeyDeref::Text(Box::new(x)))
 		}
 	}
 }

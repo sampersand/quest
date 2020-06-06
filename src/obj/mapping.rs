@@ -1,17 +1,19 @@
-use crate::obj::{self, Object, EqResult, Args, types};
+use crate::obj::{self, Object, traits::*, Args, types};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 
 mod key;
-mod object_map;
+mod value;
+mod result_map;
+pub use self::value::Value;
 pub use self::key::Key;
-use self::object_map::ObjectMap;
+use self::result_map::ResultMap;
 
 // this is totally hacky, and shouldbe replaced with something better in the future.
 #[derive(Clone, Default)]
 pub struct Mapping {
-	map: ObjectMap,
+	map: ResultMap<Key, Value>,
 	parent: Option<Object>
 }
 
@@ -39,64 +41,90 @@ impl Debug for Mapping {
 const PARENT_KEY: Key = Key::Literal("__parent__");
 const ID_KEY: Key = Key::Literal("__id__");
 
+
 impl Mapping {
 	pub fn new(parent: Option<Object>) -> Self {
 		Mapping { map: Default::default(), parent }
 	}
 
-	pub fn insert(&mut self, attr: Key, val: Object) -> obj::Result<Object> {
-		if attr.equals(&PARENT_KEY)? {
-			self.parent = Some(val.clone());
-		} else {
-			self.map.insert(attr.into(), val.clone())?;
+	pub fn insert<K: ?Sized, V>(&mut self, key: K, value: V) -> obj::Result<Object>
+	where
+		K: EqResult<Key> + Into<Key>, V: Into<Value>
+	{
+		let value = value.into();
+
+		if key.equals(&PARENT_KEY)? {
+			let value = Object::from(value);
+			self.parent = Some(value.clone());
+			return Ok(value);
 		}
 
-		Ok(val)
+		match self.map.insert(key, value) {
+			Ok(None) => Ok(Object::default()),
+			Ok(Some(value)) => Ok(value.into()),
+			Err(err) => Err(err)
+		}
 	}
 
-	pub fn has<K>(&self, attr: &K, obj: &Object) -> bool
-	where K: Debug + ?Sized + EqResult<Key> {
-		self.get(attr, obj).is_ok()
+	pub fn has<K>(&self, key: &K) -> bool
+	where
+		K: Debug + ?Sized + EqResult<Key>
+	{
+		self.get(key).is_ok()
 	}
 
-	pub fn get<K>(&self, attr: &K, obj: &Object) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key> {
-		if attr.equals(&PARENT_KEY)? {
-			self.parent.clone().ok_or_else(|| "attr `__parent__` doesn't exist.".into())
-		} else if attr.equals(&ID_KEY)? {
-			Ok(obj.id().into())
-		} else if let Some(obj) = self.map.get(attr)? {
-			Ok(obj)
+	fn get_special_key<K>(&self, key: &K) -> obj::Result<Option<Object>>
+	where
+		K: Debug + ?Sized + EqResult<Key>
+	{
+		if key.equals(&PARENT_KEY)? {
+			Ok(self.parent.clone())
+		} else if key.equals(&ID_KEY)? {
+			unimplemented!()
+		} else {
+			Ok(None)
+		}
+	}
+
+	pub fn get<K>(&self, key: &K) -> obj::Result<Object>
+	where
+		K: Debug + ?Sized + EqResult<Key>
+	{
+
+		if let Some(value) = self.get_special_key(key)? {
+			Ok(value)
+		} else if let Some(value) = self.map.get(key)? {
+			Ok(value.clone().into())
 		} else {
 			if let Some(ref parent) = self.parent {
-				if let Ok(val) = parent.get_attr(attr) {
+				if let Ok(val) = parent.get_attr(key) {
 					return Ok(val);
 				}
 			}
 
 			if let Some(mixins) = self.map.get("__mixins__")? {
+				let mixins = Object::from(mixins.clone());
 				for mixin in mixins.downcast_call::<types::List>()?.as_ref() {
-					if let Some(val) = mixin.get_attr(attr).ok() {
+					if let Some(val) = mixin.get_attr(key).ok() {
 						return Ok(val);
 					}
 				}
 			}
-			Err(format!("attr {:?} does not exist for {:?}.", attr, obj).into())
+			Err(format!("attr {:?} does not exist", key).into())
 		}
 	}
 
-	pub fn remove<K>(&mut self, attr: &K, obj: &Object) -> obj::Result<Object>
-	where K: Debug + ?Sized + EqResult<Key> {
-		if attr.equals(&PARENT_KEY)? {
+	pub fn remove<K: ?Sized>(&mut self, key: &K) -> obj::Result<Object>
+	where
+		K: Debug + EqResult<Key>
+	{
+		if key.equals(&PARENT_KEY)? {
 			return Ok(self.parent.take().unwrap_or_default());
-		} else if let Some(old) = self.map.remove(attr)? {
-			Ok(old)
-		} else {
-			Err(format!("attr {:?} does not exist for {:?}.", attr, obj).into())
 		}
+
+		self.map.remove(key)?
+			.map(|value| value.into())
+			.ok_or_else(|| format!("attr {:?} does not exist for.", key).into())
 	}
 }
-
-
-
 
