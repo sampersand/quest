@@ -9,6 +9,7 @@ pub enum Operator {
 	Not, Eql, Neq, Lth, Leq, Gth, Geq, Cmp, And, Or,
 	Lsh, Rsh, BNot, BAnd, BOr, Xor,
 	Assign, Dot, DotAssign, ColonColon,
+	Call, Index,
 	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign, LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
 }
 
@@ -40,6 +41,7 @@ impl Display for Operator {
 			Lsh => "<<", Rsh => ">>", BOr => "|", Xor => "^",
 			Dot => ".", ColonColon => "::",
 			Assign => "=", DotAssign => ".=",
+			Call => "()", Index => "[]",
 			AddAssign => "+=", SubAssign => "-=", MulAssign => "*=", DivAssign => "/=", ModAssign => "%=",
 			PowAssign => "**=", LshAssign => "<<=", RshAssign => ">>=", BAndAssign => "&=", BOrAssign => "|=",
 			XorAssign => "^=",
@@ -48,23 +50,7 @@ impl Display for Operator {
 }
 impl From<Operator> for types::Text {
 	fn from(op: Operator) -> Self {
-		use Operator::*;
-		Self::from(match op {
-			Pos => "+@", Neg => "-@",
-			Add => "+", Sub => "-", Mul => "*", Div => "/", Mod => "%",
-			Pow => "**",
-			Not => "!", Eql => "==", Neq => "!=",
-			Lth => "<", Leq => "<=", Gth => ">", Geq => ">=",
-			Cmp => "<=>",
-			And => "&&", Or => "||",
-			BNot => "~", BAnd => "&",
-			Lsh => "<<", Rsh => ">>", BOr => "|", Xor => "^",
-			Dot => ".", ColonColon => "::",
-			Assign => "=", DotAssign => ".=",
-			AddAssign => "+=", SubAssign => "-=", MulAssign => "*=", DivAssign => "/=", ModAssign => "%=",
-			PowAssign => "**=", LshAssign => "<<=", RshAssign => ">>=", BAndAssign => "&=", BOrAssign => "|=",
-			XorAssign => "^=",
-		})
+		types::Text::from(op.to_string())
 	}
 }
 
@@ -117,20 +103,21 @@ impl Operator {
 		// using ruby's precedence as a template.
 		match self {
 			Dot | ColonColon => 0,
-			Not | BNot | Pos => 1,
-			Pow => 2,
-			Neg => 3,
-			Mul | Div | Mod => 4,
-			Add | Sub => 5,
-			Lsh | Rsh => 6,
-			BAnd => 7,
-			BOr | Xor => 8,
-			Lth | Leq | Gth | Geq => 9,
-			Cmp | Eql | Neq => 10,
-			And => 11,
-			Or => 12,
+			Call | Index => 1,
+			Not | BNot | Pos => 2,
+			Pow => 3,
+			Neg => 4,
+			Mul | Div | Mod => 5,
+			Add | Sub => 6,
+			Lsh | Rsh => 7,
+			BAnd => 8,
+			BOr | Xor => 9,
+			Lth | Leq | Gth | Geq => 10,
+			Cmp | Eql | Neq => 11,
+			And => 12,
+			Or => 13,
 			Assign | DotAssign | AddAssign | SubAssign | MulAssign | DivAssign | ModAssign
-				| PowAssign | LshAssign | RshAssign | BAndAssign | BOrAssign | XorAssign => 13
+				| PowAssign | LshAssign | RshAssign | BAndAssign | BOrAssign | XorAssign => 14
 		}
 	}
 }

@@ -1,5 +1,5 @@
 # A class is just an executed block of code
-$Person = {
+Kernel.$Person = {
 	# Set the name of this class to `Person`. Executed blocks automatically inherit from
 	# `ExecutedBlock`, which defines `@text` as `name` (if a name is set)
 	$name = "Person";
@@ -11,7 +11,7 @@ $Person = {
 		# 
 		# We don't want the child to be a direct descendant of Person, then we'd have `name` defined.
 		# Instead, have it inherit from the Person's instance methods.
-		$__parent__ = _1::$instance_methods ;
+		$__parent__ = (_1.$instance_methods);
 
 		# assign the first and last names to the second and third parameters
 		$first = _2;
@@ -29,13 +29,13 @@ $Person = {
 
 		# We define the `@text` method for a person by combining their first and last names
 		$@text = {
-			(_1.$first ) + ' ' + _1.$last
+			(_1.$first) + ' ' + (_1.$last)
 		};
 
 		$says_what = 'hi';
 
 		$speak = {
-			disp(((_1.'@text')() + ": ") + (_1.'says_what'))
+			disp('' + _1 + ':', _1.$says_what);
 		};
 
 		# Return this as the last argument, so we can use it as a parent.
@@ -47,11 +47,14 @@ $Person = {
 
 $Child = {
 	$__parent__ = Person;
+
 	$instance_methods = {
-		$__parent__ = _1::$instance_methods ;
+		$class = _1;
+
+		$__parent__ = (_1.$instance_methods);
 
 		$@text = {
-			$super = ((_1.'__parent__').'__parent__')::'@text';
+			$super = (_1.$__parent__::$@text);
 			"Baby " + super(_1)
 		};
 
@@ -64,10 +67,8 @@ $Child = {
 
 $sam = Person('Sam', 'W');
 $child = Child('Jace', 'B');
-(sam.'speak')();
-(child.'speak')();
-
-
+sam.$speak();
+child.$speak();
 
 
 

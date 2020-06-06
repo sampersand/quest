@@ -1,47 +1,38 @@
-"and_and" = {
-	$lhs = _1();
-	$rhs = _2;
-	if(lhs, rhs, {lhs})()
-};
-
-"Frac" = {
-	"()" = {
-		$__parent__ = _1;
+Kernel.$Frac = {
+	$name = 'Frac';
+	$() = {
+		# parens are needed bc I don't have syntax parser perfectly done
+		$__parent__ = (_1.$instance_methods);
 		$numer = _2;
 		$denom = _3;
-		(__this__.'__del_attr__')('__args__');
 		__this__
 	};
 
-	"@text" = {
-		$__this__ = _1;
-		('' + numer) + if(denom == 1, '', '/' + denom)
-	};
+	$instance_methods = {
+		$class = _1;
 
-	"@num" = {
-		(_1.'numer') / (_1.'denom')
-	};
+		$+ = {
+			$lhs = _1;
+			$rhs = _2.$@num();
+		# parens are needed bc I don't have syntax parser perfectly done
+			Frac((lhs.$numer) + rhs * (lhs.$denom), lhs.$denom)
+		};
 
-	"to_frac" = {
-		$obj = _1;
-		if(and_and({(obj.'__has_attr__')('numer')}, {(obj.'__has_attr__')('denom')}), {
-			obj
-		}, {
-			Frac(obj, 1)
-		})()
-	};
+		$@text = {
+		# parens are needed bc I don't have syntax parser perfectly done
+			'' + (_1.$numer) + '/' + (_1.$denom)
+		};
 
-	"+" = {
-		$rhs = (Frac::'to_frac')(_2);
-		Frac(
-			((_1.'numer') * (rhs.'denom')) + ((_1.'denom') * (rhs.'numer')),
-			((_1.'denom') * (rhs.'denom')
-		))
-	};
+		$@num = {
+		# parens are needed bc I don't have syntax parser perfectly done
+			(_1.$numer) / (_1.$denom)
+		};
+
+		__this__
+	}(__this__);
 
 	__this__
 }();
 
-$half = Frac(1, 2);
-disp(3 ** half);
-
+$three_quarters = Frac(3, 4);
+disp(three_quarters + 4.3);

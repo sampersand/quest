@@ -246,7 +246,7 @@ impl Object {
 
 		if let Some(boundfn) = self.downcast_ref::<types::BoundFunction>() {
 			if attr.equals(&"()".into())? {
-				// println!("hi");
+				// println!("adding: {:?}", self);
 				args.add_this(self.clone());
 				return crate::obj::types::bound_function::impls::call(args);
 			}

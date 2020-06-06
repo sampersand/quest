@@ -20,7 +20,7 @@ impl Debug for Block {
 		if f.alternate() {
 			f.debug_struct("Block")
 				.field("paren", &self.paren)
-				.field("body", &format!("[{} line(s)]", self.body.len()))
+				.field("body", &self.body)
 				.field("returns", &self.returns)
 				.finish()
 		} else {
@@ -106,6 +106,7 @@ mod impls {
 
 impl_object_type!{
 for Block [(parent super::Function)]:
+	"@text" => (|args| Ok(format!("{:?}", *args.this()?.try_downcast_ref::<Block>()?).into())),
 	"()" => impls::call
 }
 

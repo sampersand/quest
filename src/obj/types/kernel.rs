@@ -6,17 +6,18 @@ mod impls {
 	// pub const TRUE: Object = Object::new(types::boolean::TRUE);
 
 	pub fn r#if(args: Args) -> Result<Object> {
-		// a hack because rustfns don't accept a `this` param
-		if args.this()?.downcast_call::<types::Boolean>()?.into() {
-			args.arg(0).map(Clone::clone)
-		} else {
+		if args.arg(0)?.downcast_call::<types::Boolean>()?.into() {
 			args.arg(1).map(Clone::clone)
+		} else {
+			Ok(args.arg(2).map(Clone::clone).unwrap_or_default())
 		}
 	}
 
 	pub fn disp(args: Args, print_end: bool) -> Result<Object> {
 		print!("{}",
-			args.as_ref()
+			args.args(..)
+				.unwrap_or_default()
+				.as_ref()
 				.iter()
 				.map(|arg| arg.downcast_call::<types::Text>())
 				.collect::<Result<Vec<_>>>()?
@@ -34,10 +35,10 @@ mod impls {
 	}
 
 	pub fn r#while(args: Args) -> Result<Object> {
-		let cond = args.this()?;
-		let body = args.arg(0)?;
+		let cond = args.arg(0)?;
+		let body = args.arg(1)?;
 		let call_args = 
-			match args.arg(1) {
+			match args.arg(2) {
 				Ok(arg) => Vec::from(arg.downcast_call::<types::List>()?).into(),
 				Err(_) => Args::default()
 			};
@@ -53,12 +54,12 @@ mod impls {
 	}
 
 	pub fn quit(args: Args) -> Result<Object> {
-		let code = args.this()
+		let code = args.arg(0)
 			.and_then(|x| x.downcast_call::<types::Number>())
 			.map(|x| x.to_int())
 			.unwrap_or(1);
 
-		if let Some(msg) = args.arg(0).ok() {
+		if let Some(msg) = args.arg(1).ok() {
 			disp(vec![msg.clone()].into(), true);
 		}
 
@@ -67,9 +68,9 @@ mod impls {
 
 	pub fn system(args: Args) -> Result<Object> {
 		use std::process::Command;
-		let this = args.this()?.downcast_call::<types::Text>()?;
-		let mut command = Command::new(this.as_ref());
-		for arg in args.args(..)?.as_ref() {
+		let cmd = args.arg(0)?.downcast_call::<types::Text>()?;
+		let mut command = Command::new(cmd.as_ref());
+		for arg in args.args(1..).unwrap_or_default().as_ref() {
 			command.arg(arg.downcast_call::<types::Text>()?.as_ref());
 		}
 		let output = command.output().map_err(|err| format!("couldnt spawn proc: {}", err))?;
@@ -80,10 +81,10 @@ mod impls {
 		let mut start: f64 = 0.0;
 		let mut end: f64 = 1.0;
 
-		if let Some(start_num) = args.this().ok() {
+		if let Some(start_num) = args.arg(0).ok() {
 			start = start_num.downcast_call::<types::Number>()?.into();
 
-			if let Some(end_num) = args.arg(0).ok() {
+			if let Some(end_num) = args.arg(1).ok() {
 				end = end_num.downcast_call::<types::Number>()?.into();
 			} else {
 				end = start;
@@ -99,7 +100,7 @@ mod impls {
 	}
 
 	pub fn prompt(args: Args) -> Result<Object> {
-		if let Some(prompt) = args.this().ok() {
+		if let Some(prompt) = args.arg(0).ok() {
 			disp(vec![prompt.clone()].into(), false);
 		}
 		use std::io::{self, Read};

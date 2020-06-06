@@ -17,7 +17,6 @@ pub enum Expression {
 	TerninaryOp(Operator, Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
-
 // expr -> primary | function_call | infix
 // primary -> <LITERAL> | block | <PREFIX_OP> expr
 // block -> '(' block_inner ')' | '{' block_inner '}' | '[' block_inner ']'
@@ -46,7 +45,7 @@ impl Expression {
 
 fn next_expression_bound<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, lhs: Expression, end: Option<Operator>) -> Result<Expression> {
 	match iter.peek() {
-		Some(Token::Left(paren)) => {
+		Some(Token::Left(paren)) if end.map(|e| e > Operator::Call).unwrap_or(true) => {
 			let paren = *paren;
 			assert_eq!(iter.next().unwrap(), Token::Left(paren));
 			let func_call = Expression::FunctionCall(Box::new(lhs), next_block(iter, paren)?);
@@ -57,7 +56,9 @@ fn next_expression_bound<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, lhs: E
 			let op = *op;
 			assert_eq!(iter.next().unwrap(), Token::Operator(op));
 			// TODO: order of operations here.
-			let mut rhs = next_expression(iter)?;
+			let primary = next_primary(iter)?;
+			let rhs = next_expression_bound(iter, primary, Some(op))?;
+
 			// 
 			if op == Operator::Dot {
 				if let Expression::InfixOp(Operator::Assign, rlhs, rrhs) = rhs {
@@ -85,7 +86,8 @@ fn next_expression_bound<I: Iterator<Item=Token>>(iter: &mut Peekable<I>, lhs: E
 			// 		_ => break
 			// 	}
 			// };
-			Ok(Expression::InfixOp(op, Box::new(lhs), Box::new(rhs)))
+			let infix = Expression::InfixOp(op, Box::new(lhs), Box::new(rhs));
+			next_expression_bound(iter, infix, None)
 		},
 		None | Some(_) => Ok(lhs),
 	}

@@ -39,6 +39,26 @@ mod impls {
 		args.this()?.downcast_convert::<types::Boolean>()?
 			.call_attr(literals::NOT, args.new_args_slice(&[]))
 	}
+
+	pub fn open_self(args: Args) -> Result<Object> {
+		use types::rustfn::Binding;
+		println!("{:?}", args);
+		let this = args.this()?;
+		let block = args.arg(0)?;
+		let args: Vec<Object> = Binding::instance().as_ref()
+			.get_attr("__args__")?
+			.downcast_call::<types::List>()?.into();
+
+		unimplemented!();
+		// Binding::new_stackframe(args.into(), (|_binding| {
+			// Binding::set_binding(this.clone());
+			// block.call_attr("()", vec![this.clone()])
+		// }))
+		// if this.downcast_ref::<Text>().map(|x| x.as_ref() == "__this__").unwrap_or(false) {
+		// 	Ok(Binding::set_binding(rhs.clone()).as_ref().clone())
+		// 	block.call_attr("()", vec![])
+		// }))
+	}
 	// pub fn and(args: Args) -> Result<Object> {
 	// 	args.this()?
 	// 		.call("@bool", args.args(..)?)?
@@ -57,6 +77,7 @@ for Basic [(parent super::Kernel)]:
 	"==" => impls::eql,
 	"!=" => impls::neq,
 	"!" => impls::not,
+	"{}" => impls::open_self,
 	// "||"    => impls::or,
 	// "&&"    => impls::and,
 	"ancestors" => (|args| todo!()) // this is just a reminder to update `__parent__`...

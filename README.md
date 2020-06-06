@@ -9,3 +9,4 @@
 - Operator precedence
 - Function calling allows for `.`, eg `12.'sqrt'()`
 - Either solidify or remove the `$arg` syntax
+- Blank expressions shouldn't be passing null as a parameter.

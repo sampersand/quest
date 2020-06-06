@@ -15,11 +15,12 @@ fn main() {
 		.into_iter();
 
 	let expression = parse::Expression::try_from_iter(&mut stream).unwrap();
-	let args = std::env::args()
+	let mut args: Vec<obj::Object> = std::env::args()
 		.skip(1)
 		.map(|x| obj::Object::from(String::from(x)))
-		.collect::<Vec<_>>().into();
-	let result = obj::Binding::new_stackframe(args, |_| expression.execute());
+		.collect::<Vec<obj::Object>>();
+	args.insert(0, obj::Object::default());
+	let result = obj::Binding::new_stackframe(args.into(), |_| expression.execute());
 	// if cfg!(debug) {
 		println!("{:?}", result);
 	// } else {

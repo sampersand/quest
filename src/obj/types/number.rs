@@ -30,7 +30,7 @@ impl Number {
 	pub const  INF: Number = Number::new_rational(f64::INFINITY);
 
 	pub fn try_to_int(&self) -> obj::Result<Integer> {
-		unimplemented!()
+		Ok(self.0 as _)
 		// self.0.try_into()
 			// .ok_or_else(|| format!("non-integer number {}", self.0).into())
 	}
@@ -41,6 +41,7 @@ impl Number {
 	}
 
 	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, std::num::ParseIntError> {
+		println!("{:?} {:?}", inp, radix);
 		// i64::from_str_radix(inp, radix).map(Number::from)
 		unimplemented!()
 
@@ -179,7 +180,7 @@ mod impls {
 
 	pub fn at_num(args: Args) -> Result<Object> {
 		let this = args.this()?;
-		debug_assert!(this.is_a::<Number>(), "bad `this` given");
+		debug_assert!(this.is_a::<Number>(), "bad `this` given: {:?}", args.this());
 		this.call_attr("clone", args.clone())
 	}
 	

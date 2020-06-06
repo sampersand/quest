@@ -63,7 +63,7 @@ impl Binding {
 				if let Some(caller) = args.this().ok() {
 					binding.set_attr("__caller__", caller.clone());
 				}
-				binding.set_attr("__args__", Vec::from(args).into())?;
+				binding.set_attr("__args__", Vec::from(args.args(..)?).into())?;
 				Binding(binding)
 			};
 

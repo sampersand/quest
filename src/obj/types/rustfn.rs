@@ -60,7 +60,7 @@ mod impls {
 
 	pub fn call(mut args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<RustFn>()?;
-		this.call(args.clone())
+		this.call(args.args(..)?)
 	}
 
 	pub fn at_text(args: Args) -> Result<Object> {

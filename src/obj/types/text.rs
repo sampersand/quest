@@ -97,22 +97,25 @@ mod impls {
 	}
 
 	pub fn call(args: Args) -> Result<Object> { // "()"
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-		match this.as_ref() {
-			"__this__" => Ok(args.binding().unwrap().as_ref().clone()),
-			"__args__" => args.binding().unwrap().get_attr("__args__"),
-			num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
-				use std::str::FromStr;
-				args.binding().unwrap().get_attr("__args__")?
-					.call_attr("[]", vec![
-						((types::Number::from_str(&num.chars().skip(1).collect::<String>())
-							.expect("bad string?"))
-							+ types::Number::ONE)
-						.into()
-					])
-			},
-			other => args.binding().unwrap().get_attr(other)
+		let this = args.this()?;
+		if let Ok(this) = this.try_downcast_ref::<Text>() {
+			match this.as_ref() {
+				"__this__" => return Ok(Binding::instance().as_ref().clone()),
+				"__args__" => return Binding::instance().get_attr("__args__"),
+				num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
+					use std::str::FromStr;
+					return Binding::instance().get_attr("__args__")?
+						.call_attr("[]", vec![
+							types::Number::from_str(&num.chars().skip(1).collect::<String>())
+								.expect("bad string?")	
+								.into()
+						])
+				},
+				_ => {}
+			}
 		}
+		
+		Binding::instance().as_ref().call_attr(".", vec![this.clone().into()])
 	}
 
 	pub fn assign(args: Args) -> Result<Object> { // "=" 
@@ -126,7 +129,12 @@ mod impls {
 	}
 
 	pub fn at_list(args: Args) -> Result<Object> {
-		todo!("@list")
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		Ok(this.as_ref()
+			.chars()
+			.map(|chr| chr.to_string().into())
+			.collect::<Vec<Object>>()
+			.into())
 	}
 
 	pub fn at_bool(args: Args) -> Result<Object> { // "@bool"

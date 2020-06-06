@@ -153,7 +153,18 @@ mod impls {
 	}
 
 	pub fn join(args: Args) -> Result<Object> {
-		todo!("List::join");
+		let this = args.this()?.try_downcast_ref::<List>()?;
+		let joiner = 
+			match args.arg(0) {
+				Ok(arg) => arg.downcast_call::<types::Text>()?.as_ref().to_string(),
+				Err(err) => "".to_string()
+			};
+
+		Ok(this.0.iter()
+			.map(|obj| obj.downcast_call::<types::Text>()
+				.map(|txt| txt.as_ref().to_string()))
+			.collect::<Result<Vec<_>>>()?
+			.join(joiner.as_ref()).into())
 	}
 
 	pub fn add(args: Args) -> Result<Object> {

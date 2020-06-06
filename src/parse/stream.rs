@@ -52,6 +52,10 @@ macro_rules! parse_err {
 	};
 }
 
+fn variable_char(x: char) -> bool {
+	x.is_alphanumeric() || x == '_'
+}
+
 impl<'a, S: Seek + Read> Stream<'a, S> {
 	fn next_variable(&mut self, first_chr: char) -> Result<Token> {
 		let mut var = first_chr.to_string();
@@ -69,10 +73,16 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 	}
 	fn next_variable_escaped(&mut self) -> Result<Token> {
 		let mut var = String::new();
+		let mut break_on_non_alphanum = true;
+		match self.next_char()? {
+			Some(chr) if chr.is_alphanumeric() || chr == '_' || chr == '@' => var.push(chr),
+			Some(chr) if !chr.is_whitespace() => { break_on_non_alphanum = false; var.push(chr); },
+			Some(_) | None => return Err(Error::Message(format!("`$` with nothing after"))),
+		}
 
 		// TODO: make this interpret "$var)" as `var` + RPAREN, not `$var)`
 		while let Some(mut chr) = self.next_char()? {
-			if chr.is_whitespace() {
+			if chr.is_whitespace() || (break_on_non_alphanum && !variable_char(chr)) {
 				self.unseek(chr);
 				break;
 			} else if chr == '\\' {

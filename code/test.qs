@@ -1,18 +1,20 @@
-(12.'**')(2)
-# Kernel.$factorial = {
-# 	$memo = {$__parent__ = Pristine; __this__}();
-# 	{
-# 		$__parent__ = _0;
-# 		$n = _1;
+$'≤' = 3;
 
-# 		if(memo.'__has_attr__'(n), {
-# 			_0.'memo'.(_0.'n')
-# 		}, {
-# 			$__this__ = _0;
-# 			memo.n = if(n < 2, { 1 }, { _1 * factorial(_1 - 1) })(n)
-# 		})()
-# 	}
+disp(Text::"()"(1))
+# $list = ['sam', 22, true];
+# $map = { $name = 'sam'; $age = 22; $male = true; __this__ }();
+
+# $longhand_list = {
+# 	__this__.1 = 'sam';
+# 	__this__.2 = 22;
+# 	__this__.3 = true;
+# 	__this__ # return value is the list we've made
 # }();
 
-# factorial(3)
-# # factorial(30)
+# $longhand_map = {
+# 	__this__.'name' = 'sam';
+# 	__this__.'age' = 22;
+# 	__this__.'male' = true;
+# 	__this__ # return value is the map we've made
+# }();
+
