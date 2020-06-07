@@ -79,13 +79,15 @@ impl Block {
 				let x = x.unwrap_or_default();
 				if self.returns { Some(x) } else { None }
 			}),
+
 			ParenType::Bracket => self.run_block().map(|x| {
 				let x = x.unwrap_or_else(|| vec![].into());
 				if self.returns { Some(x) } else { None }
 			}),
+
 			ParenType::Brace => {
 				let block = Object::from(self.clone());
-				block.add_mixin(Binding::instance().as_ref().clone())?;
+				block.add_parent(Binding::instance().as_ref().clone())?;
 				Ok(Some(block))
 			},
 			// ParenType::Bracket => todo!("ParenType::Bracket return value."),
@@ -118,8 +120,6 @@ mod tests {
 	#[ignore]
 	fn call() { todo!(); }
 }
-
-
 
 
 

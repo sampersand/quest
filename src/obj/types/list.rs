@@ -220,6 +220,7 @@ for List [(parent super::Basic) (convert "@list")]:
 	"[]=" => impls::index_assign,
 	"join" => impls::join,
 	"<<" => impls::push,
+	"push" => impls::push,
 	"+" => impls::add,
 	"+=" => impls::add_assign,
 	"&" => impls::intersect,

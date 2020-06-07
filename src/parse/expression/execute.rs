@@ -16,7 +16,7 @@ impl Expression {
 			Expression::Literal(Literal::Text(text)) => Ok(text.clone().into()),
 			Expression::Literal(Literal::Variable(var)) => 
 				Object::new(var.clone()).call_attr("()", Args::default()),
-			Expression::Block(block) =>block.execute().map(Option::unwrap_or_default),
+			Expression::Block(block) => block.execute().map(Option::unwrap_or_default),
 			Expression::PrefixOp(op, obj) => op.execute(obj.clone(), vec![]),
 			Expression::InfixOp(op, obj, arg) => op.execute(obj.clone(), vec![arg.clone()]),
 			Expression::TerninaryOp(op, obj, arg1, arg2) =>

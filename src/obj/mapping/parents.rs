@@ -13,7 +13,7 @@ enum Inner {
 
 impl Debug for Parents {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		match &*self.0.read().expect("cant read") {
+		match &*self.0.read().expect("can't read") {
 			Inner::Object(obj) => write!(f, "{:?}", obj),
 			Inner::List(list) => write!(f, "{:?}", list),
 			Inner::None => write!(f, "[]")
@@ -23,7 +23,7 @@ impl Debug for Parents {
 
 impl Clone for Parents {
 	fn clone(&self) -> Self {
-		Parents::new(self.0.read().expect("cant read").clone())
+		Parents::new(self.0.read().expect("can't read").clone())
 	}
 }
 impl Default for Parents {
@@ -55,15 +55,27 @@ impl Parents {
 		Parents(RwLock::new(inner))
 	}
 
+	pub fn add_parent(&mut self, parent: Object) -> obj::Result<()> {
+		let mut inner = self.0.write().expect("can't write");
+
+		match &mut *inner {
+			Inner::Object(object) => { object.call_attr("push", vec![parent])?; },
+			Inner::List(ref mut list) => list.push(parent),
+			Inner::None => *inner = Inner::List(vec![parent])
+		};
+
+		Ok(())
+	}
+
 	pub fn as_object(&self) -> Object {
-		let inner = self.0.read().expect("cant read");
+		let inner = self.0.read().expect("can't read");
 
 		if let Inner::Object(object) = &*inner {
 			return object.clone();
 		}
 
 		drop(inner);
-		let mut inner = self.0.write().expect("cant write");
+		let mut inner = self.0.write().expect("can't write");
 
 		match &mut *inner {
 			// in case someone else updated it before we acquired the read lock

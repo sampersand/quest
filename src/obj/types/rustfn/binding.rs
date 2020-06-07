@@ -37,12 +37,6 @@ impl Binding {
 		})
 	}
 
-	fn new_child(&self, binding: Binding) -> Result<Binding> {
-		let new_scope = Object::from(types::Scope);
-		new_scope.add_mixin(binding.as_ref().clone())?;
-		Ok(Binding(new_scope))
-	}
-
 	pub fn new_stackframe<F: FnOnce(&Binding) -> Result<Object>>(args: Args, func: F) -> Result<Object> {
 		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
 		impl Drop for StackGuard<'_> {
@@ -60,9 +54,12 @@ impl Binding {
 		Binding::with_stack(|stack| {
 			let binding = {
 				let binding = Object::from(types::Scope);
+
 				if let Some(caller) = args.this().ok() {
-					binding.set_attr("__caller__", caller.clone());
+					binding.add_parent(caller.clone());
+					// binding.set_attr("__caller__", caller.clone());
 				}
+
 				binding.set_attr("__args__", Object::from(Vec::from(args.args(..)?)))?;
 				Binding(binding)
 			};

@@ -197,7 +197,8 @@ impl Object {
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
-		self.0.mapping.read().expect("cannot read").get(attr)
+		self.0.mapping.read().expect("cannot read").get(attr)?
+			.ok_or_else(|| format!("attr {:?} does not exist for {:?}", attr, self).into())
 	}
 
 	pub fn has_attr<K>(&self, attr: &K) -> obj::Result<Object>
@@ -230,20 +231,9 @@ impl Object {
 		self.0.mapping.write().expect("cannot write").remove(attr)
 	}
 
-	pub fn add_mixin(&self, val: Object) -> obj::Result<Object> {
-		let mixin =
-			match self.get_attr("__mixins__") {
-				Ok(mixin) => mixin, 
-				Err(_) => {
-					let mixin: Object = vec![].into();
-					self.set_attr("__mixins__", mixin.clone())?;
-					mixin
-				}
-			};
-
-		mixin.call_attr("<<", vec![val])
+	pub fn add_parent(&self, val: Object) -> obj::Result<()> {
+		self.0.mapping.write().expect("cannot write").add_parent(val)
 	}
-
 
 	pub fn call_attr<'a, K, A>(&self, attr: &K, mut args: A) -> obj::Result<Object>
 	where

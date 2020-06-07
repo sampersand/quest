@@ -30,6 +30,10 @@ impl Mapping {
 			parents: parents.into()
 		}
 	}
+
+	pub fn add_parent(&mut self, parent: Object) -> obj::Result<()> {
+		self.parents.add_parent(parent)
+	}
 }
 
 impl Mapping {
@@ -81,20 +85,23 @@ impl Mapping {
 		}
 	}
 
-	pub fn get<K>(&self, key: &K) -> obj::Result<Object>
+	pub fn get<K>(&self, key: &K) -> obj::Result<Option<Object>>
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
 
 		if let Some(value) = self.get_special_key(key)? {
-			Ok(value)
+			Ok(Some(value))
 		} else if let Some(value) = self.map.get(key)? {
-			Ok(value.clone().into())
+			Ok(Some(value.clone().into()))
 		} else {
-			self.parents.iter()?
-				.filter_map(|parent| parent.get_attr(key).ok())
-				.next()
-				.ok_or_else(|| format!("attr {:?} does not exist", key).into())
+			for parent in self.parents.iter()? {
+				if let Some(obj) = parent.0.mapping.read().expect("cant read").get(key)? {
+					return Ok(Some(obj))
+				}
+			}
+
+			Ok(None)
 		}
 	}
 
