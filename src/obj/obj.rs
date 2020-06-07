@@ -205,7 +205,8 @@ impl Object {
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
-		Ok(self.0.mapping.read().expect("cannot read").has(attr).into())
+		// println!("{:#?}", &*self.0.mapping.read().unwrap());
+		self.0.mapping.read().expect("cannot read").has(attr).map(bool::into)
 	}
 
 	pub fn set_attr_possibly_parents<K, V>(&self, attr: K, value: V) -> obj::Result<Object>

@@ -89,6 +89,12 @@ mod impls {
 		todo!("List::index_of");
 	}
 
+	pub fn clear(args: Args) -> Result<Object> {
+		let mut this = args.this()?.try_downcast_mut::<List>()?;
+		this.0.clear();
+		Ok(args.this()?.clone())
+	}
+
 	pub fn len(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
 		Ok(this.0.len().into())
@@ -214,6 +220,7 @@ for List [(parent super::Basic) (convert "@list")]:
 	"clone" => impls::clone,
 
 	"does_include" => impls::does_include,
+	"clear" => impls::clear,
 	"index_of" => impls::index_of,
 	"len" => impls::len,
 	"[]" => impls::index,

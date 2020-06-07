@@ -1,16 +1,20 @@
-$Frac = {
-	$name = 'Frac';
-	__this__
-}();
-disp(Frac);
-$x = {
-	$foo = 3;
+Number.$square = { _1 ** 2 };
+disp(4.$square());
+
+Number.$factorial = {
+	$__memo = { __this__.0 = (1); __this__ }();
 	{
-		foo
+		disp(_2);
+		if (!__memo.$__has_attr__(_1), {
+			__memo._1 = ((_1 - 1).$factorial() * _1);
+		})(_1);
+
+		__memo._1
 	}
-}();
-$foo = 4;
-x()
+}(1, 2);
+
+12.$factorial()
+
 # Kernel.$Frac = {
 # 	$name = 'Frac';
 # 	$() = {

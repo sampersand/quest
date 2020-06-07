@@ -65,11 +65,11 @@ impl Mapping {
 
 
 
-	pub fn has<K>(&self, key: &K) -> bool
+	pub fn has<K>(&self, key: &K) -> obj::Result<bool>
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
-		self.get(key).is_ok()
+		self.get(key).map(|x| x.is_some())
 	}
 
 	fn get_special_key<K>(&self, key: &K) -> obj::Result<Option<Object>>
