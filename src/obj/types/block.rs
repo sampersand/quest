@@ -76,8 +76,13 @@ impl Block {
 	pub fn execute(&self) -> Result<Option<Object>> {
 		match self.paren {
 			ParenType::Paren => self.run_block().map(|x| {
-				let x = x.unwrap_or_default();
-				if self.returns { Some(x) } else { None }
+				// let x = x.a.unwrap_or_default();
+				if self.returns {
+					x
+				}  else {
+					None
+				}
+				// if self.returns { Some(x) } else { None }
 			}),
 
 			ParenType::Bracket => self.run_block().map(|x| {

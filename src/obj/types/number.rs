@@ -48,8 +48,8 @@ impl Number {
 	}
 
 	pub fn abs(self) -> Number {
-		// Number::from(self.0.abs())
-		unimplemented!()
+		Number::from(self.0.abs())
+		// unimplemented!()
 
 	}
 

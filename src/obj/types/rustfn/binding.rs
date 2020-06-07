@@ -60,6 +60,11 @@ impl Binding {
 					// binding.set_attr("__caller__", caller.clone());
 				}
 
+				for (i, arg) in args.args(..)?.as_ref().iter().enumerate() {
+					// `+1` because we don't start at 0
+					binding.set_attr(Object::from(format!("_{}", i + 1)), arg.clone())?;
+				}
+
 				binding.set_attr("__args__", Object::from(Vec::from(args.args(..)?)))?;
 				Binding(binding)
 			};
