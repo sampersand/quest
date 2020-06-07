@@ -118,5 +118,3 @@ impl Mapping {
 			.ok_or_else(|| format!("attr {:?} does not exist for.", key).into())
 	}
 }
-
-

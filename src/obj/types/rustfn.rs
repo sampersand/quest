@@ -70,7 +70,7 @@ mod impls {
 }
 
 impl_object_type!{
-for RustFn [(parent super::Function)]:
+for RustFn [(parents super::Function)]:
 	"@text" => impls::at_text,
 	"()" => impls::call,
 }

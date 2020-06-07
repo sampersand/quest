@@ -27,7 +27,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Scope [(parent super::Basic)]:
+for Scope [(parents super::Basic)]:
 	"@text" => impls::at_text,
 	"super" => impls::super_,
 }

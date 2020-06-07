@@ -127,12 +127,12 @@ mod impls {
 		let len = this.0.len();
 		let start = args.arg(0)?
 			.try_downcast_ref::<types::Number>()?
-			.to_int() as isize;
+			.truncate() as isize;
 		let end = args.arg(1)
 			.ok()
 			.map(Object::downcast_call::<types::Number>)
 			.transpose()?
-			.map(|x| x.to_int() as isize);
+			.map(|x| x.truncate() as isize);
 
 		let start =
 			if let Some(start) = correct_index(start, len)? {
@@ -213,7 +213,7 @@ mod impls {
 
 
 impl_object_type!{
-for List [(parent super::Basic) (convert "@list")]:
+for List [(parents super::Basic) (convert "@list")]:
 	"@text" => impls::at_text,
 	"@map" => impls::at_map,
 	"@list" => impls::at_list,

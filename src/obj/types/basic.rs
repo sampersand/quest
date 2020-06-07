@@ -71,7 +71,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Basic [(parent super::Kernel)]:
+for Basic [(parents super::Kernel)]:
 	"@bool" => impls::at_bool,
 	"@text" => impls::at_text,
 	"==" => impls::eql,

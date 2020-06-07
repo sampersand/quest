@@ -56,7 +56,7 @@ mod impls {
 	pub fn quit(args: Args) -> Result<Object> {
 		let code = args.arg(0)
 			.and_then(|x| x.downcast_call::<types::Number>())
-			.map(|x| x.to_int())
+			.map(|x| x.truncate())
 			.unwrap_or(1);
 
 		if let Some(msg) = args.arg(1).ok() {
@@ -82,10 +82,10 @@ mod impls {
 		let mut end: f64 = 1.0;
 
 		if let Some(start_num) = args.arg(0).ok() {
-			start = start_num.downcast_call::<types::Number>()?.into();
+			start = start_num.downcast_call::<types::Number>()?.truncate() as _;
 
 			if let Some(end_num) = args.arg(1).ok() {
-				end = end_num.downcast_call::<types::Number>()?.into();
+				end = end_num.downcast_call::<types::Number>()?.truncate() as _;
 			} else {
 				end = start;
 				start = 0.0;
@@ -128,7 +128,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Kernel [(parent super::Pristine)]: // todo: do i want its parent to be pristine?
+for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pristine?
 	"true" => const Boolean::new(true),
 	"false" => const Boolean::new(false),
 	"null" => const Null::new(),

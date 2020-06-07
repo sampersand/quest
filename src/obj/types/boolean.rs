@@ -138,7 +138,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Boolean [(parent super::Basic) (convert "@bool")]:
+for Boolean [(parents super::Basic) (convert "@bool")]:
 	"@num"  => impls::at_num,
 	"@text" => impls::at_text,
 	"@bool" => impls::at_bool,

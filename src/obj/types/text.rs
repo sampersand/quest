@@ -80,7 +80,7 @@ mod impls {
 			args.arg(0)
 				.ok()
 				.map(|obj| obj.downcast_call::<types::Number>()
-						.and_then(|n| n.try_to_int())
+						.and_then(|n| n.try_to_int_())
 						.and_then(|r| u32::try_from(r)
 								.map_err(|err| format!("invalid radix {}: {}", r, err).into())));
 		match radix {
@@ -174,7 +174,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Text [(parent super::Basic) (convert "@text")]:
+for Text [(parents super::Basic) (convert "@text")]:
 	"@text" => (impls::at_text),
 	"@num" => (impls::at_num),
 	"()" => (impls::call),

@@ -112,7 +112,7 @@ mod impls {
 
 
 impl_object_type!{
-for Block [(parent super::Function)]:
+for Block [(parents super::Function)]:
 	"@text" => (|args| Ok(format!("{:?}", *args.this()?.try_downcast_ref::<Block>()?).into())),
 	"()" => impls::call
 }

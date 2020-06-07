@@ -44,7 +44,7 @@ pub mod impls {
 }
 
 impl_object_type!{
-for BoundFunction [(parent super::Basic)]:
+for BoundFunction [(parents super::Basic)]:
 	"__get_attr__" => impls::get_attr,
 	"__set_attr__" => impls::set_attr,
 	"__del_attr__" => impls::del_attr,

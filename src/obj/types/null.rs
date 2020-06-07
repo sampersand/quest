@@ -102,7 +102,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Null [(parent super::Basic)]:
+for Null [(parents super::Basic)]:
 	"@bool" => impls::at_bool,
 	"@list" => impls::at_list,
 	"@num" => impls::at_num,

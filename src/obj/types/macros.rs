@@ -15,7 +15,7 @@ macro_rules! dummy_object {
 	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:path { $($args:tt)* }) =>{
 		#[derive(Debug, Clone)]
 		$vis struct $obj$(($($types),*))?;
-		impl_object_type!(for $obj [(parent $parent)]: $($args)* );
+		impl_object_type!(for $obj [(parents $parent)]: $($args)* );
 	};
 }
 
@@ -103,7 +103,7 @@ macro_rules! impl_object_type {
 	(@PARENT_DEFAULT) => {
 		compile_error!("A parent is needed to create an object");
 	};
-	(@PARENT_DEFAULT (parent $parent:path) $($_rest:tt)*) => {
+	(@PARENT_DEFAULT (parents $parent:path) $($_rest:tt)*) => {
 		<$parent as Default>::default()
 	};
 	(@PARENT_DEFAULT $_b:tt $($rest:tt)*) => {
@@ -123,7 +123,7 @@ macro_rules! impl_object_type {
 			);
 		)?
 	};
-	(@SET_PARENT $class:ident (parent $parent:path) $($_rest:tt)*) => {
+	(@SET_PARENT $class:ident (parents $parent:path) $($_rest:tt)*) => {
 		impl_object_type!(@SET_PARENT $class (init_parent $parent));
 	};
 
