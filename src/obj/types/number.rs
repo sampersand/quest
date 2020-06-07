@@ -395,6 +395,17 @@ mod impls {
 			Ok(Text::from(*this).into())
 		}
 	}
+	// pub fn at_text(args: Args) -> Result<Object> {
+	// 	let this = args.this()?.try_downcast_ref::<Number>()?;
+	// 	if let Some(radix) = args.arg(0).ok() {
+	// 		let radix = radix.downcast_call::<Number>()?.truncate();
+	// 		this.to_string_radix(radix as _)
+	// 			.map_err(|err| err.to_string().into())
+	// 			.map(Object::from)
+	// 	} else {
+	// 		Ok(Text::from(*this).into())
+	// 	}
+	// }
 
 	pub fn at_bool(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
@@ -644,6 +655,7 @@ mod tests {
 		assert!(matches!(Number::from_str("1.2.3").unwrap_err(), FromStrError::BadFloat(..)));
 		assert!(matches!(Number::from_str("12e3e4").unwrap_err(), FromStrError::BadFloat(..)));
 		assert!(matches!(Number::from_str("").unwrap_err(), FromStrError::BadFloat(..)));
+		assert!(matches!(Number::from_str(" ").unwrap_err(), FromStrError::BadFloat(..)));
 	}
 
 }
