@@ -3,8 +3,8 @@ Number.$sin = {
 	system('ruby', '-e', 'puts Math.sin(' + _1 + ')')
 };
 
-disp(2 << 64);
-disp(12.$sin());
+disp(2 << 12);
+disp(12.$sin(12));
 
 # $Math = {
 # 	$cos = { system('ruby', '-e', 'puts Math.cos ' + _1) };

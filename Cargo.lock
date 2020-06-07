@@ -7,6 +7,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
+name = "exec"
+version = "0.1.0"
+dependencies = [
+ "quest",
+ "quest_parser",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -34,6 +42,13 @@ name = "quest"
 version = "0.2.0"
 dependencies = [
  "rand",
+]
+
+[[package]]
+name = "quest_parser"
+version = "0.1.0"
+dependencies = [
+ "quest",
 ]
 
 [[package]]

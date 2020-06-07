@@ -1,0 +1,8 @@
+[package]
+name = "quest"
+version = "0.2.0"
+authors = ["Sam Westerman <sam@sampersand.me>"]
+edition = "2018"
+
+[dependencies]
+rand = "*"
