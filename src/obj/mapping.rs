@@ -2,69 +2,64 @@ use crate::obj::{self, Object, traits::*, Args, types};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
+use std::ops::Deref;
 
 mod key;
 mod value;
+mod parents;
 mod result_map;
 pub use self::value::Value;
 pub use self::key::Key;
+pub use self::parents::Parents;
 use self::result_map::ResultMap;
 
 // this is totally hacky, and shouldbe replaced with something better in the future.
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Mapping {
 	map: ResultMap<Key, Value>,
-	parent: Option<Object>
+	parents: Parents
 }
 
-impl Debug for Mapping {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		struct Parent(bool);
-		impl Debug for Parent {
-			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-				if self.0 {
-					write!(f, "Some({{ ... }})")
-				} else {
-					write!(f, "None")
-				}
-			}
-		}
-
-		f.debug_struct("Mapping")
-			.field("map", &self.map)
-			.field("parent", &Parent(self.parent.is_some()))
-			.finish()
-	}
-}
-
-
-const PARENT_KEY: Key = Key::Literal("__parent__");
+const PARENTS_KEY: Key = Key::Literal("__parents__");
 const ID_KEY: Key = Key::Literal("__id__");
 
+impl Mapping {
+	pub fn new<P: Into<Parents>>(parents: P) -> Self {
+		Mapping {
+			map: Default::default(),
+			parents: parents.into()
+		}
+	}
+}
 
 impl Mapping {
-	pub fn new(parent: Option<Object>) -> Self {
-		Mapping { map: Default::default(), parent }
-	}
-
 	pub fn insert<K: ?Sized, V>(&mut self, key: K, value: V) -> obj::Result<Object>
 	where
-		K: EqResult<Key> + Into<Key>, V: Into<Value>
+		K: EqResult<Key> + Into<Key>,
+		V: Into<Value> + Into<Parents>
 	{
-		let value = value.into();
-
-		if key.equals(&PARENT_KEY)? {
-			let value = Object::from(value);
-			self.parent = Some(value.clone());
-			return Ok(value);
+		if key.equals(&PARENTS_KEY)? {
+			self.parents = value.into();
+			Ok(self.parents.as_object())
+		} else {
+			self.insert_not_parents(key, value)
 		}
+	}
 
-		match self.map.insert(key, value) {
+	pub fn insert_not_parents<K: ?Sized, V>(&mut self, key: K, value: V) -> obj::Result<Object>
+	where
+		K: EqResult<Key> + Into<Key>,
+		V: Into<Value>
+	{
+		assert!(!key.equals(&PARENTS_KEY).unwrap(), "can't call insert_not_parents with PARENTS_KEY");
+		match self.map.insert(key, value.into()) {
 			Ok(None) => Ok(Object::default()),
 			Ok(Some(value)) => Ok(value.into()),
 			Err(err) => Err(err)
 		}
 	}
+
+
 
 	pub fn has<K>(&self, key: &K) -> bool
 	where
@@ -77,8 +72,8 @@ impl Mapping {
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
-		if key.equals(&PARENT_KEY)? {
-			Ok(self.parent.clone())
+		if key.equals(&PARENTS_KEY)? {
+			Ok(Some(self.parents.as_object()))
 		} else if key.equals(&ID_KEY)? {
 			unimplemented!()
 		} else {
@@ -96,21 +91,10 @@ impl Mapping {
 		} else if let Some(value) = self.map.get(key)? {
 			Ok(value.clone().into())
 		} else {
-			if let Some(ref parent) = self.parent {
-				if let Ok(val) = parent.get_attr(key) {
-					return Ok(val);
-				}
-			}
-
-			if let Some(mixins) = self.map.get("__mixins__")? {
-				let mixins = Object::from(mixins.clone());
-				for mixin in mixins.downcast_call::<types::List>()?.as_ref() {
-					if let Some(val) = mixin.get_attr(key).ok() {
-						return Ok(val);
-					}
-				}
-			}
-			Err(format!("attr {:?} does not exist", key).into())
+			self.parents.iter()?
+				.filter_map(|parent| parent.get_attr(key).ok())
+				.next()
+				.ok_or_else(|| format!("attr {:?} does not exist", key).into())
 		}
 	}
 
@@ -118,8 +102,8 @@ impl Mapping {
 	where
 		K: Debug + EqResult<Key>
 	{
-		if key.equals(&PARENT_KEY)? {
-			return Ok(self.parent.take().unwrap_or_default());
+		if key.equals(&PARENTS_KEY)? {
+			return Ok(std::mem::take(&mut self.parents).as_object());
 		}
 
 		self.map.remove(key)?
@@ -127,4 +111,5 @@ impl Mapping {
 			.ok_or_else(|| format!("attr {:?} does not exist for.", key).into())
 	}
 }
+
 

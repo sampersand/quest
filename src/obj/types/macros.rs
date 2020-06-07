@@ -115,9 +115,11 @@ macro_rules! impl_object_type {
 	};
 	(@SET_PARENT $class:ident (init_parent $($init_parent:path)?) $($_rest:tt)*) => {
 		$(
-			$class.set_attr(
-				"__parent__",
-				<$init_parent as $crate::obj::types::ObjectType>::mapping(),
+			$class.set_attr_possibly_parents(
+				"__parents__",
+				vec![
+					<$init_parent as $crate::obj::types::ObjectType>::mapping()
+				]
 			);
 		)?
 	};
@@ -138,7 +140,8 @@ macro_rules! impl_object_type {
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $crate::obj::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
-			$val)
+			$val
+		)
 		);
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
@@ -178,7 +181,7 @@ macro_rules! impl_object_type {
 				HAS_CREATE_HAPPENED.call_once(|| unsafe {
 					CLASS_OBJECT.as_mut_ptr().write(Object::new_with_parent(
 						impl_object_type!(@PARENT_DEFAULT $($args)*),
-						None
+						()
 					));
 				});
 

@@ -2,7 +2,7 @@ Kernel.$Frac = {
 	$name = 'Frac';
 	$() = {
 		# parens are needed bc I don't have syntax parser perfectly done
-		$__parent__ = (_1.$instance_methods);
+		$__parents__ = [_1.$instance_methods];
 		$numer = _2;
 		$denom = _3;
 		__this__

@@ -80,9 +80,10 @@ impl EqResult<Key> for Object {
 
 
 impl Object {
-	pub fn new_with_parent<T>(data: T, parent: Option<Object>) -> Self 
+	pub fn new_with_parent<T, P>(data: T, parents: P) -> Self 
 	where
-		T: Any + Debug + Send + Sync
+		T: Any + Debug + Send + Sync,
+		P: Into<mapping::Parents>
 	{
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
@@ -90,14 +91,14 @@ impl Object {
 		Object(Arc::new(Internal {
 			id: id,
 			// binding: Binding::instance(),
-			mapping: Arc::new(RwLock::new(Mapping::new(parent))),
+			mapping: Arc::new(RwLock::new(Mapping::new(parents))),
 			data: Arc::new(RwLock::new(data)),
 			dbg: (|x, f| <T as Debug>::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f))
 		}))
 	}
 
 	pub fn new<T: ObjectType>(data: T) -> Self {
-		Object::new_with_parent(data, Some(T::mapping()))
+		Object::new_with_parent(data, vec![T::mapping()])
 	}
 
 	pub fn id(&self) -> usize {
@@ -206,13 +207,20 @@ impl Object {
 		Ok(self.0.mapping.read().expect("cannot read").has(attr).into())
 	}
 
+	pub fn set_attr_possibly_parents<K, V>(&self, attr: K, value: V) -> obj::Result<Object>
+	where
+		K: Into<Key>,
+		V: Into<Value> + Into<mapping::Parents>
+	{
+		self.0.mapping.write().expect("cannot write").insert(attr.into(), value)
+	}
+
 	pub fn set_attr<K, V>(&self, attr: K, value: V) -> obj::Result<Object>
 	where
 		K: Into<Key>,
 		V: Into<Value>
 	{
-		self.0.mapping.write().expect("cannot write")
-			.insert(attr.into(), value)
+		self.0.mapping.write().expect("cannot write").insert_not_parents(attr.into(), value)
 	}
 
 	pub fn del_attr<K>(&self, attr: &K) -> obj::Result<Object>

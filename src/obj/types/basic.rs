@@ -12,7 +12,7 @@ mod impls {
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		Ok(format!("<{}:{}>",
-			this.get_attr(literals::PARENT)?
+			this.get_attr(literals::PARENTS)?
 				.get_attr("name")
 				.and_then(|x| x.downcast_call::<types::Text>())
 				.unwrap_or_else(|_| "<unknown name>".into())

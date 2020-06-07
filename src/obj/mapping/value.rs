@@ -14,6 +14,12 @@ impl From<Object> for Value {
 	}
 }
 
+impl From<Vec<Object>> for Value {
+	fn from(list: Vec<Object>) -> Self {
+		Value::Object(list.into())
+	}
+}
+
 impl From<RustFn> for Value {
 	fn from(rustfn: RustFn) -> Self {
 		Value::RustFn(rustfn)

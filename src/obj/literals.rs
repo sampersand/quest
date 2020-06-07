@@ -10,7 +10,7 @@ macro_rules! literals {
 
 literals! {
 	// builtin
-	PARENT "__parent__" ID "__id__"
+	PARENTS "__parents__" ID "__id__"
 
 	// conversions
 	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list" AT_MAP "@map"

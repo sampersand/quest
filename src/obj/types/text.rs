@@ -124,7 +124,7 @@ mod impls {
 		if this.downcast_ref::<Text>().map(|x| x.as_ref() == "__this__").unwrap_or(false) {
 			Ok(Binding::set_binding(rhs.clone()).as_ref().clone())
 		} else {
-			args.binding().unwrap().set_attr(this.clone(), rhs.clone())
+			args.binding().unwrap().set_attr_possibly_parents(this.clone(), rhs.clone())
 		}
 	}
 
