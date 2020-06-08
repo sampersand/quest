@@ -1,6 +1,4 @@
-use std::convert::TryFrom;
-
-use crate::{Object, Result, types::{self, RustFn}};
+use crate::{Object, types::RustFn};
 
 #[derive(Debug, Clone)]
 pub enum Value {

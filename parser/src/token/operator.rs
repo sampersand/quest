@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use quest::{Object, mapping::Key, types, EqResult};
+use quest::{Object, Key, types, EqResult};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

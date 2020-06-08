@@ -29,7 +29,7 @@ pub enum Expression {
 
 impl Expression {
 	pub fn try_from_iter<I: Iterator<Item=Token>>(iter: &mut I) -> Result<Self> {
-		let ref mut iter = std::iter::once(Token::Left(ParenType::Paren))
+		let mut iter = &mut std::iter::once(Token::Left(ParenType::Paren))
 			.chain(iter)
 			.chain(std::iter::once(Token::Right(ParenType::Paren)))
 			.peekable();

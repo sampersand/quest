@@ -2,7 +2,7 @@
 pub struct Function;
 
 mod impls {
-	use crate::{Object, Result, Args, types};
+	use crate::{Object, Result, Args};
 	pub fn lsh(_args: Args) -> Result<Object> {
 		todo!("<<")
 	}
@@ -24,8 +24,6 @@ for Function [(parents super::Basic)]:
 }
 
 mod tests {
-	use super::*;
-
 	#[test]
 	#[ignore]
 	fn lsh() { todo!() }

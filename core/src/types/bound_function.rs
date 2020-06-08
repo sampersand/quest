@@ -2,8 +2,7 @@
 pub struct BoundFunction;
 
 pub mod impls {
-	use super::BoundFunction;
-	use crate::{Object, Result, Args, types, literals};
+	use crate::{Object, Result, Args};
 
 	fn parent_call_attr(args: Args, attr: &'static str) -> Result<Object> {
 		let this = args.this()?;
@@ -29,7 +28,7 @@ pub mod impls {
 	pub fn call(args: Args) -> Result<Object> {
 		let this = args.this()?.clone();
 		let bound_object_owner = this.get_attr("__bound_object_owner__")?;
-		let bound_object = this.get_attr("__bound_object__")?;
+		// let bound_object = this.get_attr("__bound_object__")?;
 		let mut args = Vec::from(args.args(..)?);
 		// print!("BoundObject::call(this={:?}, __bound_object_owner__={:?}", this.id(), bound_object_owner.id());
 		args.insert(0, bound_object_owner);

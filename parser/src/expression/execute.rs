@@ -2,6 +2,7 @@ use crate::{Expression, Token, Literal, token::{ParenType, Operator}, expression
 use quest::{Object, Result, Args};
 
 impl Operator {
+	#[allow(clippy::vec_box, clippy::boxed_local)]
 	fn execute(self, obj: Box<Expression>, args: Vec<Box<Expression>>) -> Result<Object> {
 		obj.execute()?.call_attr(&self, Args::new(
 			args.into_iter().map(|arg| arg.execute()).collect::<Result<Vec<_>>>()?

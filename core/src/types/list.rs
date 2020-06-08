@@ -1,5 +1,4 @@
-use crate::{Object, types::ObjectType};
-use std::sync::{Arc, RwLock};
+use crate::Object;
 use std::fmt::{self, Debug, Formatter};
 
 
@@ -67,7 +66,7 @@ mod impls {
 			.call_attr("@bool", vec![])
 	}
 
-	pub fn at_map(args: Args) -> Result<Object> {
+	pub fn at_map(_args: Args) -> Result<Object> {
 		todo!("List::at_map");
 	}
 
@@ -81,11 +80,11 @@ mod impls {
 		Ok(this.clone().into())
 	}
 
-	pub fn does_include(args: Args) -> Result<Object> {
+	pub fn does_include(_args: Args) -> Result<Object> {
 		todo!("List::does_include");
 	}
 
-	pub fn index_of(args: Args) -> Result<Object> {
+	pub fn index_of(_args: Args) -> Result<Object> {
 		todo!("List::index_of");
 	}
 
@@ -154,7 +153,7 @@ mod impls {
 		}
 	}
 
-	pub fn index_assign(args: Args) -> Result<Object> {
+	pub fn index_assign(_args: Args) -> Result<Object> {
 		todo!("List::index_assign");
 	}
 
@@ -163,7 +162,7 @@ mod impls {
 		let joiner = 
 			match args.arg(0) {
 				Ok(arg) => arg.downcast_call::<types::Text>()?.as_ref().to_string(),
-				Err(err) => "".to_string()
+				Err(_) => "".to_string()
 			};
 
 		Ok(this.0.iter()
@@ -182,6 +181,8 @@ mod impls {
 	pub fn add_assign(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?.downcast_call::<List>()?;
+
+		#[allow(clippy::redundant_clone)]
 		this.try_downcast_mut::<List>()?.0.append(&mut rhs.clone().0);
 		Ok(this.clone())
 	}
@@ -193,19 +194,19 @@ mod impls {
 		Ok(this.clone())
 	}
 
-	pub fn intersect(args: Args) -> Result<Object> {
+	pub fn intersect(_args: Args) -> Result<Object> {
 		todo!("List::intersect");
 	}
 
-	pub fn union(args: Args) -> Result<Object> {
+	pub fn union(_args: Args) -> Result<Object> {
 		todo!("List::union");
 	}
 
-	pub fn not_shared(args: Args) -> Result<Object> {
+	pub fn not_shared(_args: Args) -> Result<Object> {
 		todo!("List::not_shared");
 	}
 
-	pub fn difference(args: Args) -> Result<Object> {
+	pub fn difference(_args: Args) -> Result<Object> {
 		todo!("List::difference");
 	}
 
@@ -215,6 +216,7 @@ mod impls {
 impl_object_type!{
 for List [(parents super::Basic) (convert "@list")]:
 	"@text" => impls::at_text,
+	"@bool" => impls::at_bool,
 	"@map" => impls::at_map,
 	"@list" => impls::at_list,
 	"clone" => impls::clone,

@@ -49,7 +49,7 @@ mod impls {
 		Ok(result)
 	}
 
-	pub fn r#for(args: Args) -> Result<Object> {
+	pub fn r#for(_args: Args) -> Result<Object> {
 		todo!("r#for")
 	}
 
@@ -59,8 +59,8 @@ mod impls {
 			.map(|x| x.truncate())
 			.unwrap_or(1);
 
-		if let Some(msg) = args.arg(1).ok() {
-			disp(vec![msg.clone()].into(), true);
+		if let Ok(msg) = args.arg(1) {
+			disp(vec![msg.clone()].into(), true)?;
 		}
 
 		std::process::exit(code as i32)
@@ -70,9 +70,11 @@ mod impls {
 		use std::process::Command;
 		let cmd = args.arg(0)?.downcast_call::<types::Text>()?;
 		let mut command = Command::new(cmd.as_ref());
+
 		for arg in args.args(1..).unwrap_or_default().as_ref() {
 			command.arg(arg.downcast_call::<types::Text>()?.as_ref());
 		}
+
 		let output = command.output().map_err(|err| format!("couldnt spawn proc: {}", err))?;
 		Ok(String::from_utf8_lossy(&output.stdout).to_string().into())
 	}
@@ -81,35 +83,38 @@ mod impls {
 		let mut start: f64 = 0.0;
 		let mut end: f64 = 1.0;
 
-		if let Some(start_num) = args.arg(0).ok() {
+		if let Ok(start_num) = args.arg(0) {
 			start = start_num.downcast_call::<types::Number>()?.truncate() as _;
 
-			if let Some(end_num) = args.arg(1).ok() {
+			if let Ok(end_num) = args.arg(1) {
 				end = end_num.downcast_call::<types::Number>()?.truncate() as _;
 			} else {
 				end = start;
 				start = 0.0;
 			}
 		}
+
 		Ok((rand::random::<f64>() * (end - start) + start).into())
 	}
 
-	pub fn eval(args: Args) -> Result<Object> {
+	pub fn eval(_args: Args) -> Result<Object> {
 		// use std::thread::Thread;
 		todo!("eval")
 	}
 
 	pub fn prompt(args: Args) -> Result<Object> {
-		if let Some(prompt) = args.arg(0).ok() {
-			disp(vec![prompt.clone()].into(), false);
+		use std::io;
+
+		if let Ok(prompt) = args.arg(0) {
+			disp(vec![prompt.clone()].into(), false)?;
 		}
-		use std::io::{self, Read};
+
 		let mut buf = String::new();
 
 		match io::stdin().read_line(&mut buf) {
 			Ok(_) => {
-				if buf.chars().last() == Some('\n') {
-					buf.pop(); // remove trailing newline; only on unix lol
+				if buf.ends_with('\n') {
+					buf.pop(); // remove trailing newline; only on unix currently...
 				}
 
 				Ok(buf.into())
@@ -118,11 +123,11 @@ mod impls {
 		}
 	}
 
-	pub fn sleep(args: Args) -> Result<Object> {
+	pub fn sleep(_args: Args) -> Result<Object> {
 		todo!("sleep")
 	}
 
-	pub fn open(args: Args) -> Result<Object> {
+	pub fn open(_args: Args) -> Result<Object> {
 		todo!("open")
 	}
 }
@@ -166,8 +171,6 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-
 	#[test]
 	fn constants_exist() {
 		use crate::{Object, types::*};
@@ -218,7 +221,7 @@ mod tests {
 		}
 
 		assert_mapping_eq!(
-			"Basic" Basic, "Block" Block, "Boolean" Boolean, "Function" Function,
+			"Basic" Basic, /*"Block" Block,*/ "Boolean" Boolean, "Function" Function,
 			"Kernel" Kernel, "List" List, "Null" Null, "Number" Number,
 			"Pristine" Pristine, "RustFn" RustFn, "Text" Text
 		);

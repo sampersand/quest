@@ -1,5 +1,4 @@
 use crate::{Object, types};
-use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Display, Formatter};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
@@ -73,7 +72,6 @@ impl From<Boolean> for types::Text {
 
 mod impls {
 	use super::*;
-	use std::ops::{Deref, BitAnd, BitOr, BitXor, Not};
 	use crate::{Object, Result, Args, types, literals};
 
 	pub fn at_num(args: Args) -> Result<Object> {
@@ -128,11 +126,11 @@ mod impls {
 		Ok((this ^ rhs).into())
 	}
 
-	pub fn cmp(args: Args) -> Result<Object> {
+	pub fn cmp(_args: Args) -> Result<Object> {
 		todo!("cmp for Boolean")
 	}
 
-	pub fn hash(args: Args) -> Result<Object> {
+	pub fn hash(_args: Args) -> Result<Object> {
 		todo!("hash for Boolean")
 	}
 }

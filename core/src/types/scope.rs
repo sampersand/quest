@@ -2,7 +2,8 @@
 pub struct Scope;
 
 mod impls {
-	use crate::{Object, Result, Args, types};
+	use crate::{Object, Result, Args};
+
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		if let Ok(name) = this.get_attr("name") {
@@ -14,7 +15,7 @@ mod impls {
 
 	pub fn super_(args: Args) -> Result<Object> {
 		let this = args.this()?;
-		let attr = args.arg(0)?;
+		let _attr = args.arg(0)?;
 		let mut args = args.args(1..)?;
 		args.add_this(this.clone());
 

@@ -2,7 +2,6 @@
 pub struct Pristine;
 
 mod impls {
-	use super::Pristine;
 	use crate::{Object, Result, Args, types};
 
 	pub fn __id__(args: Args) -> Result<Object> {

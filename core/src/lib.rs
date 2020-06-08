@@ -1,16 +1,23 @@
-#![allow(unused, deprecated)]
+#![deny(warnings)]
 extern crate rand;
 
-mod obj;
-mod result;
-pub mod traits;
-pub mod mapping;
+pub trait EqResult<Rhs = Self> : std::fmt::Debug
+where
+	Rhs: ?Sized
+{
+	fn equals(&self, rhs: &Rhs) -> Result<bool>;
 
-pub mod literals;
+	fn into_object(&self) -> Object {
+		format!("{:?}", self).into()
+	}
+}
+
+mod error;
+
+pub mod obj;
 pub mod types;
+pub mod literals;
 
-pub use self::mapping::Mapping;
-pub use self::traits::*;
-pub use self::obj::Object;
+pub use self::obj::{Object, Key, Value};
+pub use self::error::Result;
 pub use self::types::rustfn::{Args, Binding};
-pub use self::result::Result;

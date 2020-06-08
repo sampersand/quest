@@ -1,8 +1,6 @@
 use std::slice::SliceIndex;
-use crate::{Result, Object, types::{self, Convertible}};
-use std::any::Any;
+use crate::{Result, Object, types};
 use std::borrow::Cow;
-use std::ops::Deref;
 
 use crate::types::rustfn::Binding;
 
@@ -87,56 +85,3 @@ impl Args<'_> {
 			.ok_or_else(|| format!("no `this` supplied (args={:?})", self).into())
 	}
 }
-
-
-/*
-
-impl Args<'_> {
-	#[deprecated]
-	pub fn get_rng<'c, I>(&'c self, idx: I) -> obj::Result<Args<'c>>
-	where I: SliceIndex<[Object], Output=[Object]> + 'c
-	{
-		if let Some(rng) = self.args.get(idx) {
-			Ok(self.new_args_slice(rng))
-		} else {
-			Err(format!("index is invalid (len={})", self.args.len()).into())
-		}
-	}
-
-	#[deprecated]
-	pub fn get(&self, idx: usize) -> obj::Result<Object> {
-		if let Some(obj) = self.args.get(idx) {
-			Ok(obj.clone())
-		} else {
-			Err(format!("index is invalid (len={})", self.args.len()).into())
-		}
-	}
-
-	#[deprecated]
-	pub fn get_downcast<'c, T: Any>(&'c self, index: usize) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
-		self.args.get(index)
-			.ok_or_else(|| format!("index is invalid (len={})", self.args.len()).into())
-			.and_then(|thing| thing.try_downcast_ref::<T>())
-	}
-
-	pub fn _this(&self) -> obj::Result<Object> {
-		let ret = self.get(0);
-		debug_assert!(ret.is_ok(), "invalid index given");
-		ret
-	}
-
-	pub fn _this_obj<T: Any>(&self) -> obj::Result<Object> {
-		let ret = self._this()?;
-		assert!(ret.is_a::<T>(), "invalid this encountered");
-		Ok(ret)
-	}
-
-	pub fn _this_downcast_ref<'c, T: Any>(&'c self) -> obj::Result<impl std::ops::Deref<Target=T> + 'c> {
-		self.this_downcast_ref()
-		// let ret = self.get_downcast(0);
-		// debug_assert!(ret.is_ok(), "invalid `this` encountered: {:?}, {:?}", self, ret.map(|x| {panic!(); 0i32}).unwrap_err());
-		// ret
-	}
-}
-
-*/

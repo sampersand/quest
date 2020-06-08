@@ -1,62 +1,25 @@
-#![allow(unused, deprecated)]
-
-use quest::{Object, Binding, types::ObjectType};
-use quest_parser as parse;
+use quest::{Object, Binding};
+use std::convert::TryFrom;
+use quest_parser::{Result as ParseResult, Stream, Expression};
 
 fn main() {
-	let filename = std::env::args().skip(1).next().unwrap_or("code/test.qs".to_string());
-	let mut stream = parse::Stream::from_file(filename.as_ref())
+	let filename = std::env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
+	let mut stream = Stream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))
 		.expect("couldn't open file")
-		.collect::<parse::Result<Vec<_>>>()
+		.collect::<ParseResult<Vec<_>>>()
 		.unwrap()
 		.into_iter();
 
-	let expression = parse::Expression::try_from_iter(&mut stream).unwrap();
+	let expression = Expression::try_from_iter(&mut stream).unwrap();
 	let mut args: Vec<Object> = std::env::args()
 		.skip(1)
-		.map(|x| Object::from(String::from(x)))
+		.map(Object::from)
 		.collect::<Vec<Object>>();
 	args.insert(0, Object::default());
 	let result = Binding::new_stackframe(args.into(), |_| expression.execute());
-	// if cfg!(debug) {
+	if cfg!(debug) {
 		println!("{:?}", result);
-	// } else {
-	// 	result.unwrap();
-	// }
+	} else {
+		result.unwrap();
+	}
 }
-
-//	let mut stream = parse::Stream::from_str(r##"
-
-// "Frac" = {
-// 	"()" = {
-// 		"numer" = (_1."@num"());
-// 		"denom" = (_2."@num"());
-// 		if((_2 == 0), {
-// 			return(-2, "error!")
-// 		})();
-// 		__this__
-// 	};
-
-// 	"@text" = {
-// 		__this__."numer" + "/" + __this__."denom"
-// 	};
-// }();
-
-// "half" = Frac(1, 2);
-// disp((half."@text")() + " = half");
-// 	"##);
-
-/*
-
-		# a."+@"()
-		# + += +@ - -= -@ * *= ** **= % %= / /= ! != = ==
-		# < <= <=> << <<= > >= >> >>= ~ & &= && | |= || ^ ^= . .= .~ , ;
-#// (4 + (5 * 3)) * 3;
-#// (12."floor")(x);
-#// "y" = ((1 ** 2) * 3) + 4;
-#// 3 + { (x), (y); (z) };
-#// "car" = { "x" = [_1, _2]."last"[]; (_1 * _2)."floor"(x) };
-#// this.x = "123" + that.34; # this
-#// foo = { _1 * (_2.'3' = _3) };
-#// disp("hello there," + this.x);
-*/

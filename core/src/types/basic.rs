@@ -2,7 +2,6 @@
 pub struct Basic;
 
 mod impls {
-	use super::Basic;
 	use crate::{Object, Result, Args, types, literals};
 
 	pub fn at_bool(_: Args) -> Result<Object> {
@@ -41,13 +40,13 @@ mod impls {
 	}
 
 	pub fn open_self(args: Args) -> Result<Object> {
-		use types::rustfn::Binding;
+		// use types::rustfn::Binding;
 		println!("{:?}", args);
-		let this = args.this()?;
-		let block = args.arg(0)?;
-		let args: Vec<Object> = Binding::instance().as_ref()
-			.get_attr("__args__")?
-			.downcast_call::<types::List>()?.into();
+		// let this = args.this()?;
+		// let block = args.arg(0)?;
+		// let args: Vec<Object> = Binding::instance().as_ref()
+		// 	.get_attr("__args__")?
+		// 	.downcast_call::<types::List>()?.into();
 
 		unimplemented!();
 		// Binding::new_stackframe(args.into(), (|_binding| {
@@ -80,7 +79,7 @@ for Basic [(parents super::Kernel)]:
 	"{}" => impls::open_self,
 	// "||"    => impls::or,
 	// "&&"    => impls::and,
-	"ancestors" => (|args| todo!()) // this is just a reminder to update `__parent__`...
+	"ancestors" => (|_args| todo!()) // this is just a reminder to update `__parent__`...
 }
 
 

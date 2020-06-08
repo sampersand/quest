@@ -1,5 +1,4 @@
-use crate::{Object, Result, EqResult};
-use std::borrow::Borrow;
+use crate::{Result, EqResult};
 use std::fmt::{self, Debug, Formatter};
 
 #[derive(Clone)]

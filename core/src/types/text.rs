@@ -1,5 +1,4 @@
-use crate::{Mapping, Object, types::{self, rustfn::Binding}};
-use std::sync::{Arc, RwLock};
+use crate::{Object, types::rustfn::Binding};
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Formatter};
 
@@ -80,7 +79,8 @@ mod impls {
 			args.arg(0)
 				.ok()
 				.map(|obj| obj.downcast_call::<types::Number>()
-						.and_then(|n| n.try_to_int_())
+						.and_then(|n| 
+							i64::try_from(n).map_err(|_| format!("{:?} is not an int", n).into()))
 						.and_then(|r| u32::try_from(r)
 								.map_err(|err| format!("invalid radix {}: {}", r, err).into())));
 		match radix {
@@ -90,7 +90,7 @@ mod impls {
 					.map_err(|err| err.to_string().into()),
 			Some(Err(err)) => Err(err),
 			None => 
-				types::Number::from_str(this.as_ref())
+				types::Number::try_from(this.as_ref())
 					.map(Into::into)
 					.map_err(|err| err.to_string().into())
 		}
@@ -115,7 +115,7 @@ mod impls {
 			}
 		}
 		
-		Binding::instance().as_ref().call_attr(".", vec![this.clone().into()])
+		Binding::instance().as_ref().call_attr(".", vec![this.clone()])
 	}
 
 	pub fn assign(args: Args) -> Result<Object> { // "=" 
@@ -163,14 +163,14 @@ mod impls {
 		Ok(this_str.into())
 	}
 
-	pub fn chr(args: Args) -> Result<Object> { todo!("chr") } // "chr"
-	pub fn len(args: Args) -> Result<Object> { todo!("len") } // "len"
-	pub fn index(args: Args) -> Result<Object> { todo!("[]") } // "[]"
-	pub fn index_assign(args: Args) -> Result<Object> { todo!("[]=") } // "[]=
-	pub fn is_empty(args: Args) -> Result<Object> { todo!("is_empty") } // "is_empty"
-	pub fn index_of(args: Args) -> Result<Object> { todo!("index_of") } // "index_of"
-	pub fn split(args: Args) -> Result<Object> { todo!("split") } // "split"
-	pub fn reverse(args: Args) -> Result<Object> { todo!("reverse") } // "reverse"
+	pub fn chr(_args: Args) -> Result<Object> { todo!("chr") } // "chr"
+	pub fn len(_args: Args) -> Result<Object> { todo!("len") } // "len"
+	pub fn index(_args: Args) -> Result<Object> { todo!("[]") } // "[]"
+	pub fn index_assign(_args: Args) -> Result<Object> { todo!("[]=") } // "[]=
+	pub fn is_empty(_args: Args) -> Result<Object> { todo!("is_empty") } // "is_empty"
+	pub fn index_of(_args: Args) -> Result<Object> { todo!("index_of") } // "index_of"
+	pub fn split(_args: Args) -> Result<Object> { todo!("split") } // "split"
+	pub fn reverse(_args: Args) -> Result<Object> { todo!("reverse") } // "reverse"
 }
 
 impl_object_type!{

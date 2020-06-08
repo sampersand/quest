@@ -1,12 +1,13 @@
-use crate::{literals,
-	Result, mapping::{self, Key, Value}, Mapping, Args,
-	types::{self, ObjectType, rustfn::Binding},
-	traits::*
-};
+use crate::{literals, Result, Args, types::{self, ObjectType}, EqResult};
+
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
-use std::ops::Deref;
+
+mod mapping;
+use self::mapping::Mapping;
+pub use self::mapping::Key;
+pub use self::mapping::Value;
 
 #[derive(Clone)]
 pub struct Object(pub(super) Arc<Internal>);
@@ -86,10 +87,9 @@ impl Object {
 		P: Into<mapping::Parents>
 	{
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
-		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
 		//println!("making object ({}) = {:?}", id, data);
 		Object(Arc::new(Internal {
-			id: id,
+			id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
 			// binding: Binding::instance(),
 			mapping: Arc::new(RwLock::new(Mapping::new(parents))),
 			data: Arc::new(RwLock::new(data)),
@@ -120,6 +120,7 @@ impl Object {
 	}
 
 	pub fn downcast_clone<T: Any + Clone>(&self) -> Option<T> {
+		#[allow(clippy::map_clone)]
 		self.downcast_ref::<T>().map(|x| x.clone())
 	}
 
@@ -130,7 +131,7 @@ impl Object {
 	}
 
 	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl std::ops::Deref<Target=T> + 'a> {
-		use std::{sync::RwLockReadGuard, marker::PhantomData, ops::{Deref, DerefMut}};
+		use std::{sync::RwLockReadGuard, marker::PhantomData, ops::Deref};
 		struct Caster<'a, T>(RwLockReadGuard<'a, dyn Any + Send + Sync>, PhantomData<T>);
 		impl<'a, T: 'static> Deref for Caster<'a, T> {
 			type Target = T;
@@ -157,7 +158,7 @@ impl Object {
 	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl std::ops::DerefMut<Target=T> + 'a> {
 		use std::{sync::RwLockWriteGuard, marker::PhantomData, ops::{Deref, DerefMut}};
 		struct Caster<'a, T>(RwLockWriteGuard<'a, dyn Any + Send + Sync>, PhantomData<T>);
-		impl<'a, T: 'static> std::ops::Deref for Caster<'a, T> {
+		impl<'a, T: 'static> Deref for Caster<'a, T> {
 			type Target = T;
 			fn deref(&self) -> &T {
 				self.0.downcast_ref().unwrap()
@@ -187,7 +188,7 @@ impl Object {
 				result.is_a::<types::BoundFunction>() {
 			let bound_res = Object::new(crate::types::BoundFunction);
 			bound_res.set_attr("__bound_object_owner__", self.clone())?;
-			bound_res.set_attr("__bound_object__", result);
+			bound_res.set_attr("__bound_object__", result)?;
 			Ok(bound_res)	
 		} else {
 			Ok(result)
@@ -237,41 +238,15 @@ impl Object {
 		self.0.mapping.write().expect("cannot write").add_parent(val)
 	}
 
-	pub fn call_attr<'a, K, A>(&self, attr: &K, mut args: A) -> Result<Object>
-	where
-		K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>>
-	{
-		static mut INDENT: usize = 0;
-		// for i in 0..unsafe{ INDENT } {
-		// 	print!("\t");
-		// }
-		unsafe { INDENT += 1; }
-		let args = args.into();
-		let s = format!("Object::call_attr({:?}, {:?}, {:?})", self, attr, args);
-		//println!("{}=...", s);
-		let res = self.call_attr1(attr, args);
-		unsafe { INDENT -= 1 };
-		// for i in 0..unsafe{ INDENT } {
-		// 	print!("\t");
-		// }
-		//println!("{}={:?}", s, res);
-		res
-	}
-
-	pub fn call_attr1<'a, K, A>(&self, attr: &K, mut args: A) -> Result<Object>
+	pub fn call_attr<'a, K, A>(&self, attr: &K, args: A) -> Result<Object>
 	where
 		K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>>
 	{
 		let mut args = args.into();
 
-		// println!("{:?}, {:?}, {:?}", self, attr, args);
-
-		if let Some(boundfn) = self.downcast_ref::<types::BoundFunction>() {
-			if attr.equals(&"()".into())? {
-				// println!("adding: {:?}", self);
-				args.add_this(self.clone());
-				return crate::types::bound_function::impls::call(args);
-			}
+		if self.downcast_ref::<types::BoundFunction>().is_some() && attr.equals(&"()".into())? {
+			args.add_this(self.clone());
+			return crate::types::bound_function::impls::call(args);
 		}
 
 		if let Some(rustfn) = self.downcast_ref::<types::RustFn>() {

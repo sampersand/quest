@@ -1,9 +1,5 @@
-use crate::{Object, Result, Args, types::rustfn::Binding};
+use crate::{Object, Result, Args};
 use std::any::Any;
-use std::sync::{RwLockWriteGuard, RwLockReadGuard};
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
-
 
 pub trait Convertible : Any + Sized + Clone {
 	const CONVERT_FUNC: &'static str;

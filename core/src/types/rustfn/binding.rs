@@ -19,7 +19,7 @@ impl Binding {
 			stack.read()
 				.expect("stack poisoned")
 				.last()
-				.map(|x| x.clone())
+				.cloned()
 		})
 	}
 
@@ -46,7 +46,7 @@ impl Binding {
 					None => eprintln!("nothing left to pop?"),
 					Some(binding) if binding.0.is_identical(self.1.as_ref()) => {},
 					// this is now ok, as you can set __this__.
-					Some(binding) => {/*eprintln!("bindings don't match: {:?}", binding)*/}
+					Some(_binding) => {/*eprintln!("bindings don't match: {:?}", binding)*/}
 				}
 			}
 		}
@@ -55,9 +55,8 @@ impl Binding {
 			let binding = {
 				let binding = Object::from(types::Scope);
 
-				if let Some(caller) = args.this().ok() {
-					binding.add_parent(caller.clone());
-					// binding.set_attr("__caller__", caller.clone());
+				if let Ok(caller) = args.this() {
+					binding.add_parent(caller.clone())?;
 				}
 
 				for (i, arg) in args.args(..)?.as_ref().iter().enumerate() {
@@ -74,7 +73,8 @@ impl Binding {
 				stack.push(binding.clone());
 			};
 
-			let guard = StackGuard(stack, &binding);
+
+			let _guard = StackGuard(stack, &binding);
 			func(&binding)
 		})
 	}

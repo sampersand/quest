@@ -22,6 +22,7 @@ macro_rules! dummy_object {
 #[cfg(test)]
 macro_rules! call_impl {
 	($fnc:ident($this:expr $(,$args:expr)*) -> $ret:ty) => {{
+		#[allow(unused)]
 		use crate::types::{self, *, rustfn::Args};
 		impls::$fnc({
 			let mut args = Args::new(vec![$($args.into()),*]);
@@ -34,13 +35,15 @@ macro_rules! call_impl {
 #[cfg(test)]
 macro_rules! assert_call_eq {
 	(for $ty:ty; $($lhs:expr, $rhs:ident($this:expr $(,$args:expr)*) -> $ret:ty),* $(,)?) => {{
+		#[allow(unused)]
 		use crate::types::{self, *, rustfn::Args};
 		#[cfg(test)]
 		<$ty>::_wait_for_setup_to_finish();
 		let mut which = 1;
 		$(
 			assert_eq!($lhs, *call_impl!($rhs($this $(,$args)*) -> $ret), "Bad test #{}", which);
-			which += 1;
+			#[allow(unused)]
+			{ which += 1; }
 		)*
 	}};
 }
@@ -96,7 +99,7 @@ macro_rules! impl_object_type {
 				vec![
 					<$init_parent as $crate::types::ObjectType>::mapping()
 				]
-			);
+			).expect("cant set `__parents__`?");
 		)?
 	};
 	(@SET_PARENT $class:ident (parents $parent:path) $($_rest:tt)*) => {
@@ -109,16 +112,15 @@ macro_rules! impl_object_type {
 
 	(@SET_ATTRS $class:ident $obj:ty;) => {};
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => const $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr($attr, Object::from($val));
+		$class.set_attr($attr, Object::from($val))
+			.expect(concat!("can't set `", stringify!($obj), "::", $attr, "`?"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $crate::types::RustFn::new(
-			concat!(stringify!($obj), "::", $attr),
-			$val
-		)
-		);
+			concat!(stringify!($obj), "::", $attr), $val)
+		).expect(concat!("can't set `", stringify!($obj), "::", $attr, "`?"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
@@ -146,9 +148,10 @@ macro_rules! impl_object_type {
 			}
 
 			fn mapping() -> $crate::Object {
-				use std::mem::{self, MaybeUninit};
-				use std::sync::{Once, Arc, RwLock, atomic::{AtomicU8, Ordering}};
-				use $crate::{Object, Mapping, mapping::Key, literals};
+				use std::mem::MaybeUninit;
+				use std::sync::{Once, atomic::{AtomicU8, Ordering}};
+				#[allow(unused)]
+				use $crate::{Object, Key, literals};
 
 				static mut CLASS_OBJECT: MaybeUninit<Object> = MaybeUninit::uninit();
 				static mut HAS_SETUP_HAPPENED: AtomicU8 = AtomicU8::new(0);
@@ -164,10 +167,12 @@ macro_rules! impl_object_type {
 				let class = unsafe { (*CLASS_OBJECT.as_ptr()).clone() };
 				
 				if unsafe { HAS_SETUP_HAPPENED.compare_and_swap(0, 1, Ordering::SeqCst) } == 0 {
+					#[allow(unused)]
 					use $crate::{Object, types::*};
 					impl_object_type!(@SET_PARENT class $($args)*);
 
-					class.set_attr("name", Object::from(stringify!($obj)));
+					class.set_attr("name", Object::from(stringify!($obj)))
+						.expect(concat!("can't set `", stringify!($obj), "::name`?"));
 					impl_object_type!(@SET_ATTRS class $obj; $($body)*);
 
 					#[cfg(test)]

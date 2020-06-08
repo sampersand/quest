@@ -1,6 +1,7 @@
 use std::iter::Peekable;
 use crate::{Result, Error, Literal, Token, token};
 use quest::types;
+use std::convert::TryFrom;
 use std::path::Path;
 use std::fs::File;
 use std::io::{self, Read, Bytes, BufReader, Seek, SeekFrom, Cursor};
@@ -34,15 +35,19 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 	}
 }
 
-impl<'a> Stream<'static, Cursor<&'a str>> {
-	pub fn from_str(data: &'a str) -> Self {
+
+impl<'a> From<&'a str> for Stream<'static, Cursor<&'a str>> {
+	fn from(data: &'a str) -> Self {
 		Stream::new(Cursor::new(data), None)
 	}
 }
 
-impl<'a> Stream<'a, BufReader<File>> {
-	pub fn from_file(file: &'a Path) -> io::Result<Self> {
-		Ok(Stream::new(BufReader::new(File::open(file)?), Some(file.as_ref())))
+impl<'a> TryFrom<&'a Path> for Stream<'a, BufReader<File>> {
+	type Error = io::Error;
+
+	fn try_from(file: &'a Path) -> io::Result<Self> {
+		let buf = BufReader::new(File::open(file)?);
+		Ok(Stream::new(buf, Some(file)))
 	}
 }
 
@@ -71,13 +76,14 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 
 		Ok(Token::Literal(Literal::Variable(types::Text::new(var))))
 	}
+
 	fn next_variable_escaped(&mut self) -> Result<Token> {
 		let mut var = String::new();
 		let mut break_on_non_alphanum = true;
 		match self.next_char()? {
 			Some(chr) if chr.is_alphanumeric() || chr == '_' || chr == '@' => var.push(chr),
 			Some(chr) if !chr.is_whitespace() => { break_on_non_alphanum = false; var.push(chr); },
-			Some(_) | None => return Err(Error::Message(format!("`$` with nothing after"))),
+			Some(_) | None => return Err(Error::Message("`$` with nothing after".to_string())),
 		}
 
 		// TODO: make this interpret "$var)" as `var` + RPAREN, not `$var)`
@@ -86,7 +92,7 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 				self.unseek(chr);
 				break;
 			} else if chr == '\\' {
-				chr = self.next_char()?.ok_or_else(|| Error::Message(format!("`\\` with nothing after")))?;
+				chr = self.next_char()?.ok_or_else(|| Error::Message("`\\` with nothing after".to_string()))?;
 			}
 			var.push(chr)
 		}
@@ -153,7 +159,7 @@ impl<'a, S: Seek + Read> Stream<'a, S> {
 		}
 
 		// TODO: make this actually call the `from_str` method
-		Ok(Token::Literal(Literal::Number(types::Number::from_str(&num)
+		Ok(Token::Literal(Literal::Number(types::Number::try_from(num.as_ref())
 				.map_err(|err| Error::Message(format!("bad number {:?}: {}", num, err)))?)))
 	}
 

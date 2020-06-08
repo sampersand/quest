@@ -1,10 +1,10 @@
 mod args;
 mod binding;
+
 pub use self::binding::Binding;
 pub use self::args::Args;
 
-use crate::{Mapping, Object, types};
-use std::sync::{Arc, RwLock};
+use crate::{Object, types};
 use std::fmt::{self, Debug, Formatter};
 
 type FnType = fn(Args) -> crate::Result<Object>;
@@ -32,8 +32,8 @@ impl PartialEq for RustFn {
 
 
 impl RustFn {
-	pub fn new(name: &'static str, n: FnType) -> Self {
-		RustFn(name, n.into())
+	pub fn new(name: &'static str, func: FnType) -> Self {
+		RustFn(name, func)
 	}
 
 	pub fn call(&self, args: Args) -> crate::Result<Object> {
@@ -58,7 +58,7 @@ mod impls {
 	use super::*;
 	use crate::{Object, Result, Args};
 
-	pub fn call(mut args: Args) -> Result<Object> {
+	pub fn call(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<RustFn>()?;
 		this.call(args.args(..)?)
 	}

@@ -1,4 +1,3 @@
-use std::sync::{Arc, RwLock};
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::cmp::Ordering;
@@ -78,7 +77,35 @@ impl Number {
 	pub const  NAN: Number = Number::Float(f64::NAN);
 	pub const  INF: Number = Number::Float(f64::INFINITY);
 
-	pub fn from_str(inp: &str) -> Result<Number, FromStrError> {
+
+	pub fn truncate(self) -> IntegerType {
+		match self {
+			Number::Integer(i) => i,
+			Number::Float(f) => f as _
+		}
+	}
+
+	#[allow(clippy::float_cmp)]
+	fn from_float_should_be_int(f: FloatType) -> Number {
+		assert!(f.is_normal() && (f as IntegerType as FloatType) == f, "bad f: {}", f);
+
+		Number::from(f as IntegerType)
+	}
+
+	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, FromStrError> {
+		if radix < 2 || radix > 36 {
+			return Err(FromStrError::BadRadix(radix))
+		}
+
+		IntegerType::from_str_radix(inp.trim(), radix)
+			.map(Number::from)
+			.map_err(FromStrError::BadInteger)
+	}
+}
+
+impl TryFrom<&'_ str> for Number {
+	type Error = FromStrError;
+	fn try_from(inp: &str) -> Result<Self, Self::Error> {
 		use std::str::FromStr;
 
 		let inp = inp.trim();
@@ -91,42 +118,13 @@ impl Number {
 				inp.remove(idx);
 			}
 
-			return Number::from_str(&inp)
+			return Number::try_from(inp.as_ref())
 		}
 
 		IntegerType::from_str(inp)
 			.map(Number::from)
 			.or_else(|_| FloatType::from_str(inp).map(Number::from))
 			.map_err(FromStrError::BadFloat)
-	}
-
-	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, FromStrError> {
-		if radix < 2 || radix > 36 {
-			return Err(FromStrError::BadRadix(radix))
-		}
-
-		IntegerType::from_str_radix(inp.trim(), radix)
-			.map(Number::from)
-			.map_err(FromStrError::BadInteger)
-	}
-
-	pub fn truncate(self) -> IntegerType {
-		match self {
-			Number::Integer(i) => i,
-			Number::Float(f) => f as _
-		}
-	}
-
-	#[deprecated]
-	pub fn try_to_int_(self) -> crate::Result<IntegerType> {
-		IntegerType::try_from(self)
-			.map_err(|_| format!("{:?} is not an int", self).into())
-	}
-
-	fn from_float_should_be_int(f: FloatType) -> Number {
-		assert!(f.is_normal() && f.floor() == f, "bad f: {}", f);
-
-		Number::from(f as IntegerType)
 	}
 }
 
@@ -198,6 +196,7 @@ impl TryFrom<Number> for IntegerType {
 }
 
 impl From<FloatType> for Number {
+	#[allow(clippy::float_cmp)]
 	fn from(f: FloatType) -> Number {
 		if f.is_normal() && f.floor() == f {
 			Number::from_float_should_be_int(f)
@@ -353,10 +352,10 @@ impl From<Number> for types::Boolean {
 mod impls {
 	use super::*;
 	use crate::{Object, Result, Args, types::{Text, Boolean}};
-	use Number::*;
 
 	#[derive(Debug, Clone)]
 	pub enum NumberError {
+		#[allow(unused)]
 		BitwiseNotInteger(&'static str, Number, Number, NotAnInteger)
 	}
 
@@ -386,7 +385,7 @@ mod impls {
 	
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
-		if let Some(radix) = args.arg(0).ok() {
+		if let Ok(radix) = args.arg(0) {
 			let radix = radix.downcast_call::<Number>()?.truncate();
 			this.to_string_radix(radix as _)
 				.map_err(|err| err.to_string().into())
@@ -433,6 +432,7 @@ mod impls {
 					let this = *args.this()?.try_downcast_ref::<Number>()?;
 					let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
+					#[allow(unused)]
 					use std::ops::*;
 					Ok(this.$op(rhs).into())
 				}
@@ -541,7 +541,7 @@ mod impls {
 		}
 	}
 
-	pub fn sqrt(args: Args) -> Result<Object> {
+	pub fn sqrt(_args: Args) -> Result<Object> {
 		unimplemented!()
 		// Ok(Number::from(args.this_downcast_ref::<Number>()?.0.sqrt()).into())
 	}
@@ -632,30 +632,30 @@ mod tests {
 	}
 
 	#[test]
-	fn from_str() {
+	fn try_from() {
 		// integers
-		assert_eq!(Number::from_str("0").unwrap(), Number::Integer(0));
-		assert_eq!(Number::from_str("12").unwrap(), Number::Integer(12));
-		assert_eq!(Number::from_str("93").unwrap(), Number::Integer(93));
-		assert_eq!(Number::from_str("-1952").unwrap(), Number::Integer(-1952));
-		assert_eq!(Number::from_str("1e8").unwrap(), Number::Integer(1e8 as _));
-		assert_eq!(Number::from_str("1.5e+12").unwrap(), Number::Integer(1.5e12 as _));
+		assert_eq!(Number::try_from("0").unwrap(), Number::Integer(0));
+		assert_eq!(Number::try_from("12").unwrap(), Number::Integer(12));
+		assert_eq!(Number::try_from("93").unwrap(), Number::Integer(93));
+		assert_eq!(Number::try_from("-1952").unwrap(), Number::Integer(-1952));
+		assert_eq!(Number::try_from("1e8").unwrap(), Number::Integer(1e8 as _));
+		assert_eq!(Number::try_from("1.5e+12").unwrap(), Number::Integer(1.5e12 as _));
 
 		// floats
-		assert_eq!(Number::from_str("12.3").unwrap(), Number::Float(12.3));
-		assert_eq!(Number::from_str("-12.3").unwrap(), Number::Float(-12.3));
-		assert_eq!(Number::from_str("1E-8").unwrap(), Number::Float(1e-8));
+		assert_eq!(Number::try_from("12.3").unwrap(), Number::Float(12.3));
+		assert_eq!(Number::try_from("-12.3").unwrap(), Number::Float(-12.3));
+		assert_eq!(Number::try_from("1E-8").unwrap(), Number::Float(1e-8));
 
 		// numbers with extra character we can strip
-		assert_eq!(Number::from_str("  123\t\n").unwrap(), Number::Integer(123));
-		assert_eq!(Number::from_str("1_000_000").unwrap(), Number::Integer(1_000_000));
+		assert_eq!(Number::try_from("  123\t\n").unwrap(), Number::Integer(123));
+		assert_eq!(Number::try_from("1_000_000").unwrap(), Number::Integer(1_000_000));
 
 		// bad numbers
-		assert!(matches!(Number::from_str("invalid").unwrap_err(), FromStrError::BadFloat(..)));
-		assert!(matches!(Number::from_str("1.2.3").unwrap_err(), FromStrError::BadFloat(..)));
-		assert!(matches!(Number::from_str("12e3e4").unwrap_err(), FromStrError::BadFloat(..)));
-		assert!(matches!(Number::from_str("").unwrap_err(), FromStrError::BadFloat(..)));
-		assert!(matches!(Number::from_str(" ").unwrap_err(), FromStrError::BadFloat(..)));
+		assert!(matches!(Number::try_from("invalid").unwrap_err(), FromStrError::BadFloat(..)));
+		assert!(matches!(Number::try_from("1.2.3").unwrap_err(), FromStrError::BadFloat(..)));
+		assert!(matches!(Number::try_from("12e3e4").unwrap_err(), FromStrError::BadFloat(..)));
+		assert!(matches!(Number::try_from("").unwrap_err(), FromStrError::BadFloat(..)));
+		assert!(matches!(Number::try_from(" ").unwrap_err(), FromStrError::BadFloat(..)));
 	}
 
 }

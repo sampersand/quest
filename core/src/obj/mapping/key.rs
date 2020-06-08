@@ -64,7 +64,6 @@ impl EqResult<str> for Object {
 
 impl EqResult for Key {
 	fn equals(&self, rhs: &Key) -> Result<bool> {
-		use Key::*;
 		match (self, rhs) {
 			(Key::Literal(lit_lhs), Key::Literal(lit_rhs)) => Ok(lit_lhs == lit_rhs),
 			(Key::Object(obj_lhs), Key::Object(obj_rhs)) => obj_lhs.equals(obj_rhs),

@@ -1,5 +1,3 @@
-use crate::mapping::Key;
-
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
 		$(

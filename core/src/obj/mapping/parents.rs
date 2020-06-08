@@ -95,7 +95,9 @@ impl Parents {
 
 	pub fn iter<'a>(&'a self) -> Result<impl Iterator<Item=Object> + 'a> {
 		enum ParentsIter<'a> {
+			#[allow(unused)]
 			List(std::slice::Iter<'a, Object>),
+			#[allow(unused)]
 			Object(std::vec::IntoIter<Object>),
 			None,
 		}
@@ -105,7 +107,7 @@ impl Parents {
 			fn next(&mut self) -> Option<Self::Item> {
 				match self {
 					ParentsIter::None => None,
-					ParentsIter::List(l) => unimplemented!(),//l.next(),
+					ParentsIter::List(_l) => unimplemented!(),//l.next(),
 					ParentsIter::Object(l) => l.next()//.as_ref()
 				}
 			}
@@ -121,10 +123,3 @@ impl Parents {
 		})
 	}
 }
-
-
-
-
-
-
-
