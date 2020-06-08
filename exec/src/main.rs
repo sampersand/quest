@@ -1,9 +1,16 @@
+#![deny(warnings)]
+
 use quest::{Object, Binding};
-use std::convert::TryFrom;
 use quest_parser::{Result as ParseResult, Stream, Expression};
+use std::convert::TryFrom;
+
+// TODO: repl
+mod repl;
+
+use std::env;
 
 fn main() {
-	let filename = std::env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
+	let filename = env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
 	let mut stream = Stream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))
 		.expect("couldn't open file")
 		.collect::<ParseResult<Vec<_>>>()
