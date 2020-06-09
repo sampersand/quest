@@ -1,6 +1,10 @@
 use std::cmp::Ordering;
+use std::io::BufRead;
 use quest::{Object, Key, types, EqResult};
 use std::fmt::{self, Display, Formatter};
+use crate::token::{Token, Result, Parsable};
+use crate::Stream;
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operator {
@@ -10,9 +14,24 @@ pub enum Operator {
 	Lsh, Rsh, BNot, BAnd, BOr, Xor,
 	Assign, Dot, DotAssign, ColonColon,
 	Call, Index,
-	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign, LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
+	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign,LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
 }
 
+impl Parsable for Operator {
+	type Item = Self;
+	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<Option<Self>> {
+		match stream.next_char()? {
+			Some('.') => Ok(Some(Operator::Dot)),
+			Some('+') => Ok(Some(Operator::Add)),
+			Some('*') => Ok(Some(Operator::Mul)),
+			Some('-') => Ok(Some(Operator::Sub)),
+			Some('!') => Ok(Some(Operator::Not)),
+			Some('=') => Ok(Some(Operator::Assign)),
+			Some(chr) => { stream.unshift_char(chr); Ok(None) },
+			None => Ok(None)
+		}
+	}
+}
 
 impl From<Operator> for Object {
 	fn from(op: Operator) -> Self {
@@ -133,6 +152,3 @@ impl PartialOrd for Operator {
 		Some(self.cmp(rhs))
 	}
 }
-
-
-

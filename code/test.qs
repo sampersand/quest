@@ -1,15 +1,42 @@
-Number.$sin = {
-	# ask ruby to figure out the sin
-	system('ruby', '-e', 'puts Math.sin(' + _1 + ')')
-};
-
-disp(2 << 12);
-disp(12.$sin(12));
-
-# $Math = {
-# 	$cos = { system('ruby', '-e', 'puts Math.cos ' + _1) };
-# 	__this__
-# }();
+Number.'square' = { _1 * _1 };
+disp( 4.'square'() ); #=> 16
 
 
-# disp(Math::$cos(12));
+	# `_1` is the first argument, ie "this"/"self"
+
+Number.$fac = {
+	$__memo = { __this__.0 = 1; __this__ }();
+
+	{
+		# we can't take fac of non-positive ints.
+		# $_1 = (_1.$floor().$abs());
+
+		# if the memo doesn't contain us
+		if(!__memo.$__has_attr__($_1 = (_1.$floor().$abs())), {
+			disp('adding', _1, 'to __memo');
+
+			# assign us to it.
+			__memo._1 = ((_1 - 1).$fac() * _1);
+		})();
+
+		# return the resulting value in the memo
+		__memo._1
+	}
+}();
+
+
+disp('5! =', 5.3.$fac());
+disp('10! = ', 10.$fac());
+
+
+
+
+
+
+
+
+
+
+
+
+
