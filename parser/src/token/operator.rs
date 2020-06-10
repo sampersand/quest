@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::io::BufRead;
 use quest::{Object, Key, types, EqResult};
 use std::fmt::{self, Display, Formatter};
-use crate::token::{Token, Result, Parsable};
+use crate::token::{Token, Result, Parsable, ParseResult};
 use crate::Stream;
 
 
@@ -17,18 +17,28 @@ pub enum Operator {
 	AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, PowAssign,LshAssign, RshAssign, BAndAssign, BOrAssign, XorAssign,
 }
 
+
+impl From<Operator> for Token {
+	fn from(op: Operator) -> Token {
+		Token::Operator(op)
+	}
+}
+
 impl Parsable for Operator {
 	type Item = Self;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<Option<Self>> {
+	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
 		match stream.next_char()? {
-			Some('.') => Ok(Some(Operator::Dot)),
-			Some('+') => Ok(Some(Operator::Add)),
-			Some('*') => Ok(Some(Operator::Mul)),
-			Some('-') => Ok(Some(Operator::Sub)),
-			Some('!') => Ok(Some(Operator::Not)),
-			Some('=') => Ok(Some(Operator::Assign)),
-			Some(chr) => { stream.unshift_char(chr); Ok(None) },
-			None => Ok(None)
+			Some('.') => Ok(ParseResult::Some(Operator::Dot)),
+			Some('+') => Ok(ParseResult::Some(Operator::Add)),
+			Some('*') => Ok(ParseResult::Some(Operator::Mul)),
+			Some('-') => Ok(ParseResult::Some(Operator::Sub)),
+			Some('!') => Ok(ParseResult::Some(Operator::Not)),
+			Some('=') => Ok(ParseResult::Some(Operator::Assign)),
+			Some(chr) => {
+				stream.unshift_char(chr);
+				Ok(ParseResult::None)
+			},
+			None => Ok(ParseResult::None)
 		}
 	}
 }

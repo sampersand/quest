@@ -1,4 +1,4 @@
-use crate::token::{self, Token, Parsable};
+use crate::token::{self, Token};
 use std::io::{self, Cursor, BufReader, BufRead};
 use std::fs::File;
 use std::path::{Path, PathBuf};

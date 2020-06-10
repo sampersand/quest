@@ -1,6 +1,5 @@
 use crate::Stream;
-use std::convert::TryFrom;
-use std::io::{self, BufRead};
+use std::io::BufRead;
 
 macro_rules! parse_error {
 	(context=$context:expr, $type:ident $($tt:tt)*) => {
@@ -24,7 +23,8 @@ use self::parenthesis::Parenthesis;
 pub use self::parenthesis::ParenType;
 pub use self::operator::Operator;
 pub use self::literal::Literal;
-pub use self::parsable::Parsable;
+pub use self::parsable::{Parsable, ParseResult};
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 #[non_exhaustive]
@@ -37,27 +37,31 @@ pub enum Token {
 	Comma
 }
 
-impl From<Literal> for Token {
-	fn from(lit: Literal) -> Token {
-		Token::Literal(lit)
+impl Display for Token {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		match self {
+			Token::Literal(l) => Display::fmt(l, f),
+			Token::Operator(o) => Display::fmt(o, f),
+			Token::Left(t) => Display::fmt(&t.left(), f),
+			Token::Right(t) => Display::fmt(&t.right(), f),
+			Token::Endline => write!(f, ";"),
+			Token::Comma => write!(f, ","),
+		}		
 	}
 }
 
-impl From<Operator> for Token {
-	fn from(op: Operator) -> Token {
-		Token::Operator(op)
-	}
-}
 
-impl Parsable for Token {
-	type Item = Self;
-
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<Option<Self>> {
+impl Token {
+	pub fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<Option<Self>> {
+		use self::{whitespace::Whitespace, comment::Comment};
 		macro_rules! try_parse {
 			($($ty:ty),*) => {
 				$(
-					if let Some(what) = <$ty>::try_parse(stream)? {
-						return Ok(Some(what.into()));
+					match <$ty>::try_parse(stream)? {
+						ParseResult::Some(val) => return Ok(Some(val.into())),
+						ParseResult::RestartParsing => return Token::try_parse(stream),
+						ParseResult::StopParsing => return Ok(None),
+						ParseResult::None => { /* do nothing, go to the next one */ }
 					}
 				)*
 			};
@@ -65,17 +69,16 @@ impl Parsable for Token {
 
 		// it's important whitespace is first, as it'll delete any extra whitespace before other
 		// parsables see them as starting tokens.
-		try_parse!(whitespace::Whitespace, comment::Comment, Literal, Operator, Parenthesis);
+		try_parse!(Whitespace, Comment, Literal, Operator, Parenthesis);
 
 		match stream.next_char()? {
+			Some(';') => Ok(Some(Token::Endline)),
+			Some(',') => Ok(Some(Token::Comma)),
 			Some(chr) => Err(Error::new(stream.context().clone(), ErrorType::UnknownTokenStart(chr))),
 			None => Ok(None)
 		}
 	}
 }
-
-
-
 
 
 

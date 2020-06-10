@@ -1,4 +1,4 @@
-#![allow(unused_imports)]
+// #![allow(unused_imports)]
 #![deny(unused_must_use)]
 
 mod token;
