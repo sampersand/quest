@@ -1,6 +1,6 @@
+use crate::{Stream, Result};
+use crate::token::{Parsable, ParseResult};
 use std::io::BufRead;
-use crate::token::{Result, Parsable, ParseResult};
-use crate::Stream;
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display, Formatter};
 

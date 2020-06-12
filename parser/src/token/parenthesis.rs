@@ -1,7 +1,7 @@
+use crate::token::{Token, Parsable, ParseResult};
+use crate::{Result, Stream};
 use std::fmt::{self, Display, Formatter};
-use crate::token::{Token, Parsable, Result, ParseResult};
 use std::io::BufRead;
-use crate::Stream;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ParenType {

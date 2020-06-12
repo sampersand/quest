@@ -1,7 +1,7 @@
-use std::io::BufRead;
-use crate::token::{Result, Parsable, ParseResult};
-use crate::Stream;
 pub use super::whitespace::Never;
+use crate::token::{Parsable, ParseResult};
+use crate::{Stream, Result};
+use std::io::BufRead;
 
 // a dummy struct just so we can have a type to impl `Parsable`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

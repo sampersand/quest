@@ -1,7 +1,7 @@
+use crate::{Stream, Result};
+use crate::token::{Operator, Parenthesis, Parsable, ParseResult};
+use crate::token::literal::{variable, Variable};
 use std::io::BufRead;
-use crate::token::{Operator, literal::variable::{self, Variable}, Result, Parsable, ParseResult};
-
-use crate::Stream;
 use std::fmt::{self, Debug, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,13 +51,19 @@ impl Text {
 		let first = stream.peek_char()?.ok_or_else(|| parse_error!(stream, UnterminatedQuote))?;
 
 		if variable::is_variable_start(first) {
-			Ok(Variable::try_parse(stream)?
-				.map(|var| Text(var.to_string().into())))
+			Ok(Variable::try_parse(stream)?.map(|var| Text(var.to_string().into())))
 		} else {
 			match Operator::try_parse(stream)?.map(|op| Text(op.to_string().into())) {
-				ParseResult::Some(val) => Ok(ParseResult::Some(val)),
-				_ => Err(parse_error!(stream, UnterminatedQuote)),
+				ParseResult::Some(val) => return Ok(ParseResult::Some(val)),
+				ParseResult::None =>
+					if let ParseResult::Some(val) = Parenthesis::try_parse(stream)?
+							.map(|p| Text(p.to_string().into())) {
+						return Ok(ParseResult::Some(val));
+					},
+				_ => {}
 			}
+
+			Err(parse_error!(stream, UnterminatedQuote))
 		}
 	}
 }

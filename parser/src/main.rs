@@ -5,7 +5,7 @@ fn main() {
 	while let Some(s) = stream.next() {
 		match s {
 			Ok(o @ quest_parser::Token::Endline) => println!("{}", o),
-			Ok(o) => print!("{} ", o),
+			Ok(o) => print!("{}", o),
 			Err(err) => {
 				eprintln!("{}", err);
 				std::process::exit(1);

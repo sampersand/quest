@@ -1,6 +1,6 @@
 use std::io::BufRead;
-use crate::token::{Token, Result, Parsable, ParseResult};
-use crate::Stream;
+use crate::token::{Parsable, ParseResult};
+use crate::{Token, Stream, Result};
 use std::fmt::{self, Display, Formatter};
 
 mod text;

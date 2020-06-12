@@ -1,6 +1,6 @@
+use crate::{Result, Stream};
+use crate::token::{Parsable, ParseResult};
 use std::io::BufRead;
-use crate::token::{Result, Parsable, ParseResult};
-use crate::Stream;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,10 +31,8 @@ impl Parsable for Variable {
 		}
 
 		let mut variable = String::with_capacity(1);
-		variable.push(stream.next_char()?.expect("internal error: first char should be available"));
-		debug_assert!(is_variable_start(variable.chars().next().unwrap()));
 
-		while let Some(chr) = stream.next_char()? {
+		while let Some(chr) = stream.next_char()? { 
 			if is_variable_body(chr) {
 				variable.push(chr)
 			} else {

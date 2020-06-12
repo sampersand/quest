@@ -1,6 +1,5 @@
+use crate::{Stream, Result};
 use std::io::BufRead;
-use crate::token::Result;
-use crate::Stream;
 
 
 // "ParseResult" is probably not the best name, because it implies an "Err", but we return

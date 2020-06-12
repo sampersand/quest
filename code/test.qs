@@ -1,41 +1,74 @@
-Number.'square' = { _1 * _1 };
-disp( 4.'square'() ); #=> 16
+# A class is just an executed block of code
+Kernel.$Person = {
+	# Set the name of this class to `Person`. Executed blocks automatically inherit from
+	# `ExecutedBlock`, which defines `@text` as `name` (if a name is set)
+	$name = "Person";
 
+	# The "constructor"; to make a new person, you do `Person(...)`, which calls this function
+	$() = {
+		# The first argument to a function is always object the function's bound to. In this case,
+		# the first argument (_1) is Person.
+		# 
+		# We don't want the child to be a direct descendant of Person, then we'd have `name` defined.
+		# Instead, have it inherit from the Person's instance methods.
+		$__parent__ = (_1.$instance_methods);
 
-	# `_1` is the first argument, ie "this"/"self"
+		# assign the first and last names to the second and third parameters
+		$first = _2;
+		$last = _3;
 
-Number.$fac = {
-	$__memo = { __this__.0 = 1; __this__ }();
+		# By returning `this`, we return the current scope we're in. All that's defined is 
+		# `__parent__`, `first` and `last`---exactly what classes in other languages have!
+		__this__
+	};
 
-	{
-		# we can't take fac of non-positive ints.
-		# $_1 = (_1.$floor().$abs());
+	# Define the instance methods of the class.
+	$instance_methods = {
+		# This is so we can access the `Parent` class.
+		$class = _1;
 
-		# if the memo doesn't contain us
-		if(!__memo.$__has_attr__($_1 = (_1.$floor().$abs())), {
-			disp('adding', _1, 'to __memo');
+		# We define the `@text` method for a person by combining their first and last names
+		$@text = {
+			(_1.$first) + ' ' + (_1.$last)
+		};
 
-			# assign us to it.
-			__memo._1 = ((_1 - 1).$fac() * _1);
-		})();
+		$says_what = 'hi';
 
-		# return the resulting value in the memo
-		__memo._1
-	}
+		$speak = {
+			disp('' + _1 + ':', _1.$says_what);
+		};
+
+		# Return this as the last argument, so we can use it as a parent.
+		__this__
+	}(__this__); # pass __this__ as the first argument
+
+	__this__
 }();
 
+$Child = {
+	$__parent__ = Person;
 
-disp('5! =', 5.3.$fac());
-disp('10! = ', 10.$fac());
+	$instance_methods = {
+		$class = _1;
 
+		$__parent__ = (_1.$instance_methods);
 
+		$@text = {
+			$super = (_1.$__parent__::$@text);
+			"Baby " + super(_1)
+		};
 
+		$says_what = "Waa! I want food!";
 
+		__this__
+	}(__this__);
+	__this__
+}();
 
-
-
-
-
+$sam = Person('Sam', 'W');
+$child = Child('Jace', 'B');
+sam.$speak();
+child.$speak();
 
 
 

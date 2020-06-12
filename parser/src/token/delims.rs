@@ -1,7 +1,7 @@
+use crate::{Result, Stream};
+use crate::token::Parsable;
 use std::fmt::{self, Display, Formatter};
-use crate::token::{Parsable, Result};
 use std::io::BufRead;
-use crate::Stream;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub(crate) enum Delims {

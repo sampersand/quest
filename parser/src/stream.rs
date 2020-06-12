@@ -1,4 +1,4 @@
-use crate::token::{self, Token};
+use crate::{Token, Result};
 use std::io::{self, Cursor, BufReader, BufRead};
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -37,10 +37,27 @@ impl<B: BufRead> Stream<B> {
 		&self.context
 	}
 
-	pub fn peek_char(&mut self) -> token::Result<Option<char>> {
+	pub fn peek_str(&mut self) -> Result<&str> {
+		self.load_line()?;
+
+		let mut iter = self.context.line.chars();
+		if self.context.column != 0 {
+			iter.by_ref().nth(self.context.column - 1);
+		}
+		Ok(iter.as_str())
+	}
+
+	pub fn peek_char(&mut self) -> Result<Option<char>> {
 		self.load_line()?;
 
 		Ok(self.context.line.chars().nth(self.context.column))
+	}
+
+	pub fn shift_str(&mut self, s: &str) -> Result<()> {
+		assert!(self.peek_str()?.starts_with(s), "'{}' doesn't start with '{}'", self.peek_str()?, s);
+
+		self.context.column += s.len();
+		Ok(())
 	}
 
 	pub fn unshift_char(&mut self, chr: char) {
@@ -49,7 +66,7 @@ impl<B: BufRead> Stream<B> {
 		assert_eq!(self.context.line.chars().nth(self.context.column), Some(chr));
 	}
 
-	pub fn next_char(&mut self) -> token::Result<Option<char>> {
+	pub fn next_char(&mut self) -> Result<Option<char>> {
 		self.load_line()?;
 
 		let chr_opt = self.context.line.chars().nth(self.context.column);
@@ -61,8 +78,7 @@ impl<B: BufRead> Stream<B> {
 		Ok(chr_opt)
 	}
 
-
-	fn load_line(&mut self) -> token::Result<()> {
+	fn load_line(&mut self) -> Result<()> {
 		// if the column's too far...
 		if self.context.line.len() <= self.context.column {
 			// keep track of the old line in case we aren't able to read a new one (for err msgs)
@@ -76,9 +92,9 @@ impl<B: BufRead> Stream<B> {
 				Err(err) => {
 					std::mem::swap(&mut old_line, &mut self.context.line);
 					return Err(
-						token::Error::new(
+						crate::Error::new(
 							self.context.clone(),
-							token::ErrorType::CantReadStream(err)
+							crate::ErrorType::CantReadStream(err)
 						)
 					)?
 				}
@@ -119,7 +135,7 @@ impl TryFrom<&'_ Path> for Stream<BufReader<File>> {
 
 
 impl<S: BufRead> Iterator for Stream<S> {
-	type Item = token::Result<Token>;
+	type Item = Result<Token>;
 	fn next(&mut self) -> Option<Self::Item> {
 		Token::try_parse(self).transpose()
 	}

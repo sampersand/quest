@@ -1,16 +1,15 @@
-use crate::Stream;
+use crate::{Stream, Result};
 use std::io::BufRead;
 
 macro_rules! parse_error {
 	(context=$context:expr, $type:ident $($tt:tt)*) => {
-		crate::token::Error::new($context, crate::token::ErrorType::$type$($tt)*)
+		crate::Error::new($context, crate::ErrorType::$type$($tt)*)
 	};
 	($stream:expr, $type:ident $($tt:tt)*) => {
 		parse_error!(context=$stream.context().clone(), $type$($tt)*)
 	};
 }
 
-mod error;
 mod literal;
 mod operator;
 mod parsable;
@@ -18,7 +17,6 @@ mod whitespace;
 mod comment;
 mod parenthesis;
 
-pub use self::error::{Error, ErrorType, Result};
 use self::parenthesis::Parenthesis;
 pub use self::parenthesis::ParenType;
 pub use self::operator::Operator;
@@ -74,7 +72,7 @@ impl Token {
 		match stream.next_char()? {
 			Some(';') => Ok(Some(Token::Endline)),
 			Some(',') => Ok(Some(Token::Comma)),
-			Some(chr) => Err(Error::new(stream.context().clone(), ErrorType::UnknownTokenStart(chr))),
+			Some(chr) => Err(parse_error!(stream, UnknownTokenStart(chr))),
 			None => Ok(None)
 		}
 	}
