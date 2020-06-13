@@ -1,4 +1,5 @@
-use crate::{Stream, Result};
+use crate::Result;
+use crate::stream::{BufStream, Stream};
 use crate::token::{Operator, Parenthesis, Parsable, ParseResult};
 use crate::token::literal::{variable, Variable};
 use std::io::BufRead;
@@ -15,7 +16,7 @@ impl Display for Text {
 }
 
 impl Text {
-	fn try_parse_quoted<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
+	fn try_parse_old_quoted<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
 		let mut text = String::new();
 		let quote = stream.next_char()?.expect("internal error: a string should have been passed");
 		debug_assert!(quote == '"' || quote == '\'');
@@ -45,18 +46,18 @@ impl Text {
 	}
 
 	// valid syntax is `$variable_name` or `$operator`.
-	fn try_parse_dollar_sign<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
+	fn try_parse_old_dollar_sign<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
 		assert_eq!(stream.next_char()?, Some('$'));
 
 		let first = stream.peek_char()?.ok_or_else(|| parse_error!(stream, UnterminatedQuote))?;
 
 		if variable::is_variable_start(first) {
-			Ok(Variable::try_parse(stream)?.map(|var| Text(var.to_string().into())))
+			Ok(Variable::try_parse_old(stream)?.map(|var| Text(var.to_string().into())))
 		} else {
-			match Operator::try_parse(stream)?.map(|op| Text(op.to_string().into())) {
+			match Operator::try_parse_old(stream)?.map(|op| Text(op.to_string().into())) {
 				ParseResult::Some(val) => return Ok(ParseResult::Some(val)),
 				ParseResult::None =>
-					if let ParseResult::Some(val) = Parenthesis::try_parse(stream)?
+					if let ParseResult::Some(val) = Parenthesis::try_parse_old(stream)?
 							.map(|p| Text(p.to_string().into())) {
 						return Ok(ParseResult::Some(val));
 					},
@@ -71,10 +72,10 @@ impl Text {
 
 impl Parsable for Text {
 	type Item = Self;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
+	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
 		match stream.peek_char()? {
-			Some('$') => Text::try_parse_dollar_sign(stream),
-			Some('"') | Some('\'') => Text::try_parse_quoted(stream),
+			Some('$') => Text::try_parse_old_dollar_sign(stream),
+			Some('"') | Some('\'') => Text::try_parse_old_quoted(stream),
 			_ => Ok(ParseResult::None)
 		}
 	}

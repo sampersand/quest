@@ -1,4 +1,5 @@
-use crate::{Stream, Result};
+use crate::Result;
+use crate::stream::{BufStream, Stream};
 use crate::token::{Parsable, ParseResult};
 use std::io::BufRead;
 use std::convert::TryFrom;
@@ -14,11 +15,11 @@ impl Display for Number {
 }
 
 impl Number {
-	fn try_parse_radix<S: BufRead>(_stream: &mut Stream<S>, _radix: u32) -> Result<ParseResult<Self>> {
-		todo!("try_parse_radix")
+	fn try_parse_old_radix<S: BufRead>(_stream: &mut BufStream<S>, _radix: u32) -> Result<ParseResult<Self>> {
+		todo!("try_parse_old_radix")
 	}
 
-	fn try_parse_basic<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
+	fn try_parse_old_basic<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
 		let mut number = String::with_capacity(1);
 
 		#[derive(PartialEq, Eq)]
@@ -67,24 +68,24 @@ impl Number {
 
 impl Parsable for Number {
 	type Item = Self;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
+	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
 		match stream.peek_char()? {
 			Some('0') => {
 				assert_eq!(stream.next_char()?, Some('0'));
 
 				match stream.next_char()? {
-					Some('x') | Some('X') => return Number::try_parse_radix(stream, 16),
-					Some('d') | Some('D') => return Number::try_parse_radix(stream, 10),
-					Some('o') | Some('O') => return Number::try_parse_radix(stream,  8),
-					Some('b') | Some('B') => return Number::try_parse_radix(stream,  2),
+					Some('x') | Some('X') => return Number::try_parse_old_radix(stream, 16),
+					Some('d') | Some('D') => return Number::try_parse_old_radix(stream, 10),
+					Some('o') | Some('O') => return Number::try_parse_old_radix(stream,  8),
+					Some('b') | Some('B') => return Number::try_parse_old_radix(stream,  2),
 					Some(chr) => stream.unshift_char(chr),
 					None => {}
 				}
 
 				stream.unshift_char('0');
-				Number::try_parse_basic(stream)
+				Number::try_parse_old_basic(stream)
 			},
-			Some('1'..='9') => Number::try_parse_basic(stream),
+			Some('1'..='9') => Number::try_parse_old_basic(stream),
 			_ => Ok(ParseResult::None)
 		}
 	}

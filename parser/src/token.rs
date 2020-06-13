@@ -1,14 +1,6 @@
-use crate::{Stream, Result};
+use crate::Result;
+use crate::stream::{BufStream, Stream};
 use std::io::BufRead;
-
-macro_rules! parse_error {
-	(context=$context:expr, $type:ident $($tt:tt)*) => {
-		crate::Error::new($context, crate::ErrorType::$type$($tt)*)
-	};
-	($stream:expr, $type:ident $($tt:tt)*) => {
-		parse_error!(context=$stream.context().clone(), $type$($tt)*)
-	};
-}
 
 mod literal;
 mod operator;
@@ -50,14 +42,14 @@ impl Display for Token {
 
 
 impl Token {
-	pub fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<Option<Self>> {
+	pub fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<Option<Self>> {
 		use self::{whitespace::Whitespace, comment::Comment};
-		macro_rules! try_parse {
+		macro_rules! try_parse_old {
 			($($ty:ty),*) => {
 				$(
-					match <$ty>::try_parse(stream)? {
+					match <$ty>::try_parse_old(stream)? {
 						ParseResult::Some(val) => return Ok(Some(val.into())),
-						ParseResult::RestartParsing => return Token::try_parse(stream),
+						ParseResult::RestartParsing => return Token::try_parse_old(stream),
 						ParseResult::StopParsing => return Ok(None),
 						ParseResult::None => { /* do nothing, go to the next one */ }
 					}
@@ -67,7 +59,7 @@ impl Token {
 
 		// it's important whitespace is first, as it'll delete any extra whitespace before other
 		// parsables see them as starting tokens.
-		try_parse!(Whitespace, Comment, Literal, Operator, Parenthesis);
+		try_parse_old!(Whitespace, Comment, Literal, Operator, Parenthesis);
 
 		match stream.next_char()? {
 			Some(';') => Ok(Some(Token::Endline)),

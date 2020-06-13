@@ -1,5 +1,6 @@
 use crate::token::{Parsable, ParseResult};
-use crate::{Result, Stream};
+use crate::Result;
+use crate::stream::{BufStream, Stream};
 use std::io::BufRead;
 
 // a dummy struct just so we can have a type to impl `Parsable`
@@ -15,7 +16,7 @@ impl From<Never> for super::Token {
 
 impl Parsable for Whitespace {
 	type Item = Never;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Never>> {
+	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Never>> {
 		if stream.peek_char()?.map(char::is_whitespace).unwrap_or(false) {
 			while let Some(chr) = stream.next_char()? {
 				if !chr.is_whitespace() {

@@ -1,4 +1,5 @@
-use crate::{Result, Stream};
+use crate::Result;
+use crate::stream::{BufStream, Stream};
 use crate::token::Parsable;
 use std::fmt::{self, Display, Formatter};
 use std::io::BufRead;
@@ -20,7 +21,7 @@ impl Display for Delims {
 
 impl Parsable for Delims {
 	type Item = Self;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<Option<Self>> {
+	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<Option<Self>> {
 		match stream.next_char()? {
 			Some('(') => Ok(Some(Delims::Left(ParenType::Round))),
 			Some(')') => Ok(Some(Delims::Right(ParenType::Round))),

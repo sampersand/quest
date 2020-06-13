@@ -1,13 +1,14 @@
 pub use super::whitespace::Never;
 use crate::token::{Parsable, ParseResult};
-use crate::{Stream, Result};
+use crate::Result;
+use crate::stream::{BufStream, Stream};
 use std::io::BufRead;
 
 // a dummy struct just so we can have a type to impl `Parsable`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Comment;
 
-fn line_comment<S: BufRead>(stream: &mut Stream<S>) -> Result<()> {
+fn line_comment<S: BufRead>(stream: &mut BufStream<S>) -> Result<()> {
 	while let Some(chr) = stream.next_char()? {
 		if chr == '\n' {
 			break;
@@ -16,7 +17,7 @@ fn line_comment<S: BufRead>(stream: &mut Stream<S>) -> Result<()> {
 	Ok(())
 }
 
-fn block_comment<S: BufRead>(stream: &mut Stream<S>) -> Result<()> {
+fn block_comment<S: BufRead>(stream: &mut BufStream<S>) -> Result<()> {
 	let begin_context = stream.context().clone();
 
 	while let Some(chr) = stream.next_char()? {
@@ -37,7 +38,7 @@ fn block_comment<S: BufRead>(stream: &mut Stream<S>) -> Result<()> {
 
 impl Parsable for Comment {
 	type Item = Never;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Never>> {
+	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Never>> {
 		match stream.next_char()? {
 			Some('#') => { 
 				line_comment(stream)?;

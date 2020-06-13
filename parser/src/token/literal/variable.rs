@@ -1,6 +1,6 @@
 use crate::{Result, Stream};
 use crate::token::{Parsable, ParseResult};
-use std::io::BufRead;
+use std::io::{Seek, SeekFrom};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,7 +25,7 @@ pub fn is_variable_body(c: char) -> bool {
 
 impl Parsable for Variable {
 	type Item = Self;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
+	fn try_parse<S: Stream>(stream: &mut S) -> Result<ParseResult<Self>> {
 		if !stream.peek_char()?.map(is_variable_start).unwrap_or(false) {
 			return Ok(ParseResult::None)
 		}
@@ -35,8 +35,9 @@ impl Parsable for Variable {
 		while let Some(chr) = stream.next_char()? { 
 			if is_variable_body(chr) {
 				variable.push(chr)
+			} else if let Err(err) = stream.seek(SeekFrom::Current(-1)) {
+				return Err(parse_error!(stream, CantReadStream(err)));
 			} else {
-				stream.unshift_char(chr);
 				break;
 			}
 		}

@@ -1,5 +1,5 @@
-use crate::{Stream, Result};
-use std::io::BufRead;
+use crate::Result;
+use crate::stream::Stream;
 
 
 // "ParseResult" is probably not the best name, because it implies an "Err", but we return
@@ -26,5 +26,11 @@ impl<T> ParseResult<T> {
 
 pub trait Parsable {
 	type Item;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self::Item>>;
+	fn try_parse_old<S: std::io::BufRead>(stream: &mut crate::stream::BufStream<S>) -> Result<ParseResult<Self::Item>> {
+		Self::try_parse(stream)
+	}
+
+	fn try_parse<S: Stream>(stream: &mut S) -> Result<ParseResult<Self::Item>> {
+		unimplemented!()
+	}
 }

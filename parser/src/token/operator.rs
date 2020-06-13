@@ -1,6 +1,7 @@
 #![allow(unused)]
-use crate::{Token, Stream, Result};
-use crate::token::{Parsable, ParseResult};
+use crate::Result;
+use crate::stream::{BufStream, Stream};
+use crate::token::{Token, Parsable, ParseResult};
 use quest::{Object, Key, types, EqResult};
 use std::cmp::Ordering;
 use std::io::BufRead;
@@ -20,7 +21,7 @@ macro_rules! operator_enum {
 
 		impl Parsable for Operator {
 			type Item = Self;
-			fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self>> {
+			fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
 				let s = stream.peek_str()?;
 
 				$(

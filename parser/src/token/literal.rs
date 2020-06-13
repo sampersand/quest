@@ -1,6 +1,7 @@
 use std::io::BufRead;
-use crate::token::{Parsable, ParseResult};
-use crate::{Token, Stream, Result};
+use crate::Result;
+use crate::token::{Token, Parsable, ParseResult};
+use crate::stream::{BufStream, Stream};
 use std::fmt::{self, Display, Formatter};
 
 mod text;
@@ -37,18 +38,18 @@ impl From<Literal> for Token {
 
 impl Parsable for Literal {
 	type Item = Self;
-	fn try_parse<S: BufRead>(stream: &mut Stream<S>) -> Result<ParseResult<Self::Item>> {
-		match Number::try_parse(stream)?.map(Literal::Number) {
+	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self::Item>> {
+		match Number::try_parse_old(stream)?.map(Literal::Number) {
 			ParseResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		match Text::try_parse(stream)?.map(Literal::Text) {
+		match Text::try_parse_old(stream)?.map(Literal::Text) {
 			ParseResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		Ok(Variable::try_parse(stream)?.map(Literal::Variable))
+		Ok(Variable::try_parse_old(stream)?.map(Literal::Variable))
 	}
 }
 
