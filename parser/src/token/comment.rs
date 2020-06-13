@@ -1,7 +1,7 @@
 pub use super::whitespace::Never;
 use crate::token::{Parsable, ParseResult};
 use crate::Result;
-use crate::stream::{BufStream, Stream};
+use crate::stream::{BufStream, Contexted, Stream};
 use std::io::BufRead;
 
 // a dummy struct just so we can have a type to impl `Parsable`

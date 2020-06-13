@@ -1,5 +1,6 @@
 #![deny(unused_must_use)]
 #![allow(unused)]
+#![allow(deprecated)]
 
 macro_rules! parse_error {
 	(context=$context:expr, $type:ident $($tt:tt)*) => {
@@ -7,7 +8,7 @@ macro_rules! parse_error {
 	};
 
 	($stream:expr, $type:ident $($tt:tt)*) => {
-		parse_error!(context=$stream.context().clone(), $type$($tt)*)
+		parse_error!(context=$crate::stream::Contexted::context($stream).clone(), $type$($tt)*)
 	};
 }
 

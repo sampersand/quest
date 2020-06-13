@@ -1,5 +1,5 @@
 use crate::{Token, Result};
-use crate::stream::{Context, Stream};
+use crate::stream::{Context, Contexted, Stream};
 
 use std::io::{self, Cursor, Seek, SeekFrom, BufReader, BufRead};
 use std::fs::File;
@@ -28,21 +28,26 @@ impl<B: BufRead> Seek for BufStream<B> {
 	}
 }
 
-impl<B: BufRead> Stream for BufStream<B> {
-	fn context(&self) -> &Context {
-		&self.context
-	}
+impl<S: BufRead> Iterator for BufStream<S> {
+	type Item = Result<char>;
+	fn next(&mut self) -> Option<Result<char>> {
+		let chr_res = self.peek_char().transpose()?;
 
-	fn next_char(&mut self) -> Result<Option<char>> {
-		let chr_opt = self.peek_char()?;
-
-		if chr_opt.is_some() {
+		if chr_res.is_ok() {
 			self.context.column += 1;
 		}
 
-		Ok(chr_opt)
+		Some(chr_res)
 	}
+}
 
+impl<B: BufRead> Contexted for BufStream<B> {
+	fn context(&self) -> &Context {
+		&self.context
+	}
+}
+
+impl<B: BufRead> Stream for BufStream<B> {
 	fn peek_char(&mut self) -> Result<Option<char>> {
 		self.read_next_line_if_applicable()?;
 		Ok(self.context.line.chars().nth(self.context.column))
@@ -84,10 +89,7 @@ impl<B: BufRead> BufStream<B> {
 		}
 	}
 
-	pub fn context(&self) -> &Context {
-		&self.context
-	}
-
+	#[deprecated]
 	pub fn peek_str(&mut self) -> Result<&str> {
 		self.load_line()?;
 
@@ -98,6 +100,7 @@ impl<B: BufRead> BufStream<B> {
 		Ok(iter.as_str())
 	}
 
+	#[deprecated]
 	pub fn shift_str(&mut self, s: &str) -> Result<()> {
 		assert!(self.peek_str()?.starts_with(s), "'{}' doesn't start with '{}'", self.peek_str()?, s);
 
@@ -105,12 +108,14 @@ impl<B: BufRead> BufStream<B> {
 		Ok(())
 	}
 
+	#[deprecated]
 	pub fn unshift_char(&mut self, chr: char) {
 		assert_ne!(self.context.column, 0, "todo: unseek characters at the start of the line");
 		self.context.column -= 1;
 		assert_eq!(self.context.line.chars().nth(self.context.column), Some(chr));
 	}
 
+	#[deprecated]
 	fn load_line(&mut self) -> Result<()> {
 		// if the column's too far...
 		if self.context.line.len() <= self.context.column {
@@ -167,9 +172,9 @@ impl TryFrom<&'_ Path> for BufStream<BufReader<File>> {
 }
 
 
-impl<S: BufRead> Iterator for BufStream<S> {
-	type Item = Result<Token>;
-	fn next(&mut self) -> Option<Self::Item> {
-		Token::try_parse_old(self).transpose()
-	}
-}
+// impl<S: BufRead> Iterator for BufStream<S> {
+// 	type Item = Result<Token>;
+// 	fn next(&mut self) -> Option<Self::Item> {
+// 		Token::try_parse_old(self).transpose()
+// 	}
+// }

@@ -1,8 +1,8 @@
-use quest_parser::stream::BufStream;
+use quest_parser::{stream::BufStream, Token};
 
 fn main() {
 	let mut stream = BufStream::new_from_path("../code/test.qs").unwrap();
-	while let Some(s) = stream.next() {
+	while let Some(s) = Token::try_parse_old(&mut stream).transpose() {
 		match s {
 			Ok(o @ quest_parser::Token::Endline) => println!("{}", o),
 			Ok(o) => print!("{}", o),

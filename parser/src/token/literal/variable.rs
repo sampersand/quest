@@ -12,7 +12,6 @@ impl Display for Variable {
 	}
 }
 
-
 #[inline]
 pub fn is_variable_start(c: char) -> bool {
 	!c.is_ascii() || c.is_ascii_alphabetic() || c == '_' || c == '@'
@@ -32,7 +31,7 @@ impl Parsable for Variable {
 
 		let mut variable = String::with_capacity(1);
 
-		while let Some(chr) = stream.next_char()? { 
+		while let Some(chr) = stream.next().transpose()? { 
 			if is_variable_body(chr) {
 				variable.push(chr)
 			} else if let Err(err) = stream.seek(SeekFrom::Current(-1)) {
@@ -45,3 +44,4 @@ impl Parsable for Variable {
 		Ok(ParseResult::Some(Variable(variable.into())))
 	}
 }
+

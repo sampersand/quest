@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::stream::{BufStream, Stream};
+use crate::stream::{BufStream, Contexted, Stream};
 use crate::token::{Operator, Parenthesis, Parsable, ParseResult};
 use crate::token::literal::{variable, Variable};
 use std::io::BufRead;
