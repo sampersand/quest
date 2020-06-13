@@ -1,8 +1,7 @@
-use crate::Result;
-use crate::stream::{BufStream, Contexted, Stream};
-use crate::token::{Operator, Parenthesis, Parsable, ParseResult};
+use crate::{Result, Stream};
+use crate::stream::Contexted;
+use crate::token::{Operator, Parenthesis, Tokenizable, TokenizeResult};
 use crate::token::literal::{variable, Variable};
-use std::io::BufRead;
 use std::fmt::{self, Debug, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,15 +15,16 @@ impl Display for Text {
 }
 
 impl Text {
-	fn try_parse_old_quoted<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
+	fn try_tokenize_quoted<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
 		let mut text = String::new();
-		let quote = stream.next_char()?.expect("internal error: a string should have been passed");
+		let quote = stream.next().expect("internal error: a string should have been passed")?;
 		debug_assert!(quote == '"' || quote == '\'');
+
 		let starting_context = stream.context().clone();
 
-		while let Some(chr) = stream.next_char()? {
+		while let Some(chr) = stream.next().transpose()? {
 			match chr {
-				'\\' => match stream.next_char()? {
+				'\\' => match stream.next().transpose()? {
 					Some(chr @ '\\')
 						| Some(chr @ '\'')
 						| Some(chr @ '\"') => text.push(chr),
@@ -37,7 +37,7 @@ impl Text {
 					Some(chr) => return Err(parse_error!(stream, BadEscapeChar(chr))),
 					None      => return Err(parse_error!(context=starting_context, UnterminatedQuote)),
 				},
-				chr if chr == quote => return Ok(ParseResult::Some(Text(text.into()))),
+				chr if chr == quote => return Ok(TokenizeResult::Some(Text(text.into()))),
 				chr => text.push(chr)
 			}
 		}
@@ -46,38 +46,41 @@ impl Text {
 	}
 
 	// valid syntax is `$variable_name` or `$operator`.
-	fn try_parse_old_dollar_sign<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
-		assert_eq!(stream.next_char()?, Some('$'));
+	fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+		assert_eq!(stream.next().transpose()?, Some('$'));
 
-		let first = stream.peek_char()?.ok_or_else(|| parse_error!(stream, UnterminatedQuote))?;
+		let first = stream.peek().unwrap_or_else(|| Err(parse_error!(stream, UnterminatedQuote)))?;
 
-		if variable::is_variable_start(first) {
-			Ok(Variable::try_parse_old(stream)?.map(|var| Text(var.to_string().into())))
-		} else {
-			match Operator::try_parse_old(stream)?.map(|op| Text(op.to_string().into())) {
-				ParseResult::Some(val) => return Ok(ParseResult::Some(val)),
-				ParseResult::None =>
-					if let ParseResult::Some(val) = Parenthesis::try_parse_old(stream)?
-							.map(|p| Text(p.to_string().into())) {
-						return Ok(ParseResult::Some(val));
-					},
-				_ => {}
-			}
-
-			Err(parse_error!(stream, UnterminatedQuote))
+		macro_rules! from_other {
+			($($p:ty),*) => {
+				$(
+					match <$p>::try_tokenize(stream)?.map(|val| Text(val.to_string().into())) {
+						v @ TokenizeResult::Some(_) => return Ok(v),
+						TokenizeResult::None => {},
+						_ => return Err(parse_error!(stream, UnterminatedQuote))
+					}
+				)*
+			};
 		}
+
+		from_other!(Variable, Operator, Parenthesis);
+
+		Err(parse_error!(stream, UnterminatedQuote))
 	}
 }
 
 
-impl Parsable for Text {
+impl Tokenizable for Text {
 	type Item = Self;
-	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
-		match stream.peek_char()? {
-			Some('$') => Text::try_parse_old_dollar_sign(stream),
-			Some('"') | Some('\'') => Text::try_parse_old_quoted(stream),
-			_ => Ok(ParseResult::None)
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+		match stream.peek().transpose()? {
+			Some('$')               => Text::try_tokenize_dollar_sign(stream),
+			Some('\"') | Some('\'') => Text::try_tokenize_quoted(stream),
+			_ => Ok(TokenizeResult::None)
 		}
 	}
 }
+
+
+
 

@@ -1,6 +1,5 @@
-use crate::token::{Token, Parsable, ParseResult};
-use crate::Result;
-use crate::stream::{BufStream, Stream};
+use crate::token::{Token, Tokenizable, TokenizeResult};
+use crate::{Result, Stream};
 use std::fmt::{self, Display, Formatter};
 use std::io::BufRead;
 
@@ -41,21 +40,23 @@ impl From<ParenType> for quest::types::Text {
 	}
 }
 
-impl Parsable for Parenthesis {
+impl Tokenizable for Parenthesis {
 	type Item = Token;
-	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Token>> {
-		match stream.next_char()? {
-			Some('(') => Ok(ParseResult::Some(Token::Left(ParenType::Round))),
-			Some(')') => Ok(ParseResult::Some(Token::Right(ParenType::Round))),
-			Some('[') => Ok(ParseResult::Some(Token::Left(ParenType::Square))),
-			Some(']') => Ok(ParseResult::Some(Token::Right(ParenType::Square))),
-			Some('{') => Ok(ParseResult::Some(Token::Left(ParenType::Curly))),
-			Some('}') => Ok(ParseResult::Some(Token::Right(ParenType::Curly))),
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Token>> {
+		match stream.next().transpose()? {
+			Some('(') => Ok(TokenizeResult::Some(Token::Left(ParenType::Round))),
+			Some(')') => Ok(TokenizeResult::Some(Token::Right(ParenType::Round))),
+			Some('[') => Ok(TokenizeResult::Some(Token::Left(ParenType::Square))),
+			Some(']') => Ok(TokenizeResult::Some(Token::Right(ParenType::Square))),
+			Some('{') => Ok(TokenizeResult::Some(Token::Left(ParenType::Curly))),
+			Some('}') => Ok(TokenizeResult::Some(Token::Right(ParenType::Curly))),
 			Some(chr) => {
-				stream.unshift_char(chr);
-				Ok(ParseResult::None)
+				use std::io::{Seek, SeekFrom};
+				stream.seek(SeekFrom::Current(-1))
+					.map_err(|err| parse_error!(stream, CantReadStream(err)))?;
+				Ok(TokenizeResult::None)
 			},
-			None => Ok(ParseResult::None)
+			None => Ok(TokenizeResult::None)
 		}
 	}
 }

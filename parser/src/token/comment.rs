@@ -1,15 +1,15 @@
 pub use super::whitespace::Never;
-use crate::token::{Parsable, ParseResult};
-use crate::Result;
-use crate::stream::{BufStream, Contexted, Stream};
+use crate::token::{Tokenizable, TokenizeResult};
+use crate::{Stream, Result};
+use crate::stream::Contexted;
 use std::io::BufRead;
 
-// a dummy struct just so we can have a type to impl `Parsable`
+// a dummy struct just so we can have a type to impl `Tokenizable`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Comment;
 
-fn line_comment<S: BufRead>(stream: &mut BufStream<S>) -> Result<()> {
-	while let Some(chr) = stream.next_char()? {
+fn line_comment<S: Stream>(stream: &mut S) -> Result<()> {
+	while let Some(chr) = stream.next().transpose()? {
 		if chr == '\n' {
 			break;
 		}
@@ -17,46 +17,40 @@ fn line_comment<S: BufRead>(stream: &mut BufStream<S>) -> Result<()> {
 	Ok(())
 }
 
-fn block_comment<S: BufRead>(stream: &mut BufStream<S>) -> Result<()> {
+fn block_comment<S: Stream>(stream: &mut S) -> Result<()> {
 	let begin_context = stream.context().clone();
 
-	while let Some(chr) = stream.next_char()? {
+	while let Some(chr) = stream.next().transpose()? {
 		match chr {
-			'*' if stream.peek_char()? == Some('/') => {
-				assert_eq!(stream.next_char().unwrap(), Some('/'));
-				return Ok(()); // end of line
-			},
-			'/' if stream.peek_char()? == Some('*') => {
-				assert_eq!(stream.next_char().unwrap(), Some('*'));
-				block_comment(stream)?; // allow for nested block comments
-			},
+			// end of line
+			'*' if stream.next().transpose()? == Some('/') => return Ok(()),
+			// allow for nested block comments
+			'/' if stream.next().transpose()? == Some('*') => block_comment(stream)?,
 			_ => { /* do nothing, we ignore other characters */ }
 		}
 	}
+
 	Err(parse_error!(context=begin_context, UnterminatedBlockComment))
 }
 
-impl Parsable for Comment {
+impl Tokenizable for Comment {
 	type Item = Never;
-	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Never>> {
-		match stream.next_char()? {
-			Some('#') => { 
-				line_comment(stream)?;
-				Ok(ParseResult::RestartParsing)
-			},
-
-			Some('/') if stream.peek_char()? == Some('*') => {
-				assert_eq!(stream.next_char().unwrap(), Some('*'));
-				block_comment(stream)?;
-				Ok(ParseResult::RestartParsing)
-			},
-			Some(chr) => {
-				stream.unshift_char(chr);
-				Ok(ParseResult::None)
-			},
-			None => Ok(ParseResult::None)
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Never>> {
+		if stream.starts_with("##__END_OF_FILE__##")? {
+			Ok(TokenizeResult::StopParsing)
+		} else if stream.starts_with("#")? {
+			line_comment(stream).and(Ok(TokenizeResult::RestartParsing))
+		} else if stream.starts_with("/*")? {
+			try_seek!(stream, 2);
+			block_comment(stream).and(Ok(TokenizeResult::RestartParsing))
+		} else {
+			Ok(TokenizeResult::None)
 		}
 	}
 }
+
+
+
+
 
 

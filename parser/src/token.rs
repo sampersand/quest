@@ -4,7 +4,7 @@ use std::io::BufRead;
 
 mod literal;
 mod operator;
-mod parsable;
+mod tokenizable;
 mod whitespace;
 mod comment;
 mod parenthesis;
@@ -13,7 +13,7 @@ use self::parenthesis::Parenthesis;
 pub use self::parenthesis::ParenType;
 pub use self::operator::Operator;
 pub use self::literal::Literal;
-pub use self::parsable::{Parsable, ParseResult};
+pub use self::tokenizable::{Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -42,26 +42,24 @@ impl Display for Token {
 
 
 impl Token {
-	pub fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<Option<Self>> {
+	pub fn try_parse<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		use self::{whitespace::Whitespace, comment::Comment};
-		macro_rules! try_parse_old {
+		macro_rules! try_tokenize {
 			($($ty:ty),*) => {
 				$(
-					match <$ty>::try_parse_old(stream)? {
-						ParseResult::Some(val) => return Ok(Some(val.into())),
-						ParseResult::RestartParsing => return Token::try_parse_old(stream),
-						ParseResult::StopParsing => return Ok(None),
-						ParseResult::None => { /* do nothing, go to the next one */ }
+					match <$ty>::try_tokenize(stream)? {
+						TokenizeResult::Some(val) => return Ok(Some(val.into())),
+						TokenizeResult::RestartParsing => return Token::try_parse(stream),
+						TokenizeResult::StopParsing => return Ok(None),
+						TokenizeResult::None => { /* do nothing, go to the next one */ }
 					}
 				)*
 			};
 		}
 
-		// it's important whitespace is first, as it'll delete any extra whitespace before other
-		// parsables see them as starting tokens.
-		try_parse_old!(Whitespace, Comment, Literal, Operator, Parenthesis);
+		try_tokenize!(Whitespace, Comment, Literal, Parenthesis, Operator);
 
-		match stream.next_char()? {
+		match stream.next().transpose()? {
 			Some(';') => Ok(Some(Token::Endline)),
 			Some(',') => Ok(Some(Token::Comma)),
 			Some(chr) => Err(parse_error!(stream, UnknownTokenStart(chr))),

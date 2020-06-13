@@ -1,7 +1,7 @@
 #![allow(unused)]
 use crate::Result;
 use crate::stream::{BufStream, Stream};
-use crate::token::{Token, Parsable, ParseResult};
+use crate::token::{Token, Tokenizable, TokenizeResult};
 use quest::{Object, Key, types, EqResult};
 use std::cmp::Ordering;
 use std::io::BufRead;
@@ -19,19 +19,19 @@ macro_rules! operator_enum {
 			$($variant),*
 		}
 
-		impl Parsable for Operator {
+		impl Tokenizable for Operator {
 			type Item = Self;
-			fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
-				let s = stream.peek_str()?;
 
-				$(
-					if operator_enum!(; TRY_PARSE $repr $(($($ident)?))?).map(|x: &str| s.starts_with(x)).unwrap_or(false) {
-						stream.shift_str(operator_enum!(; TRY_PARSE $repr $(($($ident)?))?).unwrap());
-						return Ok(ParseResult::Some(Operator::$variant))
-					} else // this either becomes `else if ...` or connects to the following block
-				)*
+			fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self::Item>> {
+				$({
+					let o = operator_enum!(; TRY_PARSE $repr $(($($ident)?))?);
+					if o.map(|x| stream.starts_with(x)).transpose()?.unwrap_or(false) {
+						try_seek!(stream, o.unwrap().len() as i64);
+						return Ok(TokenizeResult::Some(Operator::$variant))
+					}
+				})*
 				{
-					Ok(ParseResult::None)
+					Ok(TokenizeResult::None)
 				}
 			}
 		}

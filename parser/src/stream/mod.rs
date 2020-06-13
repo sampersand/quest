@@ -9,12 +9,8 @@ pub trait Contexted {
 }
 
 pub trait Stream : Seek + Contexted + Iterator<Item=Result<char>> {
-	#[deprecated]
-	fn next_char(&mut self) -> Result<Option<char>> {
-		self.next().transpose()
-	}
-
-	fn peek_char(&mut self) -> Result<Option<char>>;
+	fn peek(&mut self) -> Option<Result<char>>;
+	fn starts_with(&mut self, s: &str) -> Result<bool>;
 }
 
 pub use self::context::Context;

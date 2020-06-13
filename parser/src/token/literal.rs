@@ -1,7 +1,5 @@
-use std::io::BufRead;
-use crate::Result;
-use crate::token::{Token, Parsable, ParseResult};
-use crate::stream::{BufStream, Stream};
+use crate::{Result, Stream};
+use crate::token::{Token, Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 
 mod text;
@@ -36,20 +34,20 @@ impl From<Literal> for Token {
 	}
 }
 
-impl Parsable for Literal {
+impl Tokenizable for Literal {
 	type Item = Self;
-	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self::Item>> {
-		match Number::try_parse_old(stream)?.map(Literal::Number) {
-			ParseResult::None => { /* do nothing, parse the next one */ },
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+		match Number::try_tokenize(stream)?.map(Literal::Number) {
+			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		match Text::try_parse_old(stream)?.map(Literal::Text) {
-			ParseResult::None => { /* do nothing, parse the next one */ },
+		match Text::try_tokenize(stream)?.map(Literal::Text) {
+			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		Ok(Variable::try_parse_old(stream)?.map(Literal::Variable))
+		Ok(Variable::try_tokenize(stream)?.map(Literal::Variable))
 	}
 }
 

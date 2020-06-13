@@ -31,7 +31,7 @@ impl<B: BufRead> Seek for BufStream<B> {
 impl<S: BufRead> Iterator for BufStream<S> {
 	type Item = Result<char>;
 	fn next(&mut self) -> Option<Result<char>> {
-		let chr_res = self.peek_char().transpose()?;
+		let chr_res = self.peek()?;
 
 		if chr_res.is_ok() {
 			self.context.column += 1;
@@ -48,9 +48,27 @@ impl<B: BufRead> Contexted for BufStream<B> {
 }
 
 impl<B: BufRead> Stream for BufStream<B> {
-	fn peek_char(&mut self) -> Result<Option<char>> {
+	fn peek(&mut self) -> Option<Result<char>> {
+		if let Err(err) = self.read_next_line_if_applicable() {
+			Some(Err(err))
+		} else {
+			self.context.line.chars().nth(self.context.column).map(Ok)
+		}
+	}
+
+	fn starts_with(&mut self, s: &str) -> Result<bool> {
 		self.read_next_line_if_applicable()?;
-		Ok(self.context.line.chars().nth(self.context.column))
+		Ok(self.as_ref().starts_with(s))
+	}
+}
+
+impl<B: BufRead> AsRef<str> for BufStream<B> {
+	fn as_ref(&self) -> &str {
+		let mut iter = self.context.line.chars();
+		if self.context.column != 0 {
+			iter.by_ref().nth(self.context.column - 1);
+		}
+		iter.as_str()
 	}
 }
 

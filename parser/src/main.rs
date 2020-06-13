@@ -2,7 +2,7 @@ use quest_parser::{stream::BufStream, Token};
 
 fn main() {
 	let mut stream = BufStream::new_from_path("../code/test.qs").unwrap();
-	while let Some(s) = Token::try_parse_old(&mut stream).transpose() {
+	while let Some(s) = Token::try_parse(&mut stream).transpose() {
 		match s {
 			Ok(o @ quest_parser::Token::Endline) => println!("{}", o),
 			Ok(o) => print!("{}", o),
@@ -15,7 +15,7 @@ fn main() {
 	// let filename = env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
 	// let mut stream = BufStream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))
 	// 	.expect("couldn't open file")
-	// 	.collect::<ParseResult<Vec<_>>>()
+	// 	.collect::<TokenizeResult<Vec<_>>>()
 	// 	.unwrap()
 	// 	.into_iter();
 

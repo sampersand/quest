@@ -1,9 +1,7 @@
-use crate::Result;
-use crate::stream::{BufStream, Stream};
-use crate::token::{Parsable, ParseResult};
-use std::io::BufRead;
+use crate::{Result, Stream};
+use crate::token::{Tokenizable, TokenizeResult};
 use std::convert::TryFrom;
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Number(quest::types::Number);
@@ -15,14 +13,15 @@ impl Display for Number {
 }
 
 impl Number {
-	fn try_parse_old_radix<S: BufRead>(_stream: &mut BufStream<S>, _radix: u32) -> Result<ParseResult<Self>> {
-		todo!("try_parse_old_radix")
+	#[allow(unused_variables)]
+	fn try_tokenize_radix<S: Stream>(stream: &mut S, radix: u32) -> Result<TokenizeResult<Self>> {
+		todo!("try_tokenize_radix")
 	}
 
-	fn try_parse_old_basic<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
+	fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
 		let mut number = String::with_capacity(1);
 
-		#[derive(PartialEq, Eq)]
+		#[derive(PartialEq)]
 		enum Position {
 			Integer,
 			Decimal,
@@ -31,29 +30,33 @@ impl Number {
 
 		let mut pos = Position::Integer;
 
-		while let Some(chr) = stream.next_char()? {
+		while let Some(chr) = stream.next().transpose()? {
 			match chr {
 				'0'..='9' => number.push(chr),
 				'.' if pos == Position::Integer => {
-					// "12.x" should be '12' '.' 'x' is the start of an attribute
-					if !matches!(stream.peek_char()?, Some('0'..='9')) {
-						stream.unshift_char('.');
-						break;
+					// "12.\D" should be interpreted as '12' '.' '\D', as '\D' is the start of an attr
+					// (\D means "not 0-9")
+					if matches!(stream.peek().transpose()?, Some('0'..='9')) {
+						number.push('.');
+						pos = Position::Decimal;
+					} else {
+						try_seek!(stream, -1);
+						break
 					}
-					number.push('.');
-					pos = Position::Decimal;
 				},
+
 				'e' | 'E' => if pos == Position::Mantissa {
 					return Err(parse_error!(stream, BadNumber("unexpected `e` encountered".to_string())))
 				} else {
 					number.push('e');
-					if matches!(stream.peek_char()?, Some('+') | Some('-')) {
-						number.push(stream.next_char()?.unwrap());
+					// accept the sign of the exponent, if supplied
+					if matches!(stream.peek().transpose()?, Some('+') | Some('-')) {
+						number.push(stream.next().transpose()?.unwrap());
 					}
 					pos = Position::Mantissa
 				},
 				_ => {
-					stream.unshift_char(chr);
+					try_seek!(stream, -1);
 					break
 				}
 			}
@@ -62,31 +65,33 @@ impl Number {
 		quest::types::Number::try_from(number.as_str())
 			.map_err(|err| parse_error!(stream, BadNumber(err.to_string())))
 			.map(Number)
-			.map(ParseResult::Some)
+			.map(TokenizeResult::Some)
 	}
 }
 
-impl Parsable for Number {
+impl Tokenizable for Number {
 	type Item = Self;
-	fn try_parse_old<S: BufRead>(stream: &mut BufStream<S>) -> Result<ParseResult<Self>> {
-		match stream.peek_char()? {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+		match stream.peek().transpose()? {
 			Some('0') => {
-				assert_eq!(stream.next_char()?, Some('0'));
+				assert_eq!(stream.next().transpose()?, Some('0'));
 
-				match stream.next_char()? {
-					Some('x') | Some('X') => return Number::try_parse_old_radix(stream, 16),
-					Some('d') | Some('D') => return Number::try_parse_old_radix(stream, 10),
-					Some('o') | Some('O') => return Number::try_parse_old_radix(stream,  8),
-					Some('b') | Some('B') => return Number::try_parse_old_radix(stream,  2),
-					Some(chr) => stream.unshift_char(chr),
-					None => {}
+				match stream.next().transpose()? {
+					Some('x') | Some('X') => Number::try_tokenize_radix(stream, 16),
+					Some('d') | Some('D') => Number::try_tokenize_radix(stream, 10),
+					Some('o') | Some('O') => Number::try_tokenize_radix(stream,  8),
+					Some('b') | Some('B') => Number::try_tokenize_radix(stream,  2),
+					Some(_) => {
+						try_seek!(stream, -2);
+						Number::try_tokenize_basic(stream)
+					},
+					None => Ok(TokenizeResult::Some(Number(0.into()))),
 				}
-
-				stream.unshift_char('0');
-				Number::try_parse_old_basic(stream)
 			},
-			Some('1'..='9') => Number::try_parse_old_basic(stream),
-			_ => Ok(ParseResult::None)
+			Some('1'..='9') => Number::try_tokenize_basic(stream),
+			_ => Ok(TokenizeResult::None)
 		}
 	}
 }
+
+
