@@ -9,7 +9,7 @@ pub enum ParenType {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub(crate) struct Parenthesis;
+pub(super) struct Parenthesis;
 
 impl Display for ParenType {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {

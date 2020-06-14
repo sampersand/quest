@@ -7,7 +7,6 @@ use crate::stream::Stream;
 pub enum TokenizeResult<T> {
 	Some(T),
 	RestartParsing,
-	#[allow(dead_code)] // this is a future improvement, eg `__END__`
 	StopParsing,
 	None
 }
@@ -21,6 +20,7 @@ impl<T> TokenizeResult<T> {
 			TokenizeResult::None => TokenizeResult::None
 		}
 	}
+
 	pub fn map_none<F: FnOnce() -> T>(self, func: F) -> TokenizeResult<T> {
 		if matches!(self, TokenizeResult::None) {
 			TokenizeResult::Some(func())

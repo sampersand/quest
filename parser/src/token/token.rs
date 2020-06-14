@@ -2,18 +2,11 @@ use crate::Result;
 use crate::stream::{BufStream, Stream};
 use std::io::BufRead;
 
-mod literal;
-mod operator;
-mod tokenizable;
-mod whitespace;
-mod comment;
-mod parenthesis;
-
-use self::parenthesis::Parenthesis;
-pub use self::parenthesis::ParenType;
-pub use self::operator::Operator;
-pub use self::literal::Literal;
-pub use self::tokenizable::{Tokenizable, TokenizeResult};
+use super::parenthesis::Parenthesis;
+use super::parenthesis::ParenType;
+use super::operator::Operator;
+use super::literal::Literal;
+use super::tokenizable::{Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -43,7 +36,7 @@ impl Display for Token {
 
 impl Token {
 	pub fn try_parse<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
-		use self::{whitespace::Whitespace, comment::Comment};
+		use super::{whitespace::Whitespace, comment::Comment};
 		macro_rules! try_tokenize {
 			($($ty:ty),*) => {
 				$(
