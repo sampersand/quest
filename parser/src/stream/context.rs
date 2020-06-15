@@ -1,5 +1,9 @@
 use std::path::PathBuf;
 
+pub trait Contexted {
+	fn context(&self) -> &Context;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default, Hash)]
 pub struct Context {
 	pub file: Option<PathBuf>,

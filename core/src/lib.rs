@@ -18,6 +18,6 @@ pub mod obj;
 pub mod types;
 pub mod literals;
 
-pub use self::obj::{Object, Key, Value};
-pub use self::error::Result;
-pub use self::types::rustfn::{Args, Binding};
+pub use obj::{Object, Key, Value};
+pub use error::Result;
+pub use types::rustfn::{Args, Binding};

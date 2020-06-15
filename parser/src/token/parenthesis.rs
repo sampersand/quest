@@ -1,7 +1,8 @@
-use crate::token::{Token, Tokenizable, TokenizeResult};
+use crate::token::{Token, Tokenizable, TokenizeResult, Operator};
 use crate::{Result, Stream};
 use std::fmt::{self, Display, Formatter};
 use std::io::BufRead;
+use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ParenType {
@@ -34,9 +35,25 @@ impl ParenType {
 	}
 }
 
-impl From<ParenType> for quest::types::Text {
+impl From<ParenType> for Operator {
 	fn from(paren_type: ParenType) -> Self {
-		Self::from(paren_type.to_string())
+		match paren_type {
+			ParenType::Round => Operator::Call,
+			ParenType::Square => Operator::Index,
+			ParenType::Curly => Operator::WithBlock,
+		}
+	}
+}
+
+impl TryFrom<Operator> for ParenType {
+	type Error = Operator;
+	fn try_from(op: Operator) -> std::result::Result<Self, Operator> {
+		match op {
+			Operator::Call => Ok(ParenType::Round),
+			Operator::Index => Ok(ParenType::Square),
+			Operator::WithBlock => Ok(ParenType::Curly),
+			other => Err(other)
+		}
 	}
 }
 

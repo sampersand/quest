@@ -1,133 +1,118 @@
-#[macro_use]
-use quest::impl_object_type;
-
-use crate::{Expression, ParenType};
-use quest::{Object, Result, Args, types::{self, rustfn::Binding}};
-use std::fmt::{self, Debug, Formatter};
+use crate::Result;
+use crate::token::{Token, ParenType};
+use crate::stream::Contexted;
+use crate::expression::{Constructable, Expression, PutBack};
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Line {
-	Multiple(Vec<Expression>),
-	Singular(Expression)
-}
-
-#[derive(Clone, PartialEq, Eq)]
 pub struct Block {
-	paren: ParenType,
-	body: Vec<Line>,
-	returns: bool,
+	lines: Vec<Vec<Expression>>,
+	paren_type: ParenType,
+	returns: bool
 }
 
-impl Debug for Block {
+impl Display for Block {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		if f.alternate() {
-			f.debug_struct("Block")
-				.field("paren", &self.paren)
-				.field("body", &self.body)
-				.field("returns", &self.returns)
-				.finish()
-		} else {
-			f.debug_tuple("Block")
-				.field(&format!("[{} line(s)]", self.body.len()))
-				.finish()
-		}
-	}
-}
+		write!(f, "{}", self.paren_type.left())?;
 
-impl Line {
-	fn execute(&self) -> Result<Object> {
-		match self {
-			Line::Singular(line) => line.execute(),
-			Line::Multiple(args) => args.iter()
-				.map(|arg| arg.execute())
-				.collect::<Result<Vec<_>>>()
-				.map(|args| types::List::from(args).into())
+		if self.lines.len() == 1 {
+			write!(f, " ")?;
+		} else if self.lines.len() > 1 {
+			write!(f, "\n")?;
 		}
+
+		for (i, line) in self.lines.iter().enumerate() {
+			if self.lines.len() > 1 {
+				write!(f, "\t")?;
+			}
+
+			let mut is_first_expr = true;
+
+			for expr in line {
+				if is_first_expr {
+					is_first_expr = false;
+				} else {
+					write!(f, ", ")?
+				}
+				Display::fmt(&expr, f)?;
+			}
+
+			if i < self.lines.len() && (i != self.lines.len() - 1 || !self.returns) {
+				write!(f, ";")?
+			}
+
+			if self.lines.len() > 1 {
+				write!(f, "\n")?;
+			}
+		}
+
+		if self.lines.len() == 1 {
+			write!(f, " ")?;
+		}
+		write!(f, "{}", self.paren_type.right())
 	}
 }
 
 impl Block {
-	pub fn new(paren: ParenType, body: Vec<Line>, returns: bool) -> Self {
-		Block { paren, body, returns }
+	pub fn paren_type(&self) -> ParenType {
+		self.paren_type
 	}
+}
 
-	pub fn paren(&self) -> ParenType {
-		self.paren
-	}
+impl Constructable for Block {
+	type Item = Self;
+	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Self>>
+	where
+		C: Iterator<Item=Result<Token>> + PutBack + Contexted
+	{
+		let paren = 
+			match ctor.next().transpose()? {
+				Some(Token::Left(paren)) => paren,
+				Some(tkn) => { ctor.put_back(Ok(tkn)); return Ok(None) },
+				None => return Ok(None)
+			};
 
-	fn run_block(&self) -> Result<Option<Object>> {
-		if let Some(last) = self.body.last() {
-			for line in &self.body[..self.body.len() - 1] {
-				line.execute()?;
-			}
+		let mut block = Block { lines: vec![], paren_type: paren, returns: false };
+		let mut curr_line: Option<Vec<Expression>> = None;
 
-			let ret = last.execute()?;
-			if self.returns {
-				return Ok(Some(ret))
-			}
-		}
+		while let Some(tkn) = ctor.next().transpose()? {
+			match tkn {
+				Token::Right(rparen) if rparen == paren => {
+					if let Some(curr_line) = curr_line {
+						block.lines.push(curr_line);
+					}
 
-		Ok(None)
-	}
+					return Ok(Some(block))
+				},
 
-	fn call(&self, args: Args) -> Result<Object> {
-		Binding::new_stackframe(args, (|_binding| {
-			self.run_block().map(Option::unwrap_or_default)
-		}))
-	}
-
-	pub fn execute(&self) -> Result<Option<Object>> {
-		match self.paren {
-			ParenType::Paren => self.run_block().map(|x| {
-				// let x = x.a.unwrap_or_default();
-				if self.returns {
-					x
-				}  else {
-					None
+				rparen @ Token::Right(..) => return Err(parse_error!(ctor, UnexpectedToken(rparen))),
+				Token::Endline => {
+					block.returns = false;
+					if let Some(curr_line) = curr_line.take() {
+						block.lines.push(curr_line);
+					}
+				},
+				Token::Comma => { /* do nothing */ },
+				other => {
+					block.returns = true;
+					ctor.put_back(Ok(other));
+					curr_line.get_or_insert_with(|| Vec::with_capacity(1))
+						.push(Expression::try_construct(ctor)?);
 				}
-				// if self.returns { Some(x) } else { None }
-			}),
-
-			ParenType::Bracket => self.run_block().map(|x| {
-				let x = x.unwrap_or_else(|| vec![].into());
-				if self.returns { Some(x) } else { None }
-			}),
-
-			ParenType::Brace => {
-				let block = Object::from(self.clone());
-				block.add_parent(Binding::instance().as_ref().clone())?;
-				Ok(Some(block))
-			},
-			// ParenType::Bracket => todo!("ParenType::Bracket return value."),
+			}
 		}
-	}
-}
 
-mod impls {
-	use super::*;
-
-	pub fn call(mut args: Args) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Block>()?.clone();
-		this.call(args)
+		Err(parse_error!(ctor, MissingClosingParen(paren)))
 	}
 }
 
 
 
-impl_object_type!{
-for Block [(parents quest::types::Function)]:
-	"@text" => (|args| Ok(format!("{:?}", *args.this()?.try_downcast_ref::<Block>()?).into())),
-	"()" => impls::call
-}
 
-#[cfg(test)]
-mod tests {
-	use super::*;
 
-	#[test]
-	#[ignore]
-	fn call() { todo!(); }
-}
+
+
+
 
 
 

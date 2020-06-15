@@ -1,5 +1,7 @@
+12.$foo = 3 * 5 + 4;
+##__EOF__##
 # A class is just an executed block of code
-Kernel.$Person = {
++Kernel.$Person = {
 	# Set the name of this class to `Person`. Executed blocks automatically inherit from
 	# `ExecutedBlock`, which defines `@text` as `name` (if a name is set)
 	$name = "Person";

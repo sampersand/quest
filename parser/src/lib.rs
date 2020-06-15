@@ -13,13 +13,14 @@ macro_rules! parse_error {
 }
 
 mod error;
-// pub mod expression;
+pub mod expression;
 pub mod token;
 pub mod stream;
-// mod block;
+pub mod block;
 
-// pub use self::block::{Block, Line};
-pub use self::error::{Error, ErrorType, Result};
-pub use self::token::{Token/*, ParenType, Literal*/};
-// pub use self::expression::Expression;
-pub use self::stream::{Stream, Context};
+// TODO: change public exports to more minimal.
+pub use block::Block;
+pub use error::{Error, ErrorType, Result};
+pub use token::{Token/*, ParenType, Literal*/};
+pub use expression::Expression;
+pub use stream::{Stream, Context, Contexted};

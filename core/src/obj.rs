@@ -6,8 +6,8 @@ use std::any::{Any, TypeId};
 
 mod mapping;
 use self::mapping::Mapping;
-pub use self::mapping::Key;
-pub use self::mapping::Value;
+pub use mapping::Key;
+pub use mapping::Value;
 
 #[derive(Clone)]
 pub struct Object(pub(super) Arc<Internal>);

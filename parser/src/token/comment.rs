@@ -36,7 +36,7 @@ fn block_comment<S: Stream>(stream: &mut S) -> Result<()> {
 impl Tokenizable for Comment {
 	type Item = Never;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Never>> {
-		if stream.starts_with("##__END_OF_FILE__##")? {
+		if stream.starts_with("##__EOF__##")? {
 			Ok(TokenizeResult::StopParsing)
 		} else if stream.starts_with("#")? {
 			line_comment(stream).and(Ok(TokenizeResult::RestartParsing))

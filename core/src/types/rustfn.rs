@@ -1,8 +1,8 @@
 mod args;
 mod binding;
 
-pub use self::binding::Binding;
-pub use self::args::Args;
+pub use binding::Binding;
+pub use args::Args;
 
 use crate::{Object, types};
 use std::fmt::{self, Debug, Formatter};

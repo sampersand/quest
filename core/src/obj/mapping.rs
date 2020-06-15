@@ -5,9 +5,9 @@ mod key;
 mod value;
 mod parents;
 mod result_map;
-pub use self::value::Value;
-pub use self::key::Key;
-pub use self::parents::Parents;
+pub use value::Value;
+pub use key::Key;
+pub use parents::Parents;
 use self::result_map::ResultMap;
 
 // this is totally hacky, and shouldbe replaced with something better in the future.

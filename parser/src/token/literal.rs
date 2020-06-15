@@ -1,4 +1,6 @@
-use crate::{Result, Stream};
+use crate::Result;
+use crate::stream::Stream;
+use crate::expression::{Expression, Constructable};
 use crate::token::{Token, Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 
@@ -51,5 +53,17 @@ impl Tokenizable for Literal {
 	}
 }
 
-
+impl Constructable for Literal {
+	type Item = Self;
+	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Self>>
+	where
+		C: Iterator<Item=Result<Token>> + crate::expression::PutBack + crate::stream::Contexted
+	{
+		match ctor.next().transpose()? {
+			Some(Token::Literal(lit)) => Ok(Some(lit)),
+			Some(tkn) => { ctor.put_back(Ok(tkn)); Ok(None) }
+			None => Ok(None),
+		}
+	}
+}
 

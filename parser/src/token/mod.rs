@@ -8,18 +8,18 @@ macro_rules! try_seek {
 	};
 }
 
-mod literal;
-mod operator;
-mod tokenizable;
-mod whitespace;
-mod comment;
-mod parenthesis;
-mod token;
+pub mod literal;
+pub mod operator;
+pub mod tokenizable;
+pub mod whitespace;
+pub mod comment;
+pub mod parenthesis;
+pub mod token;
 
 
-use self::parenthesis::Parenthesis;
-pub use self::parenthesis::ParenType;
-pub use self::operator::Operator;
-pub use self::literal::Literal;
-pub use self::tokenizable::{Tokenizable, TokenizeResult};
-pub use self::token::Token;
+use parenthesis::Parenthesis;
+pub use parenthesis::ParenType;
+pub use operator::Operator;
+pub use literal::Literal;
+pub use tokenizable::{Tokenizable, TokenizeResult};
+pub use token::Token;

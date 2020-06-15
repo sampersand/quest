@@ -1,16 +1,11 @@
-use quest_parser::{stream::BufStream, Token};
+use quest_parser::{stream::BufStream, Stream, Expression};
 
 fn main() {
-	let mut stream = BufStream::new_from_path("../code/test.qs").unwrap();
-	while let Some(s) = Token::try_parse(&mut stream).transpose() {
-		match s {
-			Ok(o @ quest_parser::Token::Endline) => println!("{}", o),
-			Ok(o) => print!("{}", o),
-			Err(err) => {
-				eprintln!("{}", err);
-				std::process::exit(1);
-			}
-		}
+	let stream = BufStream::new_from_path("../code/test.qs").unwrap();
+	
+	match Expression::parse_stream(stream.tokens()) {
+		Ok(expr) => println!("{}", expr),
+		Err(err) => println!("{}", err)
 	}
 	// let filename = env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
 	// let mut stream = BufStream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))

@@ -1,4 +1,5 @@
 use crate::stream::Context;
+use crate::token::{Token, ParenType};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
@@ -10,6 +11,10 @@ pub enum ErrorType {
 	UnknownTokenStart(char),
 	UnterminatedQuote,
 	BadEscapeChar(char),
+	UnexpectedToken(Token),
+	Message(&'static str),
+	ExpectedExpression,
+	MissingClosingParen(ParenType)
 }
 
 #[derive(Debug)]
@@ -58,13 +63,18 @@ impl Display for Error {
 
 impl Display for ErrorType {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		use ErrorType::*;
 		match self {
-			ErrorType::CantReadStream(err) => write!(f, "can't read next character: {}", err),
-			ErrorType::BadNumber(num) => write!(f, "bad number `{}`", num),
-			ErrorType::UnknownTokenStart(chr) => write!(f, "unknown token start `{}`", chr),
-			ErrorType::UnterminatedQuote => write!(f, "unterminated quote"),
-			ErrorType::BadEscapeChar(chr) => write!(f, "bad escape char `{}`", chr),
-			ErrorType::UnterminatedBlockComment => write!(f, "unterminated block comment"),
+			CantReadStream(err) => write!(f, "can't read next character: {}", err),
+			BadNumber(num) => write!(f, "bad number `{}`", num),
+			UnknownTokenStart(chr) => write!(f, "unknown token start `{}`", chr),
+			UnterminatedQuote => write!(f, "unterminated quote"),
+			BadEscapeChar(chr) => write!(f, "bad escape char `{}`", chr),
+			UnterminatedBlockComment => write!(f, "unterminated block comment"),
+			UnexpectedToken(tkn) => write!(f, "unexpected token `{}`", tkn),
+			MissingClosingParen(paren) => write!(f, "missing closing paren `{}`", paren.right()),
+			ExpectedExpression => write!(f, "expected an expression"),
+			Message(msg) => write!(f, "{}", msg),
 		}
 	}
 }
