@@ -194,6 +194,13 @@ mod impls {
 		Ok(this.clone())
 	}
 
+	pub fn unshift(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		let rhs = args.arg(0)?;
+		this.try_downcast_mut::<List>()?.0.insert(0, rhs.clone());
+		Ok(this.clone())
+	}
+
 	pub fn intersect(_args: Args) -> Result<Object> {
 		todo!("List::intersect");
 	}
@@ -230,6 +237,7 @@ for List [(parents super::Basic) (convert "@list")]:
 	"join" => impls::join,
 	"<<" => impls::push,
 	"push" => impls::push,
+	"unshift" => impls::unshift,
 	"+" => impls::add,
 	"+=" => impls::add_assign,
 	"&" => impls::intersect,

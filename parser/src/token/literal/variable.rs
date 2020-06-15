@@ -1,5 +1,6 @@
 use crate::{Result, Stream};
 use crate::token::{Tokenizable, TokenizeResult};
+use crate::expression::Executable;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,13 +12,22 @@ impl Display for Variable {
 	}
 }
 
+
+impl Executable for Variable {
+	fn execute(&self) -> quest::Result<quest::Object> {
+		quest::Object::from(self.0.clone())
+			.call_attr(&crate::token::Operator::Call, vec![])
+	}
+}
+
+
 #[inline]
-pub fn is_variable_start(c: char) -> bool {
+fn is_variable_start(c: char) -> bool {
 	!c.is_ascii() || c.is_ascii_alphabetic() || c == '_' || c == '@'
 }
 
 #[inline]
-pub fn is_variable_body(c: char) -> bool {
+fn is_variable_body(c: char) -> bool {
 	is_variable_start(c) || c.is_ascii_digit()
 }
 

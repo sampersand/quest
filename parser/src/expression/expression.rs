@@ -1,5 +1,5 @@
 use crate::{Result, Block};
-use crate::expression::{Constructable, Constructor};
+use crate::expression::{Constructable, Constructor, Executable, BoundOperator};
 use crate::stream::{Context, Contexted};
 use crate::token::{Token, Literal, Operator, ParenType, operator::Associativity};
 use std::cmp::Ordering;
@@ -11,7 +11,7 @@ use std::fmt::{self, Display, Formatter};
 pub enum Expression {
 	Literal(Literal),
 	Block(Block),
-	Operator(Operator, Vec<Expression>),
+	Operator(BoundOperator),
 }
 
 impl Display for Expression {
@@ -19,7 +19,17 @@ impl Display for Expression {
 		match self {
 			Expression::Literal(lit) => Display::fmt(lit, f),
 			Expression::Block(block) => Display::fmt(block, f),
-			Expression::Operator(op, args) => op.fmt_args(args, f)
+			Expression::Operator(op) => Display::fmt(op, f),
+		}
+	}
+}
+
+impl Executable for Expression {
+	fn execute(&self) -> quest::Result<quest::Object> {
+		match self {
+			Expression::Literal(lit) => lit.execute(),
+			Expression::Block(block) => block.execute(),
+			Expression::Operator(op) => op.execute(),
 		}
 	}
 }
@@ -36,6 +46,12 @@ impl From<Block> for Expression {
 	}
 }
 
+impl From<BoundOperator> for Expression {
+	fn from(oper: BoundOperator) -> Self {
+		Expression::Operator(oper)
+	}
+}
+
 
 impl Constructable for Expression {
 	type Item = Self;
@@ -44,12 +60,12 @@ impl Constructable for Expression {
 	where
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
-		if let Some(expr) = Literal::try_construct_primary(ctor)? {
-			Ok(Some(Expression::Literal(expr)))
-		} else if let Some(expr) = Operator::try_construct_primary(ctor)? {
-			Ok(Some(expr))
-		} else if let Some(expr) = Block::try_construct_primary(ctor)? {
-			Ok(Some(Expression::Block(expr)))
+		if let Some(lit) = Literal::try_construct_primary(ctor)? {
+			Ok(Some(lit.into()))
+		} else if let Some(oper) = BoundOperator::try_construct_primary(ctor)? {
+			Ok(Some(oper.into()))
+		} else if let Some(block) = Block::try_construct_primary(ctor)? {
+			Ok(Some(block.into()))
 		// } else if let Some(tkn) = ctor.next().transpose()? {
 		// 	ctor.put_back(Ok(tkn));
 		// 	Err(parse_error!(ctor, Message("no primary could be found")))
@@ -73,7 +89,7 @@ impl Expression {
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
 		if let Some(primary) = Expression::try_construct_primary(ctor)? {
-			Operator::construct_operator(ctor, primary, op).map(Some)
+			BoundOperator::construct_operator(ctor, primary, op).map(Some)
 		} else {
 			Ok(None)
 		}
@@ -108,11 +124,11 @@ impl Expression {
 				match self.0 {
 					Where::Start => {
 						self.0 = Where::GivenCode;
-						Some(Ok(Token::Left(ParenType::Curly)))
+						Some(Ok(Token::Left(ParenType::Round)))
 					},
 					Where::GivenCode => self.1.next().or_else(|| {
 						self.0 = Where::End;
-						Some(Ok(Token::Right(ParenType::Curly)))
+						Some(Ok(Token::Right(ParenType::Round)))
 					}),
 					Where::End => None,
 				}

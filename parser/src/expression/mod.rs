@@ -1,6 +1,10 @@
-mod executable;
 mod expression;
 mod constructor;
+mod bound_operator;
+
+pub trait Executable {
+	fn execute(&self) -> quest::Result<quest::Object>;
+}
 
 pub trait PutBack : Iterator {
 	fn put_back(&mut self, item: Self::Item);
@@ -14,5 +18,5 @@ pub trait Constructable {
 }
 
 pub(crate) use constructor::Constructor;
-pub use executable::Executable;
+pub use bound_operator::BoundOperator;
 pub use expression::Expression;

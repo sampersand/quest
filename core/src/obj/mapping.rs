@@ -14,6 +14,7 @@ use self::result_map::ResultMap;
 #[derive(Clone, Debug, Default)]
 pub struct Mapping {
 	map: ResultMap<Key, Value>,
+	pub(super) obj: std::sync::Weak<super::Internal>,
 	parents: Parents
 }
 
@@ -24,6 +25,7 @@ impl Mapping {
 	pub fn new<P: Into<Parents>>(parents: P) -> Self {
 		Mapping {
 			map: Default::default(),
+			obj: Default::default(),
 			parents: parents.into()
 		}
 	}
@@ -76,7 +78,10 @@ impl Mapping {
 		if key.equals(&PARENTS_KEY)? {
 			Ok(Some(self.parents.as_object()))
 		} else if key.equals(&ID_KEY)? {
-			unimplemented!()
+			self.obj.upgrade()
+				.ok_or_else(|| "`obj` doesnt exist?".into())
+				.map(|obj| Object::from(obj.id))
+				.map(Some)
 		} else {
 			Ok(None)
 		}

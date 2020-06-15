@@ -67,7 +67,7 @@ macro_rules! operator_enum {
 		impl Operator {
 			pub const MAX_PRECEDENCE: usize = operator_enum!(; MAX_PRECEDENCE $($ord)+) as usize;
 
-			fn precedence(&self) -> usize {
+			pub fn precedence(&self) -> usize {
 				match self {
 					$(Operator::$variant => $ord,)+
 				}
@@ -125,107 +125,11 @@ impl Ord for Operator {
 	}
 }
 
-
-impl Constructable for Operator {
-	type Item = Expression;
-
-	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Expression>>
-	where
-		C: Iterator<Item=Result<Token>> + PutBack + Contexted
-	{
-		// only unary operators on the left are constructable as they're 
-		match ctor.next().transpose()? {
-			Some(Token::Operator(op)) if op.assoc() == Associativity::UnaryOperOnLeft =>
-				Ok(Some(Expression::Operator(op, vec![Expression::try_construct(ctor)?]))),
-			// allow for unary `+` and `-`
-			Some(Token::Operator(Operator::Add)) =>
-				Ok(Some(Expression::Operator(Operator::Pos, vec![Expression::try_construct(ctor)?]))),
-			Some(Token::Operator(Operator::Sub)) =>
-				Ok(Some(Expression::Operator(Operator::Neg, vec![Expression::try_construct(ctor)?]))),
-			Some(tkn) => { ctor.put_back(Ok(tkn)); Ok(None) }
-			None => Ok(None),
-		}
+impl quest::EqResult<quest::Key> for Operator {
+	fn equals(&self, key: &quest::Key) -> quest::Result<bool> {
+		self.to_string().as_str().equals(key)
 	}
 }
-
-impl Operator {
-	pub fn construct_operator<C>(ctor: &mut C, lhs: Expression, parent_op: Option<Operator>)
-		-> Result<Expression>
-	where
-		C: Iterator<Item=Result<Token>> + PutBack + Contexted
-	{
-		match ctor.next().transpose()? {
-			Some(Token::Operator(op)) if parent_op.map(|parent_op| op < parent_op).unwrap_or(true)
-				=> op.build_op(ctor, lhs),
-			Some(t @ Token::Operator(_))
-				| Some(t @ Token::Endline)
-				| Some(t @ Token::Comma)
-				| Some(t @ Token::Right(_)) => { ctor.put_back(Ok(t)); Ok(lhs) },
-			Some(tkn) => {
-				ctor.put_back(Ok(tkn));
-
-				// any other token indicates that we're being called
-				if parent_op.map(|parent_op| Operator::Call < parent_op).unwrap_or(true) {
-					Operator::Call.build_op(ctor, lhs)
-				} else {
-					ctor.put_back(Ok(Token::Operator(Operator::Call)));
-					Ok(lhs)
-				}
-			},
-			None => Ok(lhs),
-		}
-	}
-
-	fn build_op<C>(self, ctor: &mut C, mut lhs: Expression)
-		-> Result<Expression>
-	where
-		C: Iterator<Item=Result<Token>> + PutBack + Contexted
-	{
-		let rhs = Expression::try_construct_precedence(ctor, Some(self))?
-			.ok_or_else(|| parse_error!(ctor, ExpectedExpression))?;
-
-		lhs = Expression::Operator(self, vec![lhs, rhs]);
-
-		match ctor.next().transpose()? {
-			Some(Token::Operator(Operator::Assign)) if self == Operator::Dot => 
-				lhs = Operator::DotAssign.build_op(ctor, lhs)?,
-			Some(Token::Operator(next_op)) => lhs = next_op.build_op(ctor, lhs)?,
-			Some(tkn) => ctor.put_back(Ok(tkn)),
-			None => {}
-		}
-
-		if self == Operator::DotAssign {
-			let mut args = match lhs {
-				Expression::Operator(Operator::DotAssign, args) => args,
-				other => unreachable!("bad `lhs` for DotAssign: {:?}", other)
-			};
-			let val = args.pop().unwrap();
-			let mut dot_args = match args.pop().unwrap() {
-				Expression::Operator(Operator::Dot, args) => args,
-				other => unreachable!("bad `args.pop` for lhs: {:?}", other)
-			};
-			dot_args.push(val);
-			lhs = Expression::Operator(Operator::DotAssign, dot_args);
-		}
-
-		Ok(lhs)
-	}
-
-	pub fn fmt_args(&self, args: &[Expression], f: &mut Formatter) -> fmt::Result {
-		if self.assoc() == Associativity::UnaryOperOnLeft {
-			write!(f, "{}{}", self, args[0])
-		} else if self.precedence() == 0 {
-			write!(f, "{}{}{}", args[0], self, args[1])
-		} else if *self == Operator::Call {
-			write!(f, "{} {}", args[0], args[1])
-		} else if *self == Operator::DotAssign {
-			write!(f, "{}.{} = {}", args[0], args[1], args[2])
-		} else {
-			write!(f, "({}) {} ({})", args[0], self, args[1])
-		}
-	}
-}
-
 // #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 // pub enum Associativity {
 // 	LeftToRight,

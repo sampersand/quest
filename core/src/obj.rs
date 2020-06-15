@@ -28,6 +28,12 @@ pub(super) struct Internal {
 
 impl Debug for Object {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		Debug::fmt(&self.0, f)
+	}
+}
+
+impl Debug for Internal {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		struct DataDebug<'a>(&'a dyn Any, fn(&dyn Any, &mut Formatter) -> fmt::Result);
 		impl Debug for DataDebug<'_> {
 			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -37,14 +43,14 @@ impl Debug for Object {
 
 		if f.alternate() {
 			f.debug_struct("Object")
-				.field("id", &self.0.id)
-				.field("data", &DataDebug(&*self.0.data.read().expect("poisoned"), self.0.dbg))
-				.field("mapping", &*self.0.mapping.read().expect("cant read in obj"))
+				.field("id", &self.id)
+				.field("data", &DataDebug(&*self.data.read().expect("poisoned"), self.dbg))
+				.field("mapping", &*self.mapping.read().expect("cant read in obj"))
 				.finish()
 		} else {
 			f.debug_tuple("Object")
-				.field(&self.0.id)
-				.field(&DataDebug(&*self.0.data.read().expect("poisoned"), self.0.dbg))
+				.field(&DataDebug(&*self.data.read().expect("poisoned"), self.dbg))
+				.field(&self.id)
 				.finish()
 		}
 	}
@@ -88,13 +94,16 @@ impl Object {
 	{
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 		//println!("making object ({}) = {:?}", id, data);
-		Object(Arc::new(Internal {
+		let obj = Object(Arc::new(Internal {
 			id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
 			// binding: Binding::instance(),
 			mapping: Arc::new(RwLock::new(Mapping::new(parents))),
 			data: Arc::new(RwLock::new(data)),
 			dbg: (|x, f| <T as Debug>::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f))
-		}))
+		}));
+
+		obj.0.mapping.write().unwrap().obj = Arc::downgrade(&obj.0);
+		obj
 	}
 
 	pub fn new<T: ObjectType>(data: T) -> Self {
@@ -183,8 +192,10 @@ impl Object {
 		K: Debug + ?Sized + EqResult<Key>
 	{
 		let result = self.get_attr(attr)?;
+
 		// by removing `Block`, we completely change the functionality. remove this hack?
-		if result.is_a::<types::RustFn>() || //result.is_a::<types::Block>() ||
+		// println!("{:?}", result);
+		if result.is_a::<types::RustFn>() || format!("{:?}", result).starts_with("Object(Block") ||
 				result.is_a::<types::BoundFunction>() {
 			let bound_res = Object::new(crate::types::BoundFunction);
 			bound_res.set_attr("__bound_object_owner__", self.clone())?;
@@ -203,12 +214,12 @@ impl Object {
 			.ok_or_else(|| format!("attr {:?} does not exist for {:?}", attr, self).into())
 	}
 
-	pub fn has_attr<K>(&self, attr: &K) -> Result<Object>
+	pub fn has_attr<K>(&self, attr: &K) -> Result<bool>
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
 		// println!("{:#?}", &*self.0.mapping.read().unwrap());
-		self.0.mapping.read().expect("cannot read").has(attr).map(bool::into)
+		self.0.mapping.read().expect("cannot read").has(attr)
 	}
 
 	pub fn set_attr_possibly_parents<K, V>(&self, attr: K, value: V) -> Result<Object>

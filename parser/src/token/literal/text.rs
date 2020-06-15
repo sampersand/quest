@@ -1,5 +1,6 @@
 use crate::{Result, Stream};
 use crate::stream::Contexted;
+use crate::expression::Executable;
 use crate::token::{Operator, Parenthesis, Tokenizable, TokenizeResult};
 use crate::token::literal::{variable, Variable};
 use std::fmt::{self, Debug, Display, Formatter};
@@ -13,6 +14,13 @@ impl Display for Text {
 		Debug::fmt(&self.0.as_ref(), f)
 	}
 }
+
+impl Executable for Text {
+	fn execute(&self) -> quest::Result<quest::Object> {
+		Ok(self.0.clone().into())
+	}
+}
+
 
 impl Text {
 	fn try_tokenize_quoted<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
@@ -63,9 +71,14 @@ impl Text {
 			};
 		}
 
-		from_other!(Variable, Operator, Parenthesis);
+		from_other!(Variable, Operator);
 
-		Err(parse_error!(stream, UnterminatedQuote))
+		if stream.starts_with("()")? {
+			try_seek!(stream, 2);
+			Ok(TokenizeResult::Some(Text("()".into())))
+		} else {
+			Err(parse_error!(stream, UnterminatedQuote))
+		}
 	}
 }
 

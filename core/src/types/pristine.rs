@@ -32,7 +32,7 @@ mod impls {
 	pub fn __has_attr__(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		let attr = args.arg(0)?;
-		this.has_attr(attr)
+		this.has_attr(attr).map(Into::into)
 	}
 
 	pub fn __del_attr__(args: Args) -> Result<Object> {

@@ -1,5 +1,6 @@
 use crate::{Result, Stream};
 use crate::token::{Tokenizable, TokenizeResult};
+use crate::expression::Executable;
 use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
 
@@ -9,6 +10,12 @@ pub struct Number(quest::types::Number);
 impl Display for Number {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		Display::fmt(&self.0, f)
+	}
+}
+
+impl Executable for Number {
+	fn execute(&self) -> quest::Result<quest::Object> {
+		Ok(self.0.clone().into())
 	}
 }
 
