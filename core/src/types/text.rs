@@ -102,15 +102,14 @@ mod impls {
 			match this.as_ref() {
 				"__this__" => return Ok(Binding::instance().as_ref().clone()),
 				"__args__" => return Binding::instance().get_attr("__args__"),
-				// num if num.chars().next() == Some('_') && num.chars().skip(1).all(char::is_numeric) => {
-				// 	use std::str::FromStr;
-				// 	return Binding::instance().get_attr("__args__")?
-				// 		.call_attr("[]", vec![
-				// 			types::Number::from_str(&num.chars().skip(1).collect::<String>())
-				// 				.expect("bad string?")	
-				// 				.into()
-				// 		])
-				// },
+				"__stack__" => return Ok(Binding::with_stack(|s| 
+						s.read()
+							.unwrap()
+							.iter()
+							.map(|x| x.as_ref().clone())
+							.collect::<Vec<_>>()
+							.into())),
+
 				_ => {}
 			}
 		}
@@ -156,18 +155,91 @@ mod impls {
 		}
 	}
 
-	pub fn plus(args: Args) -> Result<Object> { // "+" 
-		let mut this_str = args.this()?.try_downcast_ref::<Text>()?.0.to_owned().to_string();
-		let rhs = args.arg(0)?.downcast_call::<Text>()?;
-		this_str.push_str(rhs.as_ref());
-		Ok(this_str.into())
+	pub fn plus(args: Args) -> Result<Object> { // "+"
+		let this = args.this()?;
+		this.call_attr("clone", vec![])?
+			.call_attr("+=", args.args(..)?)
+		// let mut this_str = args.this()?.try_downcast_ref::<Text>()?.0.to_owned().to_string();
+		// let rhs = args.arg(0)?.downcast_call::<Text>()?;
+		// this_str.push_str(rhs.as_ref());
+		// Ok(this_str.into())
 	}
 
-	pub fn chr(_args: Args) -> Result<Object> { todo!("chr") } // "chr"
-	pub fn len(_args: Args) -> Result<Object> { todo!("len") } // "len"
-	pub fn index(_args: Args) -> Result<Object> { todo!("[]") } // "[]"
+	pub fn plus_assign(args: Args) -> Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Text>()?;
+		{
+			let mut this = args.this()?.try_downcast_mut::<Text>()?;
+			this.0.to_mut().push_str(rhs.as_ref());
+
+		}
+
+		args.this().map(Clone::clone)
+	}
+
+	pub fn len(args: Args) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		Ok(this.0.len().into())
+	}
+
+	fn correct_index(idx: isize, len: usize) -> Result<Option<usize>> {
+		if idx.is_positive() {
+			let idx = (idx - 1) as usize;
+			if idx < len {
+				Ok(Some(idx))
+			} else {
+				Ok(None)
+			}
+		} else if idx.is_negative() {
+			let idx = (-idx) as usize;
+			if idx < len {
+				Ok(Some(len - idx))
+			} else {
+				Ok(None)
+			}
+		} else {
+			Err("indexing by 0 isn't allowed".into())
+		}
+	}
+
+	pub fn index(args: Args) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+
+		let len = this.0.len();
+		let start = args.arg(0)?
+			.try_downcast_ref::<types::Number>()?
+			.truncate() as isize;
+
+		let end = args.arg(1)
+			.ok()
+			.map(Object::downcast_call::<types::Number>)
+			.transpose()?
+			.map(|x| x.truncate() as isize);
+
+		let start =
+			if let Some(start) = correct_index(start, len)? {
+				start
+			} else {
+				return Ok(Object::default())
+			};
+
+		match end {
+			None =>
+				Ok(this.0.chars()
+					.nth(start)
+					.map(|x| x.to_string().into())
+					.unwrap_or_default()),
+			Some(end) => {
+				let end = correct_index(end, len)?.map(|x| x + 1).unwrap_or(len);
+				if end < start {
+					Ok(Object::default())
+				} else {
+					Ok(this.0[start..end].to_owned().into())
+				}
+			}
+		}
+	}
+
 	pub fn index_assign(_args: Args) -> Result<Object> { todo!("[]=") } // "[]=
-	pub fn is_empty(_args: Args) -> Result<Object> { todo!("is_empty") } // "is_empty"
 	pub fn index_of(_args: Args) -> Result<Object> { todo!("index_of") } // "index_of"
 	pub fn split(_args: Args) -> Result<Object> { todo!("split") } // "split"
 	pub fn reverse(_args: Args) -> Result<Object> { todo!("reverse") } // "reverse"
@@ -177,18 +249,18 @@ impl_object_type!{
 for Text [(parents super::Basic) (convert "@text")]:
 	"@text" => (impls::at_text),
 	"@num" => (impls::at_num),
-	"()" => (impls::call),
-	"="  => (impls::assign),
 	"@list" => (impls::at_list),
 	"@bool" => (impls::at_bool),
 	"clone" => (impls::clone),
-	"=="  => (impls::eql),
+	"()" => (impls::call),
+	"="  => (impls::assign),
+	"==" => (impls::eql),
 	"+"  => (impls::plus),
-	"chr" => (impls::chr),
+	"+="  => (impls::plus_assign),
 	"len" => (impls::len),
+	"get" => (impls::index),
 	"[]" => (impls::index),
 	"[]=" => (impls::index_assign),
-	"is_empty" => (impls::is_empty),
 	"index_of" => (impls::index_of),
 	"split" => (impls::split),
 	"reverse" => (impls::reverse)

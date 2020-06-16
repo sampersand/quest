@@ -101,7 +101,11 @@ where
 	let rhs = Expression::try_construct_precedence(ctor, Some(oper))?
 		.ok_or_else(|| parse_error!(ctor, ExpectedExpression))?;
 
-	this = BoundOperator { oper, this: Box::new(this), args: Box::new(OperArgs::Binary(rhs)) }.into();
+	this = BoundOperator {
+		oper,
+		this: Box::new(this),
+		args: Box::new(OperArgs::Binary(rhs))
+	}.into();
 
 	match ctor.next().transpose()? {
 		Some(Token::Operator(Operator::Assign)) if oper == Operator::Dot => 
@@ -142,6 +146,7 @@ impl BoundOperator {
 	where
 		C: Iterator<Item=Result<Token>> + PutBack + Contexted
 	{
+
 		match ctor.next().transpose()? {
 			Some(Token::Operator(oper)) if parent_op.map(|parent_op| oper < parent_op).unwrap_or(true)
 				=> build_op(oper, ctor, lhs),

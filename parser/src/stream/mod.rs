@@ -15,5 +15,4 @@ pub trait Stream : Seek + Contexted + Iterator<Item=Result<char>> {
 }
 
 pub use context::{Context, Contexted};
-pub use buf_stream::BufStream;
 pub use token_iter::TokenIter;

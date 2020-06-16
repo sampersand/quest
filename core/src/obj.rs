@@ -193,8 +193,7 @@ impl Object {
 	{
 		let result = self.get_attr(attr)?;
 
-		// by removing `Block`, we completely change the functionality. remove this hack?
-		// println!("{:?}", result);
+		// remove this hack? lol
 		if result.is_a::<types::RustFn>() || format!("{:?}", result).starts_with("Object(Block") ||
 				result.is_a::<types::BoundFunction>() {
 			let bound_res = Object::new(crate::types::BoundFunction);
@@ -210,8 +209,13 @@ impl Object {
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
-		self.0.mapping.read().expect("cannot read").get(attr)?
-			.ok_or_else(|| format!("attr {:?} does not exist for {:?}", attr, self).into())
+		if let Some(attr) = self.0.mapping.read().expect("cannot read").get(attr)? {
+			Ok(attr)
+		} else if self.has_attr("__attr_missing__")? {
+			self.call_attr("__attr_missing__", vec![attr.into_object()])
+		} else {
+			Err(format!("attr {:?} does not exist for {:?}", attr, self).into())
+		}
 	}
 
 	pub fn has_attr<K>(&self, attr: &K) -> Result<bool>
@@ -235,7 +239,8 @@ impl Object {
 		K: Into<Key>,
 		V: Into<Value>
 	{
-		self.0.mapping.write().expect("cannot write").insert_not_parents(attr.into(), value)
+		self.0.mapping.write().expect("cannot write")
+			.insert_not_parents(attr.into(), value)
 	}
 
 	pub fn del_attr<K>(&self, attr: &K) -> Result<Object>

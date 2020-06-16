@@ -102,7 +102,7 @@ operator_enum!{
 	Neg("-@" () 4 UnaryOperOnLeft 1)
 	Pos("+@" () 2 UnaryOperOnLeft 1) 
 	DotAssign(".=" () 16)
-	Call("()" () 1)
+	Call("()" () 0)
 	Index("[]" () 1)
 	WithBlock("{}" () 1)
 }

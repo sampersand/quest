@@ -105,9 +105,7 @@ mod impls {
 	pub fn prompt(args: Args) -> Result<Object> {
 		use std::io;
 
-		if let Ok(prompt) = args.arg(0) {
-			disp(vec![prompt.clone()].into(), false)?;
-		}
+		disp(args, false)?;
 
 		let mut buf = String::new();
 
@@ -128,6 +126,7 @@ mod impls {
 	}
 
 	pub fn open(_args: Args) -> Result<Object> {
+		// let filename = args.arg(0)?.downcast_call::<types::Text>();
 		todo!("open")
 	}
 }

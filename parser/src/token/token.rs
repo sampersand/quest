@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::stream::{BufStream, Stream};
+use crate::stream::Stream;
 use std::io::BufRead;
 
 use super::parenthesis::Parenthesis;

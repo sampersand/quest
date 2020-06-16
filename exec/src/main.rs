@@ -1,18 +1,26 @@
+#![allow(unused)]
+use quest::Object;
+
 use quest_parser::expression::Executable;
 use quest_parser::{stream::BufStream, Stream, Expression};
 
+mod repl;
+mod file;
+
 fn main() {
-	let filename = std::env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
+	let filename = std::env::args().nth(1);
+		// .unwrap_or_else(|| "code/test.qs".to_string());
 	let stream = BufStream::new_from_path(filename).unwrap();
 	
-	match Expression::parse_stream(stream.tokens()) {
-		Ok(expr) => 
-			match expr.execute() {
-				Ok(val) => println!("{:?}", val),
-				Err(err) => println!("{:?}", err)
-			},
-		Err(err) => println!("{}", err)
-	}
+	let args: quest::Args = std::env::args()
+		.map(|arg| Object::from(arg))
+		.collect::<Vec<_>>().into();
+
+	quest::Binding::new_stackframe(args, move |_binding| {
+		Expression::parse_stream(stream.tokens())
+			.map_err(|err| Object::from(err.to_string()))?
+			.execute()
+	}).expect("couldn't execute");
 	// let filename = env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
 	// let mut stream = BufStream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))
 	// 	.expect("couldn't open file")

@@ -23,6 +23,7 @@ mod impls {
 
 		for parent in this.get_attr("__parents__")?.downcast_call::<types::List>()?.as_ref().iter() {
 			if parent.has_attr(attr)? {
+				// TODO: this
 				let attr = parent.get_attr(attr)?;
 				if attr.is_identical(&default_attr) {
 					continue;

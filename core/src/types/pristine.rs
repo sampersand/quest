@@ -26,7 +26,7 @@ mod impls {
 		let this = args.this()?;
 		let attr = args.arg(0)?;
 		let val = args.arg(1)?;
-		this.set_attr(attr.clone(), val.clone())
+		this.set_attr_possibly_parents(attr.clone(), val.clone())
 	}
 
 	pub fn __has_attr__(args: Args) -> Result<Object> {
@@ -43,8 +43,8 @@ mod impls {
 
 	pub fn dot_get_attr(args: Args) -> Result<Object> {
 		let this = args.this()?.clone();
-		// let result = __get_attr__(args)?;
 		this.dot_get_attr(args.arg(0)?)
+		// let result = __get_attr__(args)?;
 		// if result.is_a::<types::RustFn>() || result.is_a::<types::Block>() ||
 		// 		result.is_a::<types::BoundFunction>() {
 		// 	let bound_res = Object::new(crate::types::BoundFunction);

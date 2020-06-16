@@ -99,7 +99,6 @@ mod impls {
 		Ok(this.0.len().into())
 	}
 
-
 	fn correct_index(idx: isize, len: usize) -> Result<Option<usize>> {
 		if idx.is_positive() {
 			let idx = (idx - 1) as usize;
@@ -110,7 +109,7 @@ mod impls {
 			}
 		} else if idx.is_negative() {
 			let idx = (-idx) as usize;
-			if idx < len {
+			if idx <= len {
 				Ok(Some(len - idx))
 			} else {
 				Ok(None)
@@ -152,9 +151,8 @@ mod impls {
 			}
 		}
 	}
-
 	pub fn index_assign(_args: Args) -> Result<Object> {
-		todo!("List::index_assign");
+		todo!("index_assign")
 	}
 
 	pub fn join(args: Args) -> Result<Object> {
@@ -234,10 +232,12 @@ for List [(parents super::Basic) (convert "@list")]:
 	"len" => impls::len,
 	"[]" => impls::index,
 	"[]=" => impls::index_assign,
+	"get" => impls::index,
 	"join" => impls::join,
 	"<<" => impls::push,
 	"push" => impls::push,
 	"unshift" => impls::unshift,
+
 	"+" => impls::add,
 	"+=" => impls::add_assign,
 	"&" => impls::intersect,
