@@ -1,7 +1,7 @@
 use quest_parser::{Token, Result};
 use quest_parser::stream::{Context, Contexted, Stream};
 
-use std::io::{self, Cursor, Seek, SeekFrom, BufReader, BufRead};
+use std::io::{self, Cursor, Seek, SeekFrom, Stdin, BufReader, BufRead};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::convert::TryFrom;
@@ -100,7 +100,17 @@ impl<B: BufRead> BufStream<B> {
 		Ok(())
 	}
 }
-// Creation Impls
+
+impl<B: BufRead> crate::run::Runner for BufStream<B> {
+	fn run(self) -> crate::Result<quest::Object> {
+		use quest_parser::{Stream, expression::Executable};
+
+		quest_parser::Expression::parse_stream(self.tokens())?
+			.execute()
+			.map_err(Into::into)
+	}
+}
+
 impl<B: BufRead> BufStream<B> {
 	pub fn new(data: B, file: Option<PathBuf>) -> Self {
 		BufStream {
@@ -108,40 +118,12 @@ impl<B: BufRead> BufStream<B> {
 			context: Context::new(file)
 		}
 	}
+}
 
-	// #[deprecated]
-	// pub fn unshift_char(&mut self, chr: char) {
-	// 	assert_ne!(self.context.column, 0, "todo: unseek characters at the start of the line");
-	// 	self.context.column -= 1;
-	// 	assert_eq!(self.context.line.chars().nth(self.context.column), Some(chr));
-	// }
-
-	// #[deprecated]
-	// fn load_line(&mut self) -> Result<()> {
-	// 	// if the column's too far...
-	// 	if self.context.line.len() <= self.context.column {
-	// 		// keep track of the old line in case we aren't able to read a new one (for err msgs)
-	// 		let mut old_line = std::mem::take(&mut self.context.line);
-	// 		match self.data.read_line(&mut self.context.line) {
-	// 			Ok(0) => std::mem::swap(&mut old_line, &mut self.context.line),
-	// 			Ok(_) => {
-	// 				self.context.lineno += 1;
-	// 				self.context.column = 0;
-	// 			}
-	// 			Err(err) => {
-	// 				std::mem::swap(&mut old_line, &mut self.context.line);
-	// 				return Err(
-	// 					quest_parser::Error::new(
-	// 						self.context.clone(),
-	// 						quest_parser::ErrorType::CantReadStream(err)
-	// 					)
-	// 				)?
-	// 			}
-	// 		}
-	// 	}
-
-	// 	Ok(())
-	// }
+impl BufStream<BufReader<Stdin>> {
+	pub fn stdin() -> Self {
+		BufStream::new(BufReader::new(io::stdin()), Some("-".into()))
+	}
 }
 
 impl From<String> for BufStream<Cursor<String>> {
@@ -158,3 +140,4 @@ impl TryFrom<&'_ Path> for BufStream<BufReader<File>> {
 		Ok(BufStream::new(BufReader::new(File::open(&path)?), Some(path)))
 	}
 }
+

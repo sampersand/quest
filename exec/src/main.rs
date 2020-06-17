@@ -1,69 +1,50 @@
 #![allow(unused)]
 
-mod repl;
-mod opts;
-mod buf_stream;
+mod run;
 mod error;
 
 use error::{Error, Result};
-use opts::Opts;
-use repl::Repl;
-use buf_stream::BufStream;
+use quest::Object;
+use clap::Clap;
 
-use quest::{Binding, Object};
+/// Run the Quest programming language
+#[derive(Clap, Debug)]
+#[clap(version = "0.1", author = "Sam Westerman <sam@sampersand.me>")]
+struct Opts {
+	/// Define the file to run. If `-` is supplied, STDIN is read.
+	#[clap(short="f", long, conflicts_with="eval")]
+	file: Option<std::path::PathBuf>,
 
-// use quest_parser::expression::Executable;
-// use quest_parser::{Stream, Expression};
+	/// Evaluate a passed command as quest code. Omit `file`.
+	#[clap(short, long, conflicts_with="file")]
+	eval: Option<String>,
+
+	#[clap(last=true)]
+	args: Vec<String>
+
+	/*
+	#[clap(short, long, env="QUEST_DEBUG")]
+	debug: bool
+	*/
+}
+
+
+fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
+	let args = args.into_iter().map(Object::from).collect::<quest::Args>();
+	match (file, eval) {
+		(Some(_), Some(_)) => panic!("both options set?"),
+		(Some(file), None) if file.to_str() == Some("-") => run::run_stdin(args),
+		(Some(file), None) => run::run_file(file, args),
+		(None, Some(expr)) => run::run_expression(expr, args),
+		(None, None)       => run::run_repl(args)
+	}
+}
 
 fn main() {
-	use clap::Clap;
-
-	let mut opts = Opts::parse();
-	let exec = Object::new(quest::types::Scope);
-	exec.set_attr("name", Object::from("exec".to_string())).unwrap();
-
-	let mut args: quest::Args = opts.args.iter()
-		.map(|x| x.to_string().into())
-		.collect::<Vec<_>>().into();
-		
-	args.add_this(exec);
-
-	Binding::new_stackframe(args, move |binding| {
-		binding.set_attr("name", Object::from("main"))?;
-		opts.run()
-	}).expect("error");
-
-	// quest::Binding::new_stackframe(args, move |_| {
-	// 	let filename = std::env::args().nth(1);
-
-	// 	let stream = buf_stream::BufStream::new_from_path(filename.unwrap()).unwrap();
-
-	// 	Expression::parse_stream(stream.tokens())
-	// 		.map_err(|err| Object::from(err.to_string()))?
-	// 		.execute()
-	// }).expect("couldn't execute");
-
-		// .unwrap_or_else(|| "code/test.qs".to_string());
-
-	// let filename = env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
-	// let mut stream = BufStream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))
-	// 	.expect("couldn't open file")
-	// 	.collect::<TokenizeResult<Vec<_>>>()
-	// 	.unwrap()
-	// 	.into_iter();
-
-	// let expression = Expression::try_from_iter(&mut stream).unwrap();
-	// let mut args: Vec<Object> = std::env::args()
-	// 	.skip(1)
-	// 	.map(Object::from)
-	// 	.collect::<Vec<Object>>();
-	// args.insert(0, Object::default());
-	// let result = Binding::new_stackframe(args.into(), |_| expression.execute());
-	// if cfg!(debug) {
-	// 	println!("{:?}", result);
-	// } else {
-	// 	result.unwrap();
-	// }
+	match run_options(Opts::parse()) {
+		Ok(_) => {},
+		Err(err) => println!("uncaught error encountered:\n{}", err)
+	}
 }
 
 // #![deny(warnings)]

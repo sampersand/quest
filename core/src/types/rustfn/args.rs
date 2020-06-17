@@ -1,6 +1,7 @@
 use std::slice::SliceIndex;
 use crate::{Result, Object, types};
 use std::borrow::Cow;
+use std::iter::FromIterator;
 
 use crate::types::rustfn::Binding;
 
@@ -46,7 +47,7 @@ impl From<Args<'_>> for Vec<Object> {
 
 impl From<Vec<Object>> for Args<'static> {
 	fn from(args: Vec<Object>) -> Self {
-		Args::new(args)
+		Self::new(args)
 	}
 }
 
@@ -59,6 +60,12 @@ impl AsRef<[Object]> for Args<'_> {
 impl From<Args<'_>> for types::List {
 	fn from(args: Args<'_>) -> Self {
 		types::List::from(args.args.to_vec())
+	}
+}
+
+impl FromIterator<Object> for Args<'static> {
+	fn from_iter<I: IntoIterator<Item=Object>>(iter: I) -> Self {
+		Args::new(iter.into_iter().collect::<Vec<_>>())
 	}
 }
 

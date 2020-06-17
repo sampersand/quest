@@ -1,4 +1,5 @@
 use quest_parser::{Stream, Context, Contexted};
+use crate::run::Runner;
 use std::io::{self, Seek, SeekFrom};
 
 #[derive(Debug, Clone)]
@@ -6,6 +7,11 @@ pub struct Repl {
 	context: Context
 }
 
+impl Runner for Repl {
+	fn run(self) -> crate::Result<quest::Object> {
+		unimplemented!()
+	}
+}
 
 impl Repl {
 	pub fn new() -> Self {
