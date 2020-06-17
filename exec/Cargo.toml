@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 quest = { path = "../core" }
 quest_parser = { path = "../parser" }
+clap = "~3.0.0-beta.1"

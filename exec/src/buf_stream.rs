@@ -1,5 +1,5 @@
-use crate::{Token, Result};
-use crate::stream::{Context, Contexted, Stream};
+use quest_parser::{Token, Result};
+use quest_parser::stream::{Context, Contexted, Stream};
 
 use std::io::{self, Cursor, Seek, SeekFrom, BufReader, BufRead};
 use std::fs::File;
@@ -11,7 +11,6 @@ pub struct BufStream<B: BufRead> {
 	data: B,
 	context: Context
 }
-
 
 impl<B: BufRead> Seek for BufStream<B> {
 	fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
@@ -90,7 +89,10 @@ impl<B: BufRead> BufStream<B> {
 				Err(err) => {
 					// if we got an error when reading the line, restore the old one.
 					swap(&mut old_line, &mut self.context.line);
-					return Err(parse_error!(self, CantReadStream(err)));
+					return Err(quest_parser::Error::new(
+						self.context().clone(),
+						quest_parser::ErrorType::CantReadStream(err)
+					));
 				}
 			}
 		}
@@ -107,76 +109,44 @@ impl<B: BufRead> BufStream<B> {
 		}
 	}
 
-	#[deprecated]
-	pub fn peek_str(&mut self) -> Result<&str> {
-		self.load_line()?;
+	// #[deprecated]
+	// pub fn unshift_char(&mut self, chr: char) {
+	// 	assert_ne!(self.context.column, 0, "todo: unseek characters at the start of the line");
+	// 	self.context.column -= 1;
+	// 	assert_eq!(self.context.line.chars().nth(self.context.column), Some(chr));
+	// }
 
-		let mut iter = self.context.line.chars();
-		if self.context.column != 0 {
-			iter.by_ref().nth(self.context.column - 1);
-		}
-		Ok(iter.as_str())
-	}
+	// #[deprecated]
+	// fn load_line(&mut self) -> Result<()> {
+	// 	// if the column's too far...
+	// 	if self.context.line.len() <= self.context.column {
+	// 		// keep track of the old line in case we aren't able to read a new one (for err msgs)
+	// 		let mut old_line = std::mem::take(&mut self.context.line);
+	// 		match self.data.read_line(&mut self.context.line) {
+	// 			Ok(0) => std::mem::swap(&mut old_line, &mut self.context.line),
+	// 			Ok(_) => {
+	// 				self.context.lineno += 1;
+	// 				self.context.column = 0;
+	// 			}
+	// 			Err(err) => {
+	// 				std::mem::swap(&mut old_line, &mut self.context.line);
+	// 				return Err(
+	// 					quest_parser::Error::new(
+	// 						self.context.clone(),
+	// 						quest_parser::ErrorType::CantReadStream(err)
+	// 					)
+	// 				)?
+	// 			}
+	// 		}
+	// 	}
 
-	#[deprecated]
-	pub fn shift_str(&mut self, s: &str) -> Result<()> {
-		assert!(self.peek_str()?.starts_with(s), "'{}' doesn't start with '{}'", self.peek_str()?, s);
-
-		self.context.column += s.len();
-		Ok(())
-	}
-
-	#[deprecated]
-	pub fn unshift_char(&mut self, chr: char) {
-		assert_ne!(self.context.column, 0, "todo: unseek characters at the start of the line");
-		self.context.column -= 1;
-		assert_eq!(self.context.line.chars().nth(self.context.column), Some(chr));
-	}
-
-	#[deprecated]
-	fn load_line(&mut self) -> Result<()> {
-		// if the column's too far...
-		if self.context.line.len() <= self.context.column {
-			// keep track of the old line in case we aren't able to read a new one (for err msgs)
-			let mut old_line = std::mem::take(&mut self.context.line);
-			match self.data.read_line(&mut self.context.line) {
-				Ok(0) => std::mem::swap(&mut old_line, &mut self.context.line),
-				Ok(_) => {
-					self.context.lineno += 1;
-					self.context.column = 0;
-				}
-				Err(err) => {
-					std::mem::swap(&mut old_line, &mut self.context.line);
-					return Err(
-						crate::Error::new(
-							self.context.clone(),
-							crate::ErrorType::CantReadStream(err)
-						)
-					)?
-				}
-			}
-		}
-
-		Ok(())
-	}
+	// 	Ok(())
+	// }
 }
 
-impl<'a> BufStream<Cursor<&'a str>> {
-	pub fn new_from_str(data: &'a str) -> Self {
+impl From<String> for BufStream<Cursor<String>> {
+	fn from(data: String) -> Self {
 		BufStream::new(Cursor::new(data), None)
-	}
-}
-
-impl<'a> From<&'a str> for BufStream<Cursor<&'a str>> {
-	fn from(data: &'a str) -> Self {
-		BufStream::new_from_str(data)
-	}
-}
-
-impl BufStream<BufReader<File>> {
-	pub fn new_from_path<P: Into<PathBuf>>(path: P) -> io::Result<Self> {
-		let path = path.into();
-		Ok(BufStream::new(BufReader::new(File::open(&path)?), Some(path)))
 	}
 }
 
@@ -184,15 +154,7 @@ impl TryFrom<&'_ Path> for BufStream<BufReader<File>> {
 	type Error = io::Error;
 
 	fn try_from(path: &Path) -> io::Result<Self> {
-		BufStream::new_from_path(path)
+		let path = path.into();
+		Ok(BufStream::new(BufReader::new(File::open(&path)?), Some(path)))
 	}
-
 }
-
-
-// impl<S: BufRead> Iterator for BufStream<S> {
-// 	type Item = Result<Token>;
-// 	fn next(&mut self) -> Option<Self::Item> {
-// 		Token::try_parse_old(self).transpose()
-// 	}
-// }

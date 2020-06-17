@@ -1,23 +1,29 @@
+# If a maximum value was passed in on the command line (_1 is program name), then use that.
+# otherwise, calculate one.
 $MAX = if(__has_attr__($_2), { _2 }, { prompt("max=") })().$@num();
 
+# Calculate a secret value
 $secret = rand(1, MAX).$round();
 $guesses = 0;
 $guess = 0;
 
 while({ guess != secret }, {
+	# we have no need for a new stackframe, so simply set ourselves to the second stackframe--the
+	# outermost one. That way, it's as if we never opened a new stackframe at all.
 	$__this__ = __stack__.$get(2);
 	$guesses = guesses + 1;
 	$guess = prompt("Pick a number from 1-" + MAX + ": ").$@num();
 
+	# In the future, I'll implement a switch statement lol
 	disp(if(secret < guess, {
 		"too high!"
 	}, {
 		if(secret > guess, "too low!", "perfect!")
-	})();
+	})());
 });
 
 disp("it took you", guesses, "guesses");
-
+disp(12.$__id__);
 
 ##__EOF__##
 $MAX = prompt("max number?");

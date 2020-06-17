@@ -19,5 +19,5 @@ pub mod types;
 pub mod literals;
 
 pub use obj::{Object, Key, Value};
-pub use error::Result;
+pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};

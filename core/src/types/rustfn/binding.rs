@@ -1,4 +1,4 @@
-use crate::{Object, Args, Result, types};
+use crate::{Object, Args, types};
 use std::sync::RwLock;
 use std::ops::Deref;
 
@@ -37,7 +37,11 @@ impl Binding {
 		})
 	}
 
-	pub fn new_stackframe<F: FnOnce(&Binding) -> Result<Object>>(args: Args, func: F) -> Result<Object> {
+	pub fn new_stackframe<F, O, E>(args: Args, func: F) -> std::result::Result<O, E>
+	where
+		F: FnOnce(&Binding) -> std::result::Result<O, E>,
+		E: From<crate::Error>
+	{
 		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
 		impl Drop for StackGuard<'_> {
 			fn drop(&mut self) {

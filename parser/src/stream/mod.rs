@@ -1,5 +1,4 @@
 mod context;
-mod buf_stream;
 mod token_iter;
 
 use std::io::Seek;

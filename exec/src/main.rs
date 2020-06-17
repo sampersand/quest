@@ -1,26 +1,50 @@
 #![allow(unused)]
-use quest::Object;
-
-use quest_parser::expression::Executable;
-use quest_parser::{stream::BufStream, Stream, Expression};
 
 mod repl;
-mod file;
+mod opts;
+mod buf_stream;
+mod error;
+
+use error::{Error, Result};
+use opts::Opts;
+use repl::Repl;
+use buf_stream::BufStream;
+
+use quest::{Binding, Object};
+
+// use quest_parser::expression::Executable;
+// use quest_parser::{Stream, Expression};
 
 fn main() {
-	let filename = std::env::args().nth(1);
-		// .unwrap_or_else(|| "code/test.qs".to_string());
-	let stream = BufStream::new_from_path(filename).unwrap();
-	
-	let args: quest::Args = std::env::args()
-		.map(|arg| Object::from(arg))
-		.collect::<Vec<_>>().into();
+	use clap::Clap;
 
-	quest::Binding::new_stackframe(args, move |_binding| {
-		Expression::parse_stream(stream.tokens())
-			.map_err(|err| Object::from(err.to_string()))?
-			.execute()
-	}).expect("couldn't execute");
+	let mut opts = Opts::parse();
+	let exec = Object::new(quest::types::Scope);
+	exec.set_attr("name", Object::from("exec".to_string())).unwrap();
+
+	let mut args: quest::Args = opts.args.iter()
+		.map(|x| x.to_string().into())
+		.collect::<Vec<_>>().into();
+		
+	args.add_this(exec);
+
+	Binding::new_stackframe(args, move |binding| {
+		binding.set_attr("name", Object::from("main"))?;
+		opts.run()
+	}).expect("error");
+
+	// quest::Binding::new_stackframe(args, move |_| {
+	// 	let filename = std::env::args().nth(1);
+
+	// 	let stream = buf_stream::BufStream::new_from_path(filename.unwrap()).unwrap();
+
+	// 	Expression::parse_stream(stream.tokens())
+	// 		.map_err(|err| Object::from(err.to_string()))?
+	// 		.execute()
+	// }).expect("couldn't execute");
+
+		// .unwrap_or_else(|| "code/test.qs".to_string());
+
 	// let filename = env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
 	// let mut stream = BufStream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))
 	// 	.expect("couldn't open file")

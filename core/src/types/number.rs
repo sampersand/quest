@@ -579,6 +579,9 @@ for Number [(parents super::Basic) (convert "@num")]:
 	"<" => (|args| args.this()?
 			.call_attr("<=>", args.args(..)?)?
 			.call_attr("==", vec![(-1).into()])),
+	">" => (|args| args.this()?
+			.call_attr("<=>", args.args(..)?)?
+			.call_attr("==", vec![(1).into()])),
 	"round" => impls::round,
 	"ceil" => impls::ceil,
 	"floor" => impls::floor,
