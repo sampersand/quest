@@ -44,16 +44,6 @@ mod impls {
 	pub fn dot_get_attr(args: Args) -> Result<Object> {
 		let this = args.this()?.clone();
 		this.dot_get_attr(args.arg(0)?)
-		// let result = __get_attr__(args)?;
-		// if result.is_a::<types::RustFn>() || result.is_a::<types::Block>() ||
-		// 		result.is_a::<types::BoundFunction>() {
-		// 	let bound_res = Object::new(crate::types::BoundFunction);
-		// 	bound_res.set_attr("__bound_object_owner__", this)?;
-		// 	bound_res.set_attr("__bound_object__", result);
-		// 	Ok(bound_res)	
-		// } else {
-		// 	Ok(result)
-		// }
 	}
 }
 

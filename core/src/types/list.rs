@@ -115,7 +115,7 @@ mod impls {
 				Ok(None)
 			}
 		} else {
-			Err("indexing by 0 isn't allowed".into())
+			Err(crate::error::KeyError::CantIndexByZero.into())
 		}
 	}
 

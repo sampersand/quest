@@ -16,10 +16,7 @@ impl Default for Binding {
 impl Binding {
 	pub fn try_instance() -> Option<Binding> {
 		Binding::with_stack(|stack| {
-			stack.read()
-				.expect("stack poisoned")
-				.last()
-				.cloned()
+			stack.read().expect("stack poisoned").last().cloned()
 		})
 	}
 

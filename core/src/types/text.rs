@@ -1,4 +1,4 @@
-use crate::{Object, types::rustfn::Binding};
+use crate::{Object, error::{ValueError, KeyError}, types::rustfn::Binding};
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Formatter};
 
@@ -75,24 +75,20 @@ mod impls {
 		use std::convert::TryFrom;
 
 		let this = args.this()?.try_downcast_ref::<Text>()?;
-		let radix = 
-			args.arg(0)
-				.ok()
-				.map(|obj| obj.downcast_call::<types::Number>()
-						.and_then(|n| 
-							i64::try_from(n).map_err(|_| format!("{:?} is not an int", n).into()))
-						.and_then(|r| u32::try_from(r)
-								.map_err(|err| format!("invalid radix {}: {}", r, err).into())));
-		match radix {
-			Some(Ok(radix)) => 
-				types::Number::from_str_radix(this.as_ref(), radix)
-					.map(Into::into)
-					.map_err(|err| err.to_string().into()),
-			Some(Err(err)) => Err(err),
-			None => 
-				types::Number::try_from(this.as_ref())
-					.map(Into::into)
-					.map_err(|err| err.to_string().into())
+		if let Ok(radix) = args.arg(0) {
+			let radix = radix.downcast_call::<types::Number>()?;
+			let radix = i64::try_from(radix) // convert from number to i64
+				.map_err(|err| err.to_string())
+				.and_then(|num| u32::try_from(num).map_err(|err| err.to_string()))
+				.map_err(|err| ValueError::Messaged(format!("invalid radix: {}", err)))?;
+
+			types::Number::from_str_radix(this.as_ref(), radix)
+				.map(Into::into)
+				.map_err(|err| ValueError::Messaged(format!("cant convert: {}", err)).into())
+		} else {
+			types::Number::try_from(this.as_ref())
+				.map(Into::into)
+				.map_err(|err| ValueError::Messaged(err.to_string()).into())
 		}
 	}
 
@@ -159,10 +155,6 @@ mod impls {
 		let this = args.this()?;
 		this.call_attr("clone", vec![])?
 			.call_attr("+=", args.args(..)?)
-		// let mut this_str = args.this()?.try_downcast_ref::<Text>()?.0.to_owned().to_string();
-		// let rhs = args.arg(0)?.downcast_call::<Text>()?;
-		// this_str.push_str(rhs.as_ref());
-		// Ok(this_str.into())
 	}
 
 	pub fn plus_assign(args: Args) -> Result<Object> {
@@ -197,7 +189,7 @@ mod impls {
 				Ok(None)
 			}
 		} else {
-			Err("indexing by 0 isn't allowed".into())
+			Err(KeyError::CantIndexByZero.into())
 		}
 	}
 

@@ -32,7 +32,8 @@ mod impls {
 			}
 		}
 
-		Err(format!("attr {:?} does not exist for {:?} or its parents", attr, this).into())
+		Err(crate::Error::Messaged(
+			format!("attr {:?} does not exist for {:?} or its parents", attr, this).into()))
 		// this.get_attr("__parent__")?
 		// 	.get_attr("__parent__")?
 		// 	.call_attr(attr, args)

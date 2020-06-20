@@ -148,7 +148,7 @@ impl Block {
 	}
 
 	fn call(&self, args: Args) -> quest::Result<quest::Object> {
-		Binding::new_stackframe(args, (|_binding| {
+		Binding::new_stackframe(None, args, (|_binding| {
 			self.run_block()
 				.map(|x| x.map(Object::from))
 				.map(Option::unwrap_or_default)

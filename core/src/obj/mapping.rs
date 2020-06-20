@@ -1,4 +1,4 @@
-use crate::{Object, Result, EqResult};
+use crate::{Object, Result, Error, EqResult};
 use std::fmt::Debug;
 
 mod key;
@@ -79,7 +79,7 @@ impl Mapping {
 			Ok(Some(self.parents.as_object()))
 		} else if key.equals(&ID_KEY)? {
 			self.obj.upgrade()
-				.ok_or_else(|| "`obj` doesnt exist?".into())
+				.ok_or_else(|| Error::Internal("`obj` doesnt exist?"))
 				.map(|obj| Object::from(obj.id))
 				.map(Some)
 		} else {
@@ -107,16 +107,14 @@ impl Mapping {
 		}
 	}
 
-	pub fn remove<K: ?Sized>(&mut self, key: &K) -> Result<Object>
+	pub fn remove<K: ?Sized>(&mut self, key: &K) -> Result<Option<Object>>
 	where
 		K: Debug + EqResult<Key>
 	{
 		if key.equals(&PARENTS_KEY)? {
-			return Ok(std::mem::take(&mut self.parents).as_object());
+			return Ok(Some(std::mem::take(&mut self.parents).as_object()));
 		}
 
-		self.map.remove(key)?
-			.map(|value| value.into())
-			.ok_or_else(|| format!("attr {:?} does not exist for.", key).into())
+		self.map.remove(key).map(|val_opt| val_opt.map(Into::into))
 	}
 }

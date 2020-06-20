@@ -1,5 +1,5 @@
 use std::slice::SliceIndex;
-use crate::{Result, Object, types};
+use crate::{Result, Object, error::KeyError, types};
 use std::borrow::Cow;
 use std::iter::FromIterator;
 
@@ -70,25 +70,24 @@ impl FromIterator<Object> for Args<'static> {
 }
 
 impl Args<'_> {
-	pub fn arg<'s>(&'s self, index: usize) -> Result<&'s Object> {
-		self.args.get(index + 1)
-			.ok_or_else(|| format!("index `{}' is too big (args={:?})", index + 1, self).into())
+	pub fn arg<'s>(&'s self, idx: usize) -> Result<&'s Object> {
+		self.args.get(idx + 1)
+			.ok_or_else(|| KeyError::OutOfBounds { idx: idx + 1, len: self.args.len() }.into())
 	}	
 
 	pub fn args<'c, I>(&'c self, idx: I) -> Result<Args<'c>>
 	where
-		I: SliceIndex<[Object], Output=[Object]> + 'c
+		I: SliceIndex<[Object], Output=[Object]> + 'c + fmt::Debug + Clone
 	{
-		if let Some(rng) = self.args.get(1..).and_then(|args| args.get(idx)) {
+		if let Some(rng) = self.args.get(1..).and_then(|args| args.get(idx.clone())) {
 			Ok(self.new_args_slice(rng))
 		} else {
-			Err(format!("index is invalid (len={})", self.args.len()).into())
+			Err(KeyError::BadSlice { slice: format!("{:?}", idx), len: self.args.len() }.into())
 		}
 	}
 
 
 	pub fn this<'s>(&'s self) -> Result<&'s Object> {
-		self.args.get(0)
-			.ok_or_else(|| format!("no `this` supplied (args={:?})", self).into())
+		self.args.get(0).ok_or_else(|| KeyError::NoThisSupplied.into())
 	}
 }

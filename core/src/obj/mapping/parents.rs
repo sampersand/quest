@@ -26,6 +26,7 @@ impl Clone for Parents {
 		Parents::new(self.0.read().expect("can't read").clone())
 	}
 }
+
 impl Default for Parents {
 	fn default() -> Self {
 		Parents::new(Inner::None)
@@ -59,7 +60,9 @@ impl Parents {
 		let mut inner = self.0.write().expect("can't write");
 
 		match &mut *inner {
-			Inner::Object(object) => { object.call_attr("push", vec![parent])?; },
+			Inner::Object(object) => {
+				object.call_attr("push", vec![parent])?;
+			},
 			Inner::List(ref mut list) => list.push(parent),
 			Inner::None => *inner = Inner::List(vec![parent])
 		};

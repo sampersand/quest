@@ -1,8 +1,11 @@
-use crate::{literals, Result, Args, types::{self, ObjectType}, EqResult};
+use crate::{literals, Result, Args, EqResult,
+	error::{TypeError},
+	types::{self, ObjectType}
+};
 
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
-use std::any::{Any, TypeId};
+use std::any::Any;
 
 mod mapping;
 use self::mapping::Mapping;
@@ -99,7 +102,8 @@ impl Object {
 			// binding: Binding::instance(),
 			mapping: Arc::new(RwLock::new(Mapping::new(parents))),
 			data: Arc::new(RwLock::new(data)),
-			dbg: (|x, f| <T as Debug>::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f))
+			dbg: (|x, f| <T as Debug>::fmt(x.downcast_ref::<T>()
+					.expect("bad val givent to debug"), f))
 		}));
 
 		obj.0.mapping.write().unwrap().obj = Arc::downgrade(&obj.0);
@@ -125,7 +129,11 @@ impl Object {
 	}
 
 	pub fn try_downcast_clone<T: Any + Clone>(&self) -> Result<T> {
-		self.downcast_clone().ok_or_else(|| types::Text::from(format!("not a {:?}", TypeId::of::<T>())).into())
+		self.downcast_clone()
+			.ok_or_else(|| TypeError::WrongType {
+				expected: std::any::type_name::<T>(),
+				got: format!("<todo: typename impl>")
+			}.into())
 	}
 
 	pub fn downcast_clone<T: Any + Clone>(&self) -> Option<T> {
@@ -134,9 +142,11 @@ impl Object {
 	}
 
 	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> Result<impl std::ops::Deref<Target = T> + 'a> {
-		self.downcast_ref::<T>().ok_or_else(||
-			types::Text::from(format!("{:?} is not a {:?}", self, std::any::type_name::<T>())).into()
-		)
+		self.downcast_ref::<T>()
+			.ok_or_else(|| TypeError::WrongType {
+				expected: std::any::type_name::<T>(),
+				got: format!("<todo: typename impl>")
+			}.into())
 	}
 
 	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl std::ops::Deref<Target=T> + 'a> {
@@ -158,9 +168,11 @@ impl Object {
 	}
 
 	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> Result<impl std::ops::DerefMut<Target = T> + 'a> {
-		self.downcast_mut::<T>().ok_or_else(||
-			types::Text::from(format!("{:?} is not a {:?}", self, std::any::type_name::<T>())).into()
-		)
+		self.downcast_mut::<T>()
+			.ok_or_else(|| TypeError::WrongType {
+				expected: std::any::type_name::<T>(),
+				got: format!("<todo: typename impl>")
+			}.into())
 	}
 
 
@@ -247,7 +259,8 @@ impl Object {
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
-		self.0.mapping.write().expect("cannot write").remove(attr)
+		self.0.mapping.write().expect("cannot write").remove(attr)?
+			.ok_or_else(|| format!("attr {:?} does not exist for.", attr).into())
 	}
 
 	pub fn add_parent(&self, val: Object) -> Result<()> {

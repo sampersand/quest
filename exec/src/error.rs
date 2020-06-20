@@ -28,7 +28,7 @@ impl From<quest_parser::Error> for Error {
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Error::Quest(err) => std::fmt::Debug::fmt(&err, f),
+			Error::Quest(err) => Display::fmt(&err, f),
 			Error::Parser(err) => Display::fmt(&err, f),
 			Error::Io(err) => Display::fmt(&err, f),
 		}

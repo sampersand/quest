@@ -2,8 +2,7 @@
 pub struct Kernel;
 
 mod impls {
-	use crate::{Object, Result, Args, types};
-	// pub const TRUE: Object = Object::new(types::boolean::TRUE);
+	use crate::{Object, Result, Error, Args, types};
 
 	pub fn r#if(args: Args) -> Result<Object> {
 		if args.arg(0)?.downcast_call::<types::Boolean>()?.into() {
@@ -29,9 +28,13 @@ mod impls {
 		if print_end {
 			println!();
 		}
-		use std::io::Write;
-		std::io::stdout().flush().map_err(|err| Object::from(format!("couldn't flush: {}", err)))?;
-		Ok(Object::default())
+
+		use std::io::{self, Write};
+
+		io::stdout()
+			.flush()
+			.map_err(|err| Error::Messaged(format!("couldn't flush: {}", err)))
+			.map(|_| Object::default())
 	}
 
 	pub fn r#while(args: Args) -> Result<Object> {
@@ -75,8 +78,9 @@ mod impls {
 			command.arg(arg.downcast_call::<types::Text>()?.as_ref());
 		}
 
-		let output = command.output().map_err(|err| format!("couldnt spawn proc: {}", err))?;
-		Ok(String::from_utf8_lossy(&output.stdout).to_string().into())
+		command.output()
+			.map_err(|err| Error::Messaged(format!("couldnt spawn proc: {}", err)))
+			.map(|output| String::from_utf8_lossy(&output.stdout).to_string().into())
 	}
 
 	pub fn rand(args: Args) -> Result<Object> {
@@ -97,7 +101,13 @@ mod impls {
 		Ok((rand::random::<f64>() * (end - start) + start).into())
 	}
 
-	pub fn eval(_args: Args) -> Result<Object> {
+	pub fn eval(args: Args) -> Result<Object> {
+		let to_eval = args.arg(0)?.downcast_call::<types::Text>()?;
+		let scope = args.arg(1)
+			.map(Clone::clone)
+			.unwrap_or_else(|_| Object::new(types::Scope));
+
+		let bindings = crate::Binding::take_stackframe();
 		// use std::thread::Thread;
 		todo!("eval")
 	}
@@ -117,7 +127,7 @@ mod impls {
 
 				Ok(buf.into())
 			},
-			Err(err) => Err(format!("couldn't read from stdin: {}", err).into())
+			Err(err) => Err(Error::Messaged(format!("couldn't read from stdin: {}", err).into()))
 		}
 	}
 
