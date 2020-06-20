@@ -8,24 +8,24 @@ mod impls {
 		Ok(true.into())
 	}
 
+	// This function needs to be updated
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args.this()?;
-		Ok(format!("<{}:{}>",
+		let name = 
 			this.get_attr(literals::PARENTS)?
 				.get_attr("name")
 				.and_then(|x| x.downcast_call::<types::Text>())
-				.unwrap_or_else(|_| "<unknown name>".into())
-				.as_ref(),
-			this.id()
-		).into())
+				.unwrap_or_else(|_| "<unknown name>".into());
+
+		Ok(format!("<{}:{}>", name.as_ref(), this.id()).into())
 	}
 
 	pub fn eql(args: Args) -> Result<Object> {
 		// TODO: do we want the `id` here to be overridable?
-		// let lhs_id = args.this()?.call("__id__", args.new_args_slice(&[]))?;
-		// let rhs_id = args.arg(0)?.call("__id__", args.new_args_slice(&[]))?;
-		// lhs_id.call("==", args.new_args_slice(&[rhs_id]))
-		Ok((args.this()?.id() == args.arg(0)?.id()).into())
+		let this_id = args.this()?.id();
+		let other_id = args.arg(0)?.id();
+
+		Ok((this_id == other_id).into())
 	}
 
 	pub fn neq(args: Args) -> Result<Object> {
@@ -38,35 +38,6 @@ mod impls {
 		args.this()?.downcast_convert::<types::Boolean>()?
 			.call_attr(literals::NOT, args.new_args_slice(&[]))
 	}
-
-	pub fn open_self(args: Args) -> Result<Object> {
-		// use types::rustfn::Binding;
-		println!("{:?}", args);
-		// let this = args.this()?;
-		// let block = args.arg(0)?;
-		// let args: Vec<Object> = Binding::instance().as_ref()
-		// 	.get_attr("__args__")?
-		// 	.downcast_call::<types::List>()?.into();
-
-		unimplemented!();
-		// Binding::new_stackframe(args.into(), (|_binding| {
-			// Binding::set_binding(this.clone());
-			// block.call_attr("()", vec![this.clone()])
-		// }))
-		// if this.downcast_ref::<Text>().map(|x| x.as_ref() == "__this__").unwrap_or(false) {
-		// 	Ok(Binding::set_binding(rhs.clone()).as_ref().clone())
-		// 	block.call_attr("()", vec![])
-		// }))
-	}
-	// pub fn and(args: Args) -> Result<Object> {
-	// 	args.this()?
-	// 		.call("@bool", args.args(..)?)?
-	// }
-	// pub fn not(args: Args) -> Result<Object> {
-	// 	args.this()?
-	// 		.call("@bool", args.args(..)?)?
-	// 		.call("!", args.new_args_slice(&[]))
-	// }
 }
 
 impl_object_type!{
@@ -76,7 +47,6 @@ for Basic [(parents super::Kernel)]:
 	"==" => impls::eql,
 	"!=" => impls::neq,
 	"!" => impls::not,
-	"{}" => impls::open_self,
 	// "||"    => impls::or,
 	// "&&"    => impls::and,
 	"ancestors" => (|_args| todo!()) // this is just a reminder to update `__parent__`...

@@ -1,5 +1,5 @@
 use crate::{literals, Result, Args, EqResult,
-	error::{TypeError},
+	error::{TypeError, KeyError},
 	types::{self, ObjectType}
 };
 
@@ -226,7 +226,7 @@ impl Object {
 		} else if self.has_attr("__attr_missing__")? {
 			self.call_attr("__attr_missing__", vec![attr.into_object()])
 		} else {
-			Err(format!("attr {:?} does not exist for {:?}", attr, self).into())
+			Err(KeyError::DoesntExist{ attr: attr.into_object(), obj: self.clone() }.into())
 		}
 	}
 
@@ -234,7 +234,6 @@ impl Object {
 	where
 		K: Debug + ?Sized + EqResult<Key>
 	{
-		// println!("{:#?}", &*self.0.mapping.read().unwrap());
 		self.0.mapping.read().expect("cannot read").has(attr)
 	}
 

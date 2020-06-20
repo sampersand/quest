@@ -102,12 +102,11 @@ mod impls {
 	}
 
 	pub fn eval(args: Args) -> Result<Object> {
-		let to_eval = args.arg(0)?.downcast_call::<types::Text>()?;
-		let scope = args.arg(1)
+		let _to_eval = args.arg(0)?.downcast_call::<types::Text>()?;
+		let _scope = args.arg(1)
 			.map(Clone::clone)
 			.unwrap_or_else(|_| Object::new(types::Scope));
 
-		let bindings = crate::Binding::take_stackframe();
 		// use std::thread::Thread;
 		todo!("eval")
 	}
