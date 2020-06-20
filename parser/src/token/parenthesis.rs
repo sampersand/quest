@@ -69,8 +69,7 @@ impl Tokenizable for Parenthesis {
 			Some('}') => Ok(TokenizeResult::Some(Token::Right(ParenType::Curly))),
 			Some(chr) => {
 				use std::io::{Seek, SeekFrom};
-				stream.seek(SeekFrom::Current(-1))
-					.map_err(|err| parse_error!(stream, CantReadStream(err)))?;
+				try_seek!(stream, Current(-1));
 				Ok(TokenizeResult::None)
 			},
 			None => Ok(TokenizeResult::None)

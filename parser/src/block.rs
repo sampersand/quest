@@ -1,4 +1,3 @@
-
 #[macro_use]
 use quest::impl_object_type;
 use quest::{Object, Args, types::{self, rustfn::Binding}};
