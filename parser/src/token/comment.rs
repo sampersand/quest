@@ -1,8 +1,6 @@
 pub use super::whitespace::Never;
 use crate::token::{Tokenizable, TokenizeResult};
 use crate::{Stream, Result};
-use crate::stream::Contexted;
-use std::io::BufRead;
 
 // a dummy struct just so we can have a type to impl `Tokenizable`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

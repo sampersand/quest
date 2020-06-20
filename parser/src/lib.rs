@@ -1,6 +1,3 @@
-#![deny(unused_must_use)]
-#![allow(unused)]
-#![allow(deprecated)]
 
 macro_rules! parse_error {
 	(context=$context:expr, $type:ident $($tt:tt)*) => {

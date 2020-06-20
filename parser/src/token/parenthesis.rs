@@ -1,7 +1,6 @@
 use crate::token::{Token, Tokenizable, TokenizeResult, Operator};
 use crate::{Result, Stream};
 use std::fmt::{self, Display, Formatter};
-use std::io::BufRead;
 use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -67,8 +66,7 @@ impl Tokenizable for Parenthesis {
 			Some(']') => Ok(TokenizeResult::Some(Token::Right(ParenType::Square))),
 			Some('{') => Ok(TokenizeResult::Some(Token::Left(ParenType::Curly))),
 			Some('}') => Ok(TokenizeResult::Some(Token::Right(ParenType::Curly))),
-			Some(chr) => {
-				use std::io::{Seek, SeekFrom};
+			Some(_) => {
 				try_seek!(stream, Current(-1));
 				Ok(TokenizeResult::None)
 			},

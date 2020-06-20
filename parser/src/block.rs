@@ -1,6 +1,5 @@
-#[macro_use]
 use quest::impl_object_type;
-use quest::{Object, Args, types::{self, rustfn::Binding}};
+use quest::{Object, Args, Binding};
 
 use crate::Result;
 use crate::token::{Token, ParenType};
@@ -147,11 +146,11 @@ impl Block {
 	}
 
 	fn call(&self, args: Args) -> quest::Result<quest::Object> {
-		Binding::new_stackframe(args, (|_binding| {
+		Binding::new_stackframe(args, |_binding| {
 			self.run_block()
 				.map(|x| x.map(Object::from))
 				.map(Option::unwrap_or_default)
-		}))
+		})
 	}
 
 }
@@ -230,7 +229,7 @@ impl Constructable for Block {
 mod impls {
 	use super::*;
 
-	pub fn call(mut args: Args) -> quest::Result<Object> {
+	pub fn call(args: Args) -> quest::Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Block>()?.clone();
 		this.call(args)
 	}
@@ -245,7 +244,7 @@ for Block [(parents quest::types::Function)]:
 
 #[cfg(test)]
 mod tests {
-	use super::*;
+	
 
 	#[test]
 	#[ignore]

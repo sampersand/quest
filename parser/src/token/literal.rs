@@ -1,6 +1,6 @@
 use crate::Result;
 use crate::stream::Stream;
-use crate::expression::{Expression, Constructable, Executable};
+use crate::expression::{Constructable, Executable};
 use crate::token::{Token, Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 

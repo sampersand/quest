@@ -1,10 +1,7 @@
 use crate::{Result, Block};
 use crate::expression::{Constructable, Constructor, Executable, BoundOperator};
 use crate::stream::{Context, Contexted};
-use crate::token::{Token, Literal, Operator, ParenType, operator::Associativity};
-use std::cmp::Ordering;
-use std::convert::TryFrom;
-use std::iter::Peekable;
+use crate::token::{Token, Literal, Operator, ParenType};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -41,7 +41,7 @@ impl Tokenizable for Variable {
 		let mut variable = String::with_capacity(1);
 
 		while let Some(chr) = stream.next().transpose()? { 
-			use std::io::{Seek, SeekFrom};
+			
 
 			if is_variable_body(chr) {
 				variable.push(chr)

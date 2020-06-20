@@ -1,4 +1,4 @@
-use crate::{Token, Result, Error, ErrorType};
+use crate::{Result, Error, ErrorType};
 use crate::stream::{Context, Contexted, Stream};
 
 use std::io::{self, Cursor, Seek, SeekFrom, Stdin, BufReader, BufRead};

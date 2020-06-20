@@ -17,7 +17,6 @@ pub mod parenthesis;
 pub mod token;
 
 
-use parenthesis::Parenthesis;
 pub use parenthesis::ParenType;
 pub use operator::Operator;
 pub use literal::Literal;

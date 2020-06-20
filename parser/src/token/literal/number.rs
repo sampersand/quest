@@ -1,8 +1,7 @@
-use crate::{Result, Stream, Error};
+use crate::{Result, Stream};
 use crate::token::{Tokenizable, TokenizeResult};
 use crate::expression::Executable;
 use std::convert::TryFrom;
-use std::fmt::{self, Display, Formatter};
 
 pub type Number = quest::types::Number;
 

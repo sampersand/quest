@@ -1,9 +1,7 @@
 use crate::{Result, Stream};
-use crate::stream::Contexted;
 use crate::expression::Executable;
-use crate::token::{Operator, Parenthesis, Tokenizable, TokenizeResult};
-use crate::token::literal::{variable, Variable};
-use std::fmt::{self, Debug, Display, Formatter};
+use crate::token::{Operator, Tokenizable, TokenizeResult};
+use crate::token::literal::Variable;
 
 pub type Text = quest::types::Text;
 
@@ -47,8 +45,6 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Text>
 // valid syntax is `$variable_name` or `$operator`.
 fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Text>> {
 	assert_eq!(stream.next().transpose()?, Some('$'));
-
-	let first = stream.peek().unwrap_or_else(|| Err(parse_error!(stream, UnterminatedQuote)))?;
 
 	macro_rules! from_other {
 		($($p:ty),*) => {
