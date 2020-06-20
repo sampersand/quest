@@ -30,13 +30,14 @@ impl<B: BufRead> Seek for BufStream<B> {
 impl<S: BufRead> Iterator for BufStream<S> {
 	type Item = Result<char>;
 	fn next(&mut self) -> Option<Result<char>> {
-		let chr_res = self.peek()?;
-
-		if chr_res.is_ok() {
+		if let Err(err) = self.read_next_line_if_applicable() {
+			Some(Err(err))
+		} else if let Some(chr) = self.context.line.chars().nth(self.context.column) {
 			self.context.column += 1;
+			Some(Ok(chr))
+		} else {
+			None
 		}
-
-		Some(chr_res)
 	}
 }
 
@@ -47,14 +48,6 @@ impl<B: BufRead> Contexted for BufStream<B> {
 }
 
 impl<B: BufRead> Stream for BufStream<B> {
-	fn peek(&mut self) -> Option<Result<char>> {
-		if let Err(err) = self.read_next_line_if_applicable() {
-			Some(Err(err))
-		} else {
-			self.context.line.chars().nth(self.context.column).map(Ok)
-		}
-	}
-
 	fn starts_with(&mut self, s: &str) -> Result<bool> {
 		self.read_next_line_if_applicable()?;
 		Ok(self.as_ref().starts_with(s))

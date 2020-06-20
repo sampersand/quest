@@ -38,15 +38,6 @@ impl Contexted for Repl {
 }
 
 impl Stream for Repl {
-	fn peek(&mut self) -> Option<quest_parser::Result<char>> {
-		unimplemented!()
-		// if let Err(err) = self.read_next_line_if_applicable() {
-		// 	Some(Err(err))
-		// } else {
-		// 	self.context.line.chars().nth(self.context.column).map(Ok)
-		// }
-	}
-
 	fn starts_with(&mut self, s: &str) -> quest_parser::Result<bool> {
 		unimplemented!()
 		// self.read_next_line_if_applicable()?;

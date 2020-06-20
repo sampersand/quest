@@ -45,22 +45,27 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Number
 			'.' if pos == Position::Integer => {
 				// "12.\D" should be interpreted as '12' '.' '\D', as '\D' is the start of an attr
 				// (\D means "not 0-9")
-				if matches!(stream.peek().transpose()?, Some('0'..='9')) {
-					number.push('.');
-					pos = Position::Decimal;
-				} else {
-					try_seek!(stream, -1);
-					break
+				match stream.next().transpose()? {
+					Some(digit @ '0'..='9') => {
+						number.push('.');
+						number.push(digit);
+						pos = Position::Decimal;
+					},
+					_ => {
+						try_seek!(stream, -2);
+						break
+					}
 				}
 			},
 
-			'e' | 'E' => if pos == Position::Mantissa {
-				return Err(parse_error!(stream, BadNumber("unexpected `e` encountered".to_string())))
-			} else {
+			'e' | 'E' if pos == Position::Mantissa =>
+				return Err(parse_error!(stream, BadNumber("unexpected `e` encountered".to_string()))),
+			'e' | 'E' => {
 				number.push('e');
-				// accept the sign of the exponent, if supplied
-				if matches!(stream.peek().transpose()?, Some('+') | Some('-')) {
-					number.push(stream.next().transpose()?.unwrap());
+				match stream.next().transpose()? {
+					Some(chr @ '+') | Some(chr @ '-') => number.push(chr),
+					Some(_) => try_seek!(stream, -1),
+					_ => {}
 				}
 				pos = Position::Mantissa
 			},
@@ -79,10 +84,8 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Number
 impl Tokenizable for Number {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		match stream.peek().transpose()? {
+		match stream.next().transpose()? {
 			Some('0') => {
-				assert_eq!(stream.next().transpose()?, Some('0'));
-
 				match stream.next().transpose()? {
 					Some('x') | Some('X') => try_tokenize_radix(stream, 16),
 					Some('d') | Some('D') => try_tokenize_radix(stream, 10),
@@ -95,10 +98,19 @@ impl Tokenizable for Number {
 					None => Ok(TokenizeResult::Some(Number::ZERO)),
 				}
 			},
-			Some('1'..='9') => try_tokenize_basic(stream),
-			_ => Ok(TokenizeResult::None)
+			Some('1'..='9') => {
+				try_seek!(stream, -1);
+				try_tokenize_basic(stream)
+			},
+			Some(_) => {
+				try_seek!(stream, -1);
+				Ok(TokenizeResult::None)
+			},
+			None => Ok(TokenizeResult::None)
 		}
 	}
 }
+
+
 
 

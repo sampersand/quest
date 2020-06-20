@@ -1,8 +1,8 @@
 macro_rules! try_seek {
-	($stream:expr, $where:ident($val:expr)) => {
+	($stream:expr, $where:ident($val:expr)) => {{
 		std::io::Seek::seek($stream, std::io::SeekFrom::$where($val))
-			.map_err(|err| parse_error!($stream, CantReadStream(err)))?
-	};
+			.map_err(|err| parse_error!($stream, CantReadStream(err)))?;
+	}};
 	($stream:expr, $val:expr) => {
 		try_seek!($stream, Current($val));
 	};

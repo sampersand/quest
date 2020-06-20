@@ -34,15 +34,16 @@ fn is_variable_body(c: char) -> bool {
 impl Tokenizable for Variable {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		if !stream.peek().transpose()?.map(is_variable_start).unwrap_or(false) {
-			return Ok(TokenizeResult::None)
-		}
-
-		let mut variable = String::with_capacity(1);
+		let mut variable = 
+			match stream.next().transpose()? {
+				Some(chr) if is_variable_start(chr) => chr.to_string(),
+				_ => {
+					try_seek!(stream, -1);
+					return Ok(TokenizeResult::None)
+				}
+			};
 
 		while let Some(chr) = stream.next().transpose()? { 
-			
-
 			if is_variable_body(chr) {
 				variable.push(chr)
 			} else {

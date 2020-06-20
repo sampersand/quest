@@ -12,10 +12,8 @@ impl Executable for Text {
 }
 
 
-fn try_tokenize_quoted<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Text>> {
+fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<TokenizeResult<Text>> {
 	let mut text = String::new();
-	let quote = stream.next().expect("internal error: a string should have been passed")?;
-	debug_assert!(quote == '"' || quote == '\'');
 
 	let starting_context = stream.context().clone();
 
@@ -72,10 +70,13 @@ fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<TokenizeResult<
 impl Tokenizable for Text {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		match stream.peek().transpose()? {
-			Some('$')               => try_tokenize_dollar_sign(stream),
-			Some('\"') | Some('\'') => try_tokenize_quoted(stream),
-			_ => Ok(TokenizeResult::None)
+		match stream.next().transpose()? {
+			Some('$') => try_tokenize_dollar_sign(stream),
+			Some(quote @ '\"') | Some(quote @ '\'') => try_tokenize_quoted(stream, quote),
+			_ => {
+				try_seek!(stream, -1);
+				Ok(TokenizeResult::None)
+			}
 		}
 	}
 }

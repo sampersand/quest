@@ -15,13 +15,15 @@ impl From<Never> for super::Token {
 impl Tokenizable for Whitespace {
 	type Item = Never;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Never>> {
-		if stream.peek().transpose()?.map(char::is_whitespace).unwrap_or(false) {
+		if stream.next().transpose()?.map(char::is_whitespace).unwrap_or(false) {
 			while let Some(chr) = stream.next().transpose()? {
 				if !chr.is_whitespace() {
 					try_seek!(stream, -1);
 					return Ok(TokenizeResult::RestartParsing);
 				}
 			}
+		} else {
+			try_seek!(stream, -1);
 		}
 
 		Ok(TokenizeResult::None)
