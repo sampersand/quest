@@ -1,2 +1,9 @@
+system('cat', 'code/frac3.qs').$eval();
+$half = Frac(1, 2);
+disp(half + half);
 
-eval("$x = 3", __this__);
+##__EOF__##
+
+$frac = system('cat', 'code/frac3.qs').$eval({});
+$half = frac.$Frac(1, 2);
+disp(half + half);

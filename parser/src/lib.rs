@@ -12,6 +12,14 @@ macro_rules! parse_error {
 	};
 }
 
+
+pub fn init() -> quest::Result<()> {
+	use quest::types::ObjectType;
+	quest::types::Kernel::mapping()
+		.set_attr("Block", Block::mapping())
+		.and(Ok(()))
+}
+
 mod error;
 pub mod expression;
 pub mod token;

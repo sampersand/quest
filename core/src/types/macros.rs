@@ -92,15 +92,14 @@ macro_rules! impl_object_type {
 	(@SET_PARENT $class:ident) => {
 		compile_error!("parent should have been checked for earlier");
 	};
-	(@SET_PARENT $class:ident (init_parent $($init_parent:path)?) $($_rest:tt)*) => {
-		$(
-			$class.set_attr_possibly_parents(
-				"__parents__",
-				vec![
-					<$init_parent as $crate::types::ObjectType>::mapping()
-				]
-			).expect("cant set `__parents__`?");
-		)?
+	(@SET_PARENT $class:ident (init_parent) $($_rest:tt)*) => {};
+	(@SET_PARENT $class:ident (init_parent $($init_parent:path)+) $($_rest:tt)*) => {
+		$class.set_attr_possibly_parents(
+			"__parents__",
+			vec![
+				$(<$init_parent as $crate::types::ObjectType>::mapping()),+
+			]
+		).expect("cant set `__parents__`?");
 	};
 	(@SET_PARENT $class:ident (parents $parent:path) $($_rest:tt)*) => {
 		impl_object_type!(@SET_PARENT $class (init_parent $parent));

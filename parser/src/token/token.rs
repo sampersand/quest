@@ -10,7 +10,6 @@ use super::tokenizable::{Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-#[non_exhaustive]
 pub enum Token {
 	Literal(Literal),
 	Operator(Operator),

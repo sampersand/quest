@@ -308,7 +308,21 @@ macro_rules! impl_operators {
 	};
 }
 
-impl_operators!(BINARY Add add Sub sub Mul mul Div div Rem rem);
+impl_operators!(BINARY Add add Sub sub Mul mul Rem rem);
+
+impl std::ops::Div for Number {
+	type Output = Self;
+	fn div(self, rhs: Number) -> Self::Output {
+		match (self, rhs) {
+			(Number::Integer(lhs), Number::Integer(rhs)) =>
+				Number::from((lhs as FloatType).div(rhs as FloatType)),
+			(Number::Integer(lhs),   Number::Float(rhs)) => Number::from((lhs as FloatType).div(rhs)),
+			(  Number::Float(lhs), Number::Integer(rhs)) => Number::from(lhs.div(rhs as FloatType)),
+			(  Number::Float(lhs),   Number::Float(rhs)) => Number::from(lhs.div(rhs)),
+		}
+	}
+}
+
 impl_operators!(UNARY Neg neg);
 impl_operators!(BITWISE BINARY BitAnd bitand BitOr bitor BitXor bitxor Shl shl Shr shr);
 impl_operators!(BITWISE UNARY Not not);
@@ -548,7 +562,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Number [(parents super::Basic) (convert "@num")]:
+for Number [(init_parent super::Comparable super::Basic) (parents super::Basic) (convert "@num")]:
 	"PI" => const Number::PI,
 	"E" => const Number::E,
 	"NAN" => const Number::NAN,
@@ -576,12 +590,6 @@ for Number [(parents super::Basic) (convert "@num")]:
 	"==" => impls::eql,
 	"<=>" => impls::cmp,
 	"abs" => impls::abs,
-	"<" => (|args| args.this()?
-			.call_attr("<=>", args.args(..)?)?
-			.call_attr("==", vec![(-1).into()])),
-	">" => (|args| args.this()?
-			.call_attr("<=>", args.args(..)?)?
-			.call_attr("==", vec![(1).into()])),
 	"round" => impls::round,
 	"ceil" => impls::ceil,
 	"floor" => impls::floor,

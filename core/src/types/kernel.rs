@@ -101,16 +101,6 @@ mod impls {
 		Ok((rand::random::<f64>() * (end - start) + start).into())
 	}
 
-	pub fn eval(args: Args) -> Result<Object> {
-		let _to_eval = args.arg(0)?.downcast_call::<types::Text>()?;
-		let _scope = args.arg(1)
-			.map(Clone::clone)
-			.unwrap_or_else(|_| Object::new(types::Scope));
-
-		// use std::thread::Thread;
-		todo!("eval")
-	}
-
 	pub fn prompt(args: Args) -> Result<Object> {
 		use std::io;
 
@@ -159,13 +149,13 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"RustFn" => const super::RustFn::mapping(),
 	"Scope" => const super::Scope::mapping(),
 	"Text" => const super::Text::mapping(),
+	"Comparable" => const super::Comparable::mapping(),
 
 	"if" => impls::r#if, 
 	"disp" => (|a| impls::disp(a, true)),
 	"quit" => impls::quit,
 	"system" => impls::system,
 	"rand" => impls::rand,
-	"eval" => impls::eval,
 	"prompt" => impls::prompt,
 	"while" => impls::r#while,
 	"for" => impls::r#for,

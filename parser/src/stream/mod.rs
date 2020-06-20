@@ -1,5 +1,6 @@
 mod context;
 mod token_iter;
+mod buf_stream;
 
 use std::io::Seek;
 use crate::Result;
@@ -15,3 +16,4 @@ pub trait Stream : Seek + Contexted + Iterator<Item=Result<char>> {
 
 pub use context::{Context, Contexted};
 pub use token_iter::TokenIter;
+pub use buf_stream::BufStream;

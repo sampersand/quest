@@ -1,6 +1,6 @@
 use crate::{Object, error::{ValueError, KeyError}, types::rustfn::Binding};
 use std::borrow::Cow;
-use std::fmt::{self, Debug, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Text(Cow<'static, str>);
@@ -12,6 +12,12 @@ impl Debug for Text {
 		} else {
 			Debug::fmt(&self.as_ref(), f)
 		}
+	}
+}
+
+impl Display for Text {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		Display::fmt(&self.0, f)
 	}
 }
 
@@ -255,5 +261,5 @@ for Text [(parents super::Basic) (convert "@text")]:
 	"[]=" => (impls::index_assign),
 	"index_of" => (impls::index_of),
 	"split" => (impls::split),
-	"reverse" => (impls::reverse)
+	"reverse" => (impls::reverse),
 }

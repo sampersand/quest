@@ -16,6 +16,7 @@ pub mod kernel;
 pub mod basic;
 
 pub mod function;
+pub mod comparable;
 pub mod bound_function;
 pub mod rustfn;
 // pub mod block;
@@ -29,6 +30,7 @@ pub mod text;
 pub mod list;
 
 pub use convert::Convertible;
+pub use comparable::Comparable;
 pub use pristine::Pristine;
 pub use kernel::Kernel;
 pub use basic::Basic;

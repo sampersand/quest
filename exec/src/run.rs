@@ -1,8 +1,8 @@
-mod buf_stream;
 mod repl;
+mod buf_stream;
 
-use self::buf_stream::BufStream;
-use self::repl::Repl;
+pub use buf_stream::BufStream;
+use repl::Repl;
 use quest::{Object, Binding, Args};
 use crate::Result;
 use std::path::Path;

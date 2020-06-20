@@ -4,6 +4,7 @@ mod run;
 mod error;
 
 use error::{Error, Result};
+use run::BufStream;
 use quest::Object;
 use clap::Clap;
 
@@ -40,7 +41,43 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 	}
 }
 
+pub fn init() -> Result<()> {
+	use quest::types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding};
+	use quest_parser::{Stream, expression::Executable};
+	use quest::Args;
+
+	Text::mapping().set_attr("eval", RustFn::new("Text::eval", |args| {
+		let obj = args.this()?.try_downcast_ref::<Text>()?;
+		let binding = args.arg(0);
+
+		if let Ok(binding) = binding {
+			let mut args = Args::from(args.args(1..)
+				.map(|x| x.as_ref().to_vec())
+				.unwrap_or_else(|_| vec![]));
+			args.add_this(binding.clone());
+
+
+			Binding::new_stackframe(args, |_| {
+				quest_parser::Expression::parse_stream(BufStream::from(obj.to_string()).tokens())
+					.map_err(|err| err.to_string())?
+					.execute()
+					.map_err(Into::into)
+			})
+		} else {
+			quest_parser::Expression::parse_stream(BufStream::from(obj.to_string()).tokens())
+				.map_err(|err| err.to_string())?
+				.execute()
+				.map_err(Into::into)
+		}
+	}))?;
+	Ok(())
+
+}
+
 fn main() {
+	quest_parser::init().expect("couldn't initialize quest parser");
+	init().expect("couldn't initialize quest exec");
+
 	match run_options(Opts::parse()) {
 		Ok(_) => {},
 		Err(err) => println!("uncaught error encountered:\n{}", err)
