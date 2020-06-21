@@ -8,9 +8,13 @@ mod text;
 mod number;
 mod variable;
 
-use self::text::Text;
-use self::number::Number;
-use self::variable::Variable;
+use self::text::TextTokenizer;
+use self::number::NumberTokenizer;
+pub use self::variable::Variable;
+
+pub type Text = <TextTokenizer as Tokenizable>::Item;
+pub type Number = <NumberTokenizer as Tokenizable>::Item;
+// pub type Variable = <VariableTokenizer as Tokenizable>::Item;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Literal {
@@ -48,12 +52,12 @@ impl From<Literal> for Token {
 impl Tokenizable for Literal {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		match Number::try_tokenize(stream)?.map(Literal::Number) {
+		match NumberTokenizer::try_tokenize(stream)?.map(Literal::Number) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		match Text::try_tokenize(stream)?.map(Literal::Text) {
+		match TextTokenizer::try_tokenize(stream)?.map(Literal::Text) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}

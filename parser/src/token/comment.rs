@@ -12,6 +12,7 @@ fn line_comment<S: Stream>(stream: &mut S) -> Result<()> {
 			break;
 		}
 	}
+
 	Ok(())
 }
 
@@ -33,22 +34,16 @@ fn block_comment<S: Stream>(stream: &mut S) -> Result<()> {
 
 impl Tokenizable for Comment {
 	type Item = Never;
+	
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Never>> {
 		if stream.starts_with("##__EOF__##")? {
 			Ok(TokenizeResult::StopParsing)
 		} else if stream.starts_with("#")? {
 			line_comment(stream).and(Ok(TokenizeResult::RestartParsing))
-		} else if stream.starts_with("/*")? {
-			try_seek!(stream, 2);
+		} else if stream.next_if_starts_with("/*")? {
 			block_comment(stream).and(Ok(TokenizeResult::RestartParsing))
 		} else {
 			Ok(TokenizeResult::None)
 		}
 	}
 }
-
-
-
-
-
-

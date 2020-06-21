@@ -22,11 +22,18 @@ pub struct Context {
 }
 
 impl Context {
-	/// Create a new context, optionally specifying a source file.
+	/// Create a new context
 	pub fn new(file: Option<PathBuf>) -> Self {
 		Context { file, ..Context::default() }
 	}
 }
+
+impl<T: Into<PathBuf>> From<T> for Context {
+	fn from(file: T) -> Context {
+		Context::new(Some(file.into()))
+	}
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -40,12 +47,19 @@ mod tests {
 		);
 	}
 
+
 	#[test]
 	fn new() {
-		let pathbuf = PathBuf::from("/some/file");
-		assert_eq!(
-			Context::new(Some(pathbuf.clone())),
-			Context { file: Some(pathbuf), ..Context::default() });
 		assert_eq!(Context::new(None), Context::default());
+		assert_eq!(
+			Context::new(Some("/plato/republic.txt".into())),
+			Context { file: Some("/plato/republic.txt".into()), ..Context::default() });
+	}
+
+	#[test]
+	fn from() {
+		assert_eq!(
+			Context::from("/plato/meno.txt"),
+			Context { file: Some("/plato/meno.txt".into()), ..Context::default() });
 	}
 }

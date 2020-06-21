@@ -43,8 +43,7 @@ macro_rules! operator_enum {
 			fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self::Item>> {
 				$({
 					let o = operator_enum!(; TRY_PARSE $repr $(($($ident)?))?);
-					if o.map(|x| stream.starts_with(x)).transpose()?.unwrap_or(false) {
-						try_seek!(stream, o.unwrap().len() as i64);
+					if o.map(|x| stream.next_if_starts_with(x)).transpose()?.unwrap_or(false) {
 						return Ok(TokenizeResult::Some(Operator::$variant))
 					}
 				})+

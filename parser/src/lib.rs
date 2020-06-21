@@ -1,15 +1,3 @@
-
-macro_rules! parse_error {
-	(context=$context:expr, $type:ident $($tt:tt)*) => {
-		$crate::Error::new($context, $crate::ErrorType::$type$($tt)*)
-	};
-
-	($stream:expr, $type:ident $($tt:tt)*) => {
-		parse_error!(context=$crate::stream::Contexted::context($stream).clone(), $type$($tt)*)
-	};
-}
-
-
 pub fn init() -> quest::Result<()> {
 	use quest::types::ObjectType;
 	quest::types::Kernel::mapping()
@@ -17,6 +5,8 @@ pub fn init() -> quest::Result<()> {
 		.and(Ok(()))
 }
 
+#[macro_use]
+mod macros;
 mod error;
 pub mod expression;
 pub mod token;
