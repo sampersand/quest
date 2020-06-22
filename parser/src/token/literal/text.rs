@@ -2,10 +2,12 @@ use crate::{Result, Stream};
 use crate::expression::Executable;
 use crate::token::{Operator, Tokenizable, TokenizeResult};
 use crate::token::literal::Variable;
-use quest::{Object, types::Text};
+use quest::Object;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Hash)]
 pub struct TextTokenizer;
+
+pub use quest::types::Text;
 
 impl Executable for Text {
 	fn execute(&self) -> quest::Result<Object> {
@@ -72,13 +74,13 @@ impl Tokenizable for TextTokenizer {
 	type Item = Text;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Text>> {
 		match stream.next().transpose()? {
-			Some('$') => TextTokenizer::try_tokenize_dollar_sign(stream),
-			Some(quote @ '\"') | Some(quote @ '\'') =>
-				TextTokenizer::try_tokenize_quoted(stream, quote),
-			_ => {
+			Some('$') => Self::try_tokenize_dollar_sign(stream),
+			Some(quote @ '\"') | Some(quote @ '\'') => Self::try_tokenize_quoted(stream, quote),
+			Some(_) => {
 				try_seek!(stream, -1);
 				Ok(TokenizeResult::None)
-			}
+			},
+			None => Ok(TokenizeResult::None)
 		}
 	}
 }

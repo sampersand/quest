@@ -4,22 +4,41 @@ use crate::expression::{Constructable, Executable};
 use crate::token::{Token, Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 
-mod text;
-mod number;
-mod variable;
+pub mod text;
+pub mod number;
+pub mod variable;
 
 use self::text::TextTokenizer;
 use self::number::NumberTokenizer;
+
+/// A literal text.
+pub type Text = text::Text;
+
+/// A literal number.
+pub type Number = number::Number;
+
+/// A literal variable.
 pub use self::variable::Variable;
 
-pub type Text = <TextTokenizer as Tokenizable>::Item;
-pub type Number = <NumberTokenizer as Tokenizable>::Item;
-// pub type Variable = <VariableTokenizer as Tokenizable>::Item;
-
+/// Represents a literal value in Quest.
+///
+/// Due to the lack of keywords in quest, values such as `true` and `false` are not their own
+/// distinct literal types: They're simply [`Variable`](#)s that will be evaluated at run time.
+///
+/// There are also no literal lists or maps: These are both considered [`Block`](#)s.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Literal {
+	/// A literal piece of text.
+	///
+	/// See [`Text`](#) for more information on parsing.
 	Text(Text),
+	/// A literal number.
+	///
+	/// See [`Number`](#) for more information on parsing.
 	Number(Number),
+	/// A variable name.
+	///
+	/// See [`Variable`](#) for more information on parsing.
 	Variable(Variable)
 }
 

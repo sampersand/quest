@@ -37,10 +37,11 @@ impl Tokenizable for Variable {
 		let mut variable = 
 			match stream.next().transpose()? {
 				Some(chr) if is_variable_start(chr) => chr.to_string(),
-				_ => {
+				Some(_) => {
 					try_seek!(stream, -1);
 					return Ok(TokenizeResult::None)
-				}
+				},
+				None => return Ok(TokenizeResult::None)
 			};
 
 		while let Some(chr) = stream.next().transpose()? { 

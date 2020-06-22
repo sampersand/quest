@@ -6,10 +6,21 @@ use crate::{Object, types};
 type IntegerType = i64;
 type FloatType = f64;
 
-#[derive(Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, PartialOrd)]
 pub enum Number {
 	Integer(IntegerType),
 	Float(FloatType)
+}
+
+impl PartialEq for Number {
+	fn eq(&self, rhs: &Number) -> bool {
+		match (self, rhs) {
+			(Number::Integer(l), Number::Integer(r)) => l == r,
+			(Number::Float(l), Number::Float(r)) => l == r,
+			(Number::Integer(n), Number::Float(f))
+				| (Number::Float(f), Number::Integer(n)) => *f == (*n as FloatType),
+		}
+	}
 }
 
 impl Eq for Number {}

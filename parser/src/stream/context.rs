@@ -9,7 +9,7 @@ pub trait Contexted {
 }
 
 /// A type representing the current state of a [`Stream`](trait.Stream.html).
-#[derive(Debug, Clone, PartialEq, Eq, Default, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Context {
 	/// The file, if one exists, that is associated with this context
 	pub file: Option<PathBuf>,

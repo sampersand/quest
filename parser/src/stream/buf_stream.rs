@@ -106,13 +106,17 @@ impl<B: BufRead> BufStream<B> {
 			// keep track of the old line in case we aren't able to read a new one (for err msgs)
 			let mut old_line = take(&mut self.context.line);
 
-			if let Err(err) = self.data.read_line(&mut self.context.line) {
-				// if we got an error when reading the line, restore the old one.
-				swap(&mut old_line, &mut self.context.line);
-				return Err(parse_error!(self, CantReadStream(err)));
-			} else {
-				self.context.lineno += 1;
-				self.context.column = 0;
+			match self.data.read_line(&mut self.context.line) {
+				// if there's nothing left to read, just keep the old line.
+				Ok(0) => swap(&mut old_line, &mut self.context.line),
+				Ok(_) => {
+					self.context.lineno += 1;
+					self.context.column = 0;
+				},
+				Err(err) => {
+					swap(&mut old_line, &mut self.context.line);
+					return Err(parse_error!(self, CantReadStream(err)));
+				}
 			}
 		}
 
@@ -267,7 +271,10 @@ mod tests {
 		assert_next_context_eq!('y' 4 7 "apology");
 
 		assert_next_eq!(buf, None);
-		assert_eq!(*buf.context(), Context { file: None, lineno: 5, column: 0, line: String::new() });
+		assert_eq!(
+			*buf.context(),
+			Context { file: None, lineno: 4, column: 7, line: "apology".to_string() }
+		);
 
 		Ok(())
 	}

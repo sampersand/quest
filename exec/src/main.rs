@@ -79,7 +79,8 @@ fn main() {
 	init().expect("couldn't initialize quest exec");
 
 	match run_options(Opts::parse()) {
-		Ok(x) => println!("{:?}", x),
+		Ok(_) => {},
+		// Ok(x) => println!("{:?}", x),
 		Err(err) => println!("uncaught error encountered:\n{}", err)
 	}
 }
