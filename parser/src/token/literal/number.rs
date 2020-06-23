@@ -1,3 +1,5 @@
+//! Parsing a literal number.
+
 use crate::{Result, Stream};
 use crate::token::{Tokenizable, TokenizeResult};
 use crate::expression::Executable;
@@ -362,13 +364,49 @@ mod tests {
 		}
 
 		#[test]
-		fn not_a_number() {
-			assert_eq!(tkn(buf!("")), TokenizeResult::None)
+		fn before() {
+			assert_eq!(tkn(buf!("")), TokenizeResult::None);
+			assert_eq!(tkn(buf!(" ")), TokenizeResult::None);
+			assert_eq!(tkn(buf!(" 1")), TokenizeResult::None);
+			assert_eq!(tkn(buf!("_12")), TokenizeResult::None);
+			assert_eq!(tkn(buf!(".34")), TokenizeResult::None);
+			assert_eq!(tkn(buf!("\n34")), TokenizeResult::None);
 		}
 
+		#[test]
+		fn valid() {
+			assert_eq!(tkn(buf!("0")), TokenizeResult::Some(num!(0)));
+			assert_eq!(tkn(buf!("02")), TokenizeResult::Some(num!(2)));
+			assert_eq!(tkn(buf!("02")), TokenizeResult::Some(num!(2)));
+			assert_eq!(tkn(buf!("4.1e-4")), TokenizeResult::Some(num!(4.1e-4)));
+		}
+
+		#[test]
+		fn after() {
+			let buf = buf!("4.1.2");
+			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4.1)));
+			assert_eq!(buf.next().unwrap().unwrap(), '.');
+			assert_eq!(buf.next().unwrap().unwrap(), '2');
+
+			let buf = buf!("4.1e3e3");
+			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4.1e3)));
+			assert_eq!(buf.next().unwrap().unwrap(), 'e');
+			assert_eq!(buf.next().unwrap().unwrap(), '3');
+
+			let buf = buf!("4.1e3.5");
+			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4.1e3)));
+			assert_eq!(buf.next().unwrap().unwrap(), '.');
+			assert_eq!(buf.next().unwrap().unwrap(), '5');
+
+			let buf = buf!("4._2");
+			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4)));
+			assert_eq!(buf.next().unwrap().unwrap(), '.');
+			assert_eq!(buf.next().unwrap().unwrap(), '_');
+
+			let buf = buf!("4.a");
+			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4)));
+			assert_eq!(buf.next().unwrap().unwrap(), 'a');
+			assert_eq!(buf.next().unwrap().unwrap(), '_');
+		}
 	}
 }
-
-
-
-
