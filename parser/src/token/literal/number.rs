@@ -4,24 +4,17 @@ use crate::expression::Executable;
 use std::convert::TryFrom;
 use quest::Object;
 
-/// A Unit struct solely intened to implement the [`Tokenizable`] trait for Numbers.
-///
-/// This is so we can have a `Vec<dyn Tokenizable>`; if we implemented Tokenizable for Number
-/// directly, this wouldn't be possible
-#[derive(Debug, Clone, PartialEq, Eq, Default, Hash)]
-pub struct NumberTokenizer;
+/// A literal number is actually just a `quest::Number`.
+pub use quest::types::Number;
+
+/// The error that can occur whilst trying to parse a Number
+pub type ParseError = quest::types::number::FromStrError;
 
 impl Executable for Number {
 	fn execute(&self) -> quest::Result<Object> {
 		Ok(self.clone().into())
 	}
 }
-
-/// The error that can occur whilst trying to parse a Number
-pub type ParseError = quest::types::number::FromStrError;
-
-/// The type that will be parsed
-pub use quest::types::Number;
 
 /// Try to parse a number from the specified radix.
 ///
@@ -65,7 +58,15 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 
 	let mut pos = Position::Integer;
 
-	while let Some(chr) = stream.next().transpose()? {
+	fn next_non_underscore<S: Stream>(stream: &mut S) -> Result<Option<char>> {
+		match stream.next().transpose()? {
+			Some('_') => next_non_underscore(stream),
+			Some(chr) => Ok(Some(chr)),
+			None => Ok(None)
+		}
+	}
+
+	while let Some(chr) = next_non_underscore(stream)? {
 		match chr {
 			// no matter where we are, we always accept a decimal
 			'0'..='9' => number.push(chr),
@@ -86,9 +87,7 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 					// This means we have a dangling period. Let some other tokenizer deal with that,
 					// and just happily parse our digit.
 					None => {
-						println!("foo 1");
 						try_seek!(stream, -1);
-						println!("foo 2");
 						break;
 					}
 				}
@@ -98,7 +97,7 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 			'e' | 'E' if pos != Position::Mantissa => {
 				number.push('e');
 				// Reead the optional `+` or `-` following an `e`
-				match stream.next().transpose()? {
+				match next_non_underscore(stream)? {
 					Some(chr @ '+') | Some(chr @ '-') => number.push(chr),
 					Some(_) => try_seek!(stream, -1),
 					_ => {}
@@ -119,9 +118,34 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 		.map_err(|err| parse_error!(stream, BadNumber(err)))
 }
 
-impl Tokenizable for NumberTokenizer {
-	type Item = Number;
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Number>> {
+impl Tokenizable for Number {
+	type Item = Self;
+	/// Try to parse a literal number from the given stream.
+	///
+	/// There are two forms of valid numbers: "radix-based" and "normal"
+	///
+	/// # Radix-Based
+	///
+	/// Radix-based numbers are, at first blush, what you'd expect to see: `0xef` for hex, `0o357`
+	/// for octal and `0b11101111` for binary (all of which are case-insensitive; you could write
+	/// `0XEF`, for example). However an additional `d` is added that specifies `decimal`---you could
+	/// simply leave off the `0d`---which is provided for continuity: `0d239` is identical to `239`.
+	///
+	/// In the future, a way of specifying arbitrary bases via something like `0u<36>6n` may be
+	/// possible, but for now that doesn't work.
+	///
+	/// # Normal
+	/// 
+	/// As Quest doesn't distinguish between integers and floats, the syntax for writing a "normal"
+	/// number takes both forms into consideration: You can write normal integers (e.g. 12, 491,
+	/// 001210---note leading zeroes don'y imply octal), normal floats (e.g. 12.34, 0.1, 9.140),
+	/// and exponential notation (12e3, 19.1e-3, etc.)
+	/// 
+	/// Underscores are allowed in most places, where they are completely ignored. The only time an
+	/// underscore is significant is directly after the `.` in floats (e.g. `12._3`), as that implies
+	/// an element access, e.g. the tokens '12' '.' '_3'.
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+
 		match stream.next().transpose()? {
 			// If we find a zero, we could have `0x...` syntax
 			Some('0') => {
@@ -329,4 +353,22 @@ mod tests {
 			assert_eq!(None, buf.next().transpose().unwrap());
 		}
 	}
+
+	mod tokenizable {
+		use super::*;
+
+		fn tkn<S: Stream>(stream: &mut S) -> TokenizeResult<Number> {
+			Number::try_tokenize(stream).unwrap()
+		}
+
+		#[test]
+		fn not_a_number() {
+			assert_eq!(tkn(buf!("")), TokenizeResult::None)
+		}
+
+	}
 }
+
+
+
+

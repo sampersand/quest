@@ -8,9 +8,6 @@ pub mod text;
 pub mod number;
 pub mod variable;
 
-use self::text::TextTokenizer;
-use self::number::NumberTokenizer;
-
 /// A literal text.
 pub type Text = text::Text;
 
@@ -71,12 +68,12 @@ impl From<Literal> for Token {
 impl Tokenizable for Literal {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		match NumberTokenizer::try_tokenize(stream)?.map(Literal::Number) {
+		match Number::try_tokenize(stream)?.map(Literal::Number) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		match TextTokenizer::try_tokenize(stream)?.map(Literal::Text) {
+		match Text::try_tokenize(stream)?.map(Literal::Text) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
