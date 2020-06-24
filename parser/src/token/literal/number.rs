@@ -164,8 +164,7 @@ impl Tokenizable for Number {
 					Some('b') | Some('B') => try_tokenize_radix(stream,  2).map(TokenizeResult::Some),
 					// Any other trailing value indicates we're dealing with a number with a leading zero
 					Some(_) => {
-						// we don't need to go back 2, as a leading 0 is irrelevant.
-						try_seek!(stream, -1);
+						try_seek!(stream, -2);
 						try_tokenize_basic(stream).map(TokenizeResult::Some)
 					},
 					// If we have no numbers remaining, we read a literal zero.
@@ -388,6 +387,11 @@ mod tests {
 			assert_eq!(buf.next().unwrap().unwrap(), '.');
 			assert_eq!(buf.next().unwrap().unwrap(), '2');
 
+			let buf = buf!("0 =");
+			assert_eq!(tkn(buf), TokenizeResult::Some(num!(0)));
+			assert_eq!(buf.next().unwrap().unwrap(), ' ');
+			assert_eq!(buf.next().unwrap().unwrap(), '=');
+
 			let buf = buf!("4.1e3e3");
 			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4.1e3)));
 			assert_eq!(buf.next().unwrap().unwrap(), 'e');
@@ -403,10 +407,10 @@ mod tests {
 			assert_eq!(buf.next().unwrap().unwrap(), '.');
 			assert_eq!(buf.next().unwrap().unwrap(), '_');
 
-			let buf = buf!("4.a");
+			let buf = buf!("4.e");
 			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4)));
-			assert_eq!(buf.next().unwrap().unwrap(), 'a');
-			assert_eq!(buf.next().unwrap().unwrap(), '_');
+			assert_eq!(buf.next().unwrap().unwrap(), '.');
+			assert_eq!(buf.next().unwrap().unwrap(), 'e');
 		}
 	}
 }

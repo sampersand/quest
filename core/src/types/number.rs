@@ -9,16 +9,17 @@ type FloatType = f64;
 #[derive(Clone, Copy, PartialOrd)]
 pub enum Number {
 	Integer(IntegerType),
-	Float(FloatType)
+	Float(FloatType),
 }
 
 impl PartialEq for Number {
 	fn eq(&self, rhs: &Number) -> bool {
+		use Number::*;
 		match (self, rhs) {
-			(Number::Integer(l), Number::Integer(r)) => l == r,
-			(Number::Float(l), Number::Float(r)) => l == r,
-			(Number::Integer(n), Number::Float(f))
-				| (Number::Float(f), Number::Integer(n)) => *f == (*n as FloatType),
+			(Integer(l), Integer(r)) => l == r,
+			(Float(l), Float(r)) => l == r,
+			(Integer(n), Float(f))
+				| (Float(f), Integer(n)) => *f == (*n as FloatType),
 		}
 	}
 }
@@ -681,16 +682,4 @@ mod tests {
 	}
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
 

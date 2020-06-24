@@ -42,8 +42,6 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Tokeniz
 
 // valid syntax is `$variable_name` or `$operator`.
 fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Text>> {
-	assert_eq!(stream.next().transpose()?, Some('$'));
-
 	macro_rules! from_other {
 		($($p:ty),*) => {
 			$(

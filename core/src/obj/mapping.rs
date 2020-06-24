@@ -55,11 +55,8 @@ impl Mapping {
 		V: Into<Value>
 	{
 		assert!(!key.equals(&PARENTS_KEY).unwrap(), "can't call insert_not_parents with PARENTS_KEY");
-		match self.map.insert(key, value.into()) {
-			Ok(None) => Ok(Object::default()),
-			Ok(Some(value)) => Ok(value.into()),
-			Err(err) => Err(err)
-		}
+		let value = value.into();
+		self.map.insert(key, value.clone()).map(|_| value.clone().into())
 	}
 
 

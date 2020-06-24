@@ -96,9 +96,11 @@ impl Object {
 		P: Into<mapping::Parents>
 	{
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
-		//println!("making object ({}) = {:?}", id, data);
+		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
+		println!("making object ({}) = {:?}", id, data);
 		let obj = Object(Arc::new(Internal {
-			id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
+			id: id,
+			// id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
 			// binding: Binding::instance(),
 			mapping: Arc::new(RwLock::new(Mapping::new(parents))),
 			data: Arc::new(RwLock::new(data)),
