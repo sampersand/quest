@@ -8,8 +8,8 @@ Kernel.$factorial = {
 			_0.'memo'.(_0.'n')
 		}, {
 			$__this__ = _0;
-			memo.n = if(n < 2, { 1 }, { _1 * factorial(_1 - 1) })(n)
-		})()
+			memo.n = if(n < 2, { 1 }, { n * factorial(n - 1) })
+		})
 	}
 }();
 

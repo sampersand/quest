@@ -45,19 +45,34 @@ mod impls {
 		let this = args.this()?.clone();
 		this.dot_get_attr(args.arg(0)?)
 	}
+
+	pub fn __keys__(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		let include_parents = args.arg(0)
+			.and_then(|x| x.downcast_call::<types::Boolean>())
+			.map(bool::from)
+			.unwrap_or(false);
+
+		Ok(this.mapping_keys(include_parents)
+			.into_iter()
+			.map(Object::from)
+			.collect::<Vec<_>>()
+			.into())
+	}
 }
 
 impl_object_type!{
 for Pristine [(init_parent) (parents Pristine)]:
-	"__id__" => (impls::__id__),
-	"__call_attr__" => (impls::__call_attr__),
-	"__get_attr__" => (impls::__get_attr__),
-	"__set_attr__" => (impls::__set_attr__),
-	"__has_attr__" => (impls::__has_attr__),
-	"__del_attr__" => (impls::__del_attr__),
-	"::" => (impls::__get_attr__),
+	"__id__" => impls::__id__,
+	"__keys__" => impls::__keys__,
+	"__call_attr__" => impls::__call_attr__,
+	"__get_attr__" => impls::__get_attr__,
+	"__set_attr__" => impls::__set_attr__,
+	"__has_attr__" => impls::__has_attr__,
+	"__del_attr__" => impls::__del_attr__,
+	"::" => impls::__get_attr__,
 	"." => impls::dot_get_attr,
-	".=" => (impls::__set_attr__)
+	".=" => impls::__set_attr__
 }
 
 

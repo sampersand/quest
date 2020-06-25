@@ -43,22 +43,27 @@ impl Display for BoundOperator {
 impl Executable for BoundOperator {
 	fn execute(&self) -> quest::Result<quest::Object> {
 		let this = self.this.execute()?;
-		let args = match self.args.as_ref() {
-			OperArgs::Unary => vec![],
-			OperArgs::Ternary(mid, rhs) => vec![mid.execute()?, rhs.execute()?],
+		match self.args.as_ref() {
+			OperArgs::Unary =>
+				this.call_attr(&self.oper, &[]),
+			OperArgs::Ternary(mid, rhs) =>
+				this.call_attr(&self.oper, &[mid.execute()?, rhs.execute()?]),
 			OperArgs::Binary(rhs) if self.oper == Operator::Call => match rhs {
 				Expression::Block(block) if block.paren_type() == ParenType::Round =>
 					match block.run_block()? {
-						Some(crate::block::LineResult::Single(s)) => vec![s],
-						Some(crate::block::LineResult::Multiple(m)) => m,
-						None => vec![]
+						Some(crate::block::LineResult::Single(s)) =>
+							this.call_attr(&self.oper, &[s]),
+						Some(crate::block::LineResult::Multiple(m)) =>
+							this.call_attr(&self.oper, m),
+						None =>
+							this.call_attr(&self.oper, &[])
 					}
-				_ => vec![rhs.execute()?]
+				_ =>
+					this.call_attr(&self.oper, &[rhs.execute()?])
 			}
-			OperArgs::Binary(rhs) => vec![rhs.execute()?],
-		};
-
-		this.call_attr(&self.oper, args)
+			OperArgs::Binary(rhs) =>
+				this.call_attr(&self.oper, &[rhs.execute()?]),
+		}
 	}
 }
 

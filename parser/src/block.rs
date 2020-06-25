@@ -141,8 +141,11 @@ impl Block {
 				}));
 			}
 		}
-
-		Ok(None)
+		if self.paren_type == ParenType::Square {
+			Ok(Some(LineResult::Multiple(vec![])))
+		} else {
+			Ok(None)
+		}
 	}
 
 	fn call(&self, args: Args) -> quest::Result<quest::Object> {

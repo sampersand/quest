@@ -1,6 +1,6 @@
 # If a maximum value was passed in on the command line (_1 is program name), then use that.
 # otherwise, calculate one.
-$MAX = if(__has_attr__($_2), { _2 }, { prompt("max=") })().$@num();
+$MAX = if(__has_attr__($_2), { _2 }, { prompt("max=") }).$@num();
 
 # Calculate a secret value
 $secret = rand(1, MAX).$round();
@@ -18,8 +18,8 @@ while({ guess != secret }, {
 	disp(if(secret < guess, {
 		"too high!"
 	}, {
-		if(secret > guess, "too low!", "perfect!")
-	})());
+		if(secret > guess, { "too low!" }, { "perfect!" })
+	}));
 });
 
 disp("it took you", guesses, "guesses");

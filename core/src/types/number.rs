@@ -446,9 +446,7 @@ mod impls {
 
 
 	pub fn call(args: Args) -> Result<Object> {
-		let this = args.this()?;
-
-		this.call_attr("*", args.clone())
+		mul(args)
 	}
 
 	macro_rules! define_operators {
@@ -574,7 +572,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Number [(init_parent super::Comparable super::Basic) (parents super::Basic) (convert "@num")]:
+for Number [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@num")]:
 	"PI" => const Number::PI,
 	"E" => const Number::E,
 	"NAN" => const Number::NAN,

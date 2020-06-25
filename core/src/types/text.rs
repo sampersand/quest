@@ -140,7 +140,7 @@ mod impls {
 
 	pub fn at_bool(args: Args) -> Result<Object> { // "@bool"
 		let this = args.this()?.try_downcast_ref::<Text>()?;
-		Ok(this.as_ref().is_empty().into())
+		Ok((!this.as_ref().is_empty()).into())
 	}
 
 	pub fn clone(args: Args) -> Result<Object> { // "clone"
@@ -155,6 +155,12 @@ mod impls {
 			Some(rhs_txt) => Ok((*this == *rhs_txt).into()),
 			None => Ok(types::Boolean::FALSE.into())
 		}
+	}
+
+	pub fn cmp(args: Args) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<Text>()?;
+		let rhs = args.arg(0)?.downcast_call::<Text>()?;
+		Ok(this.as_ref().cmp(rhs.as_ref()).into())
 	}
 
 	pub fn plus(args: Args) -> Result<Object> { // "+"
@@ -237,6 +243,28 @@ mod impls {
 		}
 	}
 
+	pub fn shift(args: Args) -> Result<Object> {
+		let this = &mut args.this()?.try_downcast_mut::<types::Text>()?.0;
+		if this.len() == 0 {
+			Ok(Object::default())
+		} else {
+			Ok(this.to_mut().remove(0).to_string().into())
+		}
+	}
+
+	pub fn push(args: Args) -> Result<Object> {
+		let this_obj = args.this()?;
+		let arg = args.arg(0)?.downcast_call::<types::Text>()?.0;
+		this_obj.try_downcast_mut::<types::Text>()?.0.to_mut().push_str(arg.as_ref());
+		Ok(this_obj.clone())
+	}
+
+	pub fn clear(args: Args) -> Result<Object> {
+		let this_obj = args.this()?;
+		this_obj.try_downcast_mut::<types::Text>()?.0.to_mut().clear();
+		Ok(this_obj.clone())
+	}
+
 	pub fn index_assign(_args: Args) -> Result<Object> { todo!("[]=") } // "[]=
 	pub fn index_of(_args: Args) -> Result<Object> { todo!("index_of") } // "index_of"
 	pub fn split(_args: Args) -> Result<Object> { todo!("split") } // "split"
@@ -244,7 +272,7 @@ mod impls {
 }
 
 impl_object_type!{
-for Text [(parents super::Basic) (convert "@text")]:
+for Text [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
 	"@text" => (impls::at_text),
 	"@num" => (impls::at_num),
 	"@list" => (impls::at_list),
@@ -252,11 +280,15 @@ for Text [(parents super::Basic) (convert "@text")]:
 	"clone" => (impls::clone),
 	"()" => (impls::call),
 	"="  => (impls::assign),
+	"<=>"  => (impls::cmp),
 	"==" => (impls::eql),
 	"+"  => (impls::plus),
 	"+="  => (impls::plus_assign),
 	"len" => (impls::len),
 	"get" => (impls::index),
+	"shift" => (impls::shift),
+	"push" => (impls::push),
+	"clear" => (impls::clear),
 	"[]" => (impls::index),
 	"[]=" => (impls::index_assign),
 	"index_of" => (impls::index_of),

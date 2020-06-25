@@ -9,7 +9,7 @@ $Frac = {
 	};
 
 	$ims = {
-		$class = _1;
+		$class = _0;
 		__parents__.$push(Comparable);
 
 		$+ = {
@@ -27,4 +27,5 @@ $Frac = {
 
 	__this__
 }();
+
 __this__

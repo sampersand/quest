@@ -24,6 +24,7 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Tokeniz
 					| Some(chr @ '\'')
 					| Some(chr @ '\"') => text.push(chr),
 				Some('n') => text.push('\n'),
+				Some('\n') => { /* do nothing */ },
 				Some('t') => text.push('\t'),
 				Some('r') => text.push('\r'),
 				Some('0') => text.push('\0'),

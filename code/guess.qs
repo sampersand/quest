@@ -18,8 +18,8 @@ while({ !scope.'done' }, {
 				'too high!'
 			}, {
 				scope.'done' = true;
-				('perfect!\nit took you ' + guesses) + ' tr' + if(guesses == 1, 'y', 'ies')
-			})()
-		})()
+				('perfect!\nit took you ' + guesses) + ' tr' + if(guesses == 1, { 'y' }, { 'ies' })
+			})
+		})
 	);
 });

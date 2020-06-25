@@ -6,10 +6,10 @@ mod impls {
 
 	pub fn r#if(args: Args) -> Result<Object> {
 		if args.arg(0)?.downcast_call::<types::Boolean>()?.into() {
-			args.arg(1).map(Clone::clone)
+			args.arg(1)?.clone()
 		} else {
-			Ok(args.arg(2).map(Clone::clone).unwrap_or_default())
-		}
+			args.arg(2).map(Clone::clone).unwrap_or_default()
+		}.call_attr("()", &[])
 	}
 
 	pub fn disp(args: Args, print_end: bool) -> Result<Object> {
@@ -153,6 +153,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 
 	"if" => impls::r#if, 
 	"disp" => (|a| impls::disp(a, true)),
+	"dispn" => (|a| impls::disp(a, false)),
 	"quit" => impls::quit,
 	"system" => impls::system,
 	"rand" => impls::rand,

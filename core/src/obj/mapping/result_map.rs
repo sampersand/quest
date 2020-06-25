@@ -22,9 +22,11 @@ impl<K, V> ResultMap<K, V>  {
 	pub fn new() -> Self {
 		ResultMap(vec![])
 	}
-}
 
-impl<K, V> ResultMap<K, V>  {
+	pub fn keys(&self) -> Vec<&K> {
+		self.0.iter().map(|(f, _)| f).collect()
+	}
+
 	pub fn insert<Q: ?Sized>(&mut self, key: Q, value: V) -> Result<Option<V>>
 	where
 		Q: EqResult<K> + Into<K>

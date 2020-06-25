@@ -1,16 +1,25 @@
-"Person" = {
-	"()" = {
-		$__parent__ = _1;
-		$first = _2;
-		$last = _3;
+$Person = {
+	$name = 'Person';
+
+	$() = {
+		$__parents__ = [_0.$ims];
+		$first = _1;
+		$last = _2;
 		__this__
 	};
 
-	"@text" = {
-		(_1.'first') + " " + (_1.'last')
-	};
+	$ims = {
+		$class = _0;
+
+		$@text = {
+			_0.$first + ' ' + _0.$last
+		};
+
+		__this__
+	}(__this__);
 
 	__this__
 }();
 
-disp(Person("Sam", "W"))
+$sam = Person("Sam", "W");
+disp(sam);

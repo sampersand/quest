@@ -27,12 +27,11 @@ pub mod impls {
 
 	pub fn call(args: Args) -> Result<Object> {
 		let this = args.this()?.clone();
-		let bound_object_owner = this.get_attr("__bound_object_owner__")?;
+		let mut args = args.args(..)?;
 
-		let mut args = Vec::from(args.args(..)?);
-		args.insert(0, bound_object_owner);
-		this.get_attr("__bound_object__")?
-			.call_attr("()", args)
+		args.add_this(this.get_attr("__bound_object_owner__")?);
+
+		this.get_attr("__bound_object__")?.call_attr("()", args)
 	}
 }
 

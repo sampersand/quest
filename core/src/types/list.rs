@@ -17,6 +17,17 @@ impl Debug for List {
 	}
 }
 
+impl IntoIterator for List {
+	type Item = <Vec<Object> as IntoIterator>::Item;
+	type IntoIter = <Vec<Object> as IntoIterator>::IntoIter;
+
+	#[inline]
+	fn into_iter(self) -> Self::IntoIter {
+		self.0.into_iter()
+	}
+
+}
+
 impl List {
 	pub fn new(list: Inner) -> Self {
 		List(list)
@@ -192,11 +203,24 @@ mod impls {
 		Ok(this.clone())
 	}
 
+	pub fn pop(args: Args) -> Result<Object> {
+		let this = args.this()?;
+		Ok(this.try_downcast_mut::<List>()?.0.pop().unwrap_or_default())
+	}
+
 	pub fn unshift(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?;
 		this.try_downcast_mut::<List>()?.0.insert(0, rhs.clone());
 		Ok(this.clone())
+	}
+	pub fn shift(args: Args) -> Result<Object> {
+		let this = &mut args.this()?.try_downcast_mut::<List>()?.0;
+		if this.is_empty() {
+			Ok(Object::default())
+		} else {
+			Ok(this.remove(0))
+		}
 	}
 
 	pub fn intersect(_args: Args) -> Result<Object> {
@@ -236,7 +260,9 @@ for List [(parents super::Basic) (convert "@list")]:
 	"join" => impls::join,
 	"<<" => impls::push,
 	"push" => impls::push,
+	"pop" => impls::pop,
 	"unshift" => impls::unshift,
+	"shift" => impls::shift,
 
 	"+" => impls::add,
 	"+=" => impls::add_assign,

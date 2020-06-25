@@ -75,6 +75,9 @@ pub fn init() -> Result<()> {
 }
 
 fn main() {
+	// run::run_file("code/fib.qs", vec![]).unwrap();
+	// return;
+
 	quest_parser::init().expect("couldn't initialize quest parser");
 	init().expect("couldn't initialize quest exec");
 

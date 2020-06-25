@@ -22,10 +22,10 @@ impl Default for Object {
 }
 
 pub(super) struct Internal {
-	pub(super) mapping: Arc<RwLock<Mapping>>,
+	mapping: Arc<RwLock<Mapping>>,
 	id: usize,
 	// binding: Binding,
-	pub(super) data: Arc<RwLock<dyn Any + Send + Sync>>,
+	data: Arc<RwLock<dyn Any + Send + Sync>>,
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result
 }
 
@@ -97,7 +97,7 @@ impl Object {
 	{
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
-		println!("making object ({}) = {:?}", id, data);
+		// println!("making object ({}) = {:?}", id, data);
 		let obj = Object(Arc::new(Internal {
 			id: id,
 			// id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
@@ -212,6 +212,7 @@ impl Object {
 				result.is_a::<types::BoundFunction>() {
 			let bound_res = Object::new(crate::types::BoundFunction);
 			bound_res.set_attr("__bound_object_owner__", self.clone())?;
+			bound_res.add_parent(result.clone())?;
 			bound_res.set_attr("__bound_object__", result)?;
 			Ok(bound_res)	
 		} else {
@@ -229,6 +230,7 @@ impl Object {
 			self.call_attr("__attr_missing__", vec![attr.into_object()])
 		} else {
 			Err(KeyError::DoesntExist{ attr: attr.into_object(), obj: self.clone() }.into())
+			// Ok(Object::default())
 		}
 	}
 
@@ -268,13 +270,31 @@ impl Object {
 		self.0.mapping.write().expect("cannot write").add_parent(val)
 	}
 
+	pub fn mapping_keys(&self, include_parents: bool) -> Vec<Key> {
+		let mut keys = self.0.mapping.read().expect("cant read").keys();
+		if include_parents {
+			if let Ok(parents) = self.get_attr("__parents__") {
+				for key in parents.downcast_call::<types::List>().unwrap().into_iter()
+					.map(|x| x.mapping_keys(true))
+					.flatten()
+				{
+					if !keys.iter().any(|k| k.equals(&key).unwrap_or(false)) {
+						keys.push(key);
+					}
+				}
+			}
+		}
+
+		keys
+	}
+
 	pub fn call_attr<'a, K, A>(&self, attr: &K, args: A) -> Result<Object>
 	where
 		K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>>
 	{
 		let mut args = args.into();
 
-		if self.downcast_ref::<types::BoundFunction>().is_some() && attr.equals(&"()".into())? {
+		if self.is_a::<types::BoundFunction>() && attr.equals(&"()".into())? {
 			args.add_this(self.clone());
 			return crate::types::bound_function::impls::call(args);
 		}
@@ -289,24 +309,5 @@ impl Object {
 		bound_attr.set_attr("__bound_object_owner__", self.clone())?;
 		bound_attr.set_attr("__bound_object__", self.get_attr(attr)?)?;
 		bound_attr.call_attr("()", args)
-		// args.add_this(self.clone());
-		// attr.call_attr("()", args)
-
-		// if attr.equals(&".".into())? {
-		// 	return unimplemented!();
-		// }
-		// self.call_attr("."), vec![attr.into_object()])?
-		// 	.call_attr("()", args)
-		// Object::call_attr::<Key, Args>(&self.get_attr(attr)?, &"()".into(), args)
-		// args.add_this(self.clone());
-		// let result = self.get_attr(attr)?;
-		// let bound_res = Object::new(crate::types::BoundFunction);
-		// bound_res.set_attr("__bound_object_owner__", self.clone())?;
-		// bound_res.set_attr("__bound_object__", result);
-		// bound_res.call_attr("()", args.args(..)?)
-
-		// println!(">> {:?} {:?} {:?}", self, attr, self.get_attr(attr));
-		// Object::call_attr::<Key, Args>(&self.get_attr(attr)?, &"()".into(), args)
 	}
-
 }

@@ -10,7 +10,9 @@ pub struct Args<'s> {
 	binding: Option<Binding>,
 	args: Cow<'s, [Object]>
 }
+
 use std::fmt::{self, Debug, Formatter};
+
 impl Debug for Args<'_> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		Debug::fmt(&self.args, f)
@@ -45,8 +47,28 @@ impl From<Args<'_>> for Vec<Object> {
 	}
 }
 
+macro_rules! impl_from_slice {
+	($($n:literal)*) => {
+		$(
+			impl<'a> From<&'a [Object; $n]> for Args<'a> {
+				fn from(n: &'a [Object; $n]) -> Self {
+					Self::new(n as &'a [Object])
+				}
+			}
+		)+
+	};
+}
+
+impl_from_slice!(0 1 2 3 4 5);
+
 impl From<Vec<Object>> for Args<'static> {
 	fn from(args: Vec<Object>) -> Self {
+		Self::new(args)
+	}
+}
+
+impl<'a> From<&'a [Object]> for Args<'a> {
+	fn from(args: &'a [Object]) -> Self {
 		Self::new(args)
 	}
 }

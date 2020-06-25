@@ -114,10 +114,24 @@ mod impls {
 		Ok((this & rhs).into())
 	}
 
+	pub fn bitand_assign(args: Args) -> Result<Object> {
+		let this_obj = args.this()?;
+		let rhs = args.arg(0)?.downcast_call::<Boolean>()?.0;
+		this_obj.try_downcast_mut::<Boolean>()?.0 &= rhs;
+		Ok(this_obj.clone())
+	}
+
 	pub fn bitor(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
 		let rhs = args.arg(0)?.downcast_call::<Boolean>()?.0;
 		Ok((this | rhs).into())
+	}
+
+	pub fn bitor_assign(args: Args) -> Result<Object> {
+		let this_obj = args.this()?;
+		let rhs = args.arg(0)?.downcast_call::<Boolean>()?.0;
+		this_obj.try_downcast_mut::<Boolean>()?.0 |= rhs;
+		Ok(this_obj.clone())
 	}
 
 	pub fn bitxor(args: Args) -> Result<Object> {
@@ -143,7 +157,9 @@ for Boolean [(parents super::Basic) (convert "@bool")]:
 	"clone" => impls::clone,
 	"=="    => impls::eql,
 	"!"     => impls::not,
+	"|="     => impls::bitor_assign,
 	"&"     => impls::bitand,
+	"&="     => impls::bitand_assign,
 	"|"     => impls::bitor,
 	"^"     => impls::bitxor,
 	"<=>"   => impls::cmp,

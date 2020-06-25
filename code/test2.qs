@@ -17,7 +17,7 @@ Number.$fac = {
 
 			# assign us to it.
 			__memo._1 = ((_1 - 1).$fac() * _1);
-		})();
+		});
 
 		# return the resulting value in the memo
 		__memo._1

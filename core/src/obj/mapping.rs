@@ -23,6 +23,9 @@ const ID_KEY: Key = Key::Literal("__id__");
 
 impl Mapping {
 	pub fn new<P: Into<Parents>>(parents: P) -> Self {
+		// static ID_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+		// let id = ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+		// println!("created Mapping: {:?}", id);
 		Mapping {
 			map: Default::default(),
 			obj: Default::default(),
@@ -33,14 +36,23 @@ impl Mapping {
 	pub fn add_parent(&mut self, parent: Object) -> Result<()> {
 		self.parents.add_parent(parent)
 	}
-}
 
-impl Mapping {
+	pub fn keys(&self) -> Vec<Key> {
+		let mut keys = self.map.keys().into_iter().map(|k| k.clone()).collect::<Vec<_>>();
+		keys.push("__parents__".into());
+		keys.push("__id__".into());
+		keys
+	}
+
 	pub fn insert<K: ?Sized, V>(&mut self, key: K, value: V) -> Result<Object>
 	where
 		K: EqResult<Key> + Into<Key>,
 		V: Into<Value> + Into<Parents>
 	{
+		// this is a proble, as we might get a RWLOCK error if the key is a piece of text or something.
+		// example code:
+		// Text.12 = {};
+		// Text."14" = {}; # => crashes
 		if key.equals(&PARENTS_KEY)? {
 			self.parents = value.into();
 			Ok(self.parents.as_object())
