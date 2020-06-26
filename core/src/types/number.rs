@@ -6,7 +6,7 @@ use crate::{Object, types};
 type IntegerType = i64;
 type FloatType = f64;
 
-#[derive(Clone, Copy, PartialOrd)]
+#[derive(Clone, Copy)]
 pub enum Number {
 	Integer(IntegerType),
 	Float(FloatType),
@@ -90,18 +90,18 @@ impl Number {
 	pub const  INF: Number = Number::Float(f64::INFINITY);
 
 
-	pub fn truncate(self) -> IntegerType {
+	pub fn ceil(self) -> IntegerType {
 		match self {
 			Number::Integer(i) => i,
-			Number::Float(f) => f as _
+			Number::Float(f) => f.ceil() as _
 		}
 	}
 
-	#[allow(clippy::float_cmp)]
-	fn from_float_should_be_int(f: FloatType) -> Number {
-		assert!(f.is_normal() && (f as IntegerType as FloatType) == f, "bad f: {}", f);
-
-		Number::from(f as IntegerType)
+	pub fn floor(self) -> IntegerType {
+		match self {
+			Number::Integer(i) => i,
+			Number::Float(f) => f.floor() as _
+		}
 	}
 
 	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, FromStrError> {
@@ -124,6 +124,8 @@ impl TryFrom<&'_ str> for Number {
 
 		// if we have underscores, delete them and try again.
 		if inp.find('_') != None {
+			// we don't want to have to convert everything to a string in case a `_` doesn't exist, so
+			// we check for `_`'s existance first.
 			let mut inp = inp.to_string();
 
 			while let Some(idx) = inp.rfind('_') {
@@ -179,10 +181,22 @@ impl Number {
 	}
 }
 
+impl PartialOrd for Number {
+	fn partial_cmp(&self, rhs: &Number) -> Option<Ordering> {
+		Some(self.cmp(rhs))
+	}
+}
+
 impl Ord for Number {
 	fn cmp(&self, rhs: &Number) -> Ordering {
-		// this needs to be fixed, but it's not necessary currently.
-		self.partial_cmp(rhs).expect("this should be fixed")
+		use Number::*;
+		// TODO: somehow make an ordering and account for NaN
+		match (self, rhs) {
+			(Integer(l), Integer(r)) => l.cmp(r),
+			(Integer(l), Float(r)) => (*l as FloatType).partial_cmp(r).expect("bad cmp (i/f)"),
+			(Float(l), Integer(r)) => l.partial_cmp(&(*r as FloatType)).expect("bad cmp (f/i)"),
+			(Float(l), Float(r)) => l.partial_cmp(r).expect("bad cmp (f/f)"),
+		}
 	}
 }
 
@@ -208,10 +222,12 @@ impl TryFrom<Number> for IntegerType {
 }
 
 impl From<FloatType> for Number {
-	#[allow(clippy::float_cmp)]
 	fn from(f: FloatType) -> Number {
+		#[allow(clippy::float_cmp)]
 		if f.is_normal() && f.floor() == f {
-			Number::from_float_should_be_int(f)
+			assert!(f.is_normal() && (f as IntegerType as FloatType) == f, "bad f: {}", f);
+
+			Number::Integer(f as _)
 		} else {
 			Number::Float(f)
 		}
@@ -259,85 +275,114 @@ impl_from_integer!{
 	u8 u16 u32 u64 u128 usize
 }
 
-impl AsRef<f64> for Number {
-	fn as_ref(&self) -> &f64 {
-		unimplemented!()
-		// &self.0
-	}
-}
-
-macro_rules! impl_operators {
-	(BINARY $($op:ident $fn:ident)*) => {
+macro_rules! impl_math_ops {
+	($($trait:ident $trait_assign:ident $fn:ident $fn_assign:ident)*) => {
 		$(
-			impl std::ops::$op for Number {
+			impl std::ops::$trait for Number {
 				type Output = Self;
-				fn $fn(self, rhs: Number) -> Self::Output {
-					match (self, rhs) {
-						(Number::Integer(lhs), Number::Integer(rhs)) => Number::from(lhs.$fn(rhs)),
-						(Number::Integer(lhs),   Number::Float(rhs)) => Number::from((lhs as FloatType).$fn(rhs)),
-						(  Number::Float(lhs), Number::Integer(rhs)) => Number::from(lhs.$fn((rhs as FloatType))),
-						(  Number::Float(lhs),   Number::Float(rhs)) => Number::from(lhs.$fn(rhs)),
+				fn $fn(mut self, rhs: Self) -> Self {
+					use std::ops::$trait_assign;
+					self.$fn_assign(rhs);
+					self
+				}
+			}
+
+			impl std::ops::$trait_assign for Number {
+				fn $fn_assign(&mut self, rhs: Self) {
+					use Number::*;
+					use std::ops::$trait;
+					match (*self, rhs) {
+						(Integer(l), Integer(r)) => *self = Integer(l.$fn(r)),
+						(Integer(l), Float(r)) => *self = Float((l as FloatType).$fn(r)),
+						(Float(l), Integer(r)) => *self = Float(l.$fn(r as FloatType)),
+						(Float(l), Float(r)) => *self = Float(l.$fn(r))
 					}
-				}
-			}
-		)*
-	};
-
-	(UNARY $($op:ident $fn:ident)*) => {
-		$(
-			impl std::ops::$op for Number {
-				type Output = Self;
-				fn $fn(self) -> Self::Output {
-					match self {
-						Number::Integer(i) => Number::from(i.$fn()),
-						Number::Float(f) => Number::from(f.$fn())
-					}
-				}
-			}
-		)*
-	};
-
-	(BITWISE BINARY $($op:ident $fn:ident)*) => {
-		$(
-			impl std::ops::$op for Number {
-				type Output = Result<Self, NotAnInteger>;
-				fn $fn(self, rhs: Number) -> Self::Output {
-					Ok(Number::from(IntegerType::try_from(self)?.$fn(IntegerType::try_from(rhs)?)))
-				}
-			}
-		)*
-	};
-
-	(BITWISE UNARY $($op:ident $fn:ident)*) => {
-		$(
-			impl std::ops::$op for Number {
-				type Output = Result<Self, NotAnInteger>;
-				fn $fn(self) -> Self::Output {
-					Ok(Number::from(IntegerType::try_from(self)?.$fn()))
 				}
 			}
 		)*
 	};
 }
 
-impl_operators!(BINARY Add add Sub sub Mul mul Rem rem);
+impl_math_ops! {
+	Add AddAssign add add_assign
+	Sub SubAssign sub sub_assign
+	Mul MulAssign mul mul_assign
+	Rem RemAssign rem rem_assign
+}
 
 impl std::ops::Div for Number {
 	type Output = Self;
-	fn div(self, rhs: Number) -> Self::Output {
-		match (self, rhs) {
-			(Number::Integer(lhs), Number::Integer(rhs)) =>
-				Number::from((lhs as FloatType).div(rhs as FloatType)),
-			(Number::Integer(lhs),   Number::Float(rhs)) => Number::from((lhs as FloatType).div(rhs)),
-			(  Number::Float(lhs), Number::Integer(rhs)) => Number::from(lhs.div(rhs as FloatType)),
-			(  Number::Float(lhs),   Number::Float(rhs)) => Number::from(lhs.div(rhs)),
+	fn div(mut self, rhs: Self) -> Self {
+		self /= rhs;
+		self
+	}
+}
+
+impl std::ops::DivAssign for Number {
+	fn div_assign(&mut self, rhs: Self) {
+		use Number::*;
+
+		match (*self, rhs) {
+			(Integer(_), Integer(r)) if r == 0 => *self = Number::NAN,
+			(Integer(l), Integer(r)) => *self = Integer(l / r),
+			(Integer(l), Float(r)) => *self = Float((l as FloatType) / (r)),
+			(Float(l), Integer(r)) => *self = Float(l / (r as FloatType)),
+			(Float(l), Float(r)) => *self = Float(l / r)
 		}
 	}
 }
 
-impl_operators!(UNARY Neg neg);
-impl_operators!(BITWISE BINARY BitAnd bitand BitOr bitor BitXor bitxor Shl shl Shr shr);
-impl_operators!(BITWISE UNARY Not not);
+macro_rules! impl_bitwise_ops {
+	($($trait:ident $fn:ident $fn_assign:ident)*) => {
+		$(
+			impl std::ops::$trait for Number {
+				type Output = Result<Self, NotAnInteger>;
+				fn $fn(mut self, rhs: Number) -> Self::Output {
+					self.$fn_assign(rhs)?;
+					Ok(self)
+				}
+			}
+
+			impl Number {
+				pub fn $fn_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
+					#[allow(unused_imports)]
+					use std::ops::*;
+
+					match self {
+						Number::Float(n) => Err(NotAnInteger(*n)),
+						Number::Integer(n) => Ok(n.$fn_assign(IntegerType::try_from(rhs)?))
+					}
+				}
+			}
+		)*
+	};
+}
+
+impl_bitwise_ops! {
+	BitAnd bitand bitand_assign
+	BitOr bitor bitor_assign
+	BitXor bitxor bitxor_assign
+	Shl shl shl_assign
+	Shr shr shr_assign
+}
+
+impl std::ops::Neg for Number {
+	type Output = Self;
+	fn neg(self) -> Self {
+		match self {
+			Number::Integer(i) => Number::from(-i),
+			Number::Float(f) => Number::from(-f)
+		}
+	}
+}
+
+impl std::ops::Not for Number {
+	type Output = Result<Self, NotAnInteger>;
+	fn not(self) -> Self::Output {
+		Ok(Number::from(!IntegerType::try_from(self)?))
+	}
+
+}
 
 impl Number {
 	pub fn abs(self) -> Number {
@@ -347,14 +392,20 @@ impl Number {
 		}
 	}
 
-	pub fn pow(self, rhs: Number) -> Number {
-		match (self, rhs) {
-			(Number::Integer(lhs), Number::Integer(rhs))if 0 <= rhs && rhs <= (u32::MAX as i64)
-				=> Number::from(lhs.pow(rhs as u32)),
-			(Number::Integer(lhs), Number::Integer(rhs)) => Number::from((lhs as f64).powf(rhs as f64)),
-			(Number::Integer(lhs),   Number::Float(rhs)) => Number::from((lhs as f64).powf(rhs)),
-			(  Number::Float(lhs), Number::Integer(rhs)) => Number::from(lhs.powf(rhs as f64)),
-			(  Number::Float(lhs),   Number::Float(rhs)) => Number::from(lhs.powf(rhs))
+	pub fn pow(mut self, rhs: Number) -> Number {
+		self.pow_assign(rhs);
+		self
+	}
+
+	pub fn pow_assign(&mut self, rhs: Self) {
+		use Number::*;
+		match (*self, rhs) {
+			(Integer(l), Integer(r)) if 0 <= r && r <= (u32::MAX as IntegerType)
+				=> *self = l.pow(r as u32).into(),
+			(Integer(l), Integer(r)) => *self = (l as FloatType).powf(r as FloatType).into(),
+			(Integer(l), Float(r)) => *self = (l as FloatType).powf(r).into(),
+			(Float(l), Integer(r)) => *self = l.powf(r as FloatType).into(),
+			(Float(l), Float(r)) => *self = l.powf(r).into()
 		}
 	}
 }
@@ -379,40 +430,14 @@ mod impls {
 	use super::*;
 	use crate::{Object, Result, Args, types::{Text, Boolean}};
 
-	#[derive(Debug, Clone)]
-	pub enum NumberError {
-		#[allow(unused)]
-		BitwiseNotInteger(&'static str, Number, Number, NotAnInteger)
-	}
-
-	impl Display for NumberError {
-		fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-			match self {
-				NumberError::BitwiseNotInteger(func, lhs, rhs, err) =>
-					write!(f, "bad args for `{}`: ({}, {}): {}", func, lhs, rhs, err)
-			}
-		}
-	}
-
-	impl std::error::Error for NumberError {
-		fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-			match self {
-				NumberError::BitwiseNotInteger(.., ref err) => Some(err)
-			}
-		}
-	}
-
-
-	pub fn at_num(args: Args) -> Result<Object> {
-		let this = args.this()?;
-
-		this.call_attr("clone", args.clone())
-	}
+	#[allow(non_upper_case_globals)]
+	pub const at_num: fn(Args) -> Result<Object> = clone;
 	
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
+
 		if let Ok(radix) = args.arg(0) {
-			let radix = radix.downcast_call::<Number>()?.truncate();
+			let radix = radix.downcast_call::<Number>()?.floor();
 			this.to_string_radix(radix as _)
 				.map_err(|err| err.to_string().into())
 				.map(Object::from)
@@ -420,17 +445,6 @@ mod impls {
 			Ok(Text::from(*this).into())
 		}
 	}
-	// pub fn at_text(args: Args) -> Result<Object> {
-	// 	let this = args.this()?.try_downcast_ref::<Number>()?;
-	// 	if let Some(radix) = args.arg(0).ok() {
-	// 		let radix = radix.downcast_call::<Number>()?.truncate();
-	// 		this.to_string_radix(radix as _)
-	// 			.map_err(|err| err.to_string().into())
-	// 			.map(Object::from)
-	// 	} else {
-	// 		Ok(Text::from(*this).into())
-	// 	}
-	// }
 
 	pub fn at_bool(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
@@ -444,73 +458,85 @@ mod impls {
 		Ok(this.clone().into())
 	}
 
+	#[allow(non_upper_case_globals)]
+	pub const call: fn(Args) -> Result<Object> = mul;
 
-	pub fn call(args: Args) -> Result<Object> {
-		mul(args)
-	}
-
-	macro_rules! define_operators {
-		(BINARY $(($fn:ident $op:ident))*) => {
+	macro_rules! define_math_opers {
+		($($fn:ident $fn_assign:ident)*) => {
 			$(
 				pub fn $fn(args: Args) -> Result<Object> {
-					let this = *args.this()?.try_downcast_ref::<Number>()?;
+					let this = args.this()?.try_downcast_ref::<Number>()?;
 					let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
 					#[allow(unused)]
 					use std::ops::*;
-					Ok(this.$op(rhs).into())
+					Ok(this.$fn(rhs).into())
 				}
-			)*
-		};
 
-		(UNARY $(($fn:ident $op:ident))*) => {
-			$(
-				pub fn $fn(args: Args) -> Result<Object> {
-					let this = *args.this()?.try_downcast_ref::<Number>()?;
-
-					use std::ops::*;
-					Ok(this.$op().into())
-				}
-			)*
-		};
-
-		(BITWISE BINARY $(($fn:ident $op:ident))*) => {
-			$(
-				pub fn $fn(args: Args) -> Result<Object> {
-					let this = *args.this()?.try_downcast_ref::<Number>()?;
+				pub fn $fn_assign(args: Args) -> Result<Object> {
+					let this_obj = args.this()?;
 					let rhs = args.arg(0)?.downcast_call::<Number>()?;
+					let this = &mut this_obj.try_downcast_mut::<Number>()?;
 
+					#[allow(unused)]
 					use std::ops::*;
-					this.$op(rhs)
-						.map_err(|err| err.to_string().into())
-						.map(Object::from)
-				}
-			)*
-		};
+					this.$fn_assign(rhs);
 
-		(BITWISE UNARY $(($fn:ident $op:ident))*) => {
-			$(
-				pub fn $fn(args: Args) -> Result<Object> {
-					let this = *args.this()?.try_downcast_ref::<Number>()?;
-
-					use std::ops::*;
-					this.$op()
-						.map_err(|err| err.to_string().into())
-						.map(Object::from)
+					Ok(this_obj.clone())
 				}
 			)*
 		};
 	}
 
-	define_operators!(BINARY (add add) (sub sub) (mul mul) (div div) (r#mod rem) (pow pow));
-	define_operators!(UNARY  (neg neg));
-	define_operators!(BITWISE BINARY (bitand bitand) (bitor bitor) (bitxor bitxor) (shl shl) (shr shr));
-	define_operators!(BITWISE UNARY (bitnot not));
+	define_math_opers!{
+		add add_assign sub sub_assign mul mul_assign
+		div div_assign rem rem_assign pow pow_assign
+	}
 
-	pub fn pos(args: Args) -> Result<Object> {
-		let this = args.this()?;
+	macro_rules! define_bitwise_opers {
+		($($fn:ident $fn_assign:ident)*) => {
+			$(
+				pub fn $fn(args: Args) -> Result<Object> {
+					let this = args.this()?.try_downcast_ref::<Number>()?;
+					let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
-		this.call_attr("abs", args.clone())
+					use std::ops::*;
+					this.$fn(rhs)
+						.map_err(|err| err.to_string().into())
+						.map(Object::from)
+				}
+
+				pub fn $fn_assign(args: Args) -> Result<Object> {
+					let this_obj = args.this()?;
+					let rhs = args.arg(0)?.downcast_call::<Number>()?;
+					let this = &mut this_obj.try_downcast_mut::<Number>()?;
+					this.$fn_assign(rhs).map_err(|err| err.to_string())?;
+					Ok(this_obj.clone())
+				}
+			)*
+		};
+	}
+
+	define_bitwise_opers! {
+		bitand bitand_assign bitor bitor_assign bitxor bitxor_assign
+		shl shl_assign shr shr_assign
+	}
+
+	pub fn neg(args: Args) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<Number>()?;
+
+		Ok((-*this).into())
+	}
+
+	#[allow(non_upper_case_globals)]
+	pub const pos: fn(Args) -> Result<Object> = abs;
+
+	pub fn bitnot(args: Args) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<Number>()?;
+
+		(!*this)
+			.map_err(|err| err.to_string().into())
+			.map(Object::from)
 	}
 
 	pub fn abs(args: Args) -> Result<Object> {
@@ -519,55 +545,38 @@ mod impls {
 		Ok(this.abs().into())
 	}
 
-
 	pub fn eql(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 		let rhs = args.arg(0)?.downcast_ref::<Number>();
 
-		match rhs {
-			Some(rhs) => Ok((*this == *rhs).into()),
-			None => Ok(false.into())
-		}
+		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
 	}
 
 	pub fn cmp(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 		let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
-		match this.cmp(&rhs) {
-			std::cmp::Ordering::Greater => Ok(1.into()),
-			std::cmp::Ordering::Equal => Ok(0.into()),
-			std::cmp::Ordering::Less => Ok((-1).into())
-		}
+		Ok(this.cmp(&rhs).into())
 	}
 
 	pub fn floor(args: Args) -> Result<Object> {
-		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let this = args.this()?.try_downcast_ref::<Number>()?;
 
-		Ok(this.truncate().into())
-	}
-
-	pub fn round(args: Args) -> Result<Object> {
-		let this = *args.this()?.try_downcast_ref::<Number>()?;
-
-		match this {
-			Number::Integer(i) => Ok(Number::Integer(i).into()),
-			Number::Float(f) => Ok(Number::from_float_should_be_int(f.round()).into())
-		}
+		Ok(this.floor().into())
 	}
 
 	pub fn ceil(args: Args) -> Result<Object> {
-		let this = *args.this()?.try_downcast_ref::<Number>()?;
+		let this = args.this()?.try_downcast_ref::<Number>()?;
 
-		match this {
-			Number::Integer(i) => Ok(Number::Integer(i).into()),
-			Number::Float(f) => Ok(Number::from_float_should_be_int(f.ceil()).into())
-		}
+		Ok(this.ceil().into())
+	}
+
+	pub fn round(_args: Args) -> Result<Object> {
+		unimplemented!("round");
 	}
 
 	pub fn sqrt(_args: Args) -> Result<Object> {
-		unimplemented!()
-		// Ok(Number::from(args.this_downcast_ref::<Number>()?.0.sqrt()).into())
+		unimplemented!("sqrt")
 	}
 }
 
@@ -582,23 +591,25 @@ for Number [(init_parent super::Basic super::Comparable) (parents super::Basic) 
 	"@text" => impls::at_text,
 	"@bool" => impls::at_bool,
 	"clone" => impls::clone,
-	"()" => impls::call,
-	"+" => impls::add,
-	"-" => impls::sub,
-	"*" => impls::mul,
-	"/" => impls::div,
-	"%" => impls::r#mod,
-	"**" => impls::pow,
-	"&" => impls::bitand,
-	"|" => impls::bitor,
-	"^" => impls::bitxor,
-	"<<" => impls::shl,
-	">>" => impls::shr,
+
+	"+"  => impls::add,   "+="  => impls::add_assign,
+	"-"  => impls::sub,   "-="  => impls::sub_assign,
+	"*"  => impls::mul,   "*="  => impls::mul_assign,
+	"/"  => impls::div,   "/="  => impls::div_assign,
+	"%"  => impls::rem,   "%="  => impls::rem_assign,
+	"**" => impls::pow,   "**=" => impls::pow_assign,
+	"&" => impls::bitand, "&="  => impls::bitand_assign,
+	"|" => impls::bitor,  "|="  => impls::bitor_assign,
+	"^" => impls::bitxor, "^="  => impls::bitxor_assign,
+	"<<" => impls::shl,   "<<=" => impls::shl_assign,
+	">>" => impls::shr,   ">>=" => impls::shr_assign,
 	"-@" => impls::neg,
 	"+@" => impls::pos,
 	"~" => impls::bitnot,
-	"==" => impls::eql,
 	"<=>" => impls::cmp,
+
+	"()" => impls::call,
+	"==" => impls::eql,
 	"abs" => impls::abs,
 	"round" => impls::round,
 	"ceil" => impls::ceil,

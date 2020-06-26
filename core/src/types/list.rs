@@ -136,12 +136,12 @@ mod impls {
 		let len = this.0.len();
 		let start = args.arg(0)?
 			.try_downcast_ref::<types::Number>()?
-			.truncate() as isize;
+			.floor() as isize;
 		let end = args.arg(1)
 			.ok()
 			.map(Object::downcast_call::<types::Number>)
 			.transpose()?
-			.map(|x| x.truncate() as isize);
+			.map(|x| x.floor() as isize);
 
 		let start =
 			if let Some(start) = correct_index(start, len)? {

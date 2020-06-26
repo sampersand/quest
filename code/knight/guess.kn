@@ -1,14 +1,14 @@
-; = m * (+ 9 1) (+ 9 1)       # max = 100
-; = s (R 1 m)                 # secret = rand(1, max)
-; = n 0                       # nguess = 0
-; = g 0                       # guess = 0
-; O (+ 'guess 1-' m)          # print("pick from 1-" + m)
-; W (| (< g s) (> g s))       # while guess != s:
-	; = g (+ 0 (P '> '))       #   guess = int(prompt("> "))
-	; = n (+ n 1)              #   nguess += 1
-	  O (                      #   print(
-		 I (< g s) 'too low'    #     if guess < secret: 'too low'
-		 I (> g s) 'too high'   #     if guess > secret: 'too high'
-	              'correct')   #     else: 'correct')
-; O (+ 'tries: ' n)           # print("tries: " + n)
+; = max 100                           # max = 100
+; = secret (RAND 1 max)               # secret = rand(1, max)
+; = nguess 0                          # nguess = 0
+; = guess 0                           # guess = 0
+; OUTPUT (+ 'guess 1-' max)           # print("pick from 1-" + m)
+; WHILE (| (< guess secret) (> guess secret)) # while guess != s:
+	; = guess (+ 0 (PROMPT '> '))      #   guess = int(prompt("> "))
+	; = nguess (+ nguess 1)            #   nguess += 1
+	  OUTPUT (                         #   print(
+		 IF (< guess secret) 'too low'  #     if guess < secret: 'too low'
+		 IF (> guess secret) 'too high' #     if guess > secret: 'too high'
+	              'correct')           #     else: 'correct')
+; OUTPUT (+ 'tries: ' nguess)         # print("tries: " + n)
 

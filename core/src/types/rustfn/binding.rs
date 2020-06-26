@@ -83,8 +83,8 @@ impl Binding {
 
 	pub fn with_stack<F: FnOnce(&RwLock<Stack>) -> R, R>(func: F) -> R {
 		thread_local!(
-			// static STACK: RwLock<Stack> = RwLock::new(vec![]);
-			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Scope))]);
+			static STACK: RwLock<Stack> = RwLock::new(vec![]);
+			// static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Scope))]);
 		);
 
 		STACK.with(func)

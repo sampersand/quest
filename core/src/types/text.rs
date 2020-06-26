@@ -104,14 +104,14 @@ mod impls {
 			match this.as_ref() {
 				"__this__" => return Ok(Binding::instance().as_ref().clone()),
 				"__args__" => return Binding::instance().get_attr("__args__"),
-				"__stack__" => return Ok(Binding::with_stack(|s| 
-						s.read()
-							.unwrap()
-							.iter()
-							.map(|x| x.as_ref().clone())
-							.collect::<Vec<_>>()
-							.into())),
-
+				"__stack__" => return Ok(Binding::with_stack(|s| {
+					let mut stack = s.read().expect("couldn't read stack")
+						.iter()
+						.map(|x| x.as_ref().clone())
+						.collect::<Vec<_>>();
+					stack.reverse();
+					stack.into()
+				})),
 				_ => {}
 			}
 		}
@@ -211,13 +211,13 @@ mod impls {
 		let len = this.0.len();
 		let start = args.arg(0)?
 			.try_downcast_ref::<types::Number>()?
-			.truncate() as isize;
+			.floor() as isize;
 
 		let end = args.arg(1)
 			.ok()
 			.map(Object::downcast_call::<types::Number>)
 			.transpose()?
-			.map(|x| x.truncate() as isize);
+			.map(|x| x.floor() as isize);
 
 		let start =
 			if let Some(start) = correct_index(start, len)? {

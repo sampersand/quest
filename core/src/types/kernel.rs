@@ -59,7 +59,7 @@ mod impls {
 	pub fn quit(args: Args) -> Result<Object> {
 		let code = args.arg(0)
 			.and_then(|x| x.downcast_call::<types::Number>())
-			.map(|x| x.truncate())
+			.map(|x| x.floor())
 			.unwrap_or(1);
 
 		if let Ok(msg) = args.arg(1) {
@@ -88,10 +88,10 @@ mod impls {
 		let mut end: f64 = 1.0;
 
 		if let Ok(start_num) = args.arg(0) {
-			start = start_num.downcast_call::<types::Number>()?.truncate() as _;
+			start = start_num.downcast_call::<types::Number>()?.floor() as _;
 
 			if let Ok(end_num) = args.arg(1) {
-				end = end_num.downcast_call::<types::Number>()?.truncate() as _;
+				end = end_num.downcast_call::<types::Number>()?.floor() as _;
 			} else {
 				end = start;
 				start = 0.0;

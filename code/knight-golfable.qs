@@ -29,51 +29,57 @@ $is_ident = { is_ident_start(_1) || { is_digit(_1) } };
 $is_cmd = { is_cmd_start(_1) || { _1 == '_' } };
 
 $next_ident = {
-	$stream = _1;
-	$ident = '';
-	$fn = __get_attr__(if(__has_attr__($_2), { $_2 }, { $is_ident }));
-	$running = true.$clone();
+	if(GOLF, {''}, {
+		$stream = _1;
+		$ident = '';
+		$fn = __get_attr__(if(__has_attr__($_2), { $_2 }, { $is_ident }));
+		$running = true.$clone();
 
-	while({ running & stream }, {
-		if(fn(stream.$get(1)), {
-			ident += stream.$shift();
-		}, {
-			running &= false;
+		while({ running & stream }, {
+			if(fn(stream.$get(1)), {
+				ident += stream.$shift();
+			}, {
+				running &= false;
+			});
 		});
-	});
 
-	ident
+		ident
+	})
 };
 
 
 $next_number = {
-	$num = '';
-	$stream = _1;
+	if(GOLF, {''}, {
+		$num = '';
+		$stream = _1;
 
-	$running = true.$clone();
-	while({ running & stream }, {
-		if(is_digit(stream.$get(1)), {
-			num += stream.$shift();
-		}, {
-			running &= false;
-		})
-	});
-	num
+		$running = true.$clone();
+		while({ running & stream }, {
+			if(is_digit(stream.$get(1)), {
+				num += stream.$shift();
+			}, {
+				running &= false;
+			})
+		});
+		num
+	})
 };
 
 $next_text = {
-	$text = '';
-	$stream = _1;
-	$not_found = true.$clone();
-	while({ not_found & stream }, {
-		$c = stream.$shift();
-		if(c == '\'', {
-			not_found &= false;
-		}, {
-			text += if(c == '\\', stream.$shift, { c });
-		})
-	});
-	text
+	if(GOLF, {''}, {
+		$text = '';
+		$stream = _1;
+		$not_found = true.$clone();
+		while({ not_found & stream }, {
+			$c = stream.$shift();
+			if(c == '\'', {
+				not_found &= false;
+			}, {
+				text += if(c == '\\', stream.$shift, { c });
+			})
+		});
+		text
+	})
 };
 
 $parse_expr = {
@@ -122,6 +128,7 @@ $parse_expr = {
 	$R  = ($RAND ={ $m = parse_expr(_1, _2); $x = parse_expr(_1, _2); { rand(m(), x()).$floor() } });
 	$W  = ($WHILE = { $c = parse_expr(_1, _2); $b = parse_expr(_1, _2); { while(c, b) } });
 	$I  = ($IF = { $c = parse_expr(_1, _2); $t = parse_expr(_1, _2); $f = parse_expr(_1, _2); { if(c(), t, f) } });
+	$G  = { Kernel.$GOLF = true };
 	'#' = {
 		$nendl = true.$clone();
 		$stream = _1;
@@ -141,6 +148,7 @@ $parse_expr = {
 
 Kernel.$env = { $__parents__ = [Pristine]; __this__ }();
 env.null = null;
+Kernel.$GOLF = false;
 
 $knight = {
 	parse_expr(_1)()
