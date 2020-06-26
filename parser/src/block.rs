@@ -95,6 +95,15 @@ pub enum LineResult {
 	Multiple(Vec<quest::Object>)
 }
 
+impl LineResult {
+	fn force_multiple(self) -> Self {
+		match self {
+			LineResult::Single(obj) => LineResult::Multiple(vec![obj]),
+			multiple => multiple
+		}
+	}
+}
+
 impl From<LineResult> for quest::Object {
 	fn from(lr: LineResult) -> Self {
 		match lr {
@@ -105,6 +114,7 @@ impl From<LineResult> for quest::Object {
 }
 
 impl Line {
+	#[inline]
 	fn execute(&self) -> quest::Result<LineResult> {
 		match self {
 			Line::Single(expr) => expr.execute().map(LineResult::Single),
@@ -123,24 +133,22 @@ impl Block {
 	}
 
 	pub(super) fn run_block(&self) -> quest::Result<Option<LineResult>> {
-		if let Some(last) = self.lines.last() {
-			for line in &self.lines[..self.lines.len() - 1] {
+		if let Some((last, rest)) = self.lines.split_last() {
+			for line in rest {
 				line.execute()?;
 			}
 
-			let ret = last.execute()?;
+			let mut ret = last.execute()?;
 
 			if self.returns {
-				return Ok(Some(if self.paren_type == ParenType::Square {
-					match ret {
-						LineResult::Single(expr) => LineResult::Multiple(vec![expr]),
-						other => other
-					}
-				} else {
-					ret
-				}));
+				if self.paren_type == ParenType::Square {
+					ret = ret.force_multiple();
+				}
+
+				return Ok(Some(ret));
 			}
 		}
+
 		if self.paren_type == ParenType::Square {
 			Ok(Some(LineResult::Multiple(vec![])))
 		} else {
@@ -148,12 +156,14 @@ impl Block {
 		}
 	}
 
+	fn run_block_to_object(&self) -> quest::Result<quest::Object> {
+			let lines = self.run_block()?;
+			let lines_obj = lines.map(Object::from).unwrap_or_default();
+			Ok(lines_obj)
+	}
+
 	fn call(&self, args: Args) -> quest::Result<quest::Object> {
-		Binding::new_stackframe(args, |_binding| {
-			self.run_block()
-				.map(|x| x.map(Object::from))
-				.map(Option::unwrap_or_default)
-		})
+		Binding::new_stackframe(args, |_binding| self.run_block_to_object())
 	}
 
 }
@@ -165,9 +175,7 @@ impl Executable for Block {
 			block.add_parent(Binding::instance().as_ref().clone())?;
 			Ok(block)
 		} else {
-			self.run_block()
-				.map(|x| x.map(Object::from))
-				.map(Option::unwrap_or_default)
+			self.run_block_to_object()
 		}
 	}
 }

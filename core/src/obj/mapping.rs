@@ -23,9 +23,6 @@ const ID_KEY: Key = Key::Literal("__id__");
 
 impl Mapping {
 	pub fn new<P: Into<Parents>>(parents: P) -> Self {
-		// static ID_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-		// let id = ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-		// println!("created Mapping: {:?}", id);
 		Mapping {
 			map: Default::default(),
 			obj: Default::default(),

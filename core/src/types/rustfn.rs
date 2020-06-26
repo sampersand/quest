@@ -32,10 +32,12 @@ impl PartialEq for RustFn {
 
 
 impl RustFn {
+	#[inline]
 	pub fn new(name: &'static str, func: FnType) -> Self {
 		RustFn(name, func)
 	}
 
+	#[inline]
 	pub fn call(&self, args: Args) -> crate::Result<Object> {
 		(self.1)(args)
 	}

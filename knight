@@ -1,0 +1,2 @@
+#!/bin/bash
+target/debug/quest_exec -f code/knight.qs -- "$@"

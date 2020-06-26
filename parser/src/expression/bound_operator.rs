@@ -41,6 +41,7 @@ impl Display for BoundOperator {
 }
 
 impl Executable for BoundOperator {
+
 	fn execute(&self) -> quest::Result<quest::Object> {
 		let this = self.this.execute()?;
 		match self.args.as_ref() {

@@ -1,3 +1,4 @@
+
 $is_whitespace = {
 	!if(_1.$get(1) != ' ', {
 		if(_1.$get(1) != '\n', {
@@ -50,6 +51,7 @@ $parse_expr = {
 	';' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() ; r() } };
 	'O' = { $a = parse_expr(_1, _2); { disp(a()) } };
 	'P' = { $p = parse_expr(_1, _2); { prompt(p()) } };
+	'Q' = { { quit() }};
 	'R' = { $m = parse_expr(_1, _2); $x = parse_expr(_1, _2); { rand(m(), x()).$floor() } };
 	'W' = { $c = parse_expr(_1, _2); $b = parse_expr(_1, _2); { while(c, b) } };
 	'I' = { $c = parse_expr(_1, _2); $t = parse_expr(_1, _2); $f = parse_expr(_1, _2); { if(c(), t, f) } };
@@ -89,7 +91,7 @@ $parse_expr = {
 $knight = {
 	$env = { $__parents__ = [Pristine]; __this__ }();
 	env.null = null;
-	parse_expr(_1, env)()
+	parse_expr(_1, env)();
 };
 
 if(__has_attr__($_0), {

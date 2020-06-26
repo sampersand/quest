@@ -1,12 +1,17 @@
 # TODO
-- Integrate mixins (ie `__mixins__`)
-- Do we want mixins and `__parent__` to be separate?
+
 - Cleaning up of hacky code
 - Finish implementation of builtin objects
 - Change `EqResult` to be only for `Key`s
 - Implementing Copy-on-Write for object mappings?
-- If the only arg to a function is an array, don't deconstruct it into values.
-- Operator precedence
-- Function calling allows for `.`, eg `12.'sqrt'()`
-- Either solidify or remove the `$arg` syntax
-- Blank expressions shouldn't be passing null as a parameter.
+
+```quest
+$x = {
+	$a = true;
+	disp(a);
+	a &= false;
+};
+
+x(); # => true
+x(); # => false
+```

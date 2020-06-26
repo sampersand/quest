@@ -22,6 +22,7 @@ impl Display for Expression {
 }
 
 impl Executable for Expression {
+	#[inline]
 	fn execute(&self) -> quest::Result<quest::Object> {
 		match self {
 			Expression::Literal(lit) => lit.execute(),
