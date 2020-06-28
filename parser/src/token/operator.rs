@@ -3,7 +3,7 @@ use crate::Result;
 use crate::expression::{PutBack, Constructable, Expression};
 use crate::stream::{Stream, Contexted};
 use crate::token::{Token, Tokenizable, TokenizeResult};
-use quest::{Object, Key, types, EqResult};
+use quest::{Object, types};
 use std::cmp::Ordering;
 use std::io::BufRead;
 use std::fmt::{self, Display, Formatter};
@@ -124,87 +124,15 @@ impl Ord for Operator {
 	}
 }
 
-impl quest::EqResult<quest::Key> for Operator {
-	fn equals(&self, key: &quest::Key) -> quest::Result<bool> {
-		self.to_string().as_str().equals(key)
+impl quest::ToObject for Operator {
+	fn to_object(&self) -> Object {
+		Object::from(self.to_string())
 	}
 }
-// #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-// pub enum Associativity {
-// 	LeftToRight,
-// 	RightToLeft,
-// 	UnaryOperOnLeft,
-// 	// UnaryOperOnRight,
-// }
 
-// impl Operator {
-// 	pub fn into_unary_left(self) -> Self {
-// 		match self {
-// 			Operator::Add => Operator::Pos,
-// 			Operator::Sub => Operator::Neg,
-// 			_ => self
-// 		}
-// 	}
+impl quest::obj::EqKey for Operator {
+	fn eq_key(&self, key: &quest::obj::Key) -> quest::Result<bool> {
+		self.to_string().as_str().eq_key(key)
+	}
+}
 
-// 	pub fn is_symbol_unary_left(&self) -> bool {
-// 		use Operator::*;
-
-// 		match self {
-// 			Pos | Neg | Add | Sub | Not | BNot => true,
-// 			_ => false
-// 		}
-// 	}
-
-// 	pub fn assoc(&self) -> Associativity {
-// 		use Operator::*;
-// 		match self {
-// 			Pos | Neg | Not | BNot => Associativity::UnaryOperOnLeft,
-// 			Assign | DotAssign | AddAssign | SubAssign | MulAssign | DivAssign
-// 				| ModAssign | PowAssign | LshAssign | RshAssign | BAndAssign | BOrAssign | XorAssign
-// 				=> Associativity::RightToLeft,
-// 			_ => Associativity::LeftToRight
-// 		}
-// 	}
-
-// 	pub fn arity(&self) -> usize {
-// 		match self.assoc() {
-// 			Associativity::LeftToRight | Associativity::RightToLeft => 2,
-// 			Associativity::UnaryOperOnLeft /*| Associativity::UnaryOperOnRight*/ => 1
-// 		}
-// 	}
-
-// 	fn precedence(&self) -> usize {
-// 		use Operator::*;
-// 		// using ruby's precedence as a template.
-// 		match self {
-// 			Dot | ColonColon => 0,
-// 			Call | Index => 1,
-// 			Not | BNot | Pos => 2,
-// 			Pow => 3,
-// 			Neg => 4,
-// 			Mul | Div | Mod => 5,
-// 			Add | Sub => 6,
-// 			Lsh | Rsh => 7,
-// 			BAnd => 8,
-// 			BOr | Xor => 9,
-// 			Lth | Leq | Gth | Geq => 10,
-// 			Cmp | Eql | Neq => 11,
-// 			And => 12,
-// 			Or => 13,
-// 			Assign | DotAssign | AddAssign | SubAssign | MulAssign | DivAssign | ModAssign
-// 				| PowAssign | LshAssign | RshAssign | BAndAssign | BOrAssign | XorAssign => 14
-// 		}
-// 	}
-// }
-
-// impl Ord for Operator {
-// 	fn cmp(&self, rhs: &Operator) -> Ordering {
-// 		self.precedence().cmp(&rhs.precedence())
-// 	}
-// }
-
-// impl PartialOrd for Operator {
-// 	fn partial_cmp(&self, rhs: &Operator) -> Option<Ordering> {
-// 		Some(self.cmp(rhs))
-// 	}
-// }

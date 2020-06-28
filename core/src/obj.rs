@@ -1,16 +1,19 @@
-use crate::{literals, Result, Args, EqResult,
-	error::{TypeError, KeyError},
-	types::{self, ObjectType}
-};
+use crate::{Result, Args};
+use crate::error::{TypeError, KeyError};
+use crate::types::{self, ObjectType};
 
 use std::sync::{Arc, RwLock, atomic::{self, AtomicUsize}};
 use std::fmt::{self, Debug, Formatter};
 use std::any::Any;
+use std::ops::{Deref, DerefMut};
 
-mod mapping;
-use self::mapping::Mapping;
-pub use mapping::Key;
-pub use mapping::Value;
+pub mod mapping;
+use mapping::{Mapping, Value};
+pub use mapping::{Key, EqKey};
+
+pub trait ToObject {
+	fn to_object(&self) -> Object;
+}
 
 #[derive(Clone)]
 pub struct Object(pub(super) Arc<Internal>);
@@ -59,35 +62,23 @@ impl Debug for Internal {
 	}
 }
 
+// do we want this trait even?
+impl ToObject for Key {
+	fn to_object(&self) -> Object { self.clone().into() }
+}
+
+impl ToObject for Object {
+	#[inline]
+	fn to_object(&self) -> Object {
+		self.clone()
+	}
+}
+
 impl<T: Any + ObjectType> From<T> for Object {
 	fn from(data: T) -> Object {
 		Object::new(data)
 	}
 }
-
-impl EqResult for Object {
-	fn equals(&self, rhs: &Object) -> Result<bool> {
-		Ok(self.call_attr(literals::EQL, vec![rhs.clone()])?
-			.downcast_ref::<types::Boolean>()
-			.map(|x| bool::from(*x))
-			.unwrap_or(false))
-	}
-
-	fn into_object(&self) -> Object {
-		self.clone()
-	}
-}
-
-impl EqResult<Key> for Object {
-	fn equals(&self, rhs: &Key) -> Result<bool> {
-		rhs.equals(self)
-	}
-
-	fn into_object(&self) -> Object {
-		self.clone()
-	}
-}
-
 
 impl Object {
 	pub fn new_with_parent<T, P>(data: T, parents: P) -> Self 
@@ -123,6 +114,13 @@ impl Object {
 	pub fn is_identical(&self, rhs: &Object) -> bool {
 		Arc::ptr_eq(&self.0, &rhs.0)
 	}
+
+	pub fn eq_obj(&self, rhs: &Object) -> Result<bool> {
+		self.call_attr("==", &[rhs.clone()])
+			.map(|res| res.downcast_ref::<types::Boolean>()
+				.map(|b| bool::from(*b))
+				.unwrap_or(false))
+	}
 }
 
 impl Object {
@@ -143,7 +141,7 @@ impl Object {
 		self.downcast_ref::<T>().map(|x| x.clone())
 	}
 
-	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> Result<impl std::ops::Deref<Target = T> + 'a> {
+	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> Result<impl Deref<Target = T> + 'a> {
 		self.downcast_ref::<T>()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
@@ -151,8 +149,18 @@ impl Object {
 			}.into())
 	}
 
-	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl std::ops::Deref<Target=T> + 'a> {
-		use std::{sync::RwLockReadGuard, marker::PhantomData, ops::Deref};
+	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
+		if self.is_a::<T>() {
+			Some(unsafe { self.downcast_ref_unchecked() })
+		} else {
+			None
+		}
+	}
+
+	pub unsafe fn downcast_ref_unchecked<'a, T: Any>(&'a self) -> impl Deref<Target=T> + 'a {
+		use std::sync::RwLockReadGuard;
+		use std::marker::PhantomData;
+
 		struct Caster<'a, T>(RwLockReadGuard<'a, dyn Any + Send + Sync>, PhantomData<T>);
 		impl<'a, T: 'static> Deref for Caster<'a, T> {
 			type Target = T;
@@ -161,15 +169,10 @@ impl Object {
 			}
 		}
 
-		let data = self.0.data.read().expect("poison error");
-		if data.is::<T>() {
-			Some(Caster::<'a, T>(data, PhantomData))
-		} else {
-			None
-		}
+		Caster::<'a, T>(self.0.data.read().expect("poison error"), PhantomData)
 	}
 
-	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> Result<impl std::ops::DerefMut<Target = T> + 'a> {
+	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> Result<impl DerefMut<Target = T> + 'a> {
 		self.downcast_mut::<T>()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
@@ -178,8 +181,8 @@ impl Object {
 	}
 
 
-	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl std::ops::DerefMut<Target=T> + 'a> {
-		use std::{sync::RwLockWriteGuard, marker::PhantomData, ops::{Deref, DerefMut}};
+	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
+		use std::{sync::RwLockWriteGuard, marker::PhantomData};
 		struct Caster<'a, T>(RwLockWriteGuard<'a, dyn Any + Send + Sync>, PhantomData<T>);
 		impl<'a, T: 'static> Deref for Caster<'a, T> {
 			type Target = T;
@@ -200,10 +203,12 @@ impl Object {
 			None
 		}
 	}
+}
 
-	pub fn dot_get_attr<K>(&self, attr: &K) -> Result<Object>
+impl Object {
+	pub fn dot_get_attr<K: ?Sized>(&self, attr: &K) -> Result<Object>
 	where
-		K: Debug + ?Sized + EqResult<Key>
+		K: Debug + EqKey + ToObject
 	{
 		let result = self.get_attr(attr)?;
 
@@ -220,50 +225,104 @@ impl Object {
 		}
 	}
 
-	pub fn get_attr<K>(&self, attr: &K) -> Result<Object>
+	fn get_value<K: ?Sized>(&self, attr: &K) -> Result<Value>
 	where
-		K: Debug + ?Sized + EqResult<Key>
+		K: EqKey + ToObject
 	{
-		if let Some(attr) = self.0.mapping.read().expect("cannot read").get(attr)? {
-			Ok(attr)
-		} else if self.has_attr("__attr_missing__")? {
-			self.call_attr("__attr_missing__", vec![attr.into_object()])
-		} else {
-			Err(KeyError::DoesntExist{ attr: attr.into_object(), obj: self.clone() }.into())
-			// Ok(Object::default())
-		}
+		// TODO: attr missing should be within `mapping`
+		self.0.mapping.read().expect("cannot read")
+			.get(attr)?
+			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
 	}
 
-	pub fn has_attr<K>(&self, attr: &K) -> Result<bool>
+	pub fn get_attr<K: ?Sized>(&self, attr: &K) -> Result<Object>
 	where
-		K: Debug + ?Sized + EqResult<Key>
+		K: EqKey + ToObject {
+		self.get_value(attr).map(|x| x.into())
+	}
+
+	pub fn has_attr<K: ?Sized>(&self, attr: &K) -> Result<bool>
+	where
+		K: EqKey
 	{
 		self.0.mapping.read().expect("cannot read").has(attr)
 	}
 
-	pub fn set_attr_possibly_parents<K, V>(&self, attr: K, value: V) -> Result<Object>
-	where
-		K: Into<Key>,
-		V: Into<Value> + Into<mapping::Parents>
-	{
-		self.0.mapping.write().expect("cannot write").insert(attr.into(), value)
-	}
-
-	pub fn set_attr<K, V>(&self, attr: K, value: V) -> Result<Object>
+	pub fn set_attr<K, V>(&self, attr: K, value: V) -> Result<()>
 	where
 		K: Into<Key>,
 		V: Into<Value>
 	{
-		self.0.mapping.write().expect("cannot write")
-			.insert_not_parents(attr.into(), value)
+		self.0.mapping.write().expect("cannot write").insert(attr.into(), value.into())
 	}
 
-	pub fn del_attr<K>(&self, attr: &K) -> Result<Object>
+	pub fn del_attr<K: ?Sized>(&self, attr: &K) -> Result<Object>
 	where
-		K: Debug + ?Sized + EqResult<Key>
+		K: EqKey + ToObject
 	{
 		self.0.mapping.write().expect("cannot write").remove(attr)?
-			.ok_or_else(|| format!("attr {:?} does not exist for.", attr).into())
+			.ok_or_else(|| format!("attr {:?} does not exist for.", attr.to_object()).into())
+	}
+
+	pub fn call_attr<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
+	where
+		K: EqKey + ToObject,
+		A: Into<Args<'a>>
+	{
+		match self.get_value(attr)? {
+			Value::RustFn(rustfn) => {
+				let mut args = args.into();
+				args.add_this(self.clone());
+				rustfn.call(args)
+			},
+
+			Value::Object(object) => {
+				let bound_attr = Object::new(crate::types::BoundFunction);
+				bound_attr.set_attr("__bound_object_owner__", self.clone())?;
+				bound_attr.set_attr("__bound_object__", object)?;
+				bound_attr.call_attr("()", args)
+			}
+		}
+
+
+		// if let Some(rustfn) = self.downcast_ref::<types::RustFn>() {
+		// 	if attr.eq_key(&"()".into())? {
+		// 		return rustfn.call(args);	
+		// 	}
+		// }
+
+		// if self.is_a::<types::BoundFunction>() && attr.eq_key(&"()".into())? {
+		// 	args.add_this(self.clone());
+		// 	return crate::types::bound_function::impls::call(args);
+		// }
+
+		// let bound_attr = Object::new(crate::types::BoundFunction);
+		// bound_attr.set_attr("__bound_object_owner__", self.clone())?;
+		// bound_attr.set_attr("__bound_object__", self.get_attr(attr)?)?;
+		// bound_attr.call_attr("()", args)
+		// let value = 
+		// 	match self.get_value(attr)? {
+		// 		Value::RustFn(rustfn) => return rustfn.call(args.into()),
+		// 		Value::Object(object) => object
+		// 	};
+
+		// let mut args = args.into();
+
+		// if let Some(rustfn) = self.downcast_ref::<types::RustFn>() {
+		// 	if attr.eq_key(&"()".into())? {
+		// 		return rustfn.call(args);	
+		// 	}
+		// }
+
+		// if self.is_a::<types::BoundFunction>() && attr.eq_key(&"()".into())? {
+		// 	args.add_this(self.clone());
+		// 	return crate::types::bound_function::impls::call(args);
+		// }
+
+		// let bound_attr = Object::new(crate::types::BoundFunction);
+		// bound_attr.set_attr("__bound_object_owner__", self.clone())?;
+		// bound_attr.set_attr("__bound_object__", self.get_attr(attr)?)?;
+		// bound_attr.call_attr("()", args)
 	}
 
 	pub fn add_parent(&self, val: Object) -> Result<()> {
@@ -278,7 +337,7 @@ impl Object {
 					.map(|x| x.mapping_keys(true))
 					.flatten()
 				{
-					if !keys.iter().any(|k| k.equals(&key).unwrap_or(false)) {
+					if !keys.iter().any(|k| k.eq_key(&key).unwrap_or(false)) {
 						keys.push(key);
 					}
 				}
@@ -288,32 +347,6 @@ impl Object {
 		keys
 	}
 
-	pub fn call_attr<'a, K, A>(&self, attr: &K, args: A) -> Result<Object>
-	where
-		K: Debug + ?Sized + EqResult<Key>, A: Into<Args<'a>>
-	{
-		let mut args = args.into();
-
-		if let Some(rustfn) = self.downcast_ref::<types::RustFn>() {
-			if attr.equals(&"()".into())? {
-				return rustfn.call(args);	
-			}
-		}
-
-		if self.is_a::<types::BoundFunction>() && attr.equals(&"()".into())? {
-			args.add_this(self.clone());
-			return crate::types::bound_function::impls::call(args);
-		}
-
-		self.subcall(attr, args)
-	}
-
-	pub fn subcall<K: Debug + ?Sized + EqResult<Key>>(&self, attr: &K, args: Args) -> Result<Object> {
-		let bound_attr = Object::new(crate::types::BoundFunction);
-		bound_attr.set_attr("__bound_object_owner__", self.clone())?;
-		bound_attr.set_attr("__bound_object__", self.get_attr(attr)?)?;
-		bound_attr.call_attr("()", args)
-	}
 
 	// pub fn call_attr<'a, K, A>(&self, attr: &K, args: A) -> Result<Object>
 	// where

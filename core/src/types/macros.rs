@@ -94,7 +94,7 @@ macro_rules! impl_object_type {
 	};
 	(@SET_PARENT $class:ident (init_parent) $($_rest:tt)*) => {};
 	(@SET_PARENT $class:ident (init_parent $($init_parent:path)+) $($_rest:tt)*) => {
-		$class.set_attr_possibly_parents(
+		$class.set_attr(
 			"__parents__",
 			vec![
 				$(<$init_parent as $crate::types::ObjectType>::mapping()),+
@@ -150,7 +150,7 @@ macro_rules! impl_object_type {
 				use std::mem::MaybeUninit;
 				use std::sync::{Once, atomic::{AtomicU8, Ordering}};
 				#[allow(unused)]
-				use $crate::{Object, Key, literals};
+				use $crate::{Object, literals};
 
 				static mut CLASS_OBJECT: MaybeUninit<Object> = MaybeUninit::uninit();
 				static mut HAS_SETUP_HAPPENED: AtomicU8 = AtomicU8::new(0);

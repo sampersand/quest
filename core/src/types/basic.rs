@@ -12,7 +12,7 @@ mod impls {
 	pub fn at_text(args: Args) -> Result<Object> {
 		let this = args.this()?;
 		let name = 
-			this.get_attr(literals::PARENTS)?
+			this.get_attr(&literals::PARENTS)?
 				.get_attr("name")
 				.and_then(|x| x.downcast_call::<types::Text>())
 				.unwrap_or_else(|_| "<unknown name>".into());
@@ -30,13 +30,13 @@ mod impls {
 
 	pub fn neq(args: Args) -> Result<Object> {
 		args.this()?
-			.call_attr(literals::EQL, args.args(..)?)?
-			.call_attr(literals::NOT, args.new_args_slice(&[]))
+			.call_attr(&literals::EQL, args.args(..)?)?
+			.call_attr(&literals::NOT, args.new_args_slice(&[]))
 	}
 
 	pub fn not(args: Args) -> Result<Object> {
 		args.this()?.downcast_convert::<types::Boolean>()?
-			.call_attr(literals::NOT, args.new_args_slice(&[]))
+			.call_attr(&literals::NOT, args.new_args_slice(&[]))
 	}
 }
 

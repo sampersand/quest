@@ -1,4 +1,4 @@
-use crate::{Object, types::RustFn};
+use crate::{Object, ToObject, types::RustFn};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -30,5 +30,11 @@ impl From<Value> for Object {
 			Value::Object(object) => object,
 			Value::RustFn(rustfn) => rustfn.into()
 		}
+	}
+}
+
+impl ToObject for Value {
+	fn to_object(&self) -> Object {
+		self.clone().into()
 	}
 }

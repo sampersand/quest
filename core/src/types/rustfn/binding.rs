@@ -93,9 +93,9 @@ impl Binding {
 
 
 			let _guard = StackGuard(stack, &binding);
-			use crate::EqResult;
+			
 			match func(&binding) {
-				Err(crate::Error::Return { to, what }) if to.as_ref().equals(binding.as_ref())?
+				Err(crate::Error::Return { to, what }) if to.as_ref().eq_obj(binding.as_ref())?
 					=> Ok(what),
 				other => other
 			}

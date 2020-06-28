@@ -26,7 +26,8 @@ mod impls {
 		let this = args.this()?;
 		let attr = args.arg(0)?;
 		let val = args.arg(1)?;
-		this.set_attr_possibly_parents(attr.clone(), val.clone())
+		this.set_attr(attr.clone(), val.clone())?;
+		Ok(val.clone())
 	}
 
 	pub fn __has_attr__(args: Args) -> Result<Object> {

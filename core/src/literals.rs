@@ -1,14 +1,14 @@
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
 		$(
-			pub const $name: &'static str = $key;
+			pub const $name: crate::obj::Key = crate::obj::Key::Literal($key);
 		)*
 	};
 }
 
 literals! {
-	// builtin
-	PARENTS "__parents__" ID "__id__"
+	// stuff for mappings
+	PARENTS "__parents__" ID "__id__" ATTR_MISSING "__attr_missing__"
 
 	// conversions
 	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list" AT_MAP "@map"

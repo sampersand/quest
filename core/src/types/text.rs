@@ -61,6 +61,12 @@ impl From<&'static str> for Object {
 	}
 }
 
+impl crate::ToObject for str {
+	fn to_object(&self) -> Object {
+		Object::from(Text::from(self.to_string()))
+	}
+}
+
 impl AsRef<str> for Text {
 	fn as_ref(&self) -> &str {
 		self.0.as_ref()
@@ -121,11 +127,11 @@ mod impls {
 
 	pub fn assign(args: Args) -> Result<Object> { // "=" 
 		let this = args.this()?;
-		let rhs = args.arg(0)?;
+		let rhs = args.arg(0)?.clone();
 		if this.downcast_ref::<Text>().map(|x| x.as_ref() == "__this__").unwrap_or(false) {
-			Ok(Binding::set_binding(rhs.clone()).as_ref().clone())
+			Ok(Binding::set_binding(rhs).as_ref().clone())
 		} else {
-			args.binding().unwrap().set_attr_possibly_parents(this.clone(), rhs.clone())
+			args.binding().unwrap().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
 		}
 	}
 

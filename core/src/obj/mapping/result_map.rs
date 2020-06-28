@@ -1,16 +1,17 @@
-use crate::{Result, EqResult};
+use crate::{Result, obj::EqKey};
+use super::*;
 use std::fmt::{self, Debug, Formatter};
 
 #[derive(Clone)]
-pub struct ResultMap<K, V>(Vec<(K, V)>);
+pub struct ResultMap(Vec<(Key, Value)>);
 
-impl<K, V> Default for ResultMap<K, V> {
+impl Default for ResultMap {
 	fn default() -> Self {
-		ResultMap::new()
+		Self::new()
 	}
 }
 
-impl<K: Debug, V: Debug> Debug for ResultMap<K, V> {
+impl Debug for ResultMap {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		f.debug_map()
 			.entries(self.0.iter().map(|&(ref k, ref v)| (k, v)))
@@ -18,47 +19,51 @@ impl<K: Debug, V: Debug> Debug for ResultMap<K, V> {
 	}
 }
 
-impl<K, V> ResultMap<K, V>  {
+
+impl ResultMap  {
 	pub fn new() -> Self {
 		ResultMap(vec![])
 	}
 
-	pub fn keys(&self) -> Vec<&K> {
+	pub fn keys(&self) -> Vec<&Key> {
 		self.0.iter().map(|(f, _)| f).collect()
 	}
 
-	pub fn insert<Q: ?Sized>(&mut self, key: Q, value: V) -> Result<Option<V>>
-	where
-		Q: EqResult<K> + Into<K>
-	{
-		for (ref k, ref mut v) in self.0.iter_mut() {
-			if key.equals(&k)? {
-				return Ok(Some(std::mem::replace(v, value)));
+	pub fn has<K: EqKey + ?Sized>(&self, key: &K) -> Result<bool> {
+		for (ref k, _) in self.0.iter() {
+			if key.eq_key(k)? {
+				return Ok(true);
 			}
 		}
-		self.0.push((key.into(), value));
-		Ok(None)
+
+		Ok(false)
 	}
 
-	pub fn get<Q: ?Sized>(&self, key: &Q) -> Result<Option<&V>>
-	where
-		Q: EqResult<K>
-	{
+	pub fn insert(&mut self, key: Key, value: Value) -> Result<()> {
+		for (ref k, ref mut v) in self.0.iter_mut() {
+			if key.eq_key(k)? {
+				*v = value;
+				return Ok(());
+			}
+		}
+
+		self.0.push((key, value));
+		Ok(())
+	}
+
+	pub fn get<K: EqKey + ?Sized>(&self, key: &K) -> Result<Option<&Value>> {
 		for (ref k, ref v) in self.0.iter() {
-			if key.equals(k)? {
+			if key.eq_key(k)? {
 				return Ok(Some(v));
 			}
 		}
 		Ok(None)
 	}
 
-	pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Result<Option<V>>
-	where
-		Q: EqResult<K>
-	{
+	pub fn remove<K: EqKey + ?Sized>(&mut self, key: &K) -> Result<Option<Value>> {
 		let mut index = None;
 		for (i, (ref k, _)) in self.0.iter().enumerate() {
-			if key.equals(k)? {
+			if key.eq_key(k)? {
 				index = Some(i);
 				break;
 			}

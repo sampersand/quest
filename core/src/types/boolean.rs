@@ -88,7 +88,7 @@ mod impls {
 		let this = args.this()?;
 		debug_assert!(this.is_a::<Boolean>(), "bad `this` given");
 		// TODO: forwarding args, make sure `self` is updated.
-		this.call_attr(literals::CLONE, args.args(..)?)
+		this.call_attr(&literals::CLONE, args.args(..)?)
 	}
 
 	pub fn clone(args: Args) -> Result<Object> {

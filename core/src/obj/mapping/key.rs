@@ -1,36 +1,21 @@
-use crate::{Object, Result, types, EqResult};
-use std::ops::Deref;
+use crate::{Object, Result, types};
 
-#[derive(Debug, Clone)]
-pub enum Key {
-	Object(Object),
-	Literal(&'static str),
+pub trait EqKey {
+	fn eq_key(&self, key: &Key) -> Result<bool>;
 }
 
-impl Key {
-	pub fn try_as_str<'a>(&'a self) -> Option<impl Deref<Target=str> + 'a> {
-		enum KeyDeref<'a> {
-			Literal(&'static str),
-			Text(Box<dyn Deref<Target=types::Text> + 'a>)
-		}
-
-		impl<'a> Deref for KeyDeref<'a> {
-			type Target = str;
-			fn deref(&self) -> &str {
-				match self {
-					KeyDeref::Literal(lit) => lit,
-					KeyDeref::Text(t) => t.deref().as_ref()
-				}
-			}
-		}
-
-		match self {
-			Key::Literal(lit) => Some(KeyDeref::Literal(lit)),
-			Key::Object(obj) =>
-				obj.downcast_ref::<types::Text>()
-					.map(|x| KeyDeref::Text(Box::new(x)))
-		}
-	}
+/// A Key that can be used to access an [`Object`](#)'s mapping.
+///
+/// This can either be a `&'static str`, which is the preferred way to access
+/// attributes from within rust, or an [`Object`](#), which can be any Quest
+/// object.
+#[derive(Debug, Clone)]
+pub enum Key {
+	/// A Quest object that can be used as an index.
+	Object(Object),
+	/// A literal key, which can be used to drastically improve lookup times for
+	/// Builtin rust objects.
+	Literal(&'static str),
 }
 
 impl From<Object> for Key {
@@ -54,40 +39,37 @@ impl From<Key> for Object {
 	}
 }
 
-impl EqResult<str> for Object {
-	fn equals(&self, rhs: &str) -> Result<bool> {
-		Ok(self.downcast_ref::<types::Text>()
-			.map(|txt| txt.as_ref() == rhs)
-			.unwrap_or(false))
-	}
-}
-
-impl EqResult for Key {
-	fn equals(&self, rhs: &Key) -> Result<bool> {
-		match (self, rhs) {
-			(Key::Literal(lit_lhs), Key::Literal(lit_rhs)) => Ok(lit_lhs == lit_rhs),
-			(Key::Object(obj_lhs), Key::Object(obj_rhs)) => obj_lhs.equals(obj_rhs),
-			(Key::Literal(lit), Key::Object(obj))
-				| (Key::Object(obj), Key::Literal(lit)) => obj.equals(*lit)
-		}
-	}
-}
-
-
-impl EqResult<Key> for str {
-	fn equals(&self, rhs: &Key) -> Result<bool> {
-		match rhs {
-			Key::Literal(lit) => Ok(lit == &self),
-			Key::Object(obj) => obj.equals(self)
-		}
-	}
-}
-
-impl EqResult<Object> for Key {
-	fn equals(&self, rhs: &Object) -> Result<bool> {
+impl EqKey for Key {
+	fn eq_key(&self, key: &Key) -> Result<bool> {
 		match self {
-			Key::Object(obj) => rhs.equals(obj),
-			Key::Literal(lit) => rhs.equals(*lit)
+			Key::Literal(lit) => lit.eq_key(key),
+			Key::Object(obj) => obj.eq_key(key),
+		}
+	}
+}
+
+impl EqKey for str {
+	fn eq_key(&self, key: &Key) -> Result<bool> {
+		match key {
+			Key::Literal(lit) => Ok(self == *lit),
+			Key::Object(obj) if obj.is_a::<types::Text>() =>
+				unsafe { 
+					Ok(obj.downcast_ref_unchecked::<types::Text>().as_ref() == self)
+				},
+			Key::Object(_) => Ok(false)
+		}
+	}
+}
+
+impl EqKey for Object {
+	fn eq_key(&self, key: &Key) -> Result<bool> {
+		match key {
+			Key::Literal(lit) if self.is_a::<types::Text>() =>
+				unsafe { 
+					Ok(self.downcast_ref_unchecked::<types::Text>().as_ref() == *lit)
+				},
+			Key::Literal(_) => Ok(false),
+			Key::Object(obj) => self.eq_obj(obj)
 		}
 	}
 }
