@@ -101,6 +101,10 @@ impl Args<'_> {
 	where
 		I: SliceIndex<[Object], Output=[Object]> + 'c + fmt::Debug + Clone
 	{
+		if self.args.len() == 0 {
+			return Ok(Default::default())
+		}
+
 		if let Some(rng) = self.args.get(1..).and_then(|args| args.get(idx.clone())) {
 			Ok(self.new_args_slice(rng))
 		} else {

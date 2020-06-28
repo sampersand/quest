@@ -163,7 +163,7 @@ impl Block {
 	}
 
 	fn call(&self, args: Args) -> quest::Result<quest::Object> {
-		Binding::new_stackframe(args, |_binding| self.run_block_to_object())
+		Binding::new_stackframe(args, |_| self.run_block_to_object())
 	}
 
 }

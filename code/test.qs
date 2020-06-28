@@ -1,19 +1,8 @@
-$i = 10;
-while($i, {
-	__stack__.$get(2).$i = i - 1;
-	disp(i);
-});
-# $x = 3;
-# {
-# 	$name = "a";
-# 	{
-# 		$name = "b";
-# 		{
-# 			$name = "c";
-# 			disp(__stack__);
-# 			disp(__stack__.$get(-1).$x = 4);
-# 		}()
-# 	}()
-# }();
+# define the `square` method on 
+Number.$square = { _0 ** 2 };
 
-# disp(x);
+$twelve = 12;
+disp(twelve.$square()); # => 144
+
+twelve.$cube = { _0 ** 3 };
+disp(twelve.$cube());

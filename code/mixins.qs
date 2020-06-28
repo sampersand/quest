@@ -54,12 +54,12 @@ Number.$upto = {
 List.$__parents__.$push(Enumerator);
 List.$each = {
 	$dup = _0.$clone();
-	while({ dup }, {
-		_1(dup.$shift())
-	})
+	while($dup, { _1(dup.$shift()) })
 };
 
-disp([1, 2, 3, 4, 5].$map({ _1 ** 2 }));
-disp((-4).$upto(10)
-		.$select({ _1 % 2 })
-		.$map({ _1 ** 2 }));
+disp([-3, -1, 1, 3, 5, 7, 9].$map({ _1 ** 2 }));
+disp((-4).$upto(10).$select{ _1 % 2 }.$map{ _1 ** 2 });
+
+
+
+

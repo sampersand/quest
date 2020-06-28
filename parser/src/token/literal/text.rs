@@ -1,10 +1,14 @@
+//! Parsing a literal text
+
 use crate::{Result, Stream};
 use crate::expression::Executable;
 use crate::token::{Operator, Tokenizable, TokenizeResult};
 use crate::token::literal::Variable;
 use quest::Object;
 
+/// A literal text is actually just a `quest::Text`.
 pub use quest::types::Text;
+
 
 impl Executable for Text {
 	fn execute(&self) -> quest::Result<Object> {

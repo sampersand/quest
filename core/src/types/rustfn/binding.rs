@@ -34,10 +34,23 @@ impl Binding {
 		})
 	}
 
-	pub fn new_stackframe<F, O, E>(args: Args, func: F) -> std::result::Result<O, E>
+	// pub fn new_stackframe_old_<F, O, E>(args: Args, func: F) -> std::result::Result<O, E>
+	// where
+	// 	F: FnOnce(&Binding) -> std::result::Result<O, E>,
+	// 	E: From<crate::Error>
+	// {
+	// 	Self::new_stackframe(args, |binding| func(binding)).map_err(From::from)
+	// 	// match runner.run() {
+	// 	// 	Err(Error::Quest(quest::Error::Return { to, what })) if to.as_ref().equals(binding.as_ref())?
+	// 	// 		=> Ok(what),
+	// 	// 	other => other
+	// 	// }
+
+	// }
+
+	pub fn new_stackframe<F>(args: Args, func: F) -> crate::Result<Object>
 	where
-		F: FnOnce(&Binding) -> std::result::Result<O, E>,
-		E: From<crate::Error>
+		F: FnOnce(&Binding) -> crate::Result<Object>,
 	{
 		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
 		impl Drop for StackGuard<'_> {
@@ -67,6 +80,9 @@ impl Binding {
 				}
 
 				binding.set_attr("__args__", Object::from(Vec::from(args.args(..)?)))?;
+				if let Some(callee) = stack.read().expect("bad stack").last() {
+					binding.set_attr("__callee__", callee.as_ref().clone())?;
+				}
 				Binding(binding)
 			};
 
@@ -77,7 +93,12 @@ impl Binding {
 
 
 			let _guard = StackGuard(stack, &binding);
-			func(&binding)
+			use crate::EqResult;
+			match func(&binding) {
+				Err(crate::Error::Return { to, what }) if to.as_ref().equals(binding.as_ref())?
+					=> Ok(what),
+				other => other
+			}
 		})
 	}
 

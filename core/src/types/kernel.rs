@@ -40,16 +40,25 @@ mod impls {
 	pub fn r#while(args: Args) -> Result<Object> {
 		let cond = args.arg(0)?;
 		let body = args.arg(1)?;
-		let call_args = 
-			match args.arg(2) {
-				Ok(arg) => Vec::from(arg.downcast_call::<types::List>()?).into(),
-				Err(_) => Args::default()
+		// crate::Binding::new_stackframe(args.args(2..).unwrap_or_default(), move |b| {
+		// 	b.set_attr("name", Object::from("while"))?;
+
+			let mut result = Object::default();
+			while cond.call_attr("()", &[])?.downcast_call::<types::Boolean>()?.into() {
+				result = body.call_attr("()", &[])?;
 			};
-		let mut result = Object::default();
-		while cond.call_attr("()", call_args.clone())?.downcast_call::<types::Boolean>()?.into() {
-			result = body.call_attr("()", call_args.clone())?;
-		}
-		Ok(result)
+			Ok(result)
+		// })
+	}
+
+	pub fn r#loop(args: Args) -> Result<Object> {
+		let body = args.arg(0)?;
+		// crate::Binding::new_stackframe(args.args(1..).unwrap_or_default(), move |b| {
+			// b.set_attr("name", Object::from("loop"))?;
+			loop {
+				body.call_attr("()", &[])?;
+			}
+		// })
 	}
 
 	pub fn r#for(_args: Args) -> Result<Object> {
@@ -120,6 +129,13 @@ mod impls {
 		}
 	}
 
+	pub fn r#return(args: Args) -> Result<Object> {
+		let to = crate::Binding::from(args.arg(0)?.clone());
+		let what = args.arg(1).map(Clone::clone).unwrap_or_default();
+
+		Err(Error::Return { to, what })
+	}
+
 	pub fn sleep(_args: Args) -> Result<Object> {
 		todo!("sleep")
 	}
@@ -159,9 +175,11 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"rand" => impls::rand,
 	"prompt" => impls::prompt,
 	"while" => impls::r#while,
+	"loop" => impls::r#loop,
 	"for" => impls::r#for,
 	"sleep" => impls::sleep,
 	"open" => impls::open,
+	"return" => impls::r#return,
 
 	// "&&" => impls::and,
 	// "||" => impls::or,

@@ -96,6 +96,7 @@ mod impls {
 		Ok(this.into())
 	}
 
+
 	pub fn eql(args: Args) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Boolean>()?.0;
 		// let rhs_obj = args.arg_downcast_ref::<Boolean>(0);

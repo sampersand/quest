@@ -75,6 +75,7 @@ $next_text = {
 $parse_expr = {
 	$stream = lstrip(_1);
 	$chr = stream.$shift();
+
 	if(!chr, {
 		return(__stack__.$get(2));
 	});
@@ -98,48 +99,47 @@ $parse_expr = {
 		chr += next_ident(stream, __get_attr__($is_cmd));
 	});
 
-	known_opers.chr(stream)
+	known_opers.chr(stream, env)
 };
 
 {
 	$__this__ = __get_attr__($known_opers);
-	'=' = { $l = next_ident(lstrip(_1)); $r = parse_expr(_1); { env.l = r() } };
-	'+' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() + r() } };
-	'-' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() - r() } };
-	'*' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() * r() } };
-	'/' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() / r() } };
-	'|' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() | r() } };
-	'&' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() & r() } };
-	'<' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() < r() } };
-	'>' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() > r() } };
-	'^' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() **r() } };
-	';' = { $l = parse_expr(_1); $r = parse_expr(_1); { l() ; r() } };
-	$O  = ($OUTPUT = { $a = parse_expr(_1); { disp(a()) } });
-	$P  = ($PROMPT = { $p = parse_expr(_1); { prompt(p()) } });
+	'=' = { $l = next_ident(lstrip(_1)); $r = parse_expr(_1, _2); { env.l = r() } };
+	'+' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() + r() } };
+	'-' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() - r() } };
+	'*' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() * r() } };
+	'/' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() / r() } };
+	'|' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() | r() } };
+	'&' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() & r() } };
+	'<' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() < r() } };
+	'>' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() > r() } };
+	'^' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() **r() } };
+	';' = { $l = parse_expr(_1, _2); $r = parse_expr(_1, _2); { l() ; r() } };
+	$O  = ($OUTPUT = { $a = parse_expr(_1, _2); { disp(a()) } });
+	$P  = ($PROMPT = { $p = parse_expr(_1, _2); { prompt(p()) } });
 	$Q  = ($QUIT = { quit });
-	$R  = ($RAND ={ $m = parse_expr(_1); $x = parse_expr(_1); { rand(m(), x()).$floor() } });
-	$W  = ($WHILE = { $c = parse_expr(_1); $b = parse_expr(_1); { while(c, b) } });
-	$I  = ($IF = { $c = parse_expr(_1); $t = parse_expr(_1); $f = parse_expr(_1); { if(c(), t, f) } });
+	$R  = ($RAND ={ $m = parse_expr(_1, _2); $x = parse_expr(_1, _2); { rand(m(), x()).$floor() } });
+	$W  = ($WHILE = { $c = parse_expr(_1, _2); $b = parse_expr(_1, _2); { while(c, b) } });
+	$I  = ($IF = { $c = parse_expr(_1, _2); $t = parse_expr(_1, _2); $f = parse_expr(_1, _2); { if(c(), t, f) } });
 	'#' = {
 		$nendl = true.$clone();
 		$stream = _1;
 		while({ nendl & stream },{
 			if(stream.$shift() == '\n', { nendl &= false; })
 		});
-		parse_expr(_1)
+		parse_expr(_1, _2)
 	};
-	$F = ($FNDEF = { $l = parse_expr(_1); { __get_attr__($l) } });
-	$S = ($SYSTEM = { $c = parse_expr(_1); { system(c()) } });
-	$C = ($CALL = { $l = parse_expr(_1); { l()() } });
-	$E = ($EVAL = { $w = parse_expr(_1); { knight(w()) }});
-	'(' = { parse_expr(_1) };
-	')' = { parse_expr(_1) };
+	$F = ($FNDEF = { $l = parse_expr(_1, _2); { __get_attr__($l) } });
+	$S = ($SYSTEM = { $c = parse_expr(_1, _2); { system(c()) } });
+	$C = ($CALL = { $l = parse_expr(_1, _2); { l()() } });
+	$E = ($EVAL = { $w = parse_expr(_1, _2); { knight(w()) }});
+	'(' = { parse_expr(_1, _2) };
+	')' = { parse_expr(_1, _2) };
 	__this__
 }();
 
 Kernel.$env = { $__parents__ = [Pristine]; __this__ }();
 env.null = null;
-
 
 $knight = {
 	parse_expr(_1)()
@@ -147,8 +147,8 @@ $knight = {
 
 
 knight(
-	if(__has_attr__($_1), {
-		if(_1 == '-e', { _2 }, { system('cat', _1) })
+	if(__has_attr__($_0), {
+		if(_0 == '-e', { _1 }, { system('cat', _0) })
 	}, {
 		$t = '';
 		while({ !at_end },{

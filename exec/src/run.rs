@@ -4,7 +4,7 @@ mod buf_stream;
 pub use buf_stream::BufStream;
 use repl::Repl;
 use quest::{Object, Binding, Args};
-use crate::Result;
+use crate::{Error, Result};
 use std::path::Path;
 use std::convert::TryFrom;
 
@@ -13,22 +13,22 @@ pub trait Runner {
 }
 
 pub fn run_file<'a, P: AsRef<Path>, A: Into<Args<'a>>>(path: P, args: A) -> Result<Object> {
-	run(BufStream::try_from(path.as_ref())?, args)
+	run(BufStream::try_from(path.as_ref())?, args).map_err(From::from)
 }
 
 pub fn run_expression<'a, A: Into<Args<'a>>>(expr: String, args: A) -> Result<Object> {
-	run(BufStream::from(expr), args)
+	run(BufStream::from(expr), args).map_err(From::from)
 }
 
 pub fn run_stdin<'a, A: Into<Args<'a>>>(args: A) -> Result<Object> {
-	run(BufStream::stdin(), args)
+	run(BufStream::stdin(), args).map_err(From::from)
 }
 
 pub fn run_repl<'a, A: Into<Args<'a>>>(args: A) -> Result<Object> {
-	run(Repl::new(), args)
+	run(Repl::new(), args).map_err(From::from)
 }
 
-pub fn run<'a, R: Runner, A: Into<Args<'a>>>(runner: R, args: A) -> Result<Object> {
+pub fn run<'a, R: Runner, A: Into<Args<'a>>>(runner: R, args: A) -> quest::Result<Object> {
 	use quest_parser::expression::Executable;
 
 	let mut args = args.into();
@@ -40,7 +40,10 @@ pub fn run<'a, R: Runner, A: Into<Args<'a>>>(runner: R, args: A) -> Result<Objec
 
 	Binding::new_stackframe(args, move |binding| {
 		binding.set_attr("name", Object::from("main"))?;
-		runner.run()
+		runner.run().map_err(|err| quest::Error::Boxed(Box::new(err)))
 	})
 }
+
+
+
 

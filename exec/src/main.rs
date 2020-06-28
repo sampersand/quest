@@ -31,7 +31,11 @@ struct Opts {
 
 
 fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
-	let args = args.into_iter().map(Object::from).collect::<quest::Args>();
+	let mut args = args.into_iter().map(Object::from).collect::<quest::Args>();
+	if let Some(file) = file.as_ref() {
+		args.add_this(file.display().to_string().into());
+	}
+
 	match (file, eval) {
 		(Some(_), Some(_)) => panic!("both options set?"),
 		(Some(file), None) if file.to_str() == Some("-") => run::run_stdin(args),
@@ -113,7 +117,7 @@ fn main() {
 // 		.map(Object::from)
 // 		.collect::<Vec<Object>>();
 // 	args.insert(0, Object::default());
-// 	let result = Binding::new_stackframe(args.into(), |_| expression.execute());
+// 	let result = Binding::new_stackframe_old(args.into(), |_| expression.execute());
 // 	if cfg!(debug) {
 // 		println!("{:?}", result);
 // 	} else {

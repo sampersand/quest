@@ -8,7 +8,7 @@ pub use type_error::TypeError;
 pub use key_error::KeyError;
 pub use value_error::ValueError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
 	/// Something internal that shouldn't have occured
@@ -21,6 +21,10 @@ pub enum Error {
 	TypeError(TypeError),
 	/// An invalid value was supplied somewhere
 	ValueError(ValueError),
+	/// Boxed error
+	Boxed(Box<dyn std::error::Error + 'static>),
+	/// Returning a value
+	Return { to: crate:: Binding, what: crate::Object }
 }
 
 impl From<String> for Error {
@@ -45,12 +49,19 @@ impl Display for Error {
 			Error::KeyError(err) => Display::fmt(&err, f),
 			Error::TypeError(err) => Display::fmt(&err, f),
 			Error::ValueError(err) => Display::fmt(&err, f),
+			Error::Boxed(err) => Display::fmt(&err, f),
+			Error::Return { to, what } => write!(f, "uncaught return to {:?}: {:?}", to, what)
 		}
 	}
 }
 
 impl std::error::Error for Error {
-	// there's no cause because the sub errors are just instances of this error.
+	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+		match self {
+			Error::Boxed(err) => Some(err.as_ref()),
+			_ => None
+		}
+	}
 }
 
 #[must_use]
