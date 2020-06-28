@@ -5,12 +5,12 @@ pub struct Comparable;
 
 mod impls {
 	use super::Ordering;
-	use crate::{Object, Result, Args, types};
+	use crate::{Object, Result, ArgsOld, types};
 
-	fn cmp(args: Args) -> Result<Ordering> {
+	fn cmp(args: ArgsOld) -> Result<Ordering> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?;
-		let num = this.call_attr("<=>", vec![rhs.clone()])?.downcast_call::<types::Number>()?;
+		let num = this.call_attr_old("<=>", vec![rhs.clone()])?.downcast_call::<types::Number>()?;
 
 		if num < types::Number::ZERO {
 			Ok(Ordering::Less)
@@ -21,27 +21,27 @@ mod impls {
 		}
 	}
 
-	pub fn lth(args: Args) -> Result<Object> {
+	pub fn lth(args: ArgsOld) -> Result<Object> {
 		Ok((cmp(args)? == Ordering::Less).into())
 	}
 
-	pub fn gth(args: Args) -> Result<Object> {
+	pub fn gth(args: ArgsOld) -> Result<Object> {
 		Ok((cmp(args)? == Ordering::Greater).into())
 	}
 
-	// pub fn eql(args: Args) -> Result<Object> {
+	// pub fn eql(args: ArgsOld) -> Result<Object> {
 	// 	Ok((cmp(args)? == Ordering::Equal).into())
 	// }
 
-	pub fn leq(args: Args) -> Result<Object> {
+	pub fn leq(args: ArgsOld) -> Result<Object> {
 		Ok((cmp(args)? != Ordering::Greater).into())
 	}
 
-	pub fn geq(args: Args) -> Result<Object> {
+	pub fn geq(args: ArgsOld) -> Result<Object> {
 		Ok((cmp(args)? != Ordering::Less).into())
 	}
 
-	// pub fn neq(args: Args) -> Result<Object> {
+	// pub fn neq(args: ArgsOld) -> Result<Object> {
 	// 	Ok((cmp(args)? != Ordering::Equal).into())
 	// }
 

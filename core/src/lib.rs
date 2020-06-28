@@ -1,4 +1,5 @@
 #![deny(warnings)]
+#![allow(deprecated)]
 extern crate rand;
 
 mod error;
@@ -9,4 +10,4 @@ pub mod literals;
 
 pub use obj::{Object, ToObject};
 pub use error::{Error, Result};
-pub use types::rustfn::{Args, Binding};
+pub use types::rustfn::{ArgsOld, Args, Binding};

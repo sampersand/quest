@@ -3,7 +3,7 @@ pub mod macros;
 
 mod convert;
 
-pub trait ObjectType : std::fmt::Debug + std::any::Any + Send + Sync + Clone {
+pub trait ObjectType : std::fmt::Debug + std::any::Any + Send + Sync  {
 	fn mapping() -> super::Object;
 
 	// #[cfg(test)]
@@ -36,7 +36,7 @@ pub use kernel::Kernel;
 pub use basic::Basic;
 pub use bound_function::BoundFunction;
 pub use function::Function;
-pub use rustfn::{RustFn, Args};
+pub use rustfn::{RustFn, ArgsOld};
 // pub use block::Block;
 pub use scope::Scope;
 pub use null::Null;

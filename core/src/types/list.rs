@@ -60,9 +60,9 @@ impl AsRef<[Object]> for List {
 
 mod impls {
 	use super::List;
-	use crate::{Object, Result, Args, types};
+	use crate::{Object, Result, ArgsOld, types};
 
-	pub fn at_text(args: Args) -> Result<Object> {
+	pub fn at_text(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
 		let mut l = vec![];
 		for item in this.0.iter() {
@@ -71,41 +71,41 @@ mod impls {
 		Ok(format!("[{}]", l.join(", ")).into())
 	}
 
-	pub fn at_bool(args: Args) -> Result<Object> {
+	pub fn at_bool(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
-		this.call_attr("len", args.clone())?
-			.call_attr("@bool", vec![])
+		this.call_attr_old("len", args.clone())?
+			.call_attr_old("@bool", vec![])
 	}
 
-	pub fn at_map(_args: Args) -> Result<Object> {
+	pub fn at_map(_args: ArgsOld) -> Result<Object> {
 		todo!("List::at_map");
 	}
 
-	pub fn at_list(args: Args) -> Result<Object> { // "@list"
+	pub fn at_list(args: ArgsOld) -> Result<Object> { // "@list"
 		let this = args.this()?;
-		this.call_attr("clone", args.clone())
+		this.call_attr_old("clone", args.clone())
 	}
 
-	pub fn clone(args: Args) -> Result<Object> {
+	pub fn clone(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
 		Ok(this.clone().into())
 	}
 
-	pub fn does_include(_args: Args) -> Result<Object> {
+	pub fn does_include(_args: ArgsOld) -> Result<Object> {
 		todo!("List::does_include");
 	}
 
-	pub fn index_of(_args: Args) -> Result<Object> {
+	pub fn index_of(_args: ArgsOld) -> Result<Object> {
 		todo!("List::index_of");
 	}
 
-	pub fn clear(args: Args) -> Result<Object> {
+	pub fn clear(args: ArgsOld) -> Result<Object> {
 		let mut this = args.this()?.try_downcast_mut::<List>()?;
 		this.0.clear();
 		Ok(args.this()?.clone())
 	}
 
-	pub fn len(args: Args) -> Result<Object> {
+	pub fn len(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
 		Ok(this.0.len().into())
 	}
@@ -130,7 +130,7 @@ mod impls {
 		}
 	}
 
-	pub fn index(args: Args) -> Result<Object> {
+	pub fn index(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
 
 		let len = this.0.len();
@@ -162,11 +162,11 @@ mod impls {
 			}
 		}
 	}
-	pub fn index_assign(_args: Args) -> Result<Object> {
+	pub fn index_assign(_args: ArgsOld) -> Result<Object> {
 		todo!("index_assign")
 	}
 
-	pub fn join(args: Args) -> Result<Object> {
+	pub fn join(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
 		let joiner = 
 			match args.arg(0) {
@@ -181,13 +181,13 @@ mod impls {
 			.join(joiner.as_ref()).into())
 	}
 
-	pub fn add(args: Args) -> Result<Object> {
+	pub fn add(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
-		this.call_attr("clone", vec![])?
-			.call_attr("+=", args.args(..)?)
+		this.call_attr_old("clone", vec![])?
+			.call_attr_old("+=", args.args(..)?)
 	}
 
-	pub fn add_assign(args: Args) -> Result<Object> {
+	pub fn add_assign(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?.downcast_call::<List>()?;
 
@@ -196,25 +196,25 @@ mod impls {
 		Ok(this.clone())
 	}
 
-	pub fn push(args: Args) -> Result<Object> {
+	pub fn push(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?;
 		this.try_downcast_mut::<List>()?.0.push(rhs.clone());
 		Ok(this.clone())
 	}
 
-	pub fn pop(args: Args) -> Result<Object> {
+	pub fn pop(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		Ok(this.try_downcast_mut::<List>()?.0.pop().unwrap_or_default())
 	}
 
-	pub fn unshift(args: Args) -> Result<Object> {
+	pub fn unshift(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?;
 		this.try_downcast_mut::<List>()?.0.insert(0, rhs.clone());
 		Ok(this.clone())
 	}
-	pub fn shift(args: Args) -> Result<Object> {
+	pub fn shift(args: ArgsOld) -> Result<Object> {
 		let this = &mut args.this()?.try_downcast_mut::<List>()?.0;
 		if this.is_empty() {
 			Ok(Object::default())
@@ -223,19 +223,19 @@ mod impls {
 		}
 	}
 
-	pub fn intersect(_args: Args) -> Result<Object> {
+	pub fn intersect(_args: ArgsOld) -> Result<Object> {
 		todo!("List::intersect");
 	}
 
-	pub fn union(_args: Args) -> Result<Object> {
+	pub fn union(_args: ArgsOld) -> Result<Object> {
 		todo!("List::union");
 	}
 
-	pub fn not_shared(_args: Args) -> Result<Object> {
+	pub fn not_shared(_args: ArgsOld) -> Result<Object> {
 		todo!("List::not_shared");
 	}
 
-	pub fn difference(_args: Args) -> Result<Object> {
+	pub fn difference(_args: ArgsOld) -> Result<Object> {
 		todo!("List::difference");
 	}
 

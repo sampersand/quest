@@ -31,7 +31,7 @@ struct Opts {
 
 
 fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
-	let mut args = args.into_iter().map(Object::from).collect::<quest::Args>();
+	let mut args = args.into_iter().map(Object::from).collect::<quest::ArgsOld>();
 	if let Some(file) = file.as_ref() {
 		args.add_this(file.display().to_string().into());
 	}
@@ -48,14 +48,14 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 pub fn init() -> Result<()> {
 	use quest::types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding};
 	use quest_parser::{Stream, expression::Executable};
-	use quest::Args;
+	use quest::ArgsOld;
 
 	Text::mapping().set_attr("eval", RustFn::new("Text::eval", |args| {
 		let obj = args.this()?.try_downcast_ref::<Text>()?;
 		let binding = args.arg(0);
 
 		if let Ok(binding) = binding {
-			let mut args = Args::from(args.args(1..)
+			let mut args = ArgsOld::from(args.args(1..)
 				.map(|x| x.as_ref().to_vec())
 				.unwrap_or_else(|_| vec![]));
 			args.add_this(binding.clone());
@@ -79,8 +79,8 @@ pub fn init() -> Result<()> {
 }
 
 fn main() {
-	run::run_file("code.ignore/knight.qs", vec!["--".into(), "code.ignore/knight/guess.kn".into()]).unwrap();
-	return;
+	// run::run_file("code.ignore/knight.qs", vec!["--".into(), "code.ignore/knight/guess.kn".into()]).unwrap();
+	// return;
 
 	quest_parser::init().expect("couldn't initialize quest parser");
 	init().expect("couldn't initialize quest exec");

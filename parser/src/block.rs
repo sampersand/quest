@@ -1,5 +1,5 @@
 use quest::impl_object_type;
-use quest::{Object, Args, Binding};
+use quest::{Object, ArgsOld, Binding};
 
 use crate::Result;
 use crate::token::{Token, ParenType};
@@ -162,7 +162,7 @@ impl Block {
 			Ok(lines_obj)
 	}
 
-	fn call(&self, args: Args) -> quest::Result<quest::Object> {
+	fn call(&self, args: ArgsOld) -> quest::Result<quest::Object> {
 		Binding::new_stackframe(args, |_| self.run_block_to_object())
 	}
 
@@ -240,7 +240,7 @@ impl Constructable for Block {
 mod impls {
 	use super::*;
 
-	pub fn call(args: Args) -> quest::Result<Object> {
+	pub fn call(args: ArgsOld) -> quest::Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Block>()?.clone();
 		this.call(args)
 	}

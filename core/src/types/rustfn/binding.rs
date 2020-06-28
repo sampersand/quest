@@ -1,4 +1,4 @@
-use crate::{Object, Args, types};
+use crate::{Object, ArgsOld, types};
 use std::sync::RwLock;
 use std::ops::Deref;
 
@@ -34,7 +34,7 @@ impl Binding {
 		})
 	}
 
-	// pub fn new_stackframe_old_<F, O, E>(args: Args, func: F) -> std::result::Result<O, E>
+	// pub fn new_stackframe_old_<F, O, E>(args: ArgsOld, func: F) -> std::result::Result<O, E>
 	// where
 	// 	F: FnOnce(&Binding) -> std::result::Result<O, E>,
 	// 	E: From<crate::Error>
@@ -48,7 +48,7 @@ impl Binding {
 
 	// }
 
-	pub fn new_stackframe<F>(args: Args, func: F) -> crate::Result<Object>
+	pub fn new_stackframe<F>(args: ArgsOld, func: F) -> crate::Result<Object>
 	where
 		F: FnOnce(&Binding) -> crate::Result<Object>,
 	{

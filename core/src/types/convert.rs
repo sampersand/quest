@@ -1,4 +1,4 @@
-use crate::{Object, Result, Args};
+use crate::{Object, Result, ArgsOld};
 use std::any::Any;
 
 pub trait Convertible : Any + Sized + Clone {
@@ -7,7 +7,7 @@ pub trait Convertible : Any + Sized + Clone {
 
 impl Object {
 	pub fn downcast_convert<T: Convertible>(&self) -> Result<Self> {
-		self.call_attr(T::CONVERT_FUNC, Args::default())
+		self.call_attr_old(T::CONVERT_FUNC, ArgsOld::default())
 	}
 
 	pub fn downcast_call<T: Convertible>(&self) -> Result<T> {

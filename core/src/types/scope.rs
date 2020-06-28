@@ -2,9 +2,9 @@
 pub struct Scope;
 
 mod impls {
-	use crate::{Object, Result, Args, types};
+	use crate::{Object, Result, ArgsOld, types};
 
-	pub fn at_text(args: Args) -> Result<Object> {
+	pub fn at_text(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		if let Ok(name) = this.get_attr("name") {
 			Ok(name)
@@ -13,7 +13,7 @@ mod impls {
 		}
 	}
 
-	pub fn super_(args: Args) -> Result<Object> {
+	pub fn super_(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		let attr = args.arg(0)?;
 		let mut args = args.args(1..)?;
@@ -28,7 +28,7 @@ mod impls {
 				if attr.is_identical(&default_attr) {
 					continue;
 				}
-				return parent.get_attr(&attr)?.call_attr("()", args);
+				return parent.get_attr(&attr)?.call_attr_old("()", args);
 			}
 		}
 
@@ -36,7 +36,7 @@ mod impls {
 			format!("attr {:?} does not exist for {:?} or its parents", attr, this).into()))
 		// this.get_attr("__parent__")?
 		// 	.get_attr("__parent__")?
-		// 	.call_attr(attr, args)
+		// 	.call_attr_old(attr, args)
 	}
 
 }

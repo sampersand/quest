@@ -1,6 +1,6 @@
 use crate::{Object, Result, Error};
 use std::fmt::Debug;
-use crate::literals::{PARENTS, ID, ATTR_MISSING};
+use crate::literals::{__PARENTS__, __ID__, __ATTR_MISSING__};
 
 mod key;
 mod value;
@@ -46,8 +46,8 @@ impl Mapping {
 			.map(|k| k.clone())
 			.collect::<Vec<_>>();
 
-		keys.push(PARENTS);
-		keys.push(ID);
+		keys.push(__PARENTS__);
+		keys.push(__ID__);
 		keys
 	}
 
@@ -56,7 +56,7 @@ impl Mapping {
 		// example code:
 		// Text.12 = {};
 		// Text."14" = {}; # => crashes
-		if key.eq_key(&PARENTS)? {
+		if key.eq_key(&__PARENTS__)? {
 			self.parents = Object::from(value).into();
 			return Ok(());
 		}
@@ -65,7 +65,7 @@ impl Mapping {
 	}
 
 	pub fn has<K: EqKey + ?Sized>(&self, key: &K) -> Result<bool> {
-		if key.eq_key(&PARENTS)? || key.eq_key(&ID)? {
+		if key.eq_key(&__PARENTS__)? || key.eq_key(&__ID__)? {
 			return Ok(true);
 		}
 
@@ -73,11 +73,11 @@ impl Mapping {
 	}
 
 	pub fn get<K: EqKey + ?Sized>(&self, key: &K) -> Result<Option<Value>> {
-		if key.eq_key(&PARENTS)? {
+		if key.eq_key(&__PARENTS__)? {
 			return Ok(Some(self.parents.as_object().into()));
 		}
 
-		if key.eq_key(&ID)? {
+		if key.eq_key(&__ID__)? {
 			return Ok(Some(Object::from(self.owner()?.0.id).into()));
 		}
 
@@ -85,8 +85,8 @@ impl Mapping {
 			return Ok(Some(val.clone()));
 		}
 
-		if self.map.has(&ATTR_MISSING)? {
-			// self.call_attr("__attr_missing__", &[attr.to_object()])
+		if self.map.has(&__ATTR_MISSING__)? {
+			// self.call_attr_old("__attr_missing__", &[attr.to_object()])
 			unimplemented!("how do we handle attr missing and parents?")
 		}
 
@@ -100,7 +100,7 @@ impl Mapping {
 	}
 
 	pub fn remove<K: EqKey + ?Sized>(&mut self, key: &K) -> Result<Option<Object>> {
-		if key.eq_key(&PARENTS)? {
+		if key.eq_key(&__PARENTS__)? {
 			return Ok(Some(std::mem::take(&mut self.parents).as_object()));
 		}
 

@@ -46,24 +46,24 @@ impl Executable for BoundOperator {
 		let this = self.this.execute()?;
 		match self.args.as_ref() {
 			OperArgs::Unary =>
-				this.call_attr(&self.oper, &[]),
+				this.call_attr_old(&self.oper, &[]),
 			OperArgs::Ternary(mid, rhs) =>
-				this.call_attr(&self.oper, &[mid.execute()?, rhs.execute()?]),
+				this.call_attr_old(&self.oper, &[mid.execute()?, rhs.execute()?]),
 			OperArgs::Binary(rhs) if self.oper == Operator::Call => match rhs {
 				Expression::Block(block) if block.paren_type() == ParenType::Round =>
 					match block.run_block()? {
 						Some(crate::block::LineResult::Single(s)) =>
-							this.call_attr(&self.oper, &[s]),
+							this.call_attr_old(&self.oper, &[s]),
 						Some(crate::block::LineResult::Multiple(m)) =>
-							this.call_attr(&self.oper, m),
+							this.call_attr_old(&self.oper, m),
 						None =>
-							this.call_attr(&self.oper, &[])
+							this.call_attr_old(&self.oper, &[])
 					}
 				_ =>
-					this.call_attr(&self.oper, &[rhs.execute()?])
+					this.call_attr_old(&self.oper, &[rhs.execute()?])
 			}
 			OperArgs::Binary(rhs) =>
-				this.call_attr(&self.oper, &[rhs.execute()?]),
+				this.call_attr_old(&self.oper, &[rhs.execute()?]),
 		}
 	}
 }

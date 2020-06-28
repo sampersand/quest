@@ -3,56 +3,46 @@ use crate::{Result, Object, error::KeyError, types};
 use std::borrow::Cow;
 use std::iter::FromIterator;
 
-use crate::types::rustfn::Binding;
 
 #[derive(Clone, Default)]
-pub struct Args<'s> {
-	binding: Option<Binding>,
-	args: Cow<'s, [Object]>
-}
+pub struct Args<'s, 'o: 's>(Cow<'s, [&'o Object]>);
 
 use std::fmt::{self, Debug, Formatter};
 
-impl Debug for Args<'_> {
+impl Debug for Args<'_, '_> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		Debug::fmt(&self.args, f)
+		Debug::fmt(&self.0, f)
 	}
 }
 
-impl<'s> Args<'s> {
-	pub fn new<V: Into<Cow<'s, [Object]>>>(args: V) -> Self {
-		Args { args: args.into(), binding: Binding::try_instance() }
+impl<'s, 'o> Args<'s, 'o> {
+	pub fn new<V: Into<Cow<'s, [&'o Object]>>>(args: V) -> Self {
+		Args(args.into())
 	}
 
-	pub fn new_slice(args: &'s [Object]) -> Self {
-		Args { args: args.into(), binding: Binding::try_instance() }
-	}
-
-	pub fn new_args_slice<'a>(&self, args: &'a [Object]) -> Args<'a> {
-		Args { args: args.into(), binding: self.binding.clone() }
-	}
-
-	pub fn add_this(&mut self, this: Object)  {
-		self.args.to_mut().insert(0, this);
-	}
-
-	pub fn binding(&self) -> Option<&Binding> {
-		self.binding.as_ref()
+	pub fn into_inner(self) -> Cow<'s, [&'o Object]> {
+		self.0
 	}
 }
 
-impl From<Args<'_>> for Vec<Object> {
+impl From<Args<'_, '_>> for Vec<Object> {
 	fn from(args: Args) -> Self {
-		args.args.to_vec()
+		args.0.iter().map(|x| (*x).clone()).collect()
+	}
+}
+
+impl<'s, 'o> From<&'s [&'o Object]> for Args<'s, 'o> {
+	fn from(args: &'s [&'o Object]) -> Self {
+		Args::new(args)
 	}
 }
 
 macro_rules! impl_from_slice {
 	($($n:literal)*) => {
 		$(
-			impl<'a> From<&'a [Object; $n]> for Args<'a> {
-				fn from(n: &'a [Object; $n]) -> Self {
-					Self::new(n as &'a [Object])
+			impl<'a, 'o> From<&'a [&'o Object; $n]> for Args<'a, 'o> {
+				fn from(n: &'a [&'o Object; $n]) -> Self {
+					Self::new(n as &'a [&'o Object])
 				}
 			}
 		)+
@@ -61,59 +51,55 @@ macro_rules! impl_from_slice {
 
 impl_from_slice!(0 1 2 3 4 5);
 
-impl From<Vec<Object>> for Args<'static> {
-	fn from(args: Vec<Object>) -> Self {
+impl<'o> From<Vec<&'o Object>> for Args<'o, 'o> {
+	fn from(args: Vec<&'o Object>) -> Self {
 		Self::new(args)
 	}
 }
 
-impl<'a> From<&'a [Object]> for Args<'a> {
-	fn from(args: &'a [Object]) -> Self {
-		Self::new(args)
+impl<'o> AsRef<[&'o Object]> for Args<'_, 'o> {
+	fn as_ref(&self) -> &[&'o Object] {
+		self.0.as_ref()
 	}
 }
 
-impl AsRef<[Object]> for Args<'_> {
-	fn as_ref(&self) -> &[Object] {
-		self.args.as_ref()
+impl From<Args<'_, '_>> for types::List {
+	fn from(args: Args<'_, '_>) -> Self {
+		types::List::from(Vec::<Object>::from(args))
 	}
 }
 
-impl From<Args<'_>> for types::List {
-	fn from(args: Args<'_>) -> Self {
-		types::List::from(args.args.to_vec())
-	}
-}
-
-impl FromIterator<Object> for Args<'static> {
-	fn from_iter<I: IntoIterator<Item=Object>>(iter: I) -> Self {
+impl<'o> FromIterator<&'o Object> for Args<'o, 'o> {
+	fn from_iter<I: IntoIterator<Item=&'o Object>>(iter: I) -> Self {
 		Args::new(iter.into_iter().collect::<Vec<_>>())
 	}
 }
 
-impl Args<'_> {
-	pub fn arg<'s>(&'s self, idx: usize) -> Result<&'s Object> {
-		self.args.get(idx + 1)
-			.ok_or_else(|| KeyError::OutOfBounds { idx: idx + 1, len: self.args.len() }.into())
-	}	
-
-	pub fn args<'c, I>(&'c self, idx: I) -> Result<Args<'c>>
-	where
-		I: SliceIndex<[Object], Output=[Object]> + 'c + fmt::Debug + Clone
-	{
-		if self.args.len() == 0 {
-			return Ok(Default::default())
-		}
-
-		if let Some(rng) = self.args.get(1..).and_then(|args| args.get(idx.clone())) {
-			Ok(self.new_args_slice(rng))
-		} else {
-			Err(KeyError::BadSlice { slice: format!("{:?}", idx), len: self.args.len() }.into())
-		}
-	}
-
-
-	pub fn this<'s>(&'s self) -> Result<&'s Object> {
-		self.args.get(0).ok_or_else(|| KeyError::NoThisSupplied.into())
+impl<'s, 'o: 's> IntoIterator for Args<'s, 'o> {
+	// in the future, maybe figure out a way to return the slice?
+	type Item = <Vec<&'o Object> as IntoIterator>::Item;
+	type IntoIter = <Vec<&'o Object> as IntoIterator>::IntoIter;
+	fn into_iter(self) -> Self::IntoIter {
+		self.0.into_owned().into_iter()
 	}
 }
+
+impl<'o> Args<'_, 'o> {
+	pub fn arg(&self, idx: usize) -> Result<&'o Object> {
+		self.0.get(idx)
+			.map(|x| *x)
+			.ok_or_else(|| KeyError::OutOfBounds { idx, len: self.0.len() }.into())
+	}	
+
+	pub fn args<I>(&self, idx: I) -> Result<Args<'_, 'o>>
+	where
+		I: SliceIndex<[&'o Object], Output=[&'o Object]> + fmt::Debug + Clone
+	{
+		if let Some(rng) = self.0.get(idx.clone()) {
+			Ok(rng.into())
+		} else {
+			Err(KeyError::BadSlice { slice: format!("{:?}", idx), len: self.0.len() }.into())
+		}
+	}
+}
+

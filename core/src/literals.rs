@@ -8,7 +8,9 @@ macro_rules! literals {
 
 literals! {
 	// stuff for mappings
-	PARENTS "__parents__" ID "__id__" ATTR_MISSING "__attr_missing__"
+	__PARENTS__ "__parents__" __ID__ "__id__" __ATTR_MISSING__ "__attr_missing__"
+
+	__THIS__ "__this__"
 
 	// conversions
 	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list" AT_MAP "@map"

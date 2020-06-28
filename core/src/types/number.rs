@@ -428,12 +428,12 @@ impl From<Number> for types::Boolean {
 
 mod impls {
 	use super::*;
-	use crate::{Object, Result, Args, types::{Text, Boolean}};
+	use crate::{Object, Result, ArgsOld, types::{Text, Boolean}};
 
 	#[allow(non_upper_case_globals)]
-	pub const at_num: fn(Args) -> Result<Object> = clone;
+	pub const at_num: fn(ArgsOld) -> Result<Object> = clone;
 	
-	pub fn at_text(args: Args) -> Result<Object> {
+	pub fn at_text(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		if let Ok(radix) = args.arg(0) {
@@ -446,25 +446,25 @@ mod impls {
 		}
 	}
 
-	pub fn at_bool(args: Args) -> Result<Object> {
+	pub fn at_bool(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		Ok(Boolean::from(*this).into())
 	}
 
-	pub fn clone(args: Args) -> Result<Object> {
+	pub fn clone(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		Ok(this.clone().into())
 	}
 
 	#[allow(non_upper_case_globals)]
-	pub const call: fn(Args) -> Result<Object> = mul;
+	pub const call: fn(ArgsOld) -> Result<Object> = mul;
 
 	macro_rules! define_math_opers {
 		($($fn:ident $fn_assign:ident)*) => {
 			$(
-				pub fn $fn(args: Args) -> Result<Object> {
+				pub fn $fn(args: ArgsOld) -> Result<Object> {
 					let this = args.this()?.try_downcast_ref::<Number>()?;
 					let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
@@ -473,7 +473,7 @@ mod impls {
 					Ok(this.$fn(rhs).into())
 				}
 
-				pub fn $fn_assign(args: Args) -> Result<Object> {
+				pub fn $fn_assign(args: ArgsOld) -> Result<Object> {
 					let this_obj = args.this()?;
 					let rhs = args.arg(0)?.downcast_call::<Number>()?;
 					let this = &mut this_obj.try_downcast_mut::<Number>()?;
@@ -496,7 +496,7 @@ mod impls {
 	macro_rules! define_bitwise_opers {
 		($($fn:ident $fn_assign:ident)*) => {
 			$(
-				pub fn $fn(args: Args) -> Result<Object> {
+				pub fn $fn(args: ArgsOld) -> Result<Object> {
 					let this = args.this()?.try_downcast_ref::<Number>()?;
 					let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
@@ -506,7 +506,7 @@ mod impls {
 						.map(Object::from)
 				}
 
-				pub fn $fn_assign(args: Args) -> Result<Object> {
+				pub fn $fn_assign(args: ArgsOld) -> Result<Object> {
 					let this_obj = args.this()?;
 					let rhs = args.arg(0)?.downcast_call::<Number>()?;
 					let this = &mut this_obj.try_downcast_mut::<Number>()?;
@@ -522,16 +522,16 @@ mod impls {
 		shl shl_assign shr shr_assign
 	}
 
-	pub fn neg(args: Args) -> Result<Object> {
+	pub fn neg(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		Ok((-*this).into())
 	}
 
 	#[allow(non_upper_case_globals)]
-	pub const pos: fn(Args) -> Result<Object> = abs;
+	pub const pos: fn(ArgsOld) -> Result<Object> = abs;
 
-	pub fn bitnot(args: Args) -> Result<Object> {
+	pub fn bitnot(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		(!*this)
@@ -539,43 +539,43 @@ mod impls {
 			.map(Object::from)
 	}
 
-	pub fn abs(args: Args) -> Result<Object> {
+	pub fn abs(args: ArgsOld) -> Result<Object> {
 		let this = *args.this()?.try_downcast_ref::<Number>()?;
 
 		Ok(this.abs().into())
 	}
 
-	pub fn eql(args: Args) -> Result<Object> {
+	pub fn eql(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 		let rhs = args.arg(0)?.downcast_ref::<Number>();
 
 		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
 	}
 
-	pub fn cmp(args: Args) -> Result<Object> {
+	pub fn cmp(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 		let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
 		Ok(this.cmp(&rhs).into())
 	}
 
-	pub fn floor(args: Args) -> Result<Object> {
+	pub fn floor(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		Ok(this.floor().into())
 	}
 
-	pub fn ceil(args: Args) -> Result<Object> {
+	pub fn ceil(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		Ok(this.ceil().into())
 	}
 
-	pub fn round(_args: Args) -> Result<Object> {
+	pub fn round(_args: ArgsOld) -> Result<Object> {
 		unimplemented!("round");
 	}
 
-	pub fn sqrt(_args: Args) -> Result<Object> {
+	pub fn sqrt(_args: ArgsOld) -> Result<Object> {
 		unimplemented!("sqrt")
 	}
 }

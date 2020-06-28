@@ -2,16 +2,16 @@
 pub struct Function;
 
 mod impls {
-	use crate::{Object, Result, Args};
-	pub fn lsh(_args: Args) -> Result<Object> {
+	use crate::{Object, Result, ArgsOld};
+	pub fn lsh(_args: ArgsOld) -> Result<Object> {
 		todo!("<<")
 	}
 
-	pub fn rsh(_args: Args) -> Result<Object> {
+	pub fn rsh(_args: ArgsOld) -> Result<Object> {
 		todo!(">>")
 	}
 
-	pub fn curry(_args: Args) -> Result<Object> {
+	pub fn curry(_args: ArgsOld) -> Result<Object> {
 		todo!("curry")
 	}
 }

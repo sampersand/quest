@@ -1,8 +1,12 @@
-use crate::{Object, error::{ValueError, KeyError}, types::rustfn::Binding};
+use crate::{Object, Result, Args};
+use crate::error::{ValueError, KeyError};
+use crate::literals::__THIS__;
+use crate::types::Number;
+use crate::Binding;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Text(Cow<'static, str>);
 
 impl Debug for Text {
@@ -30,7 +34,7 @@ impl Text {
 		Text(Cow::Borrowed(txt))
 	}
 
-	pub fn evaluate(&self) -> crate::Result<Object> {
+	pub fn evaluate(&self) -> Result<Object> {
 		match self.as_ref() {
 			"__this__" => Ok(Binding::instance().as_ref().clone()),
 			"__args__" => Binding::instance().get_attr("__args__"),
@@ -42,11 +46,9 @@ impl Text {
 				stack.reverse();
 				stack.into()
 			})),
-			_ => Binding::instance().as_ref().call_attr(".", &[self.clone().into()])
+			_ => Binding::instance().as_ref().call_attr_old(".", &[self.clone().into()])
 		}
 	}
-
-
 }
 
 impl From<&'static str> for Text {
@@ -91,108 +93,111 @@ impl AsRef<str> for Text {
 	}
 }
 
-mod impls {
-	use super::*;
-	use crate::{Object, Result, Args, types};
-	// "[]~" => (|args| todo!("[]~")),
-	// "clear" => (|args| todo!("clear")),
-	pub fn at_text(args: Args) -> Result<Object> { // "@text"
-		let this = args.this()?;
-		this.call_attr("clone", args.clone())
+impl Text {
+	#[inline]
+	pub fn qs_at_text(&self, args: Args) -> Result<Object> {
+		self.qs_clone(args)
 	}
 
-	pub fn at_num(args: Args) -> Result<Object> { // "@num"
-		use std::convert::TryFrom;
 
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-		if let Ok(radix) = args.arg(0) {
-			let radix = radix.downcast_call::<types::Number>()?;
-			let radix = i64::try_from(radix) // convert from number to i64
-				.map_err(|err| err.to_string())
-				.and_then(|num| u32::try_from(num).map_err(|err| err.to_string()))
-				.map_err(|err| ValueError::Messaged(format!("invalid radix: {}", err)))?;
-
-			types::Number::from_str_radix(this.as_ref(), radix)
-				.map(Into::into)
-				.map_err(|err| ValueError::Messaged(format!("cant convert: {}", err)).into())
-		} else {
-			types::Number::try_from(this.as_ref())
-				.map(Into::into)
-				.map_err(|err| ValueError::Messaged(err.to_string()).into())
-		}
-	}
-
-	pub fn call(args: Args) -> Result<Object> { // "()"
-		let this = args.this()?;
-		if let Ok(this) = this.try_downcast_ref::<Text>() {
-			this.evaluate()
-		} else {
-			Binding::instance().as_ref().call_attr(".", vec![this.clone()])
-		}
-	}
-
-	pub fn assign(args: Args) -> Result<Object> { // "=" 
-		let this = args.this()?;
-		let rhs = args.arg(0)?.clone();
-		if this.downcast_ref::<Text>().map(|x| x.as_ref() == "__this__").unwrap_or(false) {
-			Ok(Binding::set_binding(rhs).as_ref().clone())
-		} else {
-			args.binding().unwrap().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
-		}
-	}
-
-	pub fn at_list(args: Args) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-		Ok(this.as_ref()
+	pub fn qs_at_list(&self, _: Args) -> Result<Object> {
+		Ok(self.as_ref()
 			.chars()
 			.map(|chr| chr.to_string().into())
 			.collect::<Vec<Object>>()
 			.into())
 	}
 
-	pub fn at_bool(args: Args) -> Result<Object> { // "@bool"
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-		Ok((!this.as_ref().is_empty()).into())
+	#[inline]
+	pub fn qs_at_bool(&self, _: Args) -> Result<Object> {
+		Ok((!self.as_ref().is_empty()).into())
 	}
 
-	pub fn clone(args: Args) -> Result<Object> { // "clone"
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-		Ok(this.clone().into())
-	}
+	pub fn qs_at_num(&self, args: Args) -> Result<Object> {
+		use std::convert::TryFrom;
 
-	pub fn eql(args: Args) -> Result<Object> { // "=="
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-		let rhs_opt = args.arg(0)?.downcast_ref::<Text>();
-		match rhs_opt {
-			Some(rhs_txt) => Ok((*this == *rhs_txt).into()),
-			None => Ok(types::Boolean::FALSE.into())
+		if let Ok(radix) = args.arg(0) {
+			let radix = radix.downcast_call::<Number>()?;
+			let radix = i64::try_from(radix) // convert from number to i64
+				.map_err(|err| err.to_string())
+				.and_then(|num| u32::try_from(num).map_err(|err| err.to_string()))
+				.map_err(|err| ValueError::Messaged(format!("invalid radix: {}", err)))?;
+
+			Number::from_str_radix(self.as_ref(), radix)
+				.map(Into::into)
+				.map_err(|err| ValueError::Messaged(format!("cant convert: {}", err)).into())
+		} else {
+			Number::try_from(self.as_ref())
+				.map(Into::into)
+				.map_err(|err| ValueError::Messaged(err.to_string()).into())
 		}
 	}
 
-	pub fn cmp(args: Args) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-		let rhs = args.arg(0)?.downcast_call::<Text>()?;
-		Ok(this.as_ref().cmp(rhs.as_ref()).into())
+	#[inline]
+	pub fn qs_clone(&self, _: Args) -> Result<Object> {
+		Ok(self.clone().into())
 	}
 
-	pub fn plus(args: Args) -> Result<Object> { // "+"
-		let this = args.this()?;
-		this.call_attr("clone", vec![])?
-			.call_attr("+=", args.args(..)?)
+	pub fn qs_call(this: &Object, _: Args) -> Result<Object> {
+		if let Ok(this) = this.try_downcast_ref::<Text>() {
+			this.evaluate()
+		} else {
+			Binding::instance().as_ref().dot_get_attr(this)
+		}
 	}
 
-	pub fn plus_assign(args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Text>()?;
-		{
-			let mut this = args.this()?.try_downcast_mut::<Text>()?;
-			this.0.to_mut().push_str(rhs.as_ref());
+	pub fn qs_assign(this: &Object, args: Args) -> Result<Object> {
+		let rhs = args.arg(0)?.clone();
 
+		if let Some(this) = this.downcast_ref::<Text>() {
+			use crate::obj::EqKey;
+			if this.as_ref().eq_key(&__THIS__)? {
+				return Ok(Binding::set_binding(rhs).as_ref().clone())
+			}
 		}
 
-		args.this().map(Clone::clone)
+		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
 	}
 
-	pub fn len(args: Args) -> Result<Object> {
+	pub fn qs_eql(&self, args: Args) -> Result<Object> { // "=="
+		if let Some(rhs) = args.arg(0)?.downcast_ref::<Text>() {
+			Ok((*self == *rhs).into())
+		} else {
+			Ok(false.into())
+		}
+	}
+
+	#[inline]
+	pub fn qs_cmp(&self, args: Args) -> Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Text>()?;
+		Ok(self.cmp(&rhs).into())
+	}
+
+	pub fn qs_add(&self, args: Args) -> Result<Object> {
+		let mut clone = self.clone();
+		clone.qs_add_assign(args)?;
+		Ok(clone.into())
+	}
+
+	#[inline]
+	pub fn qs_add_assign(&mut self, args: Args) -> Result<()> {
+		let rhs = args.arg(0)?.downcast_call::<Text>()?;
+		self.0.to_mut().push_str(rhs.as_ref());
+		// let mut this = args.this()?.try_downcast_mut::<Text>()?;
+		// this.0.to_mut().push_str(rhs.as_ref());
+		// }
+
+		Ok(())
+	}
+}
+
+mod impls {
+	use super::*;
+	use crate::{Object, Result, ArgsOld, types};
+	// "[]~" => (|args| todo!("[]~")),
+	// "clear" => (|args| todo!("clear")),
+
+	pub fn len(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Text>()?;
 		Ok(this.0.len().into())
 	}
@@ -217,7 +222,7 @@ mod impls {
 		}
 	}
 
-	pub fn index(args: Args) -> Result<Object> {
+	pub fn index(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Text>()?;
 
 		let len = this.0.len();
@@ -255,7 +260,7 @@ mod impls {
 		}
 	}
 
-	pub fn shift(args: Args) -> Result<Object> {
+	pub fn shift(args: ArgsOld) -> Result<Object> {
 		let this = &mut args.this()?.try_downcast_mut::<types::Text>()?.0;
 		if this.len() == 0 {
 			Ok(Object::default())
@@ -264,40 +269,40 @@ mod impls {
 		}
 	}
 
-	pub fn push(args: Args) -> Result<Object> {
+	pub fn push(args: ArgsOld) -> Result<Object> {
 		let this_obj = args.this()?;
 		let arg = args.arg(0)?.downcast_call::<types::Text>()?.0;
 		this_obj.try_downcast_mut::<types::Text>()?.0.to_mut().push_str(arg.as_ref());
 		Ok(this_obj.clone())
 	}
 
-	pub fn clear(args: Args) -> Result<Object> {
+	pub fn clear(args: ArgsOld) -> Result<Object> {
 		let this_obj = args.this()?;
 		this_obj.try_downcast_mut::<types::Text>()?.0.to_mut().clear();
 		Ok(this_obj.clone())
 	}
 
-	pub fn index_assign(_args: Args) -> Result<Object> { todo!("[]=") } // "[]=
-	pub fn index_of(_args: Args) -> Result<Object> { todo!("index_of") } // "index_of"
-	pub fn split(_args: Args) -> Result<Object> { todo!("split") } // "split"
-	pub fn reverse(_args: Args) -> Result<Object> { todo!("reverse") } // "reverse"
+	pub fn index_assign(_args: ArgsOld) -> Result<Object> { todo!("[]=") } // "[]=
+	pub fn index_of(_args: ArgsOld) -> Result<Object> { todo!("index_of") } // "index_of"
+	pub fn split(_args: ArgsOld) -> Result<Object> { todo!("split") } // "split"
+	pub fn reverse(_args: ArgsOld) -> Result<Object> { todo!("reverse") } // "reverse"
 }
 
 impl_object_type!{
 for Text [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
-	"@text" => (impls::at_text),
-	"@num" => (impls::at_num),
-	"@list" => (impls::at_list),
-	"@bool" => (impls::at_bool),
-	"clone" => (impls::clone),
-	"()" => (impls::call),
-	"="  => (impls::assign),
-	"<=>"  => (impls::cmp),
-	"==" => (impls::eql),
-	"+"  => (impls::plus),
-	"+="  => (impls::plus_assign),
-	"len" => (impls::len),
-	"get" => (impls::index),
+	"@text" => method Text::qs_at_text,
+	"@num"  => method Text::qs_at_num,
+	"@list" => method Text::qs_at_list,
+	"@bool" => method Text::qs_at_bool,
+	"clone" => method Text::qs_clone,
+	"()"    => method Text::qs_call,
+	"="     => method Text::qs_assign,
+	"<=>"   => method Text::qs_cmp,
+	"=="    => method Text::qs_eql,
+	"+"     => method Text::qs_add,
+	"+"     => method_assign Text::qs_add_assign,
+	"len"   => (impls::len),
+	"get"   => (impls::index),
 	"shift" => (impls::shift),
 	"push" => (impls::push),
 	"clear" => (impls::clear),

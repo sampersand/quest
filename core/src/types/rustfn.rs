@@ -1,54 +1,72 @@
 mod args;
+mod args_old;
 mod binding;
 
-pub use binding::Binding;
 pub use args::Args;
+pub use args_old::ArgsOld;
+pub use binding::Binding;
 
-use crate::{Object, types};
+use crate::{Object, Result, types};
 use std::fmt::{self, Debug, Formatter};
+// use std::any::Any;
 
-type FnType = fn(Args) -> crate::Result<Object>;
+#[derive(Clone, Copy)]
+enum FnType {
+	Old(fn(ArgsOld) -> Result<Object>),
+	New(fn(&Object, Args) -> Result<Object>)
+}
 
 #[derive(Clone, Copy)]
 pub struct RustFn(&'static str, FnType);
 
 impl Debug for RustFn {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		f.debug_tuple("RustFn")
-			.field(&self.0)
-			// .field(&(self.1 as usize as *const ()))
-			.finish()
+		f.debug_tuple("RustFn").field(&self.0).finish()
 	}
 }
 
 impl Eq for RustFn {}
 impl PartialEq for RustFn {
 	fn eq(&self, rhs: &RustFn) -> bool {
-		let eql = (self.1 as usize) == (rhs.1 as usize);
-		assert_eq!(eql, self.0 == rhs.0);
-		eql
+		self.0 == rhs.0
+		// let eql = (self.1 as usize) == (rhs.1 as usize);
+		// assert_eq!(eql, self.0 == rhs.0);
+		// eql
 	}
 }
 
 
 impl RustFn {
 	#[inline]
-	pub fn new(name: &'static str, func: FnType) -> Self {
-		RustFn(name, func)
+	pub fn new(name: &'static str, func: fn(ArgsOld) -> Result<Object>) -> Self {
+		RustFn(name, FnType::Old(func))
+	}
+
+	pub fn method(name: &'static str, func: fn(&Object, Args) -> Result<Object>) -> Self {
+		RustFn(name, FnType::New(func))
 	}
 
 	#[inline]
-	pub fn call(&self, args: Args) -> crate::Result<Object> {
-		(self.1)(args)
+	pub fn call(&self, obj: &Object, args: Args) -> Result<Object> {
+		match self.1 {
+			FnType::Old(generic) => {
+				let mut args = ArgsOld::from(args);
+				args.add_this(obj.clone());
+				generic(args)
+			},
+			FnType::New(method) => method(obj, args)
+		}
+	}
+
+	#[inline]
+	pub fn call_old(&self, args: ArgsOld) -> Result<Object> {
+		match self.1 {
+			FnType::Old(generic) => generic(args),
+			FnType::New(method) => method(args.this()?, args.args(..)?.as_ref().iter().collect())
+		}
 	}
 }
 
-
-impl AsRef<FnType> for RustFn {
-	fn as_ref(&self) -> &FnType {
-		&self.1
-	}
-}
 
 impl From<RustFn> for types::Text {
 	fn from(rustfn: RustFn) -> Self {
@@ -58,16 +76,16 @@ impl From<RustFn> for types::Text {
 
 mod impls {
 	use super::*;
-	use crate::{Object, Result, Args};
+	use crate::{Object, Result, ArgsOld};
 
-	pub fn call(args: Args) -> Result<Object> {
+	pub fn call(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<RustFn>()?;
-		this.call(args.args(..)?)
+		this.call_old(args.args(..)?)
 	}
 
-	pub fn at_text(args: Args) -> Result<Object> {
-		let this = *args.this()?.try_downcast_ref::<RustFn>()?;
-		Ok(types::Text::from(this).into())
+	pub fn at_text(args: ArgsOld) -> Result<Object> {
+		let this = args.this()?.try_downcast_ref::<RustFn>()?;
+		Ok(this.0.into())
 	}
 }
 

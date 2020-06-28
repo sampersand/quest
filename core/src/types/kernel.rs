@@ -2,17 +2,17 @@
 pub struct Kernel;
 
 mod impls {
-	use crate::{Object, Result, Error, Args, types};
+	use crate::{Object, Result, Error, ArgsOld, types};
 
-	pub fn r#if(args: Args) -> Result<Object> {
+	pub fn r#if(args: ArgsOld) -> Result<Object> {
 		if args.arg(0)?.downcast_call::<types::Boolean>()?.into() {
 			args.arg(1)?.clone()
 		} else {
 			args.arg(2).map(Clone::clone).unwrap_or_default()
-		}.call_attr("()", &[])
+		}.call_attr_old("()", &[])
 	}
 
-	pub fn disp(args: Args, print_end: bool) -> Result<Object> {
+	pub fn disp(args: ArgsOld, print_end: bool) -> Result<Object> {
 		print!("{}",
 			args.args(..)
 				.unwrap_or_default()
@@ -37,35 +37,35 @@ mod impls {
 			.map(|_| Object::default())
 	}
 
-	pub fn r#while(args: Args) -> Result<Object> {
+	pub fn r#while(args: ArgsOld) -> Result<Object> {
 		let cond = args.arg(0)?;
 		let body = args.arg(1)?;
 		// crate::Binding::new_stackframe(args.args(2..).unwrap_or_default(), move |b| {
 		// 	b.set_attr("name", Object::from("while"))?;
 
 			let mut result = Object::default();
-			while cond.call_attr("()", &[])?.downcast_call::<types::Boolean>()?.into() {
-				result = body.call_attr("()", &[])?;
+			while cond.call_attr_old("()", &[])?.downcast_call::<types::Boolean>()?.into() {
+				result = body.call_attr_old("()", &[])?;
 			};
 			Ok(result)
 		// })
 	}
 
-	pub fn r#loop(args: Args) -> Result<Object> {
+	pub fn r#loop(args: ArgsOld) -> Result<Object> {
 		let body = args.arg(0)?;
 		// crate::Binding::new_stackframe(args.args(1..).unwrap_or_default(), move |b| {
 			// b.set_attr("name", Object::from("loop"))?;
 			loop {
-				body.call_attr("()", &[])?;
+				body.call_attr_old("()", &[])?;
 			}
 		// })
 	}
 
-	pub fn r#for(_args: Args) -> Result<Object> {
+	pub fn r#for(_args: ArgsOld) -> Result<Object> {
 		todo!("r#for")
 	}
 
-	pub fn quit(args: Args) -> Result<Object> {
+	pub fn quit(args: ArgsOld) -> Result<Object> {
 		let code = args.arg(0)
 			.and_then(|x| x.downcast_call::<types::Number>())
 			.map(|x| x.floor())
@@ -78,7 +78,7 @@ mod impls {
 		std::process::exit(code as i32)
 	}
 
-	pub fn system(args: Args) -> Result<Object> {
+	pub fn system(args: ArgsOld) -> Result<Object> {
 		use std::process::Command;
 		let cmd = args.arg(0)?.downcast_call::<types::Text>()?;
 		let mut command = Command::new(cmd.as_ref());
@@ -92,7 +92,7 @@ mod impls {
 			.map(|output| String::from_utf8_lossy(&output.stdout).to_string().into())
 	}
 
-	pub fn rand(args: Args) -> Result<Object> {
+	pub fn rand(args: ArgsOld) -> Result<Object> {
 		let mut start: f64 = 0.0;
 		let mut end: f64 = 1.0;
 
@@ -110,7 +110,7 @@ mod impls {
 		Ok((rand::random::<f64>() * (end - start) + start).into())
 	}
 
-	pub fn prompt(args: Args) -> Result<Object> {
+	pub fn prompt(args: ArgsOld) -> Result<Object> {
 		use std::io;
 
 		disp(args, false)?;
@@ -129,18 +129,18 @@ mod impls {
 		}
 	}
 
-	pub fn r#return(args: Args) -> Result<Object> {
+	pub fn r#return(args: ArgsOld) -> Result<Object> {
 		let to = crate::Binding::from(args.arg(0)?.clone());
 		let what = args.arg(1).map(Clone::clone).unwrap_or_default();
 
 		Err(Error::Return { to, what })
 	}
 
-	pub fn sleep(_args: Args) -> Result<Object> {
+	pub fn sleep(_args: ArgsOld) -> Result<Object> {
 		todo!("sleep")
 	}
 
-	pub fn open(_args: Args) -> Result<Object> {
+	pub fn open(_args: ArgsOld) -> Result<Object> {
 		// let filename = args.arg(0)?.downcast_call::<types::Text>();
 		todo!("open")
 	}
@@ -193,13 +193,13 @@ mod tests {
 		use crate::{Object, types::*};
 
 		macro_rules! assert_exists_eq {
-			($($key:literal $val:expr),*) => {
+			($($key:literal $ty:ty, $val:expr),*) => {
 				$(
 					assert_eq!(
 						$val,
 						*Kernel::mapping()
 							.get_attr(&Object::from($key))
-							.unwrap().downcast_ref().unwrap(),
+							.unwrap().downcast_ref::<$ty>().unwrap(),
 						"constant {:?} doesn't exist or is wrong value",
 						$key
 					);
@@ -210,9 +210,9 @@ mod tests {
 		Kernel::_wait_for_setup_to_finish();
 
 		assert_exists_eq!(
-			"true" Boolean::new(true),
-			"false" Boolean::new(false),
-			"null" Null::new()
+			"true" Boolean, Boolean::new(true),
+			"false" Boolean, Boolean::new(false),
+			"null" Null, Null::new()
 		);
 	}
 

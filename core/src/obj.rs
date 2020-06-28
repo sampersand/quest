@@ -1,4 +1,4 @@
-use crate::{Result, Args};
+use crate::{Result, Args, ArgsOld};
 use crate::error::{TypeError, KeyError};
 use crate::types::{self, ObjectType};
 
@@ -58,6 +58,7 @@ impl Debug for Internal {
 		} else {
 			f.debug_tuple("Object")
 				.field(&DataDebug(&**self.data.read().expect("poisoned"), self.dbg))
+				.field(&self.typename)
 				.field(&self.id)
 				.finish()
 		}
@@ -110,16 +111,23 @@ impl Object {
 		Object::new_with_parent(data, vec![T::mapping()])
 	}
 
+	#[inline]
 	pub fn id(&self) -> usize {
 		self.0.id
 	}
 
+	#[inline]
+	pub fn typename(&self) -> &'static str {
+		self.0.typename
+	}
+
+	#[inline]
 	pub fn is_identical(&self, rhs: &Object) -> bool {
 		Arc::ptr_eq(&self.0, &rhs.0)
 	}
 
 	pub fn eq_obj(&self, rhs: &Object) -> Result<bool> {
-		self.call_attr("==", &[rhs.clone()])
+		self.call_attr_old("==", &[rhs.clone()])
 			.map(|res| res.downcast_ref::<types::Boolean>()
 				.map(|b| bool::from(*b))
 				.unwrap_or(false))
@@ -148,7 +156,6 @@ impl Object {
 		self.downcast_ref::<T>().map(|x| x.clone())
 	}
 
-				#[allow(unreachable_code)]
 	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> Result<impl Deref<Target = T> + 'a> {
 		self.downcast_ref::<T>()
 			.ok_or_else(|| TypeError::WrongType {
@@ -294,23 +301,41 @@ impl Object {
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
 	}
 
-	pub fn call_attr<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
+	pub fn call_attr<'s, 'o: 's, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
 	where
 		K: EqKey + ToObject,
-		A: Into<Args<'a>>
+		A: Into<Args<'s, 'o>>
 	{
 		match self.get_value(attr)? {
 			Value::RustFn(rustfn) => {
-				let mut args = args.into();
-				args.add_this(self.clone());
-				rustfn.call(args)
+				rustfn.call(self, args.into())
 			},
 
 			Value::Object(object) => {
 				let bound_attr = Object::new(crate::types::BoundFunction);
 				bound_attr.set_attr("__bound_object_owner__", self.clone())?;
 				bound_attr.set_attr("__bound_object__", object)?;
-				bound_attr.call_attr("()", args)
+				bound_attr.call_attr_old("()", args.into())
+			}
+		}
+	}
+	pub fn call_attr_old<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
+	where
+		K: EqKey + ToObject,
+		A: Into<ArgsOld<'a>>
+	{
+		match self.get_value(attr)? {
+			Value::RustFn(rustfn) => {
+				let mut args = args.into();
+				args.add_this(self.clone());
+				rustfn.call_old(args)
+			},
+
+			Value::Object(object) => {
+				let bound_attr = Object::new(crate::types::BoundFunction);
+				bound_attr.set_attr("__bound_object_owner__", self.clone())?;
+				bound_attr.set_attr("__bound_object__", object)?;
+				bound_attr.call_attr_old("()", args)
 			}
 		}
 	}

@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 #![deny(warnings)]
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.

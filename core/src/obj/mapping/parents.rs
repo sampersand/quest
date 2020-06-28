@@ -61,7 +61,7 @@ impl Parents {
 
 		match &mut *inner {
 			Inner::Object(object) => {
-				object.call_attr("push", vec![parent])?;
+				object.call_attr_old("push", vec![parent])?;
 			},
 			Inner::List(ref mut list) => list.push(parent),
 			Inner::None => *inner = Inner::List(vec![parent])

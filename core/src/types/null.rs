@@ -62,39 +62,39 @@ impl From<Null> for types::Text {
 
 mod impls {
 	use super::Null;
-	use crate::{Object, Result, Args, types};
+	use crate::{Object, Result, ArgsOld, types};
 
-	pub fn at_bool(_args: Args) -> Result<Object> {
+	pub fn at_bool(_args: ArgsOld) -> Result<Object> {
 		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
 		Ok(types::Boolean::from(Null).into())
 	}
 
-	pub fn at_list(_args: Args) -> Result<Object> {
+	pub fn at_list(_args: ArgsOld) -> Result<Object> {
 		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
 		Ok(types::List::from(Null).into())
 	}
 
-	pub fn at_num(_args: Args) -> Result<Object> {
+	pub fn at_num(_args: ArgsOld) -> Result<Object> {
 		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
 		Ok(types::Number::from(Null).into())
 	}
 
-	pub fn at_text(_args: Args) -> Result<Object> {
+	pub fn at_text(_args: ArgsOld) -> Result<Object> {
 		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
 		Ok(types::Text::from(Null).into())
 	}
 
-	pub fn call(_args: Args) -> Result<Object> {
+	pub fn call(_args: ArgsOld) -> Result<Object> {
 		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
 		Ok(Object::default())
 	}
 
-	pub fn eql(args: Args) -> Result<Object> {
+	pub fn eql(args: ArgsOld) -> Result<Object> {
 		debug_assert!(args.this().expect("bad this given").is_a::<Null>());
 		Ok(args.arg(0)?.is_a::<Null>().into())
 	}
 
-	pub fn clone(_args: Args) -> Result<Object> {
+	pub fn clone(_args: ArgsOld) -> Result<Object> {
 		debug_assert!(_args.this().expect("bad this given").is_a::<Null>());
 		Ok(Null.into())
 	}
