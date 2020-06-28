@@ -1,2 +1,0 @@
-;=sR1=m 100;=n=g 0;O+'guess 1-'m
-;W|<g s>g s;=n+1nO I<=g+0P'> 's'too low'I>g s'too high''correct'O+'tries: 'n

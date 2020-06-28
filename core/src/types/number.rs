@@ -324,7 +324,7 @@ impl std::ops::DivAssign for Number {
 
 		match (*self, rhs) {
 			(Integer(_), Integer(r)) if r == 0 => *self = Number::NAN,
-			(Integer(l), Integer(r)) => *self = Integer(l / r),
+			(Integer(l), Integer(r)) => *self = Self::from((l as FloatType) / (r as FloatType)),
 			(Integer(l), Float(r)) => *self = Float((l as FloatType) / (r)),
 			(Float(l), Integer(r)) => *self = Float(l / (r as FloatType)),
 			(Float(l), Float(r)) => *self = Float(l / r)

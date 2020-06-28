@@ -29,9 +29,9 @@ mod impls {
 		Ok((cmp(args)? == Ordering::Greater).into())
 	}
 
-	pub fn eql(args: Args) -> Result<Object> {
-		Ok((cmp(args)? == Ordering::Equal).into())
-	}
+	// pub fn eql(args: Args) -> Result<Object> {
+	// 	Ok((cmp(args)? == Ordering::Equal).into())
+	// }
 
 	pub fn leq(args: Args) -> Result<Object> {
 		Ok((cmp(args)? != Ordering::Greater).into())
@@ -41,9 +41,9 @@ mod impls {
 		Ok((cmp(args)? != Ordering::Less).into())
 	}
 
-	pub fn neq(args: Args) -> Result<Object> {
-		Ok((cmp(args)? != Ordering::Equal).into())
-	}
+	// pub fn neq(args: Args) -> Result<Object> {
+	// 	Ok((cmp(args)? != Ordering::Equal).into())
+	// }
 
 }
 
@@ -53,8 +53,8 @@ for Comparable [(parents super::Basic)]:
 	">" => impls::gth,
 	"<=" => impls::leq,
 	">=" => impls::geq,
-	"==" => impls::eql,
-	"!=" => impls::neq,
+	// "==" => impls::eql,
+	// "!=" => impls::neq,
 }
 
 impl From<Ordering> for crate::Object {
