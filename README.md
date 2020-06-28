@@ -2,7 +2,7 @@
 A language based around extensibility and freedom
 
 # What's Quest
-Quest is an "non-typed" language that is design to allow for efficient code reuse. Similar to dynamically-typed languages in that types aren't relevant, Quest takes this a step further: There _are_ no types (just key-value pairs).
+Quest is an "non-typed" language that is designed to allow for efficient code reuse. Similar to dynamically-typed languages in that types aren't relevant, Quest takes this a step further: There _are_ no types (just key-value pairs).
 
 # Features
 Quest supports everything you'd expect from a programming language and more!
@@ -19,7 +19,7 @@ Quest supports everything you'd expect from a programming language and more!
 4. `./quest [-h] [-f file] [-e script] [-- [args to pass to the quest program]]`
 	- Command-line arguments are passed in the `__args__` method in the base script object.
 
-If all arguments are omitted a REPL instnace will be launched.
+If all arguments are omitted a REPL instance will be launched.
 
 # Examples
 
@@ -40,7 +40,7 @@ disp("Hello, " + __this__."where" + "!"); # => Hello, world!
 
 ## Functions, Classes, and Maps
 
-In Quest, there are no named/anomymous functions—they're both simply `Block`s, written as `{ ... }`:
+In Quest, there are no named/anonymous functions—they're both simply `Block`s, written as `{ ... }`:
 ```quest
 # Arguments are passed via local variables `_1`, `_2`, etc.
 # The last statement in a block is implicitly returned.
@@ -82,7 +82,7 @@ $Person = {
 		$first = _1;
 		$last = _2;
 
-		__this__ # return the current scope, ie the new object
+		__this__ # return the current scope, i.e. the new object
 	};
 
 	# Define the conversion to a text object
@@ -148,7 +148,7 @@ $make_dinner = {
 	true # return `true`
 };
 
-# the `if` function can also be used as a terninary operator.
+# the `if` function can also be used as a ternary operator.
 disp(if(make_dinner(), { "time to eat!" }, { "aww" }));
 ```
 
@@ -161,7 +161,7 @@ while({ i < 100 }, {
 	# Quest supports "truthy" values.
 	if(i % 2, {
 		# Return from the while loops's body's stackframe.
-		# This is ananlogous to `continue`.
+		# This is analogous to `continue`.
 		return(__stack__.$get(2));
 	});
 
@@ -215,7 +215,7 @@ disp(x, $x(), 'x'(), __this__.'x', __this__.$x); # => 5 5 5 5 5
 ```
 
 ## Everything is fair game
-Most runtime languages allow for assigning arbitrary values to any object. However, Quest takes this a step further, and allows _everything_ to have attributes added/removed from them, including primatives like numbers. (For those mathy-folks, every Quest object is a singleton object.)
+Most runtime languages allow for assigning arbitrary values to any object. However, Quest takes this a step further, and allows _everything_ to have attributes added/removed from them, including primitives like numbers. (For those mathy-folks, every Quest object is a singleton object.)
 
 ```quest
 # define the `square` method on 
