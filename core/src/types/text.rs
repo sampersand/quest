@@ -29,6 +29,24 @@ impl Text {
 	pub const fn new_static(txt: &'static str) -> Self {
 		Text(Cow::Borrowed(txt))
 	}
+
+	pub fn evaluate(&self) -> crate::Result<Object> {
+		match self.as_ref() {
+			"__this__" => Ok(Binding::instance().as_ref().clone()),
+			"__args__" => Binding::instance().get_attr("__args__"),
+			"__stack__" => Ok(Binding::with_stack(|s| {
+				let mut stack = s.read().expect("couldn't read stack")
+					.iter()
+					.map(|x| x.as_ref().clone())
+					.collect::<Vec<_>>();
+				stack.reverse();
+				stack.into()
+			})),
+			_ => Binding::instance().as_ref().call_attr(".", &[self.clone().into()])
+		}
+	}
+
+
 }
 
 impl From<&'static str> for Text {
@@ -107,22 +125,10 @@ mod impls {
 	pub fn call(args: Args) -> Result<Object> { // "()"
 		let this = args.this()?;
 		if let Ok(this) = this.try_downcast_ref::<Text>() {
-			match this.as_ref() {
-				"__this__" => return Ok(Binding::instance().as_ref().clone()),
-				"__args__" => return Binding::instance().get_attr("__args__"),
-				"__stack__" => return Ok(Binding::with_stack(|s| {
-					let mut stack = s.read().expect("couldn't read stack")
-						.iter()
-						.map(|x| x.as_ref().clone())
-						.collect::<Vec<_>>();
-					stack.reverse();
-					stack.into()
-				})),
-				_ => {}
-			}
+			this.evaluate()
+		} else {
+			Binding::instance().as_ref().call_attr(".", vec![this.clone()])
 		}
-		
-		Binding::instance().as_ref().call_attr(".", vec![this.clone()])
 	}
 
 	pub fn assign(args: Args) -> Result<Object> { // "=" 

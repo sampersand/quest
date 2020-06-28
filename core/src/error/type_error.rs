@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub enum TypeError {
-	WrongType { expected: &'static str, got: String }
+	WrongType { expected: &'static str, got: &'static str }
 }
 
 impl From<TypeError> for super::Error {

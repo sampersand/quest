@@ -57,6 +57,7 @@ impl EqKey for str {
 					Ok(obj.downcast_ref_unchecked::<types::Text>().as_ref() == self)
 				},
 			Key::Object(_) => Ok(false)
+
 		}
 	}
 }

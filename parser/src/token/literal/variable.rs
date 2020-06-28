@@ -15,8 +15,7 @@ impl Display for Variable {
 
 impl Executable for Variable {
 	fn execute(&self) -> quest::Result<quest::Object> {
-		quest::Object::from(self.0.clone())
-			.call_attr(&crate::token::Operator::Call, vec![])
+		self.0.evaluate()
 	}
 }
 
