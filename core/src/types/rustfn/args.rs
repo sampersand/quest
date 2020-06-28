@@ -1,5 +1,6 @@
 use std::slice::SliceIndex;
-use crate::{Result, Object, error::KeyError, types};
+use crate::{Object, types};
+use crate::error::KeyError;
 use std::borrow::Cow;
 use std::iter::FromIterator;
 
@@ -85,20 +86,20 @@ impl<'s, 'o: 's> IntoIterator for Args<'s, 'o> {
 }
 
 impl<'o> Args<'_, 'o> {
-	pub fn arg(&self, idx: usize) -> Result<&'o Object> {
+	pub fn arg(&self, idx: usize) -> Result<&'o Object, KeyError> {
 		self.0.get(idx)
 			.map(|x| *x)
-			.ok_or_else(|| KeyError::OutOfBounds { idx, len: self.0.len() }.into())
+			.ok_or_else(|| KeyError::OutOfBounds { idx, len: self.0.len() })
 	}	
 
-	pub fn args<I>(&self, idx: I) -> Result<Args<'_, 'o>>
+	pub fn args<I>(&self, idx: I) -> Result<Args<'_, 'o>, KeyError>
 	where
 		I: SliceIndex<[&'o Object], Output=[&'o Object]> + fmt::Debug + Clone
 	{
 		if let Some(rng) = self.0.get(idx.clone()) {
 			Ok(rng.into())
 		} else {
-			Err(KeyError::BadSlice { slice: format!("{:?}", idx), len: self.0.len() }.into())
+			Err(KeyError::BadSlice { slice: format!("{:?}", idx), len: self.0.len() })
 		}
 	}
 }

@@ -7,19 +7,22 @@ type IntegerType = i64;
 type FloatType = f64;
 
 #[derive(Clone, Copy)]
-pub enum Number {
+pub struct Number(Inner);
+
+#[derive(Clone, Copy)]
+enum Inner {
 	Integer(IntegerType),
 	Float(FloatType),
 }
 
 impl PartialEq for Number {
 	fn eq(&self, rhs: &Number) -> bool {
-		use Number::*;
-		match (self, rhs) {
+		use Inner::*;
+		match (self.0, rhs.0) {
 			(Integer(l), Integer(r)) => l == r,
 			(Float(l), Float(r)) => l == r,
 			(Integer(n), Float(f))
-				| (Float(f), Integer(n)) => *f == (*n as FloatType),
+				| (Float(f), Integer(n)) => f == (n as FloatType),
 		}
 	}
 }
@@ -35,9 +38,9 @@ impl Default for Number {
 impl Debug for Number {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		if f.alternate() {
-			match self {
-				Number::Integer(n) => write!(f, "Integer({:?})", n),
-				Number::Float(n) => write!(f, "Float({:?})", n),
+			match self.0 {
+				Inner::Integer(n) => write!(f, "Integer({:?})", n),
+				Inner::Float(n) => write!(f, "Float({:?})", n),
 			}
 		} else {
 			Display::fmt(self, f)
@@ -47,9 +50,9 @@ impl Debug for Number {
 
 impl Display for Number {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		match self {
-			Number::Integer(n) => Display::fmt(n, f),
-			Number::Float(n) => Display::fmt(n, f),
+		match self.0 {
+			Inner::Integer(n) => Display::fmt(&n, f),
+			Inner::Float(n) => Display::fmt(&n, f),
 		}
 	}
 }
@@ -82,29 +85,29 @@ impl std::error::Error for FromStrError {
 }
 
 impl Number {
-	pub const ZERO: Number = Number::Integer(0);
-	pub const  ONE: Number = Number::Integer(1);
-	pub const   PI: Number = Number::Float(std::f64::consts::PI);
-	pub const    E: Number = Number::Float(std::f64::consts::E);
-	pub const  NAN: Number = Number::Float(f64::NAN);
-	pub const  INF: Number = Number::Float(f64::INFINITY);
+	pub const ZERO: Self = Number(Inner::Integer(0 as IntegerType));
+	pub const  ONE: Self = Number(Inner::Integer(1 as IntegerType));
+	pub const   PI: Self = Number(Inner::Float(std::f64::consts::PI));
+	pub const    E: Self = Number(Inner::Float(std::f64::consts::E));
+	pub const  NAN: Self = Number(Inner::Float(f64::NAN));
+	pub const  INF: Self = Number(Inner::Float(f64::INFINITY));
 
 
 	pub fn ceil(self) -> IntegerType {
-		match self {
-			Number::Integer(i) => i,
-			Number::Float(f) => f.ceil() as _
+		match self.0 {
+			Inner::Integer(i) => i,
+			Inner::Float(f) => f.ceil() as _
 		}
 	}
 
 	pub fn floor(self) -> IntegerType {
-		match self {
-			Number::Integer(i) => i,
-			Number::Float(f) => f.floor() as _
+		match self.0 {
+			Inner::Integer(i) => i,
+			Inner::Float(f) => f.floor() as _
 		}
 	}
 
-	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Number, FromStrError> {
+	pub fn from_str_radix(inp: &str, radix: u32) -> Result<Self, FromStrError> {
 		if radix < 2 || radix > 36 {
 			return Err(FromStrError::BadRadix(radix))
 		}
@@ -132,7 +135,7 @@ impl TryFrom<&'_ str> for Number {
 				inp.remove(idx);
 			}
 
-			return Number::try_from(inp.as_ref())
+			return Number::try_from(inp.as_str())
 		}
 
 		IntegerType::from_str(inp)
@@ -189,13 +192,13 @@ impl PartialOrd for Number {
 
 impl Ord for Number {
 	fn cmp(&self, rhs: &Number) -> Ordering {
-		use Number::*;
+		use Inner::*;
 		// TODO: somehow make an ordering and account for NaN
-		match (self, rhs) {
-			(Integer(l), Integer(r)) => l.cmp(r),
-			(Integer(l), Float(r)) => (*l as FloatType).partial_cmp(r).expect("bad cmp (i/f)"),
-			(Float(l), Integer(r)) => l.partial_cmp(&(*r as FloatType)).expect("bad cmp (f/i)"),
-			(Float(l), Float(r)) => l.partial_cmp(r).expect("bad cmp (f/f)"),
+		match (self.0, rhs.0) {
+			(Integer(l), Integer(r)) => l.cmp(&r),
+			(Integer(l), Float(r)) => (l as FloatType).partial_cmp(&r).expect("bad cmp (i/f)"),
+			(Float(l), Integer(r)) => l.partial_cmp(&(r as FloatType)).expect("bad cmp (f/i)"),
+			(Float(l), Float(r)) => l.partial_cmp(&r).expect("bad cmp (f/f)"),
 		}
 	}
 }
@@ -211,15 +214,23 @@ impl Display for NotAnInteger {
 
 impl std::error::Error for NotAnInteger {}
 
-impl TryFrom<Number> for IntegerType {
-	type Error = NotAnInteger;
-	fn try_from(num: Number) -> Result<IntegerType, Self::Error> {
-		match num {
-			Number::Integer(i) => Ok(i),
-			Number::Float(f) => Err(NotAnInteger(f))
-		}
-	}
+macro_rules! impl_try_from_number {
+	($($ty:ty)*) => {
+		$(
+			impl TryFrom<Number> for $ty {
+				type Error = NotAnInteger;
+				fn try_from(num: Number) -> Result<Self, Self::Error> {
+					match num.0 {
+						Inner::Integer(n) => Ok(n as Self),
+						Inner::Float(f) => Err(NotAnInteger(f))
+					}
+				}
+			}
+		)*
+	};
 }
+
+impl_try_from_number!(u8 u16 u32 u64 u128 i8 i16 i32 i64 i128);
 
 impl From<FloatType> for Number {
 	fn from(f: FloatType) -> Number {
@@ -227,16 +238,16 @@ impl From<FloatType> for Number {
 		if f.is_normal() && f.floor() == f {
 			assert!(f.is_normal() && (f as IntegerType as FloatType) == f, "bad f: {}", f);
 
-			Number::Integer(f as _)
+			Number(Inner::Integer(f as _))
 		} else {
-			Number::Float(f)
+			Number(Inner::Float(f))
 		}
 	}
 }
 
 impl From<IntegerType> for Number {
 	fn from(n: IntegerType) -> Number {
-		Number::Integer(n)
+		Number(Inner::Integer(n))
 	}
 }
 
@@ -257,7 +268,7 @@ macro_rules! impl_from_integer {
 		$(
 			impl From<$ty> for Number {
 				fn from(num: $ty) -> Self {
-					Number::Integer(num as IntegerType)
+					Number(Inner::Integer(num as IntegerType))
 				}
 			}
 
@@ -289,13 +300,13 @@ macro_rules! impl_math_ops {
 
 			impl std::ops::$trait_assign for Number {
 				fn $fn_assign(&mut self, rhs: Self) {
-					use Number::*;
+					use Inner::*;
 					use std::ops::$trait;
-					match (*self, rhs) {
-						(Integer(l), Integer(r)) => *self = Integer(l.$fn(r)),
-						(Integer(l), Float(r)) => *self = Float((l as FloatType).$fn(r)),
-						(Float(l), Integer(r)) => *self = Float(l.$fn(r as FloatType)),
-						(Float(l), Float(r)) => *self = Float(l.$fn(r))
+					match (self.0, rhs.0) {
+						(Integer(l), Integer(r)) => self.0 = Integer(l.$fn(r)),
+						(Integer(l), Float(r)) => self.0 = Float((l as FloatType).$fn(r)),
+						(Float(l), Integer(r)) => self.0 = Float(l.$fn(r as FloatType)),
+						(Float(l), Float(r)) => self.0 = Float(l.$fn(r))
 					}
 				}
 			}
@@ -320,14 +331,14 @@ impl std::ops::Div for Number {
 
 impl std::ops::DivAssign for Number {
 	fn div_assign(&mut self, rhs: Self) {
-		use Number::*;
+		use Inner::*;
 
-		match (*self, rhs) {
+		match (self.0, rhs.0) {
 			(Integer(_), Integer(r)) if r == 0 => *self = Number::NAN,
 			(Integer(l), Integer(r)) => *self = Self::from((l as FloatType) / (r as FloatType)),
-			(Integer(l), Float(r)) => *self = Float((l as FloatType) / (r)),
-			(Float(l), Integer(r)) => *self = Float(l / (r as FloatType)),
-			(Float(l), Float(r)) => *self = Float(l / r)
+			(Integer(l), Float(r)) => self.0 = Inner::Float((l as FloatType) / (r)),
+			(Float(l), Integer(r)) => self.0 = Inner::Float(l / (r as FloatType)),
+			(Float(l), Float(r)) => self.0 = Inner::Float(l / r)
 		}
 	}
 }
@@ -348,9 +359,9 @@ macro_rules! impl_bitwise_ops {
 					#[allow(unused_imports)]
 					use std::ops::*;
 
-					match self {
-						Number::Float(n) => Err(NotAnInteger(*n)),
-						Number::Integer(n) => Ok(n.$fn_assign(IntegerType::try_from(rhs)?))
+					match self.0 {
+						Inner::Float(n) => Err(NotAnInteger(n)),
+						Inner::Integer(mut n) => Ok(n.$fn_assign(IntegerType::try_from(rhs)?))
 					}
 				}
 			}
@@ -369,9 +380,9 @@ impl_bitwise_ops! {
 impl std::ops::Neg for Number {
 	type Output = Self;
 	fn neg(self) -> Self {
-		match self {
-			Number::Integer(i) => Number::from(-i),
-			Number::Float(f) => Number::from(-f)
+		match self.0 {
+			Inner::Integer(i) => Number::from(-i),
+			Inner::Float(f) => Number::from(-f)
 		}
 	}
 }
@@ -386,9 +397,9 @@ impl std::ops::Not for Number {
 
 impl Number {
 	pub fn abs(self) -> Number {
-		match self {
-			Number::Integer(i) => Number::from(i.abs()),
-			Number::Float(f) => Number::from(f.abs())
+		match self.0 {
+			Inner::Integer(i) => Number::from(i.abs()),
+			Inner::Float(f) => Number::from(f.abs())
 		}
 	}
 
@@ -398,8 +409,8 @@ impl Number {
 	}
 
 	pub fn pow_assign(&mut self, rhs: Self) {
-		use Number::*;
-		match (*self, rhs) {
+		use Inner::*;
+		match (self.0, rhs.0) {
 			(Integer(l), Integer(r)) if 0 <= r && r <= (u32::MAX as IntegerType)
 				=> *self = l.pow(r as u32).into(),
 			(Integer(l), Integer(r)) => *self = (l as FloatType).powf(r as FloatType).into(),
@@ -623,8 +634,8 @@ mod tests {
 
 	#[test]
 	fn constants() {
-		assert_eq!(Number::ZERO, Number::Integer(0));
-		assert_eq!(Number::ONE, Number::Integer(1));
+		assert_eq!(Number::ZERO, Number(Inner::Integer(0)));
+		assert_eq!(Number::ONE, Number(Inner::Integer(1)));
 	}
 
 	#[test]
@@ -643,19 +654,19 @@ mod tests {
 	#[test]
 	fn from_str_radix() {
 		// normal numbers
-		assert_eq!(Number::from_str_radix("12", 10).unwrap(), Number::Integer(12));
-		assert_eq!(Number::from_str_radix("093", 10).unwrap(), Number::Integer(93));
-		assert_eq!(Number::from_str_radix("000", 10).unwrap(), Number::Integer(0));
-		assert_eq!(Number::from_str_radix("0110110", 2).unwrap(), Number::Integer(0b0110110));
-		assert_eq!(Number::from_str_radix("17214", 8).unwrap(), Number::Integer(0o17214));
-		assert_eq!(Number::from_str_radix("ff1e24", 16).unwrap(), Number::Integer(0xff1e24));
+		assert_eq!(Number::from_str_radix("12", 10).unwrap(), Number(Inner::Integer(12)));
+		assert_eq!(Number::from_str_radix("093", 10).unwrap(), Number(Inner::Integer(93)));
+		assert_eq!(Number::from_str_radix("000", 10).unwrap(), Number(Inner::Integer(0)));
+		assert_eq!(Number::from_str_radix("0110110", 2).unwrap(), Number(Inner::Integer(0b0110110)));
+		assert_eq!(Number::from_str_radix("17214", 8).unwrap(), Number(Inner::Integer(0o17214)));
+		assert_eq!(Number::from_str_radix("ff1e24", 16).unwrap(), Number(Inner::Integer(0xff1e24)));
 
 		// negative numbers
-		assert_eq!(Number::from_str_radix("-134", 10).unwrap(), Number::Integer(-134));
-		assert_eq!(Number::from_str_radix("-000", 10).unwrap(), Number::Integer(-0));
-		assert_eq!(Number::from_str_radix("-10110110", 2).unwrap(), -Number::Integer(0b10110110));
-		assert_eq!(Number::from_str_radix("-17214", 8).unwrap(), Number::Integer(-0o17214));
-		assert_eq!(Number::from_str_radix("-ff1e24", 16).unwrap(), Number::Integer(-0xff1e24));
+		assert_eq!(Number::from_str_radix("-134", 10).unwrap(), Number(Inner::Integer(-134)));
+		assert_eq!(Number::from_str_radix("-000", 10).unwrap(), Number(Inner::Integer(-0)));
+		assert_eq!(Number::from_str_radix("-10110110", 2).unwrap(), -Number(Inner::Integer(0b10110110)));
+		assert_eq!(Number::from_str_radix("-17214", 8).unwrap(), Number(Inner::Integer(-0o17214)));
+		assert_eq!(Number::from_str_radix("-ff1e24", 16).unwrap(), Number(Inner::Integer(-0xff1e24)));
 
 		// invalid bases
 		assert_eq!(Number::from_str_radix("0", 0).unwrap_err(), FromStrError::BadRadix(0));
@@ -666,21 +677,21 @@ mod tests {
 	#[test]
 	fn try_from() {
 		// integers
-		assert_eq!(Number::try_from("0").unwrap(), Number::Integer(0));
-		assert_eq!(Number::try_from("12").unwrap(), Number::Integer(12));
-		assert_eq!(Number::try_from("93").unwrap(), Number::Integer(93));
-		assert_eq!(Number::try_from("-1952").unwrap(), Number::Integer(-1952));
-		assert_eq!(Number::try_from("1e8").unwrap(), Number::Integer(1e8 as _));
-		assert_eq!(Number::try_from("1.5e+12").unwrap(), Number::Integer(1.5e12 as _));
+		assert_eq!(Number::try_from("0").unwrap(), Number(Inner::Integer(0)));
+		assert_eq!(Number::try_from("12").unwrap(), Number(Inner::Integer(12)));
+		assert_eq!(Number::try_from("93").unwrap(), Number(Inner::Integer(93)));
+		assert_eq!(Number::try_from("-1952").unwrap(), Number(Inner::Integer(-1952)));
+		assert_eq!(Number::try_from("1e8").unwrap(), Number(Inner::Integer(1e8 as _)));
+		assert_eq!(Number::try_from("1.5e+12").unwrap(), Number(Inner::Integer(1.5e12 as _)));
 
 		// floats
-		assert_eq!(Number::try_from("12.3").unwrap(), Number::Float(12.3));
-		assert_eq!(Number::try_from("-12.3").unwrap(), Number::Float(-12.3));
-		assert_eq!(Number::try_from("1E-8").unwrap(), Number::Float(1e-8));
+		assert_eq!(Number::try_from("12.3").unwrap(), Number(Inner::Float(12.3)));
+		assert_eq!(Number::try_from("-12.3").unwrap(), Number(Inner::Float(-12.3)));
+		assert_eq!(Number::try_from("1E-8").unwrap(), Number(Inner::Float(1e-8)));
 
 		// numbers with extra character we can strip
-		assert_eq!(Number::try_from("  123\t\n").unwrap(), Number::Integer(123));
-		assert_eq!(Number::try_from("1_000_000").unwrap(), Number::Integer(1_000_000));
+		assert_eq!(Number::try_from("  123\t\n").unwrap(), Number(Inner::Integer(123)));
+		assert_eq!(Number::try_from("1_000_000").unwrap(), Number(Inner::Integer(1_000_000)));
 
 		// bad numbers
 		assert!(matches!(Number::try_from("invalid").unwrap_err(), FromStrError::BadFloat(..)));

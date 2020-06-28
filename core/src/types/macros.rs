@@ -134,25 +134,24 @@ macro_rules! impl_object_type {
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $crate::types::RustFn::method(
-			concat!(stringify!($obj), "::", $attr), |x, a| $val(&*x.try_downcast_ref()?, a))
-		).expect(concat!("can't set `", stringify!($obj), "::", $attr, "`?"));
+			concat!(stringify!($obj), "::", $attr),
+			|x, a| {
+				$val(&*x.try_downcast_ref()?, a)
+					.map(Object::from)
+					.map_err(From::from)
+			}
+		)).expect(concat!("can't set `", stringify!($obj), "::", $attr, "`?"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method_mut $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $crate::types::RustFn::method(
-			concat!(stringify!($obj), "::", $attr), |x, a| $val(&mut *x.try_downcast_mut()?, a))
-		).expect(concat!("can't set `", stringify!($obj), "::", $attr, "`?"));
-		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
-	}};
-
-	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method_assign $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr($attr, $crate::types::RustFn::method(
 			concat!(stringify!($obj), "::", $attr),
 			|x, a| {
-				let _: () = $val(&mut *x.try_downcast_mut()?, a)?;
-				Ok(x.clone())
+				$val(&mut *x.try_downcast_mut()?, a)
+					.map(Object::from)
+					.map_err(From::from)
 			}
 		)).expect(concat!("can't set `", stringify!($obj), "::", $attr, "`?"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);

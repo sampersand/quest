@@ -31,6 +31,12 @@ impl From<String> for Error {
 	fn from(err: String) -> Self { Error::Messaged(err) }
 }
 
+impl From<!> for Error {
+	fn from(_: !) -> Self {
+		unsafe { std::hint::unreachable_unchecked() }
+	}
+}
+
 #[deprecated]
 impl From<crate::types::Text> for Error {
 	fn from(err: crate::types::Text) -> Self { Error::Messaged(err.into()) }

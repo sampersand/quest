@@ -1,5 +1,6 @@
 #![deny(warnings)]
 #![allow(deprecated)]
+#![feature(never_type)]
 extern crate rand;
 
 mod error;

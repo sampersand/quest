@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub enum TypeError {
-	WrongType { expected: &'static str, got: &'static str }
+	WrongType { expected: &'static str, got: &'static str },
 }
 
 impl From<TypeError> for super::Error {
@@ -16,7 +16,7 @@ impl Display for TypeError {
 		write!(f, "type error: ")?;
 		match self {
 			TypeError::WrongType { expected, got } => 
-				write!(f, "expected type '{}' but got type '{}'", expected, got)
+				write!(f, "expected type '{}' but got type '{}'", expected, got),
 		}
 	}
 }

@@ -30,7 +30,6 @@ pub(super) struct Internal {
 	// binding: Binding,
 	data: RwLock<Box<dyn Any + Send + Sync>>,
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result,
-	#[cfg(debug_assertions)]
 	typename: &'static str
 }
 
@@ -98,7 +97,6 @@ impl Object {
 			// binding: Binding::instance(),
 			mapping: RwLock::new(Mapping::new(parents)),
 			data: RwLock::new(Box::new(data)),
-			#[cfg(debug_assertions)]
 			typename: std::any::type_name::<T>(),
 			dbg: |x, f| T::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f)
 		}));
@@ -144,10 +142,7 @@ impl Object {
 		self.downcast_clone()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
-				#[cfg(debug_assertions)]
 				got: self.0.typename,
-				#[cfg(not(debug_assertions))]
-				got: "<todo: typename impl>"
 			}.into())
 	}
 
@@ -160,10 +155,7 @@ impl Object {
 		self.downcast_ref::<T>()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
-				#[cfg(debug_assertions)]
 				got: self.0.typename,
-				#[cfg(not(debug_assertions))]
-				got: "<todo: typename impl>"
 			}.into())
 	}
 
@@ -194,10 +186,7 @@ impl Object {
 		self.downcast_mut::<T>()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
-				#[cfg(debug_assertions)]
 				got: self.0.typename,
-				#[cfg(not(debug_assertions))]
-				got: "<todo: typename mut impl>"
 			}.into())
 	}
 
