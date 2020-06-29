@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 #![allow(unused)]
 
 mod run;
@@ -82,8 +83,8 @@ pub fn init() -> Result<()> {
 }
 
 fn main() {
-	// run::run_file("code.ignore/knight.qs", vec!["--".into(), "code.ignore/knight/guess.kn".into()]).unwrap();
-	// return;
+	run::run_file("../knight.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();
+	return;
 
 	quest_parser::init().expect("couldn't initialize quest parser");
 	init().expect("couldn't initialize quest exec");

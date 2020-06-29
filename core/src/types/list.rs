@@ -1,10 +1,14 @@
 use crate::{Object, Args};
 use crate::literals::{__INSPECT__};
-use crate::types::{Text, Boolean, Number, Null};
+use crate::types::{Text, Boolean, Number};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Formatter};
 
+/// A List in Quest.
+///
+/// Lists are what you'd expect from other languages: They start at 0, you can index
+/// from the end (eg `list.(-1)` is the same as `list.(list.$len() - 1))`), etc.
 #[derive(Clone)]
 pub struct List(Cow<'static, [Object]>);
 
@@ -153,14 +157,14 @@ impl List {
 		}
 	}
 
-	/// Find an element in the list, or return `null` if it doesn't exist.
-	pub fn find(&self, needle: &Object) -> crate::Result<Object> {
+	/// Find an element in the list
+	pub fn find(&self, needle: &Object) -> crate::Result<Option<usize>> {
 		for (idx, val) in self.iter().enumerate() {
 			if val.eq_obj(needle)? {
-				return Ok(idx.into());
+				return Ok(Some(idx));
 			}
 		}
-		Ok(Null::new().into())
+		Ok(None)
 	}
 }
 
@@ -210,6 +214,8 @@ impl From<&'_ List> for Boolean {
 
 impl std::ops::Add<List> for &'_ List {
 	type Output = List;
+
+	/// Create a new list with the other added to the end of the current one
 	#[inline]
 	fn add(self, other: List) -> Self::Output {
 		let mut dup = self.clone();
@@ -219,65 +225,94 @@ impl std::ops::Add<List> for &'_ List {
 }
 
 impl std::ops::AddAssign for List {
+	/// Add the other list to this one in place.
 	#[inline]
 	fn add_assign(&mut self, mut other: List)  {
 		self.0.to_mut().append(other.0.to_mut());
 	}
 }
 
-impl std::ops::Sub<List> for &'_ List {
-	type Output = List;
-	fn sub(self, _other: List) -> Self::Output {
-		todo!()
-	}
-}
-
-impl std::ops::SubAssign for List {
+impl List {
 	#[inline]
-	fn sub_assign(&mut self, _other: List)  {
-		todo!()
+	pub fn try_sub(&self, other: List) -> crate::Result<List> {
+		let mut dup = self.clone();
+		dup.try_sub_assign(other).and(Ok(dup))
 	}
-}
 
-impl std::ops::BitAnd<List> for &'_ List {
-	type Output = List;
-	fn bitand(self, _other: List) -> Self::Output {
-		todo!()
+	pub fn try_sub_assign(&mut self, other: List) -> crate::Result<()>  {
+		let mut i = 0;
+
+		while i < self.len() {
+			if let Some(_) = other.find(&self.0[i])? {
+				self.0.to_mut().remove(i);
+			} else {
+				i += 1;
+			}
+		}
+
+		Ok(())
 	}
-}
 
-impl std::ops::BitAndAssign for List {
 	#[inline]
-	fn bitand_assign(&mut self, _other: List)  {
-		todo!()
+	pub fn try_bitand(&self, other: List) -> crate::Result<List> {
+		let mut dup = self.clone();
+		dup.try_bitand_assign(other).and(Ok(dup))
 	}
-}
 
-impl std::ops::BitOr<List> for &'_ List {
-	type Output = List;
-	fn bitor(self, _other: List) -> Self::Output {
-		todo!()
+	pub fn try_bitand_assign(&mut self, mut other: List) -> crate::Result<()>  {
+		let mut i = 0;
+
+		while i < self.len() {
+			if let Some(j) = other.find(&self.0[i])? {
+				other.0.to_mut().remove(j);
+				i += 1;
+			} else {
+				self.0.to_mut().remove(i);
+			}
+		}
+
+		Ok(())
 	}
-}
 
-impl std::ops::BitOrAssign for List {
 	#[inline]
-	fn bitor_assign(&mut self, _other: List)  {
-		todo!()
+	pub fn try_bitor(&self, other: List) -> crate::Result<List> {
+		let mut dup = self.clone();
+		dup.try_bitor_assign(other).and(Ok(dup))
 	}
-}
 
-impl std::ops::BitXor<List> for &'_ List {
-	type Output = List;
-	fn bitxor(self, _other: List) -> Self::Output {
-		todo!()
+	pub fn try_bitor_assign(&mut self, other: List) -> crate::Result<()>  {
+		let mut i = 0;
+
+		while i < other.len() {
+			if !self.find(&other.0[i])?.is_some() {
+				self.0.to_mut().push(other.0[i].clone());
+			}
+
+			i += 1;
+		}
+
+		Ok(())
 	}
-}
 
-impl std::ops::BitXorAssign for List {
 	#[inline]
-	fn bitxor_assign(&mut self, _other: List)  {
-		todo!()
+	pub fn try_bitxor(&self, other: List) -> crate::Result<List> {
+		let mut dup = self.clone();
+		dup.try_bitxor_assign(other).and(Ok(dup))
+	}
+
+	pub fn try_bitxor_assign(&mut self, mut other: List) -> crate::Result<()>  {
+		let mut i = 0;
+
+		while i < other.len() {
+			if let Some(j) = self.find(&other.0[i])? {
+				other.0.to_mut().remove(i);
+				self.0.to_mut().remove(j);
+			} else {
+				i += 1;
+			}
+		}
+
+		Ok(())
 	}
 }
 
@@ -335,6 +370,20 @@ impl List {
 		Text::try_from(self)
 	}
 
+	/// Attempts to get an internal representation of the list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [1, "a", true];
+	///
+	/// assert(list.$__inspect__() == '[1, "a", true]')
+	/// ```
+	#[inline]
+	#[allow(non_snake_case)]
+	pub fn qs___inspect__(&self, args: Args) -> crate::Result<Text> {
+		self.qs_at_text(args)
+	}
+
 	/// Converts this into a [`Boolean`].
 	///
 	/// A list is considered to be `false` when it is empty.
@@ -370,7 +419,7 @@ impl List {
 
 	/// Finds an object within the list, returning its index.
 	///
-	/// If the object isn't in the list, [`Null`] is returned.
+	/// If the object isn't in the list, [`Null`](crate::types::Null) is returned.
 	///
 	/// # Arguments
 	/// 
@@ -386,6 +435,7 @@ impl List {
 	#[inline]
 	pub fn qs_find(&self, args: Args) -> crate::Result<Object> {
 		self.find(args.arg(0)?)
+			.map(|x| x.map(Object::from).unwrap_or_default())
 	}
 
 	/// Remove all elements from the list and returns the list.
@@ -421,9 +471,9 @@ impl List {
 
 	/// Gets an element or range from the list
 	///
-	/// If the element is out of range, [`Null`](crate::types::Null) is returned. When using the
-	/// range form, out-of-bounds `start` and `stop` values are converted to the min/max of the list
-	/// (respectively).
+	/// If the element is out of range, [`Null`](crate::types::Null) is returned.
+	/// When using the range form, out-of-bounds `start` and `stop` values are converted to the
+	/// min/max of the list (respectively).
 	///
 	/// Quest supports negative indexing, which allows you to index from the end of the list.
 	/// 
@@ -528,57 +578,256 @@ impl List {
 		Ok(this.clone())
 	}
 
+	/// Remove an element from the end of the list, returning [`Null`](crate::types::Null) if empty.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = ["a", "b"];
+	///
+	/// assert(list.$pop() == "b");
+	/// assert(list.$pop() == "a");
+	/// assert(list.$pop() == null);
+	/// assert(!list);
+	/// ```
 	#[inline]
 	pub fn qs_pop(&mut self, _: Args) -> Result<Object, !> {
 		Ok(self.pop().unwrap_or_default())
 	}
 
+	/// Add an element at the front of the list, returning the list.
+	///
+	/// # Arguments
+	///
+	/// 1. (required) The element to add to the front of the list
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [3, 4];
+	///
+	/// list.$unshift(2).$unshift(1);
+	///
+	/// assert(list == [1, 2, 3, 4])
+	/// ```
 	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
 		this.try_downcast_mut::<List>()?.unshift(rhs.clone());
 		Ok(this.clone())
 	}
 
+	/// Remove an element from the front of the list, returning [`Null`](crate::types::Null) if empty.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = ["a", "b"];
+	///
+	/// assert(list.$pop() == "a");
+	/// assert(list.$pop() == "b");
+	/// assert(list.$pop() == null);
+	/// assert(!list);
+	/// ```
 	#[inline]
 	pub fn qs_shift(&mut self, _: Args) -> Result<Object, !> {
 		Ok(self.shift().unwrap_or_default())
 	}
-}
 
-macro_rules! impl_qs_operators {
-	($($fn:ident $fn_mut:ident $op:tt $mut_op:tt)*) => {
-		impl List {
-			$(
-				#[inline]
-				pub fn $fn(&self, args: Args) -> crate::Result<List> {
-					let rhs = args.arg(0)?.downcast_call::<List>()?;
-					Ok(self $op rhs)
-				}
+	/// Adds two lists together.
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The list to add.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert([1, 2] + [3, 4] == [1, 2, 3, 4]);
+	/// assert(["a", "b"] + [] == ["a", "b"]);
+	/// ```
+	pub fn qs_add(&self, args: Args) -> crate::Result<List> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		Ok(self + rhs)
+	}
 
-				pub fn $fn_mut(this: &Object, args: Args) -> crate::Result<Object> {
-					let rhs = args.arg(0)?.downcast_call::<List>()?;
+	/// Adds a list to the end of this one, in place, returning the first list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [1, 2];
+	///
+	/// assert(list == [1, 2]);
+	/// list += [3, 4];
+	/// assert(list == [1, 2, 3, 4]);
+	/// ```
+	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
 
-					*this.try_downcast_mut::<List>()? $mut_op rhs;
+		*this.try_downcast_mut::<List>()? += rhs;
 
-					Ok(this.clone())
-				}
-			)*
-		}
-	};
-}
+		Ok(this.clone())
+	}
 
-impl_qs_operators! { 
-	qs_add qs_add_assign + +=
-	qs_sub qs_sub_assign - -=
-	qs_bitand qs_bitand_assign & &=
-	qs_bitor qs_bitor_assign | |=
-	qs_bitxor qs_bitxor_assign ^ ^=
+	/// Returns a new list of elements in the first list but not the second.
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The other list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert([1, 2, 3, "A", 2] - [1, 2] == [3, "A"]);
+	/// assert(["1", "b", "c"] - [1, "c", "c", "e"] == ["1", "b"]);
+	/// ```
+	pub fn qs_sub(&self, args: Args) -> crate::Result<List> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		self.try_sub(rhs)
+	}
+
+	/// Delete all elements in the first list that are also in the second.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [1, 2, 3, "A", 2] 
+	/// list -= [1, 2];
+	/// assert(list == [3, "A"]);
+	///
+	/// $list = ["1", "b", "c"];
+	/// list -= [1, "c", "c", "e"];
+	/// assert(list == ["1", "b"]);
+	/// ```
+	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+
+		this.try_downcast_mut::<List>()?.try_sub_assign(rhs)?;
+
+		Ok(this.clone())
+	}
+
+	/// Get the intersection of two lists, i.e. the common elements
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The other list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert([1, 2, 3] & [1, "a", "b"] == [1]);
+	/// assert([1, 2, 3] & [4, 5, 6] == []);
+	/// assert([1, 2, 3] & [1, 2, 4] == [1, 2]);
+	/// ```
+	pub fn qs_bitand(&self, args: Args) -> crate::Result<List> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		self.try_bitand(rhs)
+	}
+
+	/// Deletes all elements in the current list not common to both lists.
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The other list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [1, 2, "a", 4];
+	///
+	/// list &= [1, 2, 3];
+	/// assert(list == [1, 2]);
+	///
+	/// list &= [2, "a"];
+	/// assert(list == [2]);
+	/// ```
+	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+
+		this.try_downcast_mut::<List>()?.try_bitand_assign(rhs)?;
+
+		Ok(this.clone())
+	}
+
+	/// Get the union of two lists, i.e. the combination of all elements
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The other list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert([1, 2, 3] | [1, 1, "a", "b"] == [1, 2, 3, "a", "b"]);
+	/// assert(["a", "b", "c"] | ["c", "b", "d", "e"] == ["a", "b", "c", "d", "e"]);
+	/// ```
+	pub fn qs_bitor(&self, args: Args) -> crate::Result<List> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		self.try_bitor(rhs)
+	}
+
+	/// Adds all unique elements in the second list to the original one.
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The other list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [1, 2, "a", 4];
+	///
+	/// list |= [1, 2, 3];
+	/// assert(list == [1, 2, "a", 4, 3]);
+	///
+	/// list |= ["a", 2]; # already present, don't do anything
+	/// assert(list == [1, 2, "a", 4, 3]);
+	/// ```
+	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+
+		this.try_downcast_mut::<List>()?.try_bitor_assign(rhs)?;
+
+		Ok(this.clone())
+	}
+
+	/// Get the list of elements in only one list.
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The other list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert([1, 2, 3] ^ [1, "a", "b"] == [2, 3, "a", "b"]);
+	/// assert([1, 2, 3] ^ [4, 5, 6] == [1, 2, 3, 4, 5, 6]);
+	/// assert([1, 2, 3] ^ [1, 2, 4] == [3, 4]);
+	/// ```
+	pub fn qs_bitxor(&self, args: Args) -> crate::Result<List> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		self.try_bitxor(rhs)
+	}
+
+	/// Deletes all elements in the current list not common to both lists.
+	///
+	/// # Arguments
+	///
+	/// 1. (required, `@list`) The other list.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [1, 2, "a", 4];
+	///
+	/// list ^= [1, 2, 3];
+	/// assert(list == ["a", 4, 3]);
+	///
+	/// list ^= [2, "a"];
+	/// assert(list == [4, 3, 2]);
+	/// ```
+	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<List>()?;
+
+		this.try_downcast_mut::<List>()?.try_bitxor_assign(rhs)?;
+
+		Ok(this.clone())
+	}
 }
 
 
 impl_object_type!{
 for List [(parents super::Basic) (convert "@list")]:
 	"@text" => method List::qs_at_text,
+	"__inspect__" => method List::qs___inspect__,
 	"@bool" => method List::qs_at_bool,
 	"@list" => function List::qs_at_list,
 	"clone" => method List::qs_clone,
@@ -586,9 +835,11 @@ for List [(parents super::Basic) (convert "@list")]:
 	"clear" => function List::qs_clear,
 	"find" => method List::qs_find,
 	"len" => method List::qs_len,
+
 	"get" => method List::qs_get,
 	"set" => function List::qs_set,
 	"join" => method List::qs_join,
+
 	"<<" => function List::qs_push,
 	"push" => function List::qs_push,
 	"pop" => method_mut List::qs_pop,

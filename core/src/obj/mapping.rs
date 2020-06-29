@@ -86,7 +86,7 @@ impl Mapping {
 		}
 
 		if self.map.has(&__ATTR_MISSING__)? {
-			// self.call_attr_old("__attr_missing__", &[attr.to_object()])
+			// self.call_attr("__attr_missing__", &[&attr.to_object()])
 			unimplemented!("how do we handle attr missing and parents?")
 		}
 

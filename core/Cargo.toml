@@ -9,4 +9,4 @@ repository = "https://github.com/sampersand/quest"
 readme = "../README.md"
 
 [dependencies]
-rand = "*"
+rand = "0.7.0"

@@ -132,7 +132,7 @@ impl Object {
 	}
 
 	pub fn eq_obj(&self, rhs: &Object) -> Result<bool> {
-		self.call_attr_old("==", &[rhs.clone()])
+		self.call_attr("==", &[rhs])
 			.map(|res| res.downcast_ref::<types::Boolean>()
 				.map(|b| bool::from(*b))
 				.unwrap_or(false))
@@ -302,6 +302,14 @@ impl Object {
 		K: EqKey + ToObject,
 		A: Into<Args<'s, 'o>>
 	{
+		// static mut FOO: i32 = 0;
+		// unsafe {
+		// 	FOO += 1;
+		// 	if FOO > 10000 {
+		// 		panic!();
+		// 	}
+		// }
+		// println!("{:?} {:?}", self.typename(), attr);
 		self.get_value(attr)?.call(self, args.into())
 	}
 
@@ -310,7 +318,7 @@ impl Object {
 		K: EqKey + ToObject,
 		A: Into<ArgsOld<'a>>
 	{
-		// println!("{:?} {:?}", self.typename(), attr);
+		// println!("OLD {:?} {:?}", self.typename(), attr);
 		match self.get_value(attr)? {
 			Value::RustFn(rustfn) => {
 				let mut args = args.into();
