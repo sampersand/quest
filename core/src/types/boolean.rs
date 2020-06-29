@@ -163,6 +163,13 @@ impl std::ops::Not for Boolean {
 	}
 }
 
+impl Boolean {
+	#[allow(non_snake_case)]
+	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+		Ok(format!("{:?}", self).into())
+	}
+}
+
 
 impl Boolean {
 	/// Convert this into a [`Number`].
@@ -183,10 +190,10 @@ impl Boolean {
 
 	/// Convert this into a [`Boolean`].
 	///
-	/// This is simply a wrapper around [`Boolean::from(Boolean)`](Boolean#impl-From<Boolean>).
+	/// This is simply a wrapper around [`Boolean::clone`](#method.clone).
 	#[inline]
 	pub fn qs_at_bool(&self, _: Args) -> Result<Boolean, !> {
-		Ok(Boolean::from(*self))
+		Ok(self.clone())
 	}
 
 	/// Clones this.
@@ -290,8 +297,9 @@ impl Boolean {
 
 impl_object_type!{
 for Boolean [(parents super::Basic) (convert "@bool")]:
-	"@num"  => method Boolean::qs_at_num,
 	"@text" => method Boolean::qs_at_text,
+	"__inspect__" => method Boolean::qs___inspect__,
+	"@num"  => method Boolean::qs_at_num,
 	"@bool" => method Boolean::qs_at_bool,
 	"clone" => method Boolean::qs_clone,
 	"=="    => method Boolean::qs_eql,

@@ -12,4 +12,7 @@ pub mod attrs;
 
 pub use obj::{Object, ToObject};
 pub use error::{Error, Result};
-pub use types::rustfn::{ArgsOld, Args, Binding};
+pub use types::rustfn::{Args, Binding};
+
+#[deprecated]
+pub use types::rustfn::ArgsOld;

@@ -1,32 +1,33 @@
-use crate::{Object, Result, Args};
-use crate::literals::{EQL, AT_BOOL, NOT};
+use crate::{Object, Args};
+
+use crate::literals::{EQL, AT_BOOL, NOT,  __INSPECT__};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Basic;
 
 impl Basic {
 	#[inline]
-	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
+	pub fn qs_at_bool(_: &Object, _: Args) -> crate::Result<bool> {
 		Ok(true.into())
 	}
 
 	#[inline]
-	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object> {
-		Ok(format!("<{}:{}>", this.typename(), this.id()).into())
+	pub fn qs_at_text(this: &Object, args: Args) -> crate::Result<Object> {
+		this.call_attr(&__INSPECT__, args)
 	}
 
 	#[inline]
-	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<bool> {
 		Ok(this.is_identical(args.arg(0)?).into())
 	}
 
 	#[inline]
-	pub fn qs_neq(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_neq(this: &Object, args: Args) -> crate::Result<Object> {
 		this.call_attr(&EQL, args)?.call_attr(&NOT, &[])
 	}
 
 	#[inline]
-	pub fn qs_not(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_not(this: &Object, args: Args) -> crate::Result<Object> {
 		this.call_attr(&AT_BOOL, args)?.call_attr(&NOT, &[])
 	}
 }
@@ -46,19 +47,13 @@ for Basic [(parents super::Kernel)]:
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{Object, types};
+	use crate::{Object};
 
 	dummy_object!(struct Dummy;);
 
 	#[test]
 	fn at_bool() {
-		assert_eq!(
-			*Basic::qs_at_bool(&Dummy.into(), args!())
-				.unwrap()
-				.downcast_ref::<types::Boolean>()
-				.unwrap(),
-			true
-		);
+		assert_eq!(Basic::qs_at_bool(&Dummy.into(), args!()).unwrap(), true);
 	}
 
 	#[test]

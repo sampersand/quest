@@ -29,18 +29,6 @@ pub fn run_repl(args: Args) -> Result<Object> {
 }
 
 pub fn run<R: Runner>(runner: R, args: Args) -> quest::Result<Object> {
-	// let mut args = quest::ArgsOld::from(args);
-	// args.add_this({
-	// 	let main = Object::new(quest::types::Scope);
-	// 	main.set_attr("name", Object::from("outermost-scope"))?;
-	// 	main
-	// });
-
-	// Binding::new_stackframe_old(args, move |binding| {
-	// 	binding.set_attr("name", Object::from("main"))?;
-	// 	runner.run().map_err(|err| quest::Error::Boxed(Box::new(err)))
-	// })
-
 	let main = Object::new(quest::types::Scope);
 	main.set_attr("name", Object::from("main"))?;
 

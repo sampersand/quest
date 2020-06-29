@@ -1,3 +1,4 @@
+use crate::{Object, Binding};
 use std::fmt::{self, Display, Formatter};
 
 mod key_error;
@@ -13,18 +14,27 @@ pub use value_error::ValueError;
 pub enum Error {
 	/// Something internal that shouldn't have occured
 	Internal(&'static str),
+
 	/// Something that we don't have an error type for yet
 	Messaged(String),
+
 	/// An invalid key was requested
 	KeyError(KeyError),
+
 	/// An invalid type was supplied somewhere
 	TypeError(TypeError),
+
 	/// An invalid value was supplied somewhere
 	ValueError(ValueError),
+
+	/// Some quest assertion failed.
+	AssertionFailed(Option<String>),
+
 	/// Boxed error
 	Boxed(Box<dyn std::error::Error + 'static>),
+
 	/// Returning a value
-	Return { to: crate:: Binding, what: crate::Object }
+	Return { to: Binding, obj: Object }
 }
 
 impl From<String> for Error {
@@ -55,8 +65,10 @@ impl Display for Error {
 			Error::KeyError(err) => Display::fmt(&err, f),
 			Error::TypeError(err) => Display::fmt(&err, f),
 			Error::ValueError(err) => Display::fmt(&err, f),
+			Error::AssertionFailed(Some(err)) => write!(f, "assertion failed: {}", err),
+			Error::AssertionFailed(None) => write!(f, "assertion failed"),
 			Error::Boxed(err) => Display::fmt(&err, f),
-			Error::Return { to, what } => write!(f, "uncaught return to {:?}: {:?}", to, what)
+			Error::Return { to, obj } => write!(f, "uncaught return to {:?}: {:?}", to, obj)
 		}
 	}
 }

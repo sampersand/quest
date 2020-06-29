@@ -1,10 +1,11 @@
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::cmp::Ordering;
-use crate::{Object, types};
+use crate::{Object, Args};
+use crate::types::{Text, Boolean};
 
-type IntegerType = i64;
-type FloatType = f64;
+pub type IntegerType = i64;
+pub type FloatType = f64;
 
 #[derive(Clone, Copy)]
 pub struct Number(Inner);
@@ -421,19 +422,26 @@ impl Number {
 	}
 }
 
-impl From<Number> for types::Text {
+impl From<Number> for Text {
 	fn from(n: Number) -> Self {
-		types::Text::new(n.to_string())
+		Text::new(n.to_string())
 	}
 }
 
-impl From<Number> for types::Boolean {
+impl From<Number> for Boolean {
 	fn from(n: Number) -> Self {
 		if n == Number::ZERO {
-			types::Boolean::FALSE
+			Boolean::FALSE
 		} else {
-			types::Boolean::TRUE
+			Boolean::TRUE
 		}
+	}
+}
+
+impl Number {
+	#[allow(non_snake_case)]
+	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+		Ok(format!("{:?}", self).into())
 	}
 }
 
@@ -598,8 +606,9 @@ for Number [(init_parent super::Basic super::Comparable) (parents super::Basic) 
 	"NAN" => const Number::NAN,
 	"INF" => const Number::INF,
 
-	"@num" => impls::at_num,
 	"@text" => impls::at_text,
+	"__inspect__" => method Number::qs___inspect__,
+	"@num" => impls::at_num,
 	"@bool" => impls::at_bool,
 	"clone" => impls::clone,
 

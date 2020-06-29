@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::error::{ValueError, KeyError};
+use crate::error::{ValueError};
 use crate::literals::__THIS__;
 use crate::types::{Number, List, Boolean};
 use crate::Binding;
@@ -162,6 +162,11 @@ impl Text {
 		Ok(Text::from(self))
 	}
 
+	#[allow(non_snake_case)]
+	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+		Ok(format!("{:?}", self).into())
+	}
+
 	#[inline]
 	pub fn qs_at_list(&self, _: Args) -> Result<List, !> {
 		Ok(List::from(self))
@@ -241,24 +246,20 @@ mod impls {
 	// "[]~" => (|args| todo!("[]~")),
 	// "clear" => (|args| todo!("clear")),
 
-
-	fn correct_index(idx: isize, len: usize) -> Result<Option<usize>> {
-		if idx.is_positive() {
-			let idx = (idx - 1) as usize;
-			if idx < len {
-				Ok(Some(idx))
+	fn correct_index(idx: isize, len: usize) -> Option<usize> {
+		if !idx.is_negative() {
+			if (idx as usize) < len {
+				Some(idx as usize)
 			} else {
-				Ok(None)
-			}
-		} else if idx.is_negative() {
-			let idx = (-idx) as usize;
-			if idx < len {
-				Ok(Some(len - idx))
-			} else {
-				Ok(None)
+				None
 			}
 		} else {
-			Err(KeyError::CantIndexByZero.into())
+			let idx = (-idx) as usize;
+			if idx <= len {
+				Some(len - idx)
+			} else {
+				None
+			}
 		}
 	}
 
@@ -277,7 +278,7 @@ mod impls {
 			.map(|x| x.floor() as isize);
 
 		let start =
-			if let Some(start) = correct_index(start, len)? {
+			if let Some(start) = correct_index(start, len) {
 				start
 			} else {
 				return Ok(Object::default())
@@ -290,7 +291,7 @@ mod impls {
 					.map(|x| x.to_string().into())
 					.unwrap_or_default()),
 			Some(end) => {
-				let end = correct_index(end, len)?.map(|x| x + 1).unwrap_or(len);
+				let end = correct_index(end, len).map(|x| x + 1).unwrap_or(len);
 				if end < start {
 					Ok(Object::default())
 				} else {
@@ -331,6 +332,7 @@ mod impls {
 impl_object_type!{
 for Text [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
 	"@text" => method Text::qs_at_text,
+	"__inspect__"  => method Text::qs___inspect__,
 	"@num"  => method Text::qs_at_num,
 	"@list" => method Text::qs_at_list,
 	"@bool" => method Text::qs_at_bool,

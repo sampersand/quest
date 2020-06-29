@@ -127,7 +127,9 @@ macro_rules! impl_object_type {
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => function $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr($attr, $crate::types::RustFn::method(
-			concat!(stringify!($obj), "::", $attr), $val)
+			concat!(stringify!($obj), "::", $attr), |x, a| {
+				$val(x, a).map(Object::from).map_err(From::from)
+			})
 		).expect(concat!("can't set `", stringify!($obj), "::", $attr, "`?"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};

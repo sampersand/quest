@@ -83,8 +83,8 @@ impl Binding {
 			let _guard = StackGuard(stack, &binding);
 			
 			match func(&binding) {
-				Err(crate::Error::Return { to, what }) if to.as_ref().eq_obj(binding.as_ref())?
-					=> Ok(what),
+				Err(crate::Error::Return { to, obj }) if to.as_ref().eq_obj(binding.as_ref())?
+					=> Ok(obj),
 				other => other
 			}
 		})
@@ -132,8 +132,8 @@ impl Binding {
 			let _guard = StackGuard(stack, &binding);
 			
 			match func(&binding) {
-				Err(crate::Error::Return { to, what }) if to.as_ref().eq_obj(binding.as_ref())?
-					=> Ok(what),
+				Err(crate::Error::Return { to, obj }) if to.as_ref().eq_obj(binding.as_ref())?
+					=> Ok(obj),
 				other => other
 			}
 		})

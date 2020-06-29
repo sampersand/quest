@@ -6,14 +6,15 @@ pub use args::Args;
 pub use args_old::ArgsOld;
 pub use binding::Binding;
 
-use crate::{Object, Result, types};
+use crate::Object;
+use crate::types::Text;
 use std::fmt::{self, Debug, Formatter};
 // use std::any::Any;
 
 #[derive(Clone, Copy)]
 enum FnType {
-	Old(fn(ArgsOld) -> Result<Object>),
-	New(fn(&Object, Args) -> Result<Object>)
+	Old(fn(ArgsOld) -> crate::Result<Object>),
+	New(fn(&Object, Args) -> crate::Result<Object>)
 }
 
 #[derive(Clone, Copy)]
@@ -38,16 +39,17 @@ impl PartialEq for RustFn {
 
 impl RustFn {
 	#[inline]
-	pub fn new(name: &'static str, func: fn(ArgsOld) -> Result<Object>) -> Self {
+	pub fn new(name: &'static str, func: fn(ArgsOld) -> crate::Result<Object>) -> Self {
 		RustFn(name, FnType::Old(func))
 	}
 
-	pub fn method(name: &'static str, func: fn(&Object, Args) -> Result<Object>) -> Self {
+	pub fn method(name: &'static str, func: fn(&Object, Args) -> crate::Result<Object>) -> Self {
 		RustFn(name, FnType::New(func))
 	}
 
 	#[inline]
-	pub fn call(&self, obj: &Object, args: Args) -> Result<Object> {
+	// eventually, we'll remove the `generic` thing.
+	pub fn call(&self, obj: &Object, args: Args) -> crate::Result<Object> {
 		match self.1 {
 			FnType::Old(generic) => {
 				let mut args = ArgsOld::from(args);
@@ -59,7 +61,7 @@ impl RustFn {
 	}
 
 	#[inline]
-	pub fn call_old(&self, args: ArgsOld) -> Result<Object> {
+	pub fn call_old(&self, args: ArgsOld) -> crate::Result<Object> {
 		match self.1 {
 			FnType::Old(generic) => generic(args),
 			FnType::New(method) => method(args.this()?, args.args(..)?.as_ref().iter().collect())
@@ -68,9 +70,16 @@ impl RustFn {
 }
 
 
-impl From<RustFn> for types::Text {
+impl From<RustFn> for Text {
 	fn from(rustfn: RustFn) -> Self {
-		types::Text::new_static(rustfn.0)
+		Text::new_static(rustfn.0)
+	}
+}
+
+impl RustFn {
+	#[allow(non_snake_case)]
+	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+		Ok(format!("{:?}", self).into())
 	}
 }
 
@@ -92,5 +101,6 @@ mod impls {
 impl_object_type!{
 for RustFn [(parents super::Function)]:
 	"@text" => impls::at_text,
+	"__inspect__" => method RustFn::qs___inspect__,
 	"()" => impls::call,
 }

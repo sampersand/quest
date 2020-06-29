@@ -8,8 +8,8 @@ use std::any::Any;
 use std::ops::{Deref, DerefMut};
 
 pub mod mapping;
-use mapping::{Mapping, Value};
-pub use mapping::{Key, EqKey};
+use mapping::Mapping;
+pub use mapping::{Key, EqKey, Value};
 
 pub trait ToObject {
 	fn to_object(&self) -> Object;
@@ -36,6 +36,13 @@ pub(super) struct Internal {
 impl Debug for Object {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		Debug::fmt(&self.0, f)
+	}
+}
+
+
+impl From<!> for Object {
+	fn from(_: !) -> Self {
+		unsafe { std::hint::unreachable_unchecked() }
 	}
 }
 
@@ -246,7 +253,7 @@ impl Object {
 		}
 	}
 
-	fn get_value<K: ?Sized>(&self, attr: &K) -> Result<Value>
+	pub fn get_value<K: ?Sized>(&self, attr: &K) -> Result<Value>
 	where
 		K: EqKey + ToObject
 	{
@@ -295,21 +302,9 @@ impl Object {
 		K: EqKey + ToObject,
 		A: Into<Args<'s, 'o>>
 	{
-
-		// println!("{:?} {:?}", self.typename(), attr);
-		match self.get_value(attr)? {
-			Value::RustFn(rustfn) => {
-				rustfn.call(self, args.into())
-			},
-
-			Value::Object(object) => {
-				let bound_attr = Object::new(crate::types::BoundFunction);
-				bound_attr.set_attr("__bound_object_owner__", self.clone())?;
-				bound_attr.set_attr("__bound_object__", object)?;
-				bound_attr.call_attr("()", args.into())
-			}
-		}
+		self.get_value(attr)?.call(self, args.into())
 	}
+
 	pub fn call_attr_old<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
 	where
 		K: EqKey + ToObject,

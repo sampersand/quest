@@ -1,90 +1,95 @@
+use crate::{Args, Object, Error, Result};
+use crate::types::{Boolean, Text, Number};
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kernel;
 
-mod impls {
-	use crate::{Object, Result, Error, ArgsOld, types};
+fn display(args: &[&Object], newline: bool) -> Result<()> {
+	print!("{}",
+		args.iter()
+			.map(|x| x.downcast_call::<Text>().map(|x| x.to_string()))
+			.collect::<Result<Vec<_>>>()?
+			.join(" ")
+	);
 
-	pub fn r#if(args: ArgsOld) -> Result<Object> {
-		if args.arg(0)?.downcast_call::<types::Boolean>()?.into() {
-			args.arg(1)?.clone()
-		} else {
-			args.arg(2).map(Clone::clone).unwrap_or_default()
-		}.call_attr_old("()", &[])
-	}
-
-	pub fn disp(args: ArgsOld, print_end: bool) -> Result<Object> {
-		print!("{}",
-			args.args(..)
-				.unwrap_or_default()
-				.as_ref()
-				.iter()
-				.map(|arg| arg.downcast_call::<types::Text>())
-				.collect::<Result<Vec<_>>>()?
-				.into_iter()
-				.map(|arg| arg.as_ref().to_string())
-				.collect::<Vec<_>>()
-				.join(" ")
-		);
-		if print_end {
-			println!();
-		}
-
+	if newline {
+		println!();
+		Ok(())
+	} else {
 		use std::io::{self, Write};
 
 		io::stdout()
 			.flush()
 			.map_err(|err| Error::Messaged(format!("couldn't flush: {}", err)))
-			.map(|_| Object::default())
+	}
+}
+
+impl Kernel {
+	pub fn qs_if(_: &Object, args: Args) -> Result<Object> {
+		if args.arg(0)?.downcast_call::<Boolean>()?.into() {
+			args.arg(1)?.clone()
+		} else {
+			args.arg(2).map(Clone::clone).unwrap_or_default()
+		}.call_attr("()", &[])
 	}
 
-	pub fn r#while(args: ArgsOld) -> Result<Object> {
+	pub fn qs_disp(_: &Object, args: Args) -> Result<Object> {
+		display(args.as_ref(), true).map(|_| Object::default())
+	}
+
+	pub fn qs_dispn(_: &Object, args: Args) -> Result<Object> {
+		display(args.as_ref(), false).map(|_| Object::default())
+	}
+
+	pub fn qs_while(_: &Object, args: Args) -> Result<Object> {
 		let cond = args.arg(0)?;
 		let body = args.arg(1)?;
 		// crate::Binding::new_stackframe_old(args.args(2..).unwrap_or_default(), move |b| {
 		// 	b.set_attr("name", Object::from("while"))?;
 
 			let mut result = Object::default();
-			while cond.call_attr_old("()", &[])?.downcast_call::<types::Boolean>()?.into() {
-				result = body.call_attr_old("()", &[])?;
+			while cond.call_attr("()", &[])?.downcast_call::<Boolean>()?.into() {
+				result = body.call_attr("()", &[])?;
 			};
 			Ok(result)
 		// })
 	}
 
-	pub fn r#loop(args: ArgsOld) -> Result<Object> {
+	pub fn qs_loop(_: &Object, args: Args) -> Result<!> {
 		let body = args.arg(0)?;
 		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
 			// b.set_attr("name", Object::from("loop"))?;
 			loop {
-				body.call_attr_old("()", &[])?;
+				body.call_attr("()", &[])?;
 			}
 		// })
 	}
 
-	pub fn r#for(_args: ArgsOld) -> Result<Object> {
+	pub fn qs_for(_: &Object, _args: Args) -> Result<Object> {
 		todo!("r#for")
 	}
 
-	pub fn quit(args: ArgsOld) -> Result<Object> {
+	pub fn qs_quit(_: &Object, args: Args) -> Result<!> {
 		let code = args.arg(0)
-			.and_then(|x| x.downcast_call::<types::Number>())
+			.ok()
+			.and_then(|x| x.downcast_call::<Number>().ok())
 			.map(|x| x.floor())
 			.unwrap_or(1);
 
 		if let Ok(msg) = args.arg(1) {
-			disp(vec![msg.clone()].into(), true)?;
+			display(&[msg], true)?;
 		}
 
 		std::process::exit(code as i32)
 	}
 
-	pub fn system(args: ArgsOld) -> Result<Object> {
+	pub fn qs_system(_: &Object, args: Args) -> Result<Object> {
 		use std::process::Command;
-		let cmd = args.arg(0)?.downcast_call::<types::Text>()?;
+		let cmd = args.arg(0)?.downcast_call::<Text>()?;
 		let mut command = Command::new(cmd.as_ref());
 
 		for arg in args.args(1..).unwrap_or_default().as_ref() {
-			command.arg(arg.downcast_call::<types::Text>()?.as_ref());
+			command.arg(arg.downcast_call::<Text>()?.as_ref());
 		}
 
 		command.output()
@@ -92,28 +97,32 @@ mod impls {
 			.map(|output| String::from_utf8_lossy(&output.stdout).to_string().into())
 	}
 
-	pub fn rand(args: ArgsOld) -> Result<Object> {
-		let mut start: f64 = 0.0;
-		let mut end: f64 = 1.0;
+	pub fn qs_rand(_: &Object, args: Args) -> Result<Object> {
+		use crate::types::number::FloatType;
+
+		let mut start: FloatType = 0.0;
+		let mut end: FloatType = 1.0;
 
 		if let Ok(start_num) = args.arg(0) {
-			start = start_num.downcast_call::<types::Number>()?.floor() as _;
+			start = start_num.downcast_call::<Number>()?.floor() as _;
 
 			if let Ok(end_num) = args.arg(1) {
-				end = end_num.downcast_call::<types::Number>()?.floor() as _;
+				end = end_num.downcast_call::<Number>()?.floor() as _;
 			} else {
 				end = start;
 				start = 0.0;
 			}
 		}
 
-		Ok((rand::random::<f64>() * (end - start) + start).into())
+		Ok((rand::random::<FloatType>() * (end - start) + start).into())
 	}
 
-	pub fn prompt(args: ArgsOld) -> Result<Object> {
+	pub fn qs_prompt(_: &Object, args: Args) -> Result<Object> {
 		use std::io;
 
-		disp(args, false)?;
+		if let Ok(arg) = args.arg(0) {
+			display(&[arg], false)?;
+		}
 
 		let mut buf = String::new();
 
@@ -129,18 +138,33 @@ mod impls {
 		}
 	}
 
-	pub fn r#return(args: ArgsOld) -> Result<Object> {
+	pub fn qs_return(_: &Object, args: Args) -> Result<Object> {
 		let to = crate::Binding::from(args.arg(0)?.clone());
-		let what = args.arg(1).map(Clone::clone).unwrap_or_default();
+		let obj = args.arg(1).map(Clone::clone).unwrap_or_default();
 
-		Err(Error::Return { to, what })
+		Err(Error::Return { to, obj })
 	}
 
-	pub fn sleep(_args: ArgsOld) -> Result<Object> {
+	pub fn qs_assert(_: &Object, args: Args) -> Result<Object> {
+		let arg = args.arg(0)?;
+		if arg.downcast_call::<Boolean>()?.into_inner() {
+			Ok(arg.clone())
+		} else {
+			Err(Error::AssertionFailed(
+				if let Ok(msg) = args.arg(1) {
+					Some(msg.downcast_call::<Text>()?.into())
+				} else {
+					None
+				})
+			)
+		}
+	}
+
+	pub fn qs_sleep(_: &Object, _args: Args) -> Result<Object> {
 		todo!("sleep")
 	}
 
-	pub fn open(_args: ArgsOld) -> Result<Object> {
+	pub fn qs_open(_: &Object, _args: Args) -> Result<Object> {
 		// let filename = args.arg(0)?.downcast_call::<types::Text>();
 		todo!("open")
 	}
@@ -167,19 +191,20 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"Text" => const super::Text::mapping(),
 	"Comparable" => const super::Comparable::mapping(),
 
-	"if" => impls::r#if, 
-	"disp" => (|a| impls::disp(a, true)),
-	"dispn" => (|a| impls::disp(a, false)),
-	"quit" => impls::quit,
-	"system" => impls::system,
-	"rand" => impls::rand,
-	"prompt" => impls::prompt,
-	"while" => impls::r#while,
-	"loop" => impls::r#loop,
-	"for" => impls::r#for,
-	"sleep" => impls::sleep,
-	"open" => impls::open,
-	"return" => impls::r#return,
+	"if" => function Kernel::qs_if, 
+	"disp" => function Kernel::qs_disp,
+	"dispn" => function Kernel::qs_dispn,
+	"quit" => function Kernel::qs_quit,
+	"system" => function Kernel::qs_system,
+	"rand" => function Kernel::qs_rand,
+	"prompt" => function Kernel::qs_prompt,
+	"while" => function Kernel::qs_while,
+	"loop" => function Kernel::qs_loop,
+	"for" => function Kernel::qs_for,
+	"sleep" => function Kernel::qs_sleep,
+	"open" => function Kernel::qs_open,
+	"return" => function Kernel::qs_return,
+	"assert" => function Kernel::qs_assert,
 
 	// "&&" => impls::and,
 	// "||" => impls::or,

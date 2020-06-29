@@ -5,7 +5,6 @@ use crate::Object;
 pub enum KeyError {
 	OutOfBounds { idx: usize, len: usize },
 	BadSlice { slice: String, len: usize },
-	CantIndexByZero,
 	DoesntExist { attr: Object, obj: Object },
 	NoThisSupplied
 }
@@ -25,7 +24,6 @@ impl Display for KeyError {
 				write!(f, "index '{}' out of bounds (max: {})", idx, len),
 			KeyError::BadSlice { slice, len } => 
 				write!(f, "slice '{}' out of bounds (max: {})", slice, len),
-			KeyError::CantIndexByZero => write!(f, "indexing by 0 is not supported"),
 			KeyError::NoThisSupplied =>  write!(f, "no '__this__' supplied"),
 			KeyError::DoesntExist { attr, obj } => 
 				write!(f, "attr {:?} doesn't exist for {:?}", attr, obj),

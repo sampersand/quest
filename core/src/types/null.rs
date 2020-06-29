@@ -1,10 +1,12 @@
-use crate::{Object, types};
+use crate::{Object, Args};
+use crate::types::{Boolean, List, Number, Text};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Null;
 
 impl Display for Null {
+	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		write!(f, "null")
 	}
@@ -17,7 +19,6 @@ impl Null {
 	}
 
 	pub const NULL: Null = Null::new();
-	pub const NULL_STR: &'static str = "null";
 }
 
 impl From<()> for Object {
@@ -32,29 +33,31 @@ impl From<()> for Null {
 	}
 }
 
-impl From<Null> for types::Boolean {
+impl From<Null> for Boolean {
 	#[inline]
 	fn from(_: Null) -> Self {
-		types::Boolean::FALSE
+		Boolean::FALSE
 	}
 }
 
-impl From<Null> for types::List {
+impl From<Null> for List {
 	#[inline]
 	fn from(_: Null) -> Self {
-		types::List::new(vec![])
+		List::new(vec![])
 	}
 }
 
-impl From<Null> for types::Number {
+impl From<Null> for Number {
+	#[inline]
 	fn from(_: Null) -> Self {
-		types::Number::ZERO
+		Number::ZERO
 	}
 }
 
-impl From<Null> for types::Text {
+impl From<Null> for Text {
+	#[inline]
 	fn from(_: Null) -> Self {
-		const NULL_TEXT: types::Text = types::Text::new_static(Null::NULL_STR);
+		const NULL_TEXT: Text = Text::new_static("null");
 		NULL_TEXT
 	}
 }
@@ -100,12 +103,21 @@ mod impls {
 	}
 }
 
+impl Null {
+	#[allow(non_snake_case)]
+	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+		Ok(Text::from(*self))
+	}
+}
+
+
 impl_object_type!{
 for Null [(parents super::Basic)]:
+	"@text" => impls::at_text,
+	"__inspect__" => method Null::qs___inspect__,
 	"@bool" => impls::at_bool,
 	"@list" => impls::at_list,
 	"@num" => impls::at_num,
-	"@text" => impls::at_text,
 	"clone" => impls::clone,
 	"()" => impls::call,
 	"==" => impls::eql,

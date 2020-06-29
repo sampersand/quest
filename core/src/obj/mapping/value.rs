@@ -1,9 +1,25 @@
-use crate::{Object, ToObject, types::RustFn};
+use crate::{Object, ToObject, Result, Args, types::RustFn};
 
 #[derive(Debug, Clone)]
 pub enum Value {
 	Object(Object),
 	RustFn(RustFn),
+}
+
+impl Value {
+	pub fn call(&self, owner: &Object, args: Args) -> Result<Object> {
+
+		match self {
+			Value::RustFn(rustfn) => rustfn.call(owner, args),
+			Value::Object(object) => {
+				let bound_attr = Object::new(crate::types::BoundFunction);
+				bound_attr.set_attr("__bound_object_owner__", owner.clone())?;
+				bound_attr.set_attr("__bound_object__", object.clone())?;
+				bound_attr.call_attr("()", args)
+			}
+		}
+	}
+
 }
 
 impl From<Object> for Value {
