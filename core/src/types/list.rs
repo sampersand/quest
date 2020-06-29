@@ -448,8 +448,6 @@ impl List {
 	/// list.$clear();
 	/// assert(!list);
 	/// ```
-	///
-	/// - [`List::clear`](#method.clear)
 	#[inline]
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_mut::<List>()?.clear();

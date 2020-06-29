@@ -162,6 +162,7 @@ dependencies = [
 name = "quest-core"
 version = "0.2.2"
 dependencies = [
+ "lazy_static",
  "rand",
 ]
 

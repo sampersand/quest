@@ -192,8 +192,8 @@ impl Boolean {
 	///
 	/// This is simply a wrapper around [`Boolean::clone`](#method.clone).
 	#[inline]
-	pub fn qs_at_bool(&self, _: Args) -> Result<Boolean, !> {
-		Ok(self.clone())
+	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.clone())
 	}
 
 	/// Clones this.
@@ -300,7 +300,7 @@ for Boolean [(parents super::Basic) (convert "@bool")]:
 	"@text" => method Boolean::qs_at_text,
 	"__inspect__" => method Boolean::qs___inspect__,
 	"@num"  => method Boolean::qs_at_num,
-	"@bool" => method Boolean::qs_at_bool,
+	"@bool" => function Boolean::qs_at_bool,
 	"clone" => method Boolean::qs_clone,
 	"=="    => method Boolean::qs_eql,
 	"!"     => method Boolean::qs_not,
@@ -333,8 +333,10 @@ mod tests {
 
 	#[test]
 	fn at_bool() {
-		assert_eq!(Boolean::TRUE.qs_at_bool(args!()).unwrap(), Boolean::TRUE);
-		assert_eq!(Boolean::FALSE.qs_at_bool(args!()).unwrap(), Boolean::FALSE);
+		assert_eq!(*Boolean::qs_at_bool(&true.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(),
+				Boolean::TRUE);
+		assert_eq!(*Boolean::qs_at_bool(&false.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(),
+				Boolean::FALSE);
 	}
 
 	#[test]

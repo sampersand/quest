@@ -41,6 +41,14 @@ impl From<Vec<Object>> for Parents {
 
 impl From<Object> for Parents {
 	fn from(object: Object) -> Self {
+		// TODO: this is a hack and should be removed; this will remove all mappings from
+		// user-provided lists.
+		{
+			if let Some(obj) = object.downcast_ref::<crate::types::List>()  {
+				return Parents::new(Inner::List(obj.clone().into()))
+			}
+		}
+
 		Parents::new(Inner::Object(object))
 	}
 }
@@ -60,9 +68,7 @@ impl Parents {
 		let mut inner = self.0.write().expect("can't write");
 
 		match &mut *inner {
-			Inner::Object(object) => {
-				object.call_attr_old("push", vec![parent])?;
-			},
+			Inner::Object(object) => { object.call_attr("push", &[&parent])?; },
 			Inner::List(ref mut list) => list.push(parent),
 			Inner::None => *inner = Inner::List(vec![parent])
 		};

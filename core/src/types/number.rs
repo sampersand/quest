@@ -439,6 +439,10 @@ impl From<Number> for Boolean {
 }
 
 impl Number {
+	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.clone())
+	}
+
 	#[allow(non_snake_case)]
 	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
 		Ok(format!("{:?}", self).into())
@@ -448,9 +452,6 @@ impl Number {
 mod impls {
 	use super::*;
 	use crate::{Object, Result, ArgsOld, types::{Text, Boolean}};
-
-	#[allow(non_upper_case_globals)]
-	pub const at_num: fn(ArgsOld) -> Result<Object> = clone;
 	
 	pub fn at_text(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
@@ -608,7 +609,7 @@ for Number [(init_parent super::Basic super::Comparable) (parents super::Basic) 
 
 	"@text" => impls::at_text,
 	"__inspect__" => method Number::qs___inspect__,
-	"@num" => impls::at_num,
+	"@num" => function Number::qs_at_num,
 	"@bool" => impls::at_bool,
 	"clone" => impls::clone,
 

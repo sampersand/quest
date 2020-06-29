@@ -1,10 +1,17 @@
+use crate::Object;
+
 #[macro_use]
 pub mod macros;
 
 mod convert;
 
 pub trait ObjectType : std::fmt::Debug + std::any::Any + Send + Sync  {
-	fn mapping() -> super::Object;
+	fn mapping() -> Object;
+
+	#[inline]
+	fn new_object(self) -> Object where Self: Sized {
+		Object::new_with_parent(self, vec![Self::mapping()])
+	}
 
 	// #[cfg(test)]
 	// todo: remove this

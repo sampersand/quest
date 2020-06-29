@@ -158,8 +158,8 @@ impl<'a> TryFrom<&'a Text> for Number {
 
 impl Text {
 	#[inline]
-	pub fn qs_at_text(&self, _: Args) -> Result<Text, !> {
-		Ok(Text::from(self))
+	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.clone())
 	}
 
 	#[allow(non_snake_case)]
@@ -331,7 +331,7 @@ mod impls {
 
 impl_object_type!{
 for Text [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
-	"@text" => method Text::qs_at_text,
+	"@text" => function Text::qs_at_text,
 	"__inspect__"  => method Text::qs___inspect__,
 	"@num"  => method Text::qs_at_num,
 	"@list" => method Text::qs_at_list,

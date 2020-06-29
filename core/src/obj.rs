@@ -95,12 +95,10 @@ impl Object {
 		T: Any + Debug + Send + Sync,
 		P: Into<mapping::Parents>
 	{
+		println!("{}({:?})", std::any::type_name::<T>(), data);
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
-		let id = ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed);
-		// println!("making object ({}) = {:?}", id, data);
 		let obj = Object(Arc::new(Internal {
-			id: id,
-			// id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
+			id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
 			// binding: Binding::instance(),
 			mapping: RwLock::new(Mapping::new(parents)),
 			data: RwLock::new(Box::new(data)),
@@ -108,12 +106,13 @@ impl Object {
 			dbg: |x, f| T::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f)
 		}));
 
+
 		obj.0.mapping.write().unwrap().obj = Arc::downgrade(&obj.0);
 		obj
 	}
 
 	pub fn new<T: ObjectType>(data: T) -> Self {
-		Object::new_with_parent(data, vec![T::mapping()])
+		data.new_object()
 	}
 
 	#[inline]

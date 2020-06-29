@@ -18,6 +18,10 @@ pub struct BoundOperator {
 	args: Box<OperArgs>
 }
 
+impl BoundOperator {
+	
+}
+
 impl Display for BoundOperator {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match &*self.args {
@@ -44,27 +48,32 @@ impl Executable for BoundOperator {
 
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		let this = self.this.execute()?;
+
 		match self.args.as_ref() {
-			OperArgs::Unary =>
-				this.call_attr(&self.oper, &[]),
-			OperArgs::Ternary(mid, rhs) =>
-				this.call_attr(&self.oper, &[&mid.execute()?, &rhs.execute()?]),
 			OperArgs::Binary(rhs) if self.oper == Operator::Call => match rhs {
 				Expression::Block(block) if block.paren_type() == ParenType::Round =>
-					match block.run_block()? {
+					return match block.run_block()? {
 						Some(crate::block::LineResult::Single(s)) =>
 							this.call_attr(&self.oper, &[&s]),
 						Some(crate::block::LineResult::Multiple(m)) =>
 							this.call_attr(&self.oper, m.iter().collect::<Vec<&_>>()),
 						None =>
 							this.call_attr(&self.oper, &[])
-					}
-				_ =>
-					this.call_attr(&self.oper, &[&rhs.execute()?])
-			}
-			OperArgs::Binary(rhs) =>
-				this.call_attr(&self.oper, &[&rhs.execute()?]),
-		}
+					},
+				_ => {}
+			},
+			_ => {}
+		};
+
+		let args_vec: Vec<quest_core::Object> = match self.args.as_ref() {
+			OperArgs::Unary => vec![],
+			OperArgs::Binary(rhs) => vec![rhs.execute()?],
+			OperArgs::Ternary(mid, rhs) => vec![mid.execute()?, rhs.execute()?],
+		};
+
+		let args_vec: Vec<&quest_core::Object> = args_vec.iter().collect();
+
+		this.call_attr(&self.oper, args_vec)
 	}
 }
 
