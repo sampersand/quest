@@ -42,7 +42,7 @@ impl Display for BoundOperator {
 
 impl Executable for BoundOperator {
 
-	fn execute(&self) -> quest::Result<quest::Object> {
+	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		let this = self.this.execute()?;
 		match self.args.as_ref() {
 			OperArgs::Unary =>

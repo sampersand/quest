@@ -50,7 +50,7 @@ impl Display for Literal {
 }
 
 impl Executable for Literal {
-	fn execute(&self) -> quest::Result<quest::Object> {
+	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		match self {
 			Literal::Text(t) => t.execute(),
 			Literal::Number(n) => n.execute(),

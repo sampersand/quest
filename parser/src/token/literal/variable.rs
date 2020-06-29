@@ -4,7 +4,7 @@ use crate::expression::Executable;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Variable(quest::types::Text);
+pub struct Variable(quest_core::types::Text);
 
 impl Display for Variable {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -14,7 +14,7 @@ impl Display for Variable {
 
 
 impl Executable for Variable {
-	fn execute(&self) -> quest::Result<quest::Object> {
+	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		self.0.evaluate()
 	}
 }

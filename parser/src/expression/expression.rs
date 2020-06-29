@@ -23,7 +23,7 @@ impl Display for Expression {
 
 impl Executable for Expression {
 	#[inline]
-	fn execute(&self) -> quest::Result<quest::Object> {
+	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		match self {
 			Expression::Literal(lit) => lit.execute(),
 			Expression::Block(block) => block.execute(),

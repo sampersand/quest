@@ -3,7 +3,7 @@ mod constructor;
 mod bound_operator;
 
 pub trait Executable {
-	fn execute(&self) -> quest::Result<quest::Object>;
+	fn execute(&self) -> quest_core::Result<quest_core::Object>;
 }
 
 pub trait PutBack : Iterator {

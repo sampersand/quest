@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
 pub enum Error {
-	Quest(quest::Error),
+	Quest(quest_core::Error),
 	Parser(quest_parser::Error),
 	Io(std::io::Error)
 }
@@ -13,8 +13,8 @@ impl From<std::io::Error> for Error {
 	}
 }
 
-impl From<quest::Error> for Error {
-	fn from(error: quest::Error) -> Self {
+impl From<quest_core::Error> for Error {
+	fn from(error: quest_core::Error) -> Self {
 		Error::Quest(error)
 	}
 }

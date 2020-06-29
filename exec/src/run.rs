@@ -3,7 +3,7 @@ mod buf_stream;
 
 pub use buf_stream::BufStream;
 use repl::Repl;
-use quest::{Object, Binding, Args};
+use quest_core::{Object, Binding, Args};
 use crate::{Error, Result};
 use std::path::Path;
 use std::convert::TryFrom;
@@ -28,12 +28,12 @@ pub fn run_repl(args: Args) -> Result<Object> {
 	run(Repl::new(), args).map_err(From::from)
 }
 
-pub fn run<R: Runner>(runner: R, args: Args) -> quest::Result<Object> {
-	let main = Object::new(quest::types::Scope);
+pub fn run<R: Runner>(runner: R, args: Args) -> quest_core::Result<Object> {
+	let main = Object::new(quest_core::types::Scope);
 	main.set_attr("name", Object::from("main"))?;
 
 	Binding::new_stackframe(Some(main), args, move |_| {
-		runner.run().map_err(|err| quest::Error::Boxed(Box::new(err)))
+		runner.run().map_err(|err| quest_core::Error::Boxed(Box::new(err)))
 	})
 }
 

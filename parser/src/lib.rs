@@ -3,9 +3,9 @@
 #![deny(warnings)]
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
-pub fn init() -> quest::Result<()> {
-	use quest::types::ObjectType;
-	quest::types::Kernel::mapping()
+pub fn init() -> quest_core::Result<()> {
+	use quest_core::types::ObjectType;
+	quest_core::types::Kernel::mapping()
 		.set_attr("Block", Block::mapping())
 		.and(Ok(()))
 }

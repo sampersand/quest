@@ -30,24 +30,137 @@ impl IntoIterator for List {
 }
 
 impl List {
+	/// Create a new list.
 	#[inline]
 	pub fn new<L: Into<Cow<'static, [Object]>>>(list: L) -> Self {
 		List(list.into())
 	}
 
+	/// Get the list's length
 	#[inline]
 	pub fn len(&self) -> usize {
 		self.0.len()
 	}
 
+	/// Checks if the list is empty
 	#[inline]
 	pub fn is_empty(&self) -> bool {
 		self.0.is_empty()
 	}
 
+	/// Get an [`Iterator`](std::iter::Iterator) over elements in this list.
 	#[inline]
 	pub fn iter(&self) -> impl Iterator<Item=&Object> {
 		self.0.iter()
+	}
+
+
+	/// Remove all elements from the list
+	#[inline]
+	pub fn clear(&mut self) {
+		self.0.to_mut().clear();
+	}
+
+	/// Get either a single element or a range of elements.
+	///
+	/// Quest supports negative indexing, which allows you to index from the end of the list.
+	pub fn get(&self, idx: isize) -> Object {
+		 correct_index(idx, self.len())
+		 	.map(|idx| self.0[idx].clone())
+		 	.unwrap_or_default()
+	}
+
+	/// Get either a single element or a range of elements.
+	pub fn get_rng(&self, start: isize, stop: isize) -> Object {
+		let start =
+			if let Some(start) = correct_index(start, self.len()) {
+				start
+			} else {
+				return Object::default()
+			};
+
+		let stop = correct_index(stop, self.len()).map(|x| x + 1).unwrap_or(self.len());
+		if stop < start {
+			Object::default()
+		} else {
+			self.0[start..stop].to_owned().into()
+		}
+	}
+
+	/// Sets a single element in a list
+	pub fn set(&self, _idx: isize, _ele: Object)  {
+		unimplemented!()
+	}
+
+	/// Sets a range of elements within the list.
+	///
+	/// This can be used to delete sections of the list (set them to an empty list), and also
+	/// resize lists.
+	pub fn set_rng(&self, _start: isize, _stop: isize, _list: List) {
+		unimplemented!()
+	}
+
+	/// Combine a list's elements into a [`Text`], separated by `joiner`.
+	///
+	/// If `joiner` is omitted, nothing is inserted between elements.
+	pub fn join(&self, joiner: Option<&str>) -> crate::Result<Text> {
+		Ok(self.iter()
+			.map(|obj| obj.downcast_call::<Text>()
+				.map(|txt| txt.as_ref().to_string()))
+			.collect::<crate::Result<Vec<_>>>()?
+			.join(joiner.unwrap_or_default()).into())
+	}
+
+	/// Check to see if two lists are equal, length-wise and element-wise.
+	pub fn eql(&self, rhs: &List) -> crate::Result<bool> {
+		if self.len() != rhs.len() {
+			return Ok(false);
+		}
+
+		for (lhs, rhs) in self.iter().zip(rhs.iter()) {
+			if !lhs.eq_obj(rhs)? {
+				return Ok(false)
+			}
+		}
+
+		Ok(true)
+	}
+	/// Add a new element to the end of the list.
+	#[inline]
+	pub fn push(&mut self, what: Object) {
+		self.0.to_mut().push(what);
+	}
+
+	/// Remove an element from the end of the list.
+	#[inline]
+	pub fn pop(&mut self) -> Option<Object> {
+		self.0.to_mut().pop()
+	}
+
+	/// Add an element to the front of the list.
+	#[inline]
+	pub fn unshift(&mut self, what: Object) {
+		self.0.to_mut().insert(0, what);
+	}
+
+	/// Add an element to the end of the list.
+	#[inline]
+	pub fn shift(&mut self)  -> Option<Object> {
+		if self.is_empty() {
+			None
+		} else {
+			Some(self.0.to_mut().remove(0))
+		}
+	}
+
+	/// Find an element in the list, or return `null` if it doesn't exist.
+	pub fn find(&self, needle: &Object) -> crate::Result<Object> {
+		for (idx, val) in self.iter().enumerate() {
+			if val.eq_obj(needle)? {
+				return Ok(idx.into());
+			}
+		}
+		Ok(Null::new().into())
 	}
 }
 
@@ -168,8 +281,6 @@ impl std::ops::BitXorAssign for List {
 	}
 }
 
-
-
 fn correct_index(idx: isize, len: usize) -> Option<usize> {
 	if !idx.is_negative() {
 		if (idx as usize) < len {
@@ -189,137 +300,23 @@ fn correct_index(idx: isize, len: usize) -> Option<usize> {
 
 
 impl List {
-	/// Remove all elements from the [`List`]
-	pub fn clear(&mut self) {
-		self.0.to_mut().clear();
-	}
-
-	/// Get either a single element or a range of elements.
-	///
-	/// Quest supports negative indexing, which allows you to index from the end of the list.
-	pub fn get(&self, idx: isize) -> Object {
-		 correct_index(idx, self.len())
-		 	.map(|idx| self.0[idx].clone())
-		 	.unwrap_or_default()
-	}
-
-	/// Get either a single element or a range of elements.
-	///
-	/// Quest supports negative indexing, which allows you to index from the end of the list.
-	pub fn get_rng(&self, start: isize, stop: isize) -> Object {
-		let start =
-			if let Some(start) = correct_index(start, self.len()) {
-				start
-			} else {
-				return Object::default()
-			};
-
-		let stop = correct_index(stop, self.len()).map(|x| x + 1).unwrap_or(self.len());
-		if stop < start {
-			Object::default()
-		} else {
-			self.0[start..stop].to_owned().into()
-		}
-	}
-
-	/// Sets a single element in a list
-	///
-	/// Quest supports negative indexing, which allows you to index from the end of the list.
-	pub fn set(&self, _idx: isize, _ele: Object)  {
-		unimplemented!()
-	}
-
-	/// Sets a range of elements within the list.
-	///
-	/// This can be used to delete sections of the list (set them to an empty array), and also
-	/// resize lists.
-	pub fn set_rng(&self, _start: isize, _stop: isize, _list: List) {
-		unimplemented!()
-	}
-
-	/// Combine a list's elements into a [`Text`], separated by `joiner`.
-	///
-	/// If `joiner` is omitted, nothing is inserted between elements.
-	pub fn join(&self, joiner: Option<&str>) -> crate::Result<Text> {
-		Ok(self.iter()
-			.map(|obj| obj.downcast_call::<Text>()
-				.map(|txt| txt.as_ref().to_string()))
-			.collect::<crate::Result<Vec<_>>>()?
-			.join(joiner.unwrap_or_default()).into())
-	}
-
-	/// Check to see if two lists are equal, length-wise and element-wise.
-	pub fn eql(&self, rhs: &List) -> crate::Result<bool> {
-		if self.len() != rhs.len() {
-			return Ok(false);
-		}
-
-		for (lhs, rhs) in self.iter().zip(rhs.iter()) {
-			if !lhs.eq_obj(rhs)? {
-				return Ok(false)
-			}
-		}
-
-		Ok(true)
-	}
-	/// Add a new element to the end of the list.
-	#[inline]
-	pub fn push(&mut self, what: Object) {
-		self.0.to_mut().push(what);
-	}
-
-	/// Remove an element from the end of the list.
-	#[inline]
-	pub fn pop(&mut self) -> Option<Object> {
-		self.0.to_mut().pop()
-	}
-
-	/// Add an element to the front of the list.
-	#[inline]
-	pub fn unshift(&mut self, what: Object) {
-		self.0.to_mut().insert(0, what);
-	}
-
-	/// Add an element to the end of the list.
-	#[inline]
-	pub fn shift(&mut self)  -> Option<Object> {
-		if self.is_empty() {
-			None
-		} else {
-			Some(self.0.to_mut().remove(0))
-		}
-	}
-
-	/// Find an element in the list, or return `null` if it doesn't exist.
-	pub fn find(&self, needle: &Object) -> crate::Result<Object> {
-		for (idx, val) in self.iter().enumerate() {
-			if val.eq_obj(needle)? {
-				return Ok(idx.into());
-			}
-		}
-		Ok(Null::new().into())
-	}
-}
-
-impl List {
-	/// Converts this into a [`List`] by [cloning](#method.clone) it.
+	/// Simply returns the list.
 	///
 	/// # Quest Examples
 	///
 	/// ```quest
 	/// $list = [1, 2, 3];
-	/// $clone = list.$@list();
+	/// $list2 = list.$@list();
 	///
-	/// assert(clone == list);
-	/// assert(list.$__id__ != clone.$__id__);
+	/// assert(list.$__id__ == list2.$__id__);
 	///
 	/// list.$push(4);
 	///
-	/// assert(clone != list);
+	/// assert(clone == list);
 	/// ```
 	#[inline]
-	pub fn qs_at_list(&self, _: Args) -> Result<List, !> {
-		Ok(self.clone())
+	pub fn qs_at_list(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.clone())
 	}
 
 	/// Attempts to convert this into a [`Text`].
@@ -331,7 +328,7 @@ impl List {
 	/// ```quest
 	/// $list = [1, "a", true];
 	///
-	/// assert(list.$@text() == "[1, a, true]")
+	/// assert(list.$@text() == '[1, "a", true]')
 	/// ```
 	#[inline]
 	pub fn qs_at_text(&self, _: Args) -> crate::Result<Text> {
@@ -371,7 +368,7 @@ impl List {
 		Ok(self.clone())
 	}
 
-	/// Finds an object within the list, returning its index
+	/// Finds an object within the list, returning its index.
 	///
 	/// If the object isn't in the list, [`Null`] is returned.
 	///
@@ -428,6 +425,8 @@ impl List {
 	/// range form, out-of-bounds `start` and `stop` values are converted to the min/max of the list
 	/// (respectively).
 	///
+	/// Quest supports negative indexing, which allows you to index from the end of the list.
+	/// 
 	/// # Arguments
 	///
 	/// 1. (required, `@num`) The index / start of the range.
@@ -445,22 +444,16 @@ impl List {
 	/// assert(list.$get(1, Number::$INF) == [2, 3, false]);
 	/// ```
 	pub fn qs_get(&self, args: Args) -> crate::Result<Object> {
-		let start = args.arg(0)?
-			.try_downcast_ref::<Number>()?
-			.floor() as isize;
-		let stop = args.arg(1)
-			.ok()
-			.map(Object::downcast_call::<Number>)
-			.transpose()?
-			.map(|x| x.floor() as isize);
-
-		match stop {
-			Some(stop) => Ok(self.get_rng(start, stop)),
-			None => Ok(self.get(start))
+		let start = args.arg(0)?.downcast_call::<Number>()?.floor() as isize;
+		match args.arg(1) {
+			Ok(stop) => Ok(self.get_rng(start, stop.downcast_call::<Number>()?.floor() as isize)),
+			Err(_) => Ok(self.get(start))
 		}
 	}
 
-	/// Sets an element or range of the list to an element or list
+	/// Sets an element or range of the list to an element or list.
+	///
+	/// This allows you to delete chunks of the list if you want to by setting them to empty lists.
 	///
 	/// # Arguments
 	///
@@ -515,15 +508,20 @@ impl List {
 		}
 	}
 
-	/// Add an element to the back of the list
+	/// Add an element to the back of the list, returning the list.
 	///
 	/// # Arguments
 	///
 	/// 1. (required) The element to add to the back of the list
 	///
-	/// # See also
-	/// 
-	/// - [`List::push`](#method.push)
+	/// # Quest Examples
+	/// ```quest
+	/// $list = [1, 2];
+	///
+	/// list.$push(3).$push(4);
+	///
+	/// assert(list == [1, 2, 3, 4])
+	/// ```
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
 		this.try_downcast_mut::<List>()?.push(rhs.clone());
@@ -582,7 +580,7 @@ impl_object_type!{
 for List [(parents super::Basic) (convert "@list")]:
 	"@text" => method List::qs_at_text,
 	"@bool" => method List::qs_at_bool,
-	"@list" => method List::qs_at_list,
+	"@list" => function List::qs_at_list,
 	"clone" => method List::qs_clone,
 
 	"clear" => function List::qs_clear,

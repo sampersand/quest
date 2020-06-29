@@ -5,7 +5,7 @@ mod error;
 
 use error::{Error, Result};
 use run::BufStream;
-use quest::Object;
+use quest_core::Object;
 use clap::Clap;
 
 /// Run the Quest programming language
@@ -49,9 +49,9 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 }
 
 pub fn init() -> Result<()> {
-	use quest::types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding};
+	use quest_core::types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding};
 	use quest_parser::{Stream, expression::Executable};
-	use quest::ArgsOld;
+	use quest_core::ArgsOld;
 
 	Text::mapping().set_attr("eval", RustFn::new("Text::eval", |args| {
 		let obj = args.this()?.try_downcast_ref::<Text>()?;
@@ -97,7 +97,7 @@ fn main() {
 
 // #![deny(warnings)]
 
-// use quest::{Object, Binding};
+// use quest_core::{Object, Binding};
 // use quest_parser::{Result as ParseResult, BufStream, Expression};
 // use std::convert::TryFrom;
 

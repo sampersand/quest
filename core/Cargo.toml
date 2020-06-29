@@ -1,8 +1,12 @@
 [package]
-name = "quest"
-version = "0.2.0"
+name = "quest-core"
+version = "0.2.2"
 authors = ["Sam Westerman <sam@sampersand.me>"]
+description = "The core of the Quest programming language"
 edition = "2018"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/sampersand/quest"
+readme = "../README.md"
 
 [dependencies]
 rand = "*"

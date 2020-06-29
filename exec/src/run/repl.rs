@@ -8,7 +8,7 @@ pub struct Repl {
 }
 
 impl Runner for Repl {
-	fn run(self) -> crate::Result<quest::Object> {
+	fn run(self) -> crate::Result<quest_core::Object> {
 		unimplemented!()
 	}
 }

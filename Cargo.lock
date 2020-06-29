@@ -159,26 +159,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "quest"
-version = "0.2.0"
+name = "quest-core"
+version = "0.2.2"
 dependencies = [
  "rand",
 ]
 
 [[package]]
-name = "quest_exec"
+name = "quest-exec"
 version = "0.1.0"
 dependencies = [
  "clap",
- "quest",
- "quest_parser",
+ "quest-core",
+ "quest-parser",
 ]
 
 [[package]]
-name = "quest_parser"
+name = "quest-parser"
 version = "0.1.0"
 dependencies = [
- "quest",
+ "quest-core",
  "tempfile",
 ]
 

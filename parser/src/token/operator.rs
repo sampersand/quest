@@ -3,7 +3,7 @@ use crate::Result;
 use crate::expression::{PutBack, Constructable, Expression};
 use crate::stream::{Stream, Contexted};
 use crate::token::{Token, Tokenizable, TokenizeResult};
-use quest::{Object, types};
+use quest_core::{Object, types};
 use std::cmp::Ordering;
 use std::io::BufRead;
 use std::fmt::{self, Display, Formatter};
@@ -124,14 +124,14 @@ impl Ord for Operator {
 	}
 }
 
-impl quest::ToObject for Operator {
+impl quest_core::ToObject for Operator {
 	fn to_object(&self) -> Object {
 		Object::from(self.to_string())
 	}
 }
 
-impl quest::obj::EqKey for Operator {
-	fn eq_key(&self, key: &quest::obj::Key) -> quest::Result<bool> {
+impl quest_core::obj::EqKey for Operator {
+	fn eq_key(&self, key: &quest_core::obj::Key) -> quest_core::Result<bool> {
 		self.to_string().as_str().eq_key(key)
 	}
 }

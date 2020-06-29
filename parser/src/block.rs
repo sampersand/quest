@@ -1,5 +1,5 @@
-use quest::impl_object_type;
-use quest::{Object, Args, Binding};
+use quest_core::impl_object_type;
+use quest_core::{Object, Args, Binding};
 
 use crate::Result;
 use crate::token::{Token, ParenType};
@@ -91,8 +91,8 @@ impl Display for Line {
 }
 
 pub enum LineResult {
-	Single(quest::Object),
-	Multiple(Vec<quest::Object>)
+	Single(quest_core::Object),
+	Multiple(Vec<quest_core::Object>)
 }
 
 impl LineResult {
@@ -104,7 +104,7 @@ impl LineResult {
 	}
 }
 
-impl From<LineResult> for quest::Object {
+impl From<LineResult> for quest_core::Object {
 	fn from(lr: LineResult) -> Self {
 		match lr {
 			LineResult::Single(obj) => obj,
@@ -115,13 +115,13 @@ impl From<LineResult> for quest::Object {
 
 impl Line {
 	#[inline]
-	fn execute(&self) -> quest::Result<LineResult> {
+	fn execute(&self) -> quest_core::Result<LineResult> {
 		match self {
 			Line::Single(expr) => expr.execute().map(LineResult::Single),
 			Line::Multiple(exprs) => exprs
 				.iter()
 				.map(Executable::execute)
-				.collect::<quest::Result<_>>()
+				.collect::<quest_core::Result<_>>()
 				.map(LineResult::Multiple)
 		}
 	}
@@ -132,7 +132,7 @@ impl Block {
 		self.paren_type
 	}
 
-	pub(super) fn run_block(&self) -> quest::Result<Option<LineResult>> {
+	pub(super) fn run_block(&self) -> quest_core::Result<Option<LineResult>> {
 		if let Some((last, rest)) = self.lines.split_last() {
 			for line in rest {
 				line.execute()?;
@@ -156,20 +156,20 @@ impl Block {
 		}
 	}
 
-	fn run_block_to_object(&self) -> quest::Result<quest::Object> {
+	fn run_block_to_object(&self) -> quest_core::Result<quest_core::Object> {
 			let lines = self.run_block()?;
 			let lines_obj = lines.map(Object::from).unwrap_or_default();
 			Ok(lines_obj)
 	}
 
-	// fn call(&self, args: Args) -> quest::Result<quest::Object> {
+	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
 	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
 	// }
 
 }
 
 impl Executable for Block {
-	fn execute(&self) -> quest::Result<quest::Object> {
+	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 
 		if self.paren_type == ParenType::Curly {
 			let block = Object::from(self.clone());
@@ -241,13 +241,13 @@ impl Constructable for Block {
 
 impl Block {
 	#[inline]
-	pub fn qs_call(this: &Object, args: Args) -> quest::Result<Object> {
+	pub fn qs_call(this: &Object, args: Args) -> quest_core::Result<Object> {
 		let this_cloned = this.try_downcast_ref::<Block>()?.clone();
 		Binding::new_stackframe(Some(this.clone()), args, move |_| {
 			this_cloned.run_block_to_object()
 		})
 
-	// fn call(&self, args: Args) -> quest::Result<quest::Object> {
+	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
 	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
 	// }
 
@@ -261,7 +261,7 @@ impl Block {
 }
 
 impl_object_type!{
-for Block [(parents quest::types::Function)]:
+for Block [(parents quest_core::types::Function)]:
 	"@text" => method Block::qs_at_text,
 	"()" => function Block::qs_call
 }

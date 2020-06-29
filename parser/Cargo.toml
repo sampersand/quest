@@ -1,11 +1,11 @@
 [package]
-name = "quest_parser"
+name = "quest-parser"
 version = "0.1.0"
 authors = ["Sam Westerman <sam@sampersand.me>"]
 edition = "2018"
 
 [dependencies]
-quest = { path = "../core" }
+quest-core = { path = "../core" }
 
 [dev-dependencies]
 tempfile = "3.1"

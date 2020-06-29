@@ -4,14 +4,14 @@ use crate::{Result, Stream};
 use crate::expression::Executable;
 use crate::token::{Operator, Tokenizable, TokenizeResult};
 use crate::token::literal::Variable;
-use quest::Object;
+use quest_core::Object;
 
-/// A literal text is actually just a `quest::Text`.
-pub use quest::types::Text;
+/// A literal text is actually just a `quest_core::Text`.
+pub use quest_core::types::Text;
 
 
 impl Executable for Text {
-	fn execute(&self) -> quest::Result<Object> {
+	fn execute(&self) -> quest_core::Result<Object> {
 		Ok(self.clone().into())
 	}
 }

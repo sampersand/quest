@@ -4,16 +4,16 @@ use crate::{Result, Stream};
 use crate::token::{Tokenizable, TokenizeResult};
 use crate::expression::Executable;
 use std::convert::TryFrom;
-use quest::Object;
+use quest_core::Object;
 
-/// A literal number is actually just a `quest::Number`.
-pub use quest::types::Number;
+/// A literal number is actually just a `quest_core::Number`.
+pub use quest_core::types::Number;
 
 /// The error that can occur whilst trying to parse a Number
-pub type ParseError = quest::types::number::FromStrError;
+pub type ParseError = quest_core::types::number::FromStrError;
 
 impl Executable for Number {
-	fn execute(&self) -> quest::Result<Object> {
+	fn execute(&self) -> quest_core::Result<Object> {
 		Ok(self.clone().into())
 	}
 }

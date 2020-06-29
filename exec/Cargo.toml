@@ -1,10 +1,10 @@
 [package]
-name = "quest_exec"
+name = "quest-exec"
 version = "0.1.0"
 authors = ["Sam Westerman <sam@sampersand.me>"]
 edition = "2018"
 
 [dependencies]
-quest = { path = "../core" }
-quest_parser = { path = "../parser" }
+quest-core = { path = "../core" }
+quest-parser = { path = "../parser" }
 clap = "~3.0.0-beta.1"
