@@ -109,7 +109,6 @@ impl Binding {
 					binding.add_parent(parent)?;
 				}
 
-
 				for (i, arg) in args.iter().enumerate() {
 					binding.set_attr(Object::from(format!("_{}", i)), (*arg).clone())?;
 				}
@@ -118,6 +117,7 @@ impl Binding {
 
 				if let Some(callee) = stack.read().expect("bad stack").last() {
 					binding.set_attr("__callee__", callee.as_ref().clone())?;
+					binding.add_parent(callee.as_ref().clone())?;
 				}
 
 				Binding(binding)

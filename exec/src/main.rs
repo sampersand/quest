@@ -91,7 +91,7 @@ fn main() {
 	match run_options(Opts::parse()) {
 		Ok(_) => {},
 		// Ok(x) => println!("{:?}", x),
-		Err(err) => println!("uncaught error encountered:\n{}", err)
+		Err(err) => eprintln!("uncaught error encountered:\n{}", err)
 	}
 }
 

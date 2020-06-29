@@ -162,14 +162,15 @@ impl Block {
 			Ok(lines_obj)
 	}
 
-	fn call(&self, args: Args) -> quest::Result<quest::Object> {
-		Binding::new_stackframe_old(args.into(), |_| self.run_block_to_object())
-	}
+	// fn call(&self, args: Args) -> quest::Result<quest::Object> {
+	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
+	// }
 
 }
 
 impl Executable for Block {
 	fn execute(&self) -> quest::Result<quest::Object> {
+
 		if self.paren_type == ParenType::Curly {
 			let block = Object::from(self.clone());
 			block.add_parent(Binding::instance().as_ref().clone())?;
@@ -240,8 +241,17 @@ impl Constructable for Block {
 
 impl Block {
 	#[inline]
-	pub fn qs_call(&self, args: Args) -> quest::Result<Object> {
-		self.call(args)
+	pub fn qs_call(this: &Object, args: Args) -> quest::Result<Object> {
+		let this_cloned = this.try_downcast_ref::<Block>()?.clone();
+		Binding::new_stackframe(Some(this.clone()), args, move |_| {
+			this_cloned.run_block_to_object()
+		})
+
+	// fn call(&self, args: Args) -> quest::Result<quest::Object> {
+	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
+	// }
+
+	// 	Block::call(this, args)
 	}
 
 	#[inline]
@@ -250,11 +260,10 @@ impl Block {
 	}
 }
 
-
 impl_object_type!{
 for Block [(parents quest::types::Function)]:
 	"@text" => method Block::qs_at_text,
-	"()" => method Block::qs_call
+	"()" => function Block::qs_call
 }
 
 #[cfg(test)]
