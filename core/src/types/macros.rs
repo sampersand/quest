@@ -171,7 +171,7 @@ macro_rules! impl_object_type {
 	};
 
 
-	(for $obj:ty [ $($args:tt)* ]: $($body:tt)*/*$($attr:expr => ($($attr_val:tt)*)),* $(,)?*/) => {
+	(for $obj:ty $({$new_object:item})? [ $($args:tt)* ]: $($body:tt)*/*$($attr:expr => ($($attr_val:tt)*)),* $(,)?*/) => {
 		impl_object_type!(@CONVERTIBLE $obj; $($args)* );
 
 		#[cfg(test)]
@@ -225,6 +225,8 @@ macro_rules! impl_object_type {
 				}
 				class
 			}
+
+			$($new_object)?
 		}
 	};
 }

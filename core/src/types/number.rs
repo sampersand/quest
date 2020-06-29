@@ -3,6 +3,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 use std::cmp::Ordering;
 use crate::{Object, Args};
 use crate::types::{Text, Boolean};
+use std::hash::{Hash, Hasher};
 
 pub type IntegerType = i64;
 pub type FloatType = f64;
@@ -16,6 +17,8 @@ enum Inner {
 	Float(FloatType),
 }
 
+impl Eq for Number {}
+
 impl PartialEq for Number {
 	fn eq(&self, rhs: &Number) -> bool {
 		use Inner::*;
@@ -28,7 +31,15 @@ impl PartialEq for Number {
 	}
 }
 
-impl Eq for Number {}
+impl Hash for Number {
+	fn hash<H: Hasher>(&self, h: &mut H) {
+		// in the future, we should probably change how floats hash
+		match self.0 {
+			Inner::Integer(i) => i.hash(h),
+			Inner::Float(f) => f.to_bits().hash(h)
+		}
+	}
+}
 
 impl Default for Number {
 	fn default() -> Number {
@@ -601,7 +612,30 @@ mod impls {
 }
 
 impl_object_type!{
-for Number [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@num")]:
+	for Number 
+{
+	#[inline]
+	fn new_object(self) -> Object where Self: Sized {
+		use lazy_static::lazy_static;
+		use std::collections::HashMap;
+		use std::sync::RwLock;
+
+		lazy_static! {
+			static ref OBJECTS: RwLock<HashMap<Number, Object>> = RwLock::new(HashMap::new());
+		}
+
+		if let Some(obj) = OBJECTS.read().unwrap().get(&self) {
+			return obj.clone();
+		}
+
+		let mut objs = OBJECTS.write().unwrap();
+
+		objs.entry(self).or_insert_with(|| Object::new_with_parent(self, vec![Number::mapping()]))
+			.clone()
+	}
+}
+
+[(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@num")]:
 	"PI" => const Number::PI,
 	"E" => const Number::E,
 	"NAN" => const Number::NAN,

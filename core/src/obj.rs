@@ -7,8 +7,10 @@ use std::fmt::{self, Debug, Formatter};
 use std::any::Any;
 use std::ops::{Deref, DerefMut};
 
+mod data;
 pub mod mapping;
 use mapping::Mapping;
+pub use data::Data;
 pub use mapping::{Key, EqKey, Value};
 
 pub trait ToObject {
@@ -25,12 +27,9 @@ impl Default for Object {
 }
 
 pub(super) struct Internal {
-	mapping: RwLock<Mapping>,
 	id: usize,
-	// binding: Binding,
-	data: RwLock<Box<dyn Any + Send + Sync>>,
-	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result,
-	typename: &'static str
+	mapping: RwLock<Mapping>,
+	data: Data,
 }
 
 impl Debug for Object {
@@ -58,13 +57,12 @@ impl Debug for Internal {
 		if f.alternate() {
 			f.debug_struct("Object")
 				.field("id", &self.id)
-				.field("data", &DataDebug(&**self.data.read().expect("poisoned"), self.dbg))
+				.field("data", &self.data)
 				.field("mapping", &*self.mapping.read().expect("cant read in obj"))
 				.finish()
 		} else {
 			f.debug_tuple("Object")
-				.field(&DataDebug(&**self.data.read().expect("poisoned"), self.dbg))
-				.field(&self.typename)
+				.field(&self.data)
 				.field(&self.id)
 				.finish()
 		}
@@ -92,27 +90,31 @@ impl<T: Any + ObjectType> From<T> for Object {
 impl Object {
 	pub fn new_with_parent<T, P>(data: T, parents: P) -> Self 
 	where
-		T: Any + Debug + Send + Sync,
+		T: Any + Debug + Send + Sync + Clone,
 		P: Into<mapping::Parents>
 	{
-		println!("{}({:?})", std::any::type_name::<T>(), data);
+		Object::from_parts(Data::new(data), Mapping::new(parents))
+	}
+
+	fn from_parts(data: Data, mapping: Mapping) -> Self {
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
 		let obj = Object(Arc::new(Internal {
 			id: ID_COUNTER.fetch_add(1, atomic::Ordering::Relaxed),
-			// binding: Binding::instance(),
-			mapping: RwLock::new(Mapping::new(parents)),
-			data: RwLock::new(Box::new(data)),
-			typename: std::any::type_name::<T>(),
-			dbg: |x, f| T::fmt(x.downcast_ref::<T>().expect("bad val givent to debug"), f)
+			mapping: RwLock::new(mapping),
+			data,
 		}));
 
-
 		obj.0.mapping.write().unwrap().obj = Arc::downgrade(&obj.0);
-		obj
+		obj		
 	}
 
 	pub fn new<T: ObjectType>(data: T) -> Self {
 		data.new_object()
+	}
+
+	pub fn data(&self) -> &Data {
+		&self.0.data
 	}
 
 	#[inline]
@@ -122,7 +124,7 @@ impl Object {
 
 	#[inline]
 	pub fn typename(&self) -> &'static str {
-		self.0.typename
+		self.0.data.typename()
 	}
 
 	#[inline]
@@ -136,24 +138,28 @@ impl Object {
 				.map(|b| bool::from(*b))
 				.unwrap_or(false))
 	}
+
+	pub fn deep_clone(&self) -> Object {
+		Object::from_parts(self.0.data.clone(), self.0.mapping.read().unwrap().clone())
+	}
 }
 
 impl Object {
+	#[inline]
 	pub fn is_a<T: Any>(&self) -> bool {
-		self.0.data.read().expect("poison error").is::<T>()
+		self.0.data.is_a::<T>()
 	}
 
-				#[allow(unreachable_code)]
 	pub fn try_downcast_clone<T: Any + Clone>(&self) -> Result<T> {
 		self.downcast_clone()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
-				got: self.0.typename,
+				got: self.typename(),
 			}.into())
 	}
 
+	#[inline]
 	pub fn downcast_clone<T: Any + Clone>(&self) -> Option<T> {
-		#[allow(clippy::map_clone)]
 		self.downcast_ref::<T>().map(|x| x.clone())
 	}
 
@@ -161,74 +167,37 @@ impl Object {
 		self.downcast_ref::<T>()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
-				got: self.0.typename,
+				got: self.typename(),
 			}.into())
 	}
 
+	#[inline]
 	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
-		if self.is_a::<T>() {
-			Some(unsafe { self.downcast_ref_unchecked() })
-		} else {
-			None
-		}
+		self.0.data.downcast_ref()
 	}
 
+	#[inline]
 	pub unsafe fn downcast_ref_unchecked<'a, T: Any>(&'a self) -> impl Deref<Target=T> + 'a {
-		use std::sync::RwLockReadGuard;
-		use std::marker::PhantomData;
-
-		struct Caster<'a, T>(RwLockReadGuard<'a, Box<dyn Any + Send + Sync>>, PhantomData<T>);
-		impl<'a, T: 'static> Deref for Caster<'a, T> {
-			type Target = T;
-			fn deref(&self) -> &T {
-				self.0.downcast_ref::<T>().unwrap()
-			}
-		}
-
-		Caster::<'a, T>(self.0.data.read().expect("poison error"), PhantomData)
+		self.0.data.downcast_ref_unchecked()
 	}
 
 	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> Result<impl DerefMut<Target = T> + 'a> {
 		self.downcast_mut::<T>()
 			.ok_or_else(|| TypeError::WrongType {
 				expected: std::any::type_name::<T>(),
-				got: self.0.typename,
+				got: self.typename(),
 			}.into())
 	}
 
 
+	#[inline]
 	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
-		if self.is_a::<T>() {
-			Some(unsafe { self.downcast_mut_unchecked() })
-		} else {
-			None
-		}
+		self.0.data.downcast_mut()
 	}
 
+	#[inline]
 	pub unsafe fn downcast_mut_unchecked<'a, T: Any>(&'a self) -> impl DerefMut<Target=T> + 'a {
-		use std::{sync::RwLockWriteGuard, marker::PhantomData};
-
-		struct Caster<'a, T>(RwLockWriteGuard<'a, Box<dyn Any + Send + Sync>>, PhantomData<T>);
-		impl<'a, T: 'static> Deref for Caster<'a, T> {
-			type Target = T;
-			fn deref(&self) -> &T {
-				match self.0.downcast_ref::<T>() {
-					Some(t) => t,
-					None => unreachable!()
-				}
-			}
-		}
-
-		impl<'a, T: 'static> DerefMut for Caster<'a, T> {
-			fn deref_mut(&mut self) -> &mut T {
-				match self.0.downcast_mut::<T>() {
-					Some(t) => t,
-					None => unreachable!()
-				}
-			}
-		}
-
-		Caster::<'a, T>(self.0.data.write().expect("poison error"), PhantomData)
+		self.0.data.downcast_mut_unchecked()
 	}
 }
 

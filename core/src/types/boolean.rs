@@ -198,8 +198,8 @@ impl Boolean {
 
 	/// Clones this.
 	#[inline]
-	pub fn qs_clone(&self, _: Args) -> Result<Boolean, !> {
-		Ok(self.clone())
+	pub fn qs_clone(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.deep_clone())
 	}
 
 	/// See if a this is equal to the first argument.
@@ -296,12 +296,30 @@ impl Boolean {
 
 
 impl_object_type!{
-for Boolean [(parents super::Basic) (convert "@bool")]:
+for Boolean {
+	#[inline]
+	fn new_object(self) -> Object where Self: Sized {
+		use lazy_static::lazy_static;
+		use crate::types::ObjectType;
+
+		lazy_static! {
+			static ref TRUE: Object = Object::new_with_parent(Boolean::TRUE, vec![Boolean::mapping()]);
+			static ref FALSE: Object = Object::new_with_parent(Boolean::FALSE, vec![Boolean::mapping()]);
+		}
+
+		if self.into_inner() { 
+			TRUE.clone()
+		} else {
+			FALSE.clone()
+		}
+	}
+}
+[(parents super::Basic) (convert "@bool")]:
 	"@text" => method Boolean::qs_at_text,
 	"__inspect__" => method Boolean::qs___inspect__,
 	"@num"  => method Boolean::qs_at_num,
 	"@bool" => function Boolean::qs_at_bool,
-	"clone" => method Boolean::qs_clone,
+	"clone" => function Boolean::qs_clone,
 	"=="    => method Boolean::qs_eql,
 	"!"     => method Boolean::qs_not,
 	"&"     => method Boolean::qs_bitand,
@@ -341,8 +359,8 @@ mod tests {
 
 	#[test]
 	fn clone() {
-		assert_eq!(Boolean::TRUE.qs_clone(args!()).unwrap(), Boolean::TRUE);
-		assert_eq!(Boolean::FALSE.qs_clone(args!()).unwrap(), Boolean::FALSE);
+		assert_eq!(*Boolean::qs_clone(&true.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(), Boolean::TRUE);
+		assert_eq!(*Boolean::qs_clone(&false.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(), Boolean::FALSE);
 	}
 
 	#[test]

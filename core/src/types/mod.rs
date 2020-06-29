@@ -5,7 +5,7 @@ pub mod macros;
 
 mod convert;
 
-pub trait ObjectType : std::fmt::Debug + std::any::Any + Send + Sync  {
+pub trait ObjectType : std::fmt::Debug + std::any::Any + Send + Sync + Clone {
 	fn mapping() -> Object;
 
 	#[inline]
