@@ -31,10 +31,13 @@ struct Opts {
 
 
 fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
-	let mut args = args.into_iter().map(Object::from).collect::<quest::ArgsOld>();
+	let mut args: Vec<Object> = args.into_iter().map(Object::from).collect();
+
 	if let Some(file) = file.as_ref() {
-		args.add_this(file.display().to_string().into());
+		args.insert(0, file.display().to_string().into());
 	}
+
+	let args = args.iter().collect();
 
 	match (file, eval) {
 		(Some(_), Some(_)) => panic!("both options set?"),
@@ -61,7 +64,7 @@ pub fn init() -> Result<()> {
 			args.add_this(binding.clone());
 
 
-			Binding::new_stackframe(args, |_| {
+			Binding::new_stackframe_old(args, |_| {
 				quest_parser::Expression::parse_stream(BufStream::from(obj.to_string()).tokens())
 					.map_err(|err| err.to_string())?
 					.execute()
@@ -117,7 +120,7 @@ fn main() {
 // 		.map(Object::from)
 // 		.collect::<Vec<Object>>();
 // 	args.insert(0, Object::default());
-// 	let result = Binding::new_stackframe_old(args.into(), |_| expression.execute());
+// 	let result = Binding::new_stackframe_old_old(args.into(), |_| expression.execute());
 // 	if cfg!(debug) {
 // 		println!("{:?}", result);
 // 	} else {

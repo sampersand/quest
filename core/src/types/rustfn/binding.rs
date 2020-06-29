@@ -1,4 +1,4 @@
-use crate::{Object, ArgsOld, types};
+use crate::{Object, Args, types};
 use std::sync::RwLock;
 use std::ops::Deref;
 
@@ -34,21 +34,9 @@ impl Binding {
 		})
 	}
 
-	// pub fn new_stackframe_old_<F, O, E>(args: ArgsOld, func: F) -> std::result::Result<O, E>
-	// where
-	// 	F: FnOnce(&Binding) -> std::result::Result<O, E>,
-	// 	E: From<crate::Error>
-	// {
-	// 	Self::new_stackframe(args, |binding| func(binding)).map_err(From::from)
-	// 	// match runner.run() {
-	// 	// 	Err(Error::Quest(quest::Error::Return { to, what })) if to.as_ref().equals(binding.as_ref())?
-	// 	// 		=> Ok(what),
-	// 	// 	other => other
-	// 	// }
 
-	// }
-
-	pub fn new_stackframe<F>(args: ArgsOld, func: F) -> crate::Result<Object>
+	#[deprecated]
+	pub fn new_stackframe_old<F>(args: crate::ArgsOld, func: F) -> crate::Result<Object>
 	where
 		F: FnOnce(&Binding) -> crate::Result<Object>,
 	{
@@ -83,6 +71,55 @@ impl Binding {
 				if let Some(callee) = stack.read().expect("bad stack").last() {
 					binding.set_attr("__callee__", callee.as_ref().clone())?;
 				}
+				Binding(binding)
+			};
+
+			{
+				let mut stack = stack.write().expect("stack poisoned");
+				stack.push(binding.clone());
+			};
+
+
+			let _guard = StackGuard(stack, &binding);
+			
+			match func(&binding) {
+				Err(crate::Error::Return { to, what }) if to.as_ref().eq_obj(binding.as_ref())?
+					=> Ok(what),
+				other => other
+			}
+		})
+	}
+
+	pub fn new_stackframe<F>(parent: Option<Object>, args: Args, func: F) -> crate::Result<Object>
+	where
+		F: FnOnce(&Binding) -> crate::Result<Object>,
+	{
+		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
+		impl Drop for StackGuard<'_> {
+			fn drop(&mut self) {
+				self.0.write().expect("stack poisoned").pop();
+			}
+		}
+
+		Binding::with_stack(|stack| {
+			let binding = {
+				let binding = Object::from(types::Scope);
+
+				if let Some(parent) = parent {
+					binding.add_parent(parent)?;
+				}
+
+
+				for (i, arg) in args.iter().enumerate() {
+					binding.set_attr(Object::from(format!("_{}", i)), (*arg).clone())?;
+				}
+
+				binding.set_attr("__args__", Object::from(types::List::from(args)))?;
+
+				if let Some(callee) = stack.read().expect("bad stack").last() {
+					binding.set_attr("__callee__", callee.as_ref().clone())?;
+				}
+
 				Binding(binding)
 			};
 

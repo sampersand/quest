@@ -136,7 +136,7 @@ macro_rules! impl_object_type {
 		$class.set_attr($attr, $crate::types::RustFn::method(
 			concat!(stringify!($obj), "::", $attr),
 			|x, a| {
-				$val(&*x.try_downcast_ref()?, a)
+				$val(&*x.try_downcast_ref::<$obj>().expect(concat!(stringify!($obj), "::", $attr)), a)
 					.map(Object::from)
 					.map_err(From::from)
 			}

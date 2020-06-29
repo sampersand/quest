@@ -1,6 +1,6 @@
 use crate::{Object, Result, types};
 
-pub trait EqKey {
+pub trait EqKey : std::fmt::Debug {
 	fn eq_key(&self, key: &Key) -> Result<bool>;
 }
 

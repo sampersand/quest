@@ -1,11 +1,10 @@
-use crate::Object;
+use crate::{Object, Args};
+use std::borrow::Cow;
 use std::fmt::{self, Debug, Formatter};
 
 
-type Inner = Vec<Object>;
-
 #[derive(Clone)]
-pub struct List(Inner);
+pub struct List(Cow<'static, [Object]>);
 
 impl Debug for List {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -23,31 +22,31 @@ impl IntoIterator for List {
 
 	#[inline]
 	fn into_iter(self) -> Self::IntoIter {
-		self.0.into_iter()
+		self.0.into_owned().into_iter()
 	}
 
 }
 
 impl List {
-	pub fn new(list: Inner) -> Self {
-		List(list)
+	pub fn new<L: Into<Cow<'static, [Object]>>>(list: L) -> Self {
+		List(list.into())
 	}
 }
 
-impl From<List> for Inner {
+impl From<List> for Vec<Object> {
 	fn from(list: List) -> Self {
-		list.0
+		list.0.into_owned()
 	}
 }
 
-impl From<Inner> for List {
-	fn from(list: Inner) -> Self {
+impl From<Vec<Object>> for List {
+	fn from(list: Vec<Object>) -> Self {
 		List::new(list)
 	}
 }
 
-impl From<Inner> for Object {
-	fn from(list: Inner) -> Self {
+impl From<Vec<Object>> for Object {
+	fn from(list: Vec<Object>) -> Self {
 		List::from(list).into()
 	}
 }
@@ -57,6 +56,13 @@ impl AsRef<[Object]> for List {
 		self.0.as_ref()
 	}
 }
+
+impl List {
+	pub fn qs_at_list(&self, _: Args) -> Result<List, !> {
+		Ok(self.clone())
+	}
+}
+
 
 mod impls {
 	use super::List;
@@ -81,11 +87,6 @@ mod impls {
 		todo!("List::at_map");
 	}
 
-	pub fn at_list(args: ArgsOld) -> Result<Object> { // "@list"
-		let this = args.this()?;
-		this.call_attr_old("clone", args.clone())
-	}
-
 	pub fn clone(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?.try_downcast_ref::<List>()?;
 		Ok(this.clone().into())
@@ -101,7 +102,7 @@ mod impls {
 
 	pub fn clear(args: ArgsOld) -> Result<Object> {
 		let mut this = args.this()?.try_downcast_mut::<List>()?;
-		this.0.clear();
+		this.0.to_mut().clear();
 		Ok(args.this()?.clone())
 	}
 
@@ -192,26 +193,26 @@ mod impls {
 		let rhs = args.arg(0)?.downcast_call::<List>()?;
 
 		#[allow(clippy::redundant_clone)]
-		this.try_downcast_mut::<List>()?.0.append(&mut rhs.clone().0);
+		this.try_downcast_mut::<List>()?.0.to_mut().append(&mut rhs.clone().0.to_mut());
 		Ok(this.clone())
 	}
 
 	pub fn push(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?;
-		this.try_downcast_mut::<List>()?.0.push(rhs.clone());
+		this.try_downcast_mut::<List>()?.0.to_mut().push(rhs.clone());
 		Ok(this.clone())
 	}
 
 	pub fn pop(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
-		Ok(this.try_downcast_mut::<List>()?.0.pop().unwrap_or_default())
+		Ok(this.try_downcast_mut::<List>()?.0.to_mut().pop().unwrap_or_default())
 	}
 
 	pub fn unshift(args: ArgsOld) -> Result<Object> {
 		let this = args.this()?;
 		let rhs = args.arg(0)?;
-		this.try_downcast_mut::<List>()?.0.insert(0, rhs.clone());
+		this.try_downcast_mut::<List>()?.0.to_mut().insert(0, rhs.clone());
 		Ok(this.clone())
 	}
 	pub fn shift(args: ArgsOld) -> Result<Object> {
@@ -219,7 +220,7 @@ mod impls {
 		if this.is_empty() {
 			Ok(Object::default())
 		} else {
-			Ok(this.remove(0))
+			Ok(this.to_mut().remove(0))
 		}
 	}
 
@@ -247,7 +248,7 @@ for List [(parents super::Basic) (convert "@list")]:
 	"@text" => impls::at_text,
 	"@bool" => impls::at_bool,
 	"@map" => impls::at_map,
-	"@list" => impls::at_list,
+	"@list" => method List::qs_at_list,
 	"clone" => impls::clone,
 
 	"does_include" => impls::does_include,

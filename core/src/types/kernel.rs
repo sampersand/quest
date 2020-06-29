@@ -40,7 +40,7 @@ mod impls {
 	pub fn r#while(args: ArgsOld) -> Result<Object> {
 		let cond = args.arg(0)?;
 		let body = args.arg(1)?;
-		// crate::Binding::new_stackframe(args.args(2..).unwrap_or_default(), move |b| {
+		// crate::Binding::new_stackframe_old(args.args(2..).unwrap_or_default(), move |b| {
 		// 	b.set_attr("name", Object::from("while"))?;
 
 			let mut result = Object::default();
@@ -53,7 +53,7 @@ mod impls {
 
 	pub fn r#loop(args: ArgsOld) -> Result<Object> {
 		let body = args.arg(0)?;
-		// crate::Binding::new_stackframe(args.args(1..).unwrap_or_default(), move |b| {
+		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
 			// b.set_attr("name", Object::from("loop"))?;
 			loop {
 				body.call_attr_old("()", &[])?;

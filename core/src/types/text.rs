@@ -6,6 +6,7 @@ use crate::Binding;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
+use crate::attrs::*;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Text(Cow<'static, str>);
@@ -49,7 +50,7 @@ impl Text {
 				stack.reverse();
 				stack.into()
 			})),
-			_ => Binding::instance().as_ref().call_attr_old(".", &[self.clone().into()])
+			_ => Binding::instance().as_ref().dot_get_attr(self.as_ref())
 		}
 	}
 
@@ -137,7 +138,7 @@ impl From<&'_ Text> for List {
 
 impl From<&'_ Text> for Boolean {
 	fn from(text: &'_ Text) -> Self {
-		text.as_ref().is_empty().into()
+		(!text.as_ref().is_empty()).into()
 	}
 }
 
@@ -209,14 +210,6 @@ impl Text {
 		}
 
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
-	}
-
-	pub fn qs_eql(&self, args: Args) -> Result<bool, crate::error::KeyError> { // "=="
-		if let Some(rhs) = args.arg(0)?.downcast_ref::<Text>() {
-			Ok(*self == *rhs)
-		} else {
-			Ok(false)
-		}
 	}
 
 	#[inline]
@@ -342,12 +335,12 @@ for Text [(init_parent super::Basic super::Comparable) (parents super::Basic) (c
 	"@list" => method Text::qs_at_list,
 	"@bool" => method Text::qs_at_bool,
 	"clone" => method Text::qs_clone,
-	"()"    => method Text::qs_call,
-	"="     => method Text::qs_assign,
+	"()"    => function Text::qs_call,
+	"="     => function Text::qs_assign,
 	"<=>"   => method Text::qs_cmp,
 	"=="    => method Text::qs_eql,
 	"+"     => method Text::qs_add,
-	"+="    => method Text::qs_add_assign,
+	"+="    => function Text::qs_add_assign,
 	"len"   => method Text::qs_len,
 	"get"   => (impls::index),
 	"shift" => (impls::shift),

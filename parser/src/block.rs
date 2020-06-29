@@ -1,5 +1,5 @@
 use quest::impl_object_type;
-use quest::{Object, ArgsOld, Binding};
+use quest::{Object, Args, Binding};
 
 use crate::Result;
 use crate::token::{Token, ParenType};
@@ -162,8 +162,8 @@ impl Block {
 			Ok(lines_obj)
 	}
 
-	fn call(&self, args: ArgsOld) -> quest::Result<quest::Object> {
-		Binding::new_stackframe(args, |_| self.run_block_to_object())
+	fn call(&self, args: Args) -> quest::Result<quest::Object> {
+		Binding::new_stackframe_old(args.into(), |_| self.run_block_to_object())
 	}
 
 }
@@ -237,20 +237,24 @@ impl Constructable for Block {
 	}
 }
 
-mod impls {
-	use super::*;
 
-	pub fn call(args: ArgsOld) -> quest::Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Block>()?.clone();
-		this.call(args)
+impl Block {
+	#[inline]
+	pub fn qs_call(&self, args: Args) -> quest::Result<Object> {
+		self.call(args)
+	}
+
+	#[inline]
+	pub fn qs_at_text(&self, _: Args) -> std::result::Result<Object, !> {
+		Ok(self.to_string().into())
 	}
 }
 
 
 impl_object_type!{
 for Block [(parents quest::types::Function)]:
-	"@text" => (|args| Ok(format!("{:?}", *args.this()?.try_downcast_ref::<Block>()?).into())),
-	"()" => impls::call
+	"@text" => method Block::qs_at_text,
+	"()" => method Block::qs_call
 }
 
 #[cfg(test)]

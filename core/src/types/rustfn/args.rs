@@ -16,13 +16,19 @@ impl Debug for Args<'_, '_> {
 	}
 }
 
-impl<'s, 'o> Args<'s, 'o> {
+impl<'s, 'o: 's> Args<'s, 'o> {
 	pub fn new<V: Into<Cow<'s, [&'o Object]>>>(args: V) -> Self {
 		Args(args.into())
 	}
 
 	pub fn into_inner(self) -> Cow<'s, [&'o Object]> {
 		self.0
+	}
+
+	pub fn iter<'a: 's>(&'a self) -> impl Iterator<Item=
+			<std::slice::Iter<'s, &'o Object> as Iterator>::Item
+		> + 'a {
+		self.0.as_ref().into_iter()
 	}
 }
 
@@ -61,6 +67,12 @@ impl<'o> From<Vec<&'o Object>> for Args<'o, 'o> {
 impl<'o> AsRef<[&'o Object]> for Args<'_, 'o> {
 	fn as_ref(&self) -> &[&'o Object] {
 		self.0.as_ref()
+	}
+}
+
+impl<'o> AsMut<[&'o Object]> for Args<'_, 'o> {
+	fn as_mut(&mut self) -> &mut [&'o Object] {
+		self.0.to_mut()
 	}
 }
 

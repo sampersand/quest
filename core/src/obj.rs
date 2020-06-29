@@ -295,6 +295,8 @@ impl Object {
 		K: EqKey + ToObject,
 		A: Into<Args<'s, 'o>>
 	{
+
+		// println!("{:?} {:?}", self.typename(), attr);
 		match self.get_value(attr)? {
 			Value::RustFn(rustfn) => {
 				rustfn.call(self, args.into())
@@ -304,7 +306,7 @@ impl Object {
 				let bound_attr = Object::new(crate::types::BoundFunction);
 				bound_attr.set_attr("__bound_object_owner__", self.clone())?;
 				bound_attr.set_attr("__bound_object__", object)?;
-				bound_attr.call_attr_old("()", args.into())
+				bound_attr.call_attr("()", args.into())
 			}
 		}
 	}
@@ -313,6 +315,7 @@ impl Object {
 		K: EqKey + ToObject,
 		A: Into<ArgsOld<'a>>
 	{
+		// println!("{:?} {:?}", self.typename(), attr);
 		match self.get_value(attr)? {
 			Value::RustFn(rustfn) => {
 				let mut args = args.into();
