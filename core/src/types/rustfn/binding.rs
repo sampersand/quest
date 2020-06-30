@@ -8,18 +8,21 @@ type Stack = Vec<Binding>;
 pub struct Binding(Object);
 
 impl Default for Binding {
+	#[inline]
 	fn default() -> Self {
 		Binding::instance()
 	}
 }
 
 impl Binding {
+	#[inline]
 	pub fn try_instance() -> Option<Binding> {
 		Binding::with_stack(|stack| {
 			stack.read().expect("stack poisoned").last().cloned()
 		})
 	}
 
+	#[inline]
 	pub fn instance() -> Binding {
 		Binding::try_instance().expect("we should always have a stackframe")
 	}
@@ -31,6 +34,14 @@ impl Binding {
 			assert!(stack.pop().is_some());
 			stack.push(new.clone());
 			new
+		})
+	}
+
+	pub fn stack() -> Vec<Binding> {
+		Self::with_stack(|s| {
+			let mut stack = s.read().expect("couldn't read stack").clone();
+			stack.reverse();
+			stack
 		})
 	}
 
@@ -69,7 +80,7 @@ impl Binding {
 
 				binding.set_attr_lit("__args__", Object::from(Vec::from(args.args(..)?)));
 				if let Some(callee) = stack.read().expect("bad stack").last() {
-					binding.set_attr_lit("__callee__", callee.as_ref().clone());
+					binding.set_attr_lit("__callee__", Object::from(callee.clone()));
 				}
 				Binding(binding)
 			};
@@ -139,10 +150,11 @@ impl Binding {
 		})
 	}
 
+	#[inline]
 	pub fn with_stack<F: FnOnce(&RwLock<Stack>) -> R, R>(func: F) -> R {
 		thread_local!(
-			static STACK: RwLock<Stack> = RwLock::new(vec![]);
-			// static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Scope))]);
+			// static STACK: RwLock<Stack> = RwLock::new(vec![]);
+			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Scope))]);
 		);
 
 		STACK.with(func)
@@ -150,19 +162,29 @@ impl Binding {
 }
 
 impl From<Object> for Binding {
+	#[inline]
 	fn from(obj: Object) -> Self {
 		Binding(obj)
 	}
 }
 
 impl AsRef<Object> for Binding {
+	#[inline]
 	fn as_ref(&self) -> &Object {
 		&self
 	}
 }
 
+impl From<Binding> for Object {
+	#[inline]
+	fn from(binding: Binding) -> Self {
+		binding.0
+	}
+}
+
 impl Deref for Binding {
 	type Target = Object;
+	#[inline]
 	fn deref(&self) -> &Object {
 		&self.0
 	}

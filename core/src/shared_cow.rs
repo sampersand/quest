@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 #[derive(Debug)]
-pub struct ArcCow<T: Clone>(RwLock<Ownership<T>>);
+pub struct SharedCow<T: Clone, >(RwLock<Ownership<T>>);
 
 #[derive(Debug, Clone)]
 enum Ownership<T> {
@@ -11,37 +11,37 @@ enum Ownership<T> {
 	__Cloning
 }
 
-impl<T: Clone + Default> Default for ArcCow<T> {
+impl<T: Clone + Default> Default for SharedCow<T> {
 	#[inline]
 	fn default() -> Self {
-		ArcCow::new(T::default())
+		SharedCow::new(T::default())
 	}
 }
 
 
-impl<T: Clone> From<T> for ArcCow<T> {
+impl<T: Clone> From<T> for SharedCow<T> {
 	#[inline]
 	fn from(data: T) -> Self {
-		ArcCow::from_inner(Ownership::Owned(data))
+		SharedCow::from_inner(Ownership::Owned(data))
 	}
 }
 
 
-impl<T: Clone> From<Arc<T>> for ArcCow<T> {
+impl<T: Clone> From<Arc<T>> for SharedCow<T> {
 	#[inline]
 	fn from(data: Arc<T>) -> Self {
-		ArcCow::from_inner(Ownership::Shared(data))
+		SharedCow::from_inner(Ownership::Shared(data))
 	}
 }
 
-impl<T: Clone> Clone for ArcCow<T> {
+impl<T: Clone> Clone for SharedCow<T> {
 	#[inline]
 	fn clone(&self) -> Self {
 		Self::from_inner(self.clone_data())
 	}
 }
 
-impl<T: Clone> ArcCow<T> {
+impl<T: Clone> SharedCow<T> {
 	#[inline]
 	pub fn new(data: T) -> Self {
 		Self::from_inner(Ownership::Owned(data))
@@ -49,7 +49,7 @@ impl<T: Clone> ArcCow<T> {
 
 	#[inline]
 	fn from_inner(inner: Ownership<T>) -> Self {
-		ArcCow(RwLock::new(inner))
+		SharedCow(RwLock::new(inner))
 	}
 
 	fn clone_data(&self) -> Ownership<T> {

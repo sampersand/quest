@@ -3,7 +3,7 @@ use crate::Object;
 
 #[derive(Debug, Clone)]
 pub enum KeyError {
-	OutOfBounds { idx: usize, len: usize },
+	OutOfBounds { idx: isize, len: usize },
 	BadSlice { slice: String, len: usize },
 	DoesntExist { attr: Object, obj: Object },
 	NoThisSupplied

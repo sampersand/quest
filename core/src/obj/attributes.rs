@@ -5,7 +5,7 @@ use crate::literals::{__PARENTS__, __ID__, __ATTR_MISSING__};
 use crate::{Object, Result};
 use crate::types::Text;
 use std::hash::Hash;
-use crate::ArcCow;
+use crate::SharedCow;
 use std::borrow::Borrow;
 
 mod parents;
@@ -23,7 +23,7 @@ struct Inner {
 
 #[derive(Debug, Default)]
 pub struct Attributes {
-	data: ArcCow<Inner>,
+	data: SharedCow<Inner>,
 	id: usize
 }
 
@@ -36,13 +36,13 @@ impl Clone for Attributes {
 impl Attributes {
 	pub fn new<P: Into<Parents>>(parents: P) -> Self {
 		Attributes::from_data(
-			ArcCow::new(Inner {
+			SharedCow::new(Inner {
 				parents: parents.into(),
 				map: Default::default()
 			})
 		)
 	}
-	fn from_data(data: ArcCow<Inner>) -> Self {
+	fn from_data(data: SharedCow<Inner>) -> Self {
 		use std::sync::atomic::{AtomicUsize, Ordering};
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -125,7 +125,7 @@ impl Attributes {
 	{
 		self.data.with_mut(|inner| {
 			if (&__PARENTS__).borrow() == key {
-				Some(std::mem::replace(&mut inner.parents, Parents::None).into())
+				Some(std::mem::replace(&mut inner.parents, Parents::default()).into())
 			} else {
 				inner.map.del_lit(key)
 			}

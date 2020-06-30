@@ -4,13 +4,13 @@ use crate::stream::Stream;
 use super::parenthesis::Parenthesis;
 use super::parenthesis::ParenType;
 use super::operator::Operator;
-use super::literal::Literal;
+use super::primative::Primative;
 use super::tokenizable::{Tokenizable, TokenizeResult};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
-	Literal(Literal),
+	Primative(Primative),
 	Operator(Operator),
 	Left(ParenType),
 	Right(ParenType),
@@ -21,7 +21,7 @@ pub enum Token {
 impl Display for Token {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Token::Literal(l) => Display::fmt(l, f),
+			Token::Primative(p) => Display::fmt(p, f),
 			Token::Operator(o) => Display::fmt(o, f),
 			Token::Left(t) => Display::fmt(&t.left(), f),
 			Token::Right(t) => Display::fmt(&t.right(), f),
@@ -48,7 +48,7 @@ impl Token {
 			};
 		}
 
-		try_tokenize!(Whitespace, Comment, Literal, Parenthesis, Operator);
+		try_tokenize!(Whitespace, Comment, Primative, Parenthesis, Operator);
 
 		match stream.next().transpose()? {
 			Some(';') => Ok(Some(Token::Endline)),

@@ -3,7 +3,7 @@
 use crate::{Result, Stream};
 use crate::expression::Executable;
 use crate::token::{Operator, Tokenizable, TokenizeResult};
-use crate::token::literal::Variable;
+use crate::token::primative::Variable;
 use quest_core::Object;
 
 /// A literal text is actually just a `quest_core::Text`.

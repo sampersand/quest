@@ -1,13 +1,13 @@
 use crate::{Object, Args};
 use crate::error::{ValueError};
-use crate::literals::__THIS__;
+use crate::literals::{__THIS__, __STACK__};
 use crate::types::{Number, List, Boolean};
 use crate::Binding;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Text(Cow<'static, str>);
 
 impl Debug for Text {
@@ -39,16 +39,8 @@ impl Text {
 
 	pub fn evaluate(&self) -> crate::Result<Object> {
 		match self.as_ref() {
-			"__this__" => Ok(Binding::instance().as_ref().clone()),
-			"__args__" => Binding::instance().get_attr_lit("__args__"),
-			"__stack__" => Ok(Binding::with_stack(|s| {
-				let mut stack = s.read().expect("couldn't read stack")
-					.iter()
-					.map(|x| x.as_ref().clone())
-					.collect::<Vec<_>>();
-				stack.reverse();
-				stack.into()
-			})),
+			__THIS__ => Ok(Binding::instance().as_ref().clone()),
+			__STACK__ => Ok(Binding::stack().into_iter().map(Object::from).collect::<Vec<_>>().into()),
 			_ => Binding::instance().as_ref().dot_get_attr(&self.to_string().into())
 		}
 	}
@@ -208,7 +200,7 @@ impl Text {
 
 		if let Some(this) = this.downcast_ref::<Self>() {
 			if this.as_ref() == __THIS__ {
-				return Ok(Binding::set_binding(rhs).as_ref().clone())
+				return Ok(Binding::set_binding(rhs).into())
 			}
 		}
 

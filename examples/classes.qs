@@ -15,15 +15,15 @@ $Person = {
 	};
 
 	$instance_methods = {
-		# so you can do `my_person.$class`
-		$class = _0;
+		# set parent to the calling stackframe
+		$class = :1;
 
 		$@text = {
 			_0.$first + " " + _0.$last
 		};
 
 		__this__
-	}(__this__);
+	}();
 
 	__this__
 }();

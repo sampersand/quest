@@ -7,24 +7,29 @@ use std::fmt::{self, Display, Formatter};
 pub mod text;
 pub mod number;
 pub mod variable;
+pub mod stackpos;
 
-/// A literal text.
+
+/// A text literal .
 pub type Text = text::Text;
 
-/// A literal number.
+/// A number literal .
 pub type Number = number::Number;
 
-/// A literal variable.
-pub use self::variable::Variable;
+/// A variable literal .
+pub use variable::Variable;
 
-/// Represents a literal value in Quest.
+/// A stackpos literal
+pub use stackpos::StackPos;
+
+/// Represents a primative value in Quest.
 ///
 /// Due to the lack of keywords in quest, values such as `true` and `false` are not their own
 /// distinct literal types: They're simply [`Variable`](#)s that will be evaluated at run time.
 ///
 /// There are also no literal lists or maps: These are both considered [`Block`](#)s.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Literal {
+pub enum Primative {
 	/// A literal piece of text.
 	///
 	/// See [`Text`](#) for more information on parsing.
@@ -36,60 +41,69 @@ pub enum Literal {
 	/// A variable name.
 	///
 	/// See [`Variable`](#) for more information on parsing.
-	Variable(Variable)
+	Variable(Variable),
+
+	StackPos(StackPos)
 }
 
-impl Display for Literal {
+impl Display for Primative {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Literal::Text(t) => Display::fmt(&t, f),
-			Literal::Number(n) => Display::fmt(&n, f),
-			Literal::Variable(v) => Display::fmt(&v, f),
+			Primative::Text(t) => Display::fmt(&t, f),
+			Primative::Number(n) => Display::fmt(&n, f),
+			Primative::Variable(v) => Display::fmt(&v, f),
+			Primative::StackPos(s) => Display::fmt(&s, f),
 		}
 	}
 }
 
-impl Executable for Literal {
+impl Executable for Primative {
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		match self {
-			Literal::Text(t) => t.execute(),
-			Literal::Number(n) => n.execute(),
-			Literal::Variable(v) => v.execute(),
+			Primative::Text(t) => t.execute(),
+			Primative::Number(n) => n.execute(),
+			Primative::Variable(v) => v.execute(),
+			Primative::StackPos(s) => s.execute(),
 		}
 	}
 }
 
-impl From<Literal> for Token {
-	fn from(lit: Literal) -> Token {
-		Token::Literal(lit)
+impl From<Primative> for Token {
+	fn from(lit: Primative) -> Token {
+		Token::Primative(lit)
 	}
 }
 
-impl Tokenizable for Literal {
+impl Tokenizable for Primative {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		match Number::try_tokenize(stream)?.map(Literal::Number) {
+		match Variable::try_tokenize(stream)?.map(Primative::Variable) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		match Text::try_tokenize(stream)?.map(Literal::Text) {
+		match Number::try_tokenize(stream)?.map(Primative::Number) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		Ok(Variable::try_tokenize(stream)?.map(Literal::Variable))
+		match Text::try_tokenize(stream)?.map(Primative::Text) {
+			TokenizeResult::None => { /* do nothing, parse the next one */ },
+			other => return Ok(other)
+		}
+
+		Ok(StackPos::try_tokenize(stream)?.map(Primative::StackPos))
 	}
 }
 
-impl Constructable for Literal {
+impl Constructable for Primative {
 	type Item = Self;
 	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Self>>
 	where
 		C: Iterator<Item=Result<Token>> + crate::expression::PutBack + crate::stream::Contexted
 	{
 		match ctor.next().transpose()? {
-			Some(Token::Literal(lit)) => Ok(Some(lit)),
+			Some(Token::Primative(lit)) => Ok(Some(lit)),
 			Some(tkn) => { ctor.put_back(Ok(tkn)); Ok(None) }
 			None => Ok(None),
 		}

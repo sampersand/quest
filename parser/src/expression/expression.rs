@@ -1,12 +1,12 @@
 use crate::{Result, Block};
 use crate::expression::{Constructable, Constructor, Executable, BoundOperator};
 use crate::stream::{Context, Contexted};
-use crate::token::{Token, Literal, Operator, ParenType};
+use crate::token::{Token, Primative, Operator, ParenType};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expression {
-	Literal(Literal),
+	Primative(Primative),
 	Block(Block),
 	Operator(BoundOperator),
 }
@@ -14,7 +14,7 @@ pub enum Expression {
 impl Display for Expression {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Expression::Literal(lit) => Display::fmt(lit, f),
+			Expression::Primative(prim) => Display::fmt(prim, f),
 			Expression::Block(block) => Display::fmt(block, f),
 			Expression::Operator(op) => Display::fmt(op, f),
 		}
@@ -25,16 +25,16 @@ impl Executable for Expression {
 	#[inline]
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		match self {
-			Expression::Literal(lit) => lit.execute(),
+			Expression::Primative(prim) => prim.execute(),
 			Expression::Block(block) => block.execute(),
 			Expression::Operator(op) => op.execute(),
 		}
 	}
 }
 
-impl From<Literal> for Expression {
-	fn from(lit: Literal) -> Self {
-		Expression::Literal(lit)
+impl From<Primative> for Expression {
+	fn from(prim: Primative) -> Self {
+		Expression::Primative(prim)
 	}
 }
 
@@ -58,8 +58,8 @@ impl Constructable for Expression {
 	where
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
-		if let Some(lit) = Literal::try_construct_primary(ctor)? {
-			Ok(Some(lit.into()))
+		if let Some(prim) = Primative::try_construct_primary(ctor)? {
+			Ok(Some(prim.into()))
 		} else if let Some(oper) = BoundOperator::try_construct_primary(ctor)? {
 			Ok(Some(oper.into()))
 		} else if let Some(block) = Block::try_construct_primary(ctor)? {

@@ -100,6 +100,7 @@ impl Constructable for BoundOperator {
 			Some(Token::Operator(oper)) if oper.assoc() == Associativity::UnaryOperOnLeft
 				=> make_unary(oper, ctor),
 			// allow for unary `+` and `-`
+			Some(Token::Operator(Operator::Scoped)) => make_unary(Operator::RootScope, ctor),
 			Some(Token::Operator(Operator::Add)) => make_unary(Operator::Pos, ctor),
 			Some(Token::Operator(Operator::Sub)) => make_unary(Operator::Neg, ctor),
 			Some(tkn) => { ctor.put_back(Ok(tkn)); Ok(None) }

@@ -101,7 +101,7 @@ impl FromIterator<Object> for ArgsOld<'static> {
 impl ArgsOld<'_> {
 	pub fn arg<'s>(&'s self, idx: usize) -> Result<&'s Object> {
 		self.args.get(idx + 1)
-			.ok_or_else(|| KeyError::OutOfBounds { idx: idx + 1, len: self.args.len() }.into())
+			.ok_or_else(|| KeyError::OutOfBounds { idx: (idx as isize) + 1, len: self.args.len() }.into())
 	}	
 
 	pub fn args<'c, I>(&'c self, idx: I) -> Result<ArgsOld<'c>>

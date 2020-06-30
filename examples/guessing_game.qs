@@ -24,6 +24,6 @@ loop({
 		quit(0);
 	}, {
 		# use `if` as a "terninary operator"
-		disp("too", if(guess > secret, { "high" }, { "low" }));
+		disp("too ", if(guess > secret, { "high" }, { "low" }));
 	})
 })

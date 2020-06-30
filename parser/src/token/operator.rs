@@ -85,7 +85,7 @@ operator_enum!{
 	// 2 characters
 	AddAssign("+=" 16) SubAssign("-=" 16) MulAssign("*=" 16) DivAssign("/=" 16) ModAssign("%=" 16) 
 	BAndAssign("&=" 16) BOrAssign("|=" 16) BXorAssign("^=" 16) Or("||" 15) And("&&" 14) Eql("==" 12)
-	Neq("!=" 12) Leq("<=" 11) Geq(">=" 11) Lsh("<<" 7) Rsh(">>" 7) Pow("**" 3) ColonColon("::" 0)
+	Neq("!=" 12) Leq("<=" 11) Geq(">=" 11) Lsh("<<" 7) Rsh(">>" 7) Pow("**" 3) Scoped("::" 0)
 
 	// 1 Character
 	Assign("=" 16) Lth("<" 11) Gth(">" 11) BXor("^" 10) BOr("|" 9) BAnd("&" 8) Add("+" 6) Sub("-" 6)
@@ -95,6 +95,7 @@ operator_enum!{
 	// Unrepresentable
 	Neg("-@" () 4 UnaryOperOnLeft 1)
 	Pos("+@" () 2 UnaryOperOnLeft 1) 
+	RootScope("::@" () 0 UnaryOperOnLeft 1) 
 	DotAssign(".=" () 16)
 	Call("()" () 0)
 	Index("[]" () 1)

@@ -386,7 +386,7 @@ macro_rules! impl_bitwise_ops {
 
 					match self.0 {
 						Inner::Float(n) => Err(NotAnInteger(n)),
-						Inner::Integer(mut n) => Ok(n.$fn_assign(IntegerType::try_from(rhs)?))
+						Inner::Integer(ref mut n) => Ok(n.$fn_assign(IntegerType::try_from(rhs)?))
 					}
 				}
 			}

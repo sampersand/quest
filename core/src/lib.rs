@@ -3,19 +3,20 @@
 #![feature(never_type)]
 extern crate rand;
 
-mod error;
-mod arc_cow;
+mod shared_cow;
+pub mod error;
 
 
 pub fn init() {
 	/* todo: move all mapping initialization stuff here. */
 }
 
+pub mod utils;
 pub mod obj;
 pub mod types;
 pub mod literals;
 
-use arc_cow::ArcCow;
+use shared_cow::SharedCow;
 pub use obj::{Object, ToObject};
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};

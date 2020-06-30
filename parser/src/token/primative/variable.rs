@@ -3,22 +3,22 @@ use crate::token::{Tokenizable, TokenizeResult};
 use crate::expression::Executable;
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct Variable(quest_core::types::Text);
 
 impl Display for Variable {
+	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		Display::fmt(&self.0.as_ref(), f)
+		Display::fmt(&self.0, f)
 	}
 }
 
-
 impl Executable for Variable {
+	#[inline]
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		self.0.evaluate()
 	}
 }
-
 
 #[inline]
 fn is_variable_start(c: char) -> bool {
@@ -33,7 +33,7 @@ fn is_variable_body(c: char) -> bool {
 impl Tokenizable for Variable {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		let mut variable = 
+		let mut variable =
 			match stream.next().transpose()? {
 				Some(chr) if is_variable_start(chr) => chr.to_string(),
 				Some(_) => {
@@ -51,6 +51,8 @@ impl Tokenizable for Variable {
 				break;
 			}
 		}
+
+		variable.shrink_to_fit();
 
 		Ok(TokenizeResult::Some(Variable(variable.into())))
 	}

@@ -24,7 +24,7 @@ $Child = {
 
 	$@text = {
 		# this is bad, lol: todo builtin `super` function
-		$parent_ims = _0.$__parents__.$get(1).$__parents__.$get(1);
+		$parent_ims = _0.$__parents__.$get(0).$__parents__.$get(0);
 		"Baby '" + parent_ims::$@text(_0) + "'"
 	};
 

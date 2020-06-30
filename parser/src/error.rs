@@ -6,13 +6,14 @@ use std::fmt::{self, Display, Formatter};
 #[non_exhaustive]
 pub enum ErrorType {
 	CantReadStream(std::io::Error),
-	BadNumber(crate::token::literal::number::ParseError),
+	BadNumber(crate::token::primative::number::ParseError),
 	UnterminatedBlockComment,
 	UnknownTokenStart(char),
 	UnterminatedQuote,
 	BadEscapeChar(char),
 	UnexpectedToken(Token),
 	Message(&'static str),
+	MessagedString(String),
 	ExpectedExpression,
 	MissingClosingParen(ParenType),
 
@@ -79,6 +80,7 @@ impl Display for ErrorType {
 			MissingClosingParen(paren) => write!(f, "missing closing paren `{}`", paren.right()),
 			ExpectedExpression => write!(f, "expected an expression"),
 			Message(msg) => write!(f, "{}", msg),
+			MessagedString(msg) => write!(f, "{}", msg),
 		}
 	}
 }

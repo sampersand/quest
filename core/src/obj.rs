@@ -193,14 +193,13 @@ impl Object {
 }
 
 impl Object {
-	#[inline]
 	pub fn has_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Result<bool>
 	where
 		for <'a> &'a str: Borrow<K>
 	{
 		self.0.attrs.has_lit(attr)
 	}
-	#[inline]
+
 	pub fn get_value_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Result<Option<Value>>
 	where
 		for <'a> &'a str: Borrow<K>
@@ -208,7 +207,6 @@ impl Object {
 		self.0.attrs.get_lit(attr)
 	}
 
-	#[inline]
 	pub fn get_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Result<Object>
 	where
 		for <'a> &'a str: Borrow<K>,
@@ -216,17 +214,13 @@ impl Object {
 	{
 		self.get_value_lit(attr)?
 			.map(Object::from)
-			// .map(|x| x.map(Into::into).unwrap_or_default())
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
-
 	}
 
-	#[inline]
 	pub fn set_attr_lit<V: Into<Value>>(&self, attr: Literal, value: V) {
 		self.0.attrs.set_lit(attr, value.into())
 	}
 
-	#[inline]
 	pub fn del_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Option<Value>
 	where
 		for <'a> &'a str: Borrow<K>,
@@ -234,7 +228,6 @@ impl Object {
 		self.0.attrs.del_lit(attr)
 	}
 
-	#[inline]
 	pub fn call_attr_lit<'s, 'o: 's, A, K: ?Sized>(&self, attr: &K, args: A) -> Result<Object>
 	where
 		for <'a> &'a str: Borrow<K>,
@@ -246,30 +239,24 @@ impl Object {
 			.call(self, args.into())
 	}
 
-	
-	#[inline]
 	pub fn has_attr(&self, attr: &Object) -> Result<bool> {
 		self.0.attrs.has(attr)
 	}
 
-	#[inline]
 	pub fn get_value(&self, attr: &Object) -> Result<Option<Value>> {
 		self.0.attrs.get(attr)
 	}
 
-	#[inline]
 	pub fn get_attr(&self, attr: &Object) -> Result<Object> {
 		self.0.attrs.get(attr)?
 			.map(Object::from)
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
 	}
 
-	#[inline]
 	pub fn set_attr<V: Into<Value>>(&self, attr: Object, value: V) -> Result<()> {
 		self.0.attrs.set(attr, value.into())
 	}
 
-	#[inline]
 	pub fn del_attr(&self, attr: &Object) -> Result<Object> {
 		self.0.attrs.del(attr)?
 			.map(Object::from)

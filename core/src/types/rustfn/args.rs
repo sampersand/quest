@@ -107,7 +107,7 @@ impl<'o> Args<'_, 'o> {
 	pub fn arg(&self, idx: usize) -> Result<&'o Object, KeyError> {
 		self.0.get(idx)
 			.map(|x| *x)
-			.ok_or_else(|| KeyError::OutOfBounds { idx, len: self.0.len() })
+			.ok_or_else(|| KeyError::OutOfBounds { idx: idx as isize, len: self.0.len() })
 	}	
 
 	pub fn args<I>(&self, idx: I) -> Result<Args<'_, 'o>, KeyError>
