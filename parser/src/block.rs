@@ -36,13 +36,14 @@ impl Debug for Block {
 
 
 impl Display for Block {
+	#[allow(clippy::all)]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		write!(f, "{}", self.paren_type.left())?;
 
 		if self.lines.len() == 1 {
 			write!(f, " ")?;
 		} else if self.lines.len() > 1 {
-			write!(f, "\n")?;
+			writeln!(f)?;
 		}
 
 		for (i, line) in self.lines.iter().enumerate() {
@@ -57,7 +58,7 @@ impl Display for Block {
 			}
 
 			if self.lines.len() > 1 {
-				write!(f, "\n")?;
+				writeln!(f)?;
 			}
 		}
 

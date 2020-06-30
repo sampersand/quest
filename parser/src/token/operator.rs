@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use std::io::BufRead;
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub enum Associativity {
 	LeftToRight,
 	RightToLeft,
@@ -32,7 +32,7 @@ macro_rules! operator_enum {
 	($(
 		$variant:ident($repr:literal $(($($ident:literal)?))? $ord:literal $($assoc:ident)? $($arity:literal)?)
 	)+) => {
-		#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+		#[derive(Debug, Clone, Copy, Eq)]
 		pub enum Operator {
 			$($variant),*
 		}
@@ -119,6 +119,13 @@ impl std::hash::Hash for Operator {
 	#[inline]
 	fn hash<H: std::hash::Hasher>(&self, h: &mut H) {
 		self.repr().hash(h)
+	}
+}
+
+impl PartialEq for Operator {
+	#[inline]
+	fn eq(&self, rhs: &Operator) -> bool {
+		self.repr() == rhs.repr()
 	}
 }
 

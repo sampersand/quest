@@ -1,4 +1,6 @@
-#![allow(deprecated)]
+// #![allow(deprecated)]
+#![allow(clippy::module_inception)]
+
 #![feature(never_type)]
 #![deny(warnings)]
 

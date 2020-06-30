@@ -48,8 +48,8 @@ fn try_tokenize_radix<S: Stream>(stream: &mut S, radix: u32) -> Result<Number> {
 /// Valid numbers should match the following regex:
 /// ```regex
 /// (?xi)
-/// 	\d[\d_]*           # Position::Integer
-///	(\.\d[\d_]*)?      # Position::Decimal
+///   \d[\d_]*           # Position::Integer
+///   (\.\d[\d_]*)?      # Position::Decimal
 ///   ([eE][+-]?[\d_]+\) # Position::Mantissa
 /// ```
 fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
