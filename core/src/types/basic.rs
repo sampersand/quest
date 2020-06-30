@@ -13,7 +13,7 @@ impl Basic {
 
 	#[inline]
 	pub fn qs_at_text(this: &Object, args: Args) -> crate::Result<Object> {
-		this.call_attr(&__INSPECT__, args)
+		this.call_attr_old(__INSPECT__.clone(), args)
 	}
 
 	#[inline]
@@ -23,12 +23,12 @@ impl Basic {
 
 	#[inline]
 	pub fn qs_neq(this: &Object, args: Args) -> crate::Result<Object> {
-		this.call_attr(&EQL, args)?.call_attr(&NOT, &[])
+		this.call_attr_old(EQL.clone(), args)?.call_attr_old(NOT.clone(), &[])
 	}
 
 	#[inline]
 	pub fn qs_not(this: &Object, args: Args) -> crate::Result<Object> {
-		this.call_attr(&AT_BOOL, args)?.call_attr(&NOT, &[])
+		this.call_attr_old(AT_BOOL.clone(), args)?.call_attr_old(NOT.clone(), &[])
 	}
 }
 

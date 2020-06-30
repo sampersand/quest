@@ -1,7 +1,9 @@
+pub type Literal = &'static str;
+
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
 		$(
-			pub const $name: crate::obj::Key = crate::obj::Key::Literal($key);
+			pub const $name: Literal = $key;
 		)*
 	};
 }
@@ -10,7 +12,7 @@ literals! {
 	// stuff for mappings
 	__PARENTS__ "__parents__" __ID__ "__id__" __ATTR_MISSING__ "__attr_missing__"
 
-	__THIS__ "__this__" __INSPECT__ "__inspect__"
+	__THIS__ "__this__" __INSPECT__ "__inspect__" __KEYS__ "__keys__"
 
 	// conversions
 	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list" AT_MAP "@map"

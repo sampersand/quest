@@ -30,7 +30,7 @@ impl Kernel {
 			args.arg(1)?.clone()
 		} else {
 			args.arg(2).map(Clone::clone).unwrap_or_default()
-		}.call_attr("()", &[])
+		}.call_attr_old("()", &[])
 	}
 
 	pub fn qs_disp(_: &Object, args: Args) -> Result<Object> {
@@ -45,11 +45,11 @@ impl Kernel {
 		let cond = args.arg(0)?;
 		let body = args.arg(1)?;
 		// crate::Binding::new_stackframe_old(args.args(2..).unwrap_or_default(), move |b| {
-		// 	b.set_attr("name", Object::from("while"))?;
+		// 	b.set_attr_old("name", Object::from("while"))?;
 
 			let mut result = Object::default();
-			while cond.call_attr("()", &[])?.downcast_call::<Boolean>()?.into() {
-				result = body.call_attr("()", &[])?;
+			while cond.call_attr_old("()", &[])?.downcast_call::<Boolean>()?.into() {
+				result = body.call_attr_old("()", &[])?;
 			};
 			Ok(result)
 		// })
@@ -58,9 +58,9 @@ impl Kernel {
 	pub fn qs_loop(_: &Object, args: Args) -> Result<!> {
 		let body = args.arg(0)?;
 		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
-			// b.set_attr("name", Object::from("loop"))?;
+			// b.set_attr_old("name", Object::from("loop"))?;
 			loop {
-				body.call_attr("()", &[])?;
+				body.call_attr_old("()", &[])?;
 			}
 		// })
 	}
@@ -223,7 +223,7 @@ mod tests {
 					assert_eq!(
 						$val,
 						*Kernel::mapping()
-							.get_attr(&Object::from($key))
+							.get_attr_old(&Object::from($key))
 							.unwrap().downcast_ref::<$ty>().unwrap(),
 						"constant {:?} doesn't exist or is wrong value",
 						$key
@@ -251,7 +251,7 @@ mod tests {
 				$({
 					let expected = <$class as ObjectType>::mapping();
 					let got = Object::from(Kernel)
-						.get_attr(&Object::from($key))
+						.get_attr_old(&Object::from($key))
 						.unwrap();
 					assert!(
 						expected.is_identical(&got),

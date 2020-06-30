@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::literals::{__INSPECT__};
+use crate::literals::__INSPECT__;
 use crate::types::{Text, Boolean, Number};
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -54,7 +54,7 @@ impl List {
 
 	/// Get an [`Iterator`](std::iter::Iterator) over elements in this list.
 	#[inline]
-	pub fn iter(&self) -> impl Iterator<Item=&Object> {
+	pub fn iter(&self) -> std::slice::Iter<'_, Object> {
 		self.0.iter()
 	}
 
@@ -198,7 +198,7 @@ impl TryFrom<&'_ List> for Text {
 	fn try_from(l: &List) -> crate::Result<Self> {
 		let mut t = vec![];
 		for item in l.iter() {
-			t.push(item.call_attr(&__INSPECT__, &[])?.downcast_call::<Text>()?.to_string());
+			t.push(item.call_attr_lit(__INSPECT__, &[])?.downcast_call::<Text>()?.to_string());
 		}
 		Ok(format!("[{}]", t.join(", ")).into())
 	}

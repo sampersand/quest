@@ -49,12 +49,12 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 	}
 }
 
-pub fn init() -> Result<()> {
+pub fn init() {
 	use quest_core::types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding};
 	use quest_parser::{Stream, expression::Executable};
 	use quest_core::ArgsOld;
 
-	Text::mapping().set_attr("eval", RustFn::new("Text::eval", |args| {
+	Text::mapping().set_attr_lit("eval", RustFn::new("Text::eval", |args| {
 		let obj = args.this()?.try_downcast_ref::<Text>()?;
 		let binding = args.arg(0);
 
@@ -77,17 +77,15 @@ pub fn init() -> Result<()> {
 				.execute()
 				.map_err(Into::into)
 		}
-	}))?;
-	Ok(())
-
+	}));
 }
 
 fn main() {
 	// run::run_file("../factorial.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();
 	// return;
-
-	quest_parser::init().expect("couldn't initialize quest parser");
-	init().expect("couldn't initialize quest exec");
+	quest_core::init();
+	quest_parser::init();
+	init();
 
 	match run_options(Opts::parse()) {
 		Ok(_) => {},

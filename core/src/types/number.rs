@@ -454,6 +454,10 @@ impl Number {
 		Ok(this.clone())
 	}
 
+	pub fn qs_clone(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.deep_clone())
+	}
+
 	#[allow(non_snake_case)]
 	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
 		Ok(format!("{:?}", self).into())
@@ -481,12 +485,6 @@ mod impls {
 		let this = args.this()?.try_downcast_ref::<Number>()?;
 
 		Ok(Boolean::from(*this).into())
-	}
-
-	pub fn clone(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
-
-		Ok(this.clone().into())
 	}
 
 	#[allow(non_upper_case_globals)]
@@ -645,7 +643,7 @@ impl_object_type!{
 	"__inspect__" => method Number::qs___inspect__,
 	"@num" => function Number::qs_at_num,
 	"@bool" => impls::at_bool,
-	"clone" => impls::clone,
+	"clone" => function Number::qs_clone,
 
 	"+"  => impls::add,   "+="  => impls::add_assign,
 	"-"  => impls::sub,   "-="  => impls::sub_assign,

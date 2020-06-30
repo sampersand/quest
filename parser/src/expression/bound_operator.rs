@@ -54,11 +54,11 @@ impl Executable for BoundOperator {
 				Expression::Block(block) if block.paren_type() == ParenType::Round =>
 					return match block.run_block()? {
 						Some(crate::block::LineResult::Single(s)) =>
-							this.call_attr(&self.oper, &[&s]),
+							this.call_attr_old(&self.oper, &[&s]),
 						Some(crate::block::LineResult::Multiple(m)) =>
-							this.call_attr(&self.oper, m.iter().collect::<Vec<&_>>()),
+							this.call_attr_old(&self.oper, m.iter().collect::<Vec<&_>>()),
 						None =>
-							this.call_attr(&self.oper, &[])
+							this.call_attr_old(&self.oper, &[])
 					},
 				_ => {}
 			},
@@ -73,7 +73,7 @@ impl Executable for BoundOperator {
 
 		let args_vec: Vec<&quest_core::Object> = args_vec.iter().collect();
 
-		this.call_attr(&self.oper, args_vec)
+		this.call_attr_old(&self.oper, args_vec)
 	}
 }
 

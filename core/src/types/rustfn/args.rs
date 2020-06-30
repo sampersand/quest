@@ -76,12 +76,6 @@ impl<'o> AsRef<[&'o Object]> for Args<'_, 'o> {
 	}
 }
 
-// impl<'o> AsMut<[&'o Object]> for Args<'_, 'o> {
-// 	fn as_mut(&mut self) -> &mut [&'o Object] {
-// 		self.0.to_mut()
-// 	}
-// }
-
 impl<'o> AsMut<Vec<&'o Object>> for Args<'_, 'o> {
 	fn as_mut(&mut self) -> &mut Vec<&'o Object> {
 		self.0.to_mut()

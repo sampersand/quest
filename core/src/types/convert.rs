@@ -7,7 +7,7 @@ pub trait Convertible : Any + Sized + Clone {
 
 impl Object {
 	pub fn downcast_call<T: Convertible>(&self) -> Result<T> {
-		self.call_attr(T::CONVERT_FUNC, crate::Args::default())
+		self.call_attr_old(T::CONVERT_FUNC, crate::Args::default())
 			.and_then(|o| o.try_downcast_clone())
 	}
 }

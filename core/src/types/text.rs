@@ -6,7 +6,6 @@ use crate::Binding;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
-use crate::attrs::*;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Text(Cow<'static, str>);
@@ -41,7 +40,7 @@ impl Text {
 	pub fn evaluate(&self) -> crate::Result<Object> {
 		match self.as_ref() {
 			"__this__" => Ok(Binding::instance().as_ref().clone()),
-			"__args__" => Binding::instance().get_attr("__args__"),
+			"__args__" => Binding::instance().get_attr_old("__args__"),
 			"__stack__" => Ok(Binding::with_stack(|s| {
 				let mut stack = s.read().expect("couldn't read stack")
 					.iter()
@@ -208,13 +207,20 @@ impl Text {
 		let rhs = args.arg(0)?.clone();
 
 		if let Some(this) = this.downcast_ref::<Text>() {
-			use crate::obj::EqKey;
-			if this.as_ref().eq_key(&__THIS__)? {
+			if this.as_ref() == __THIS__ {
 				return Ok(Binding::set_binding(rhs).as_ref().clone())
 			}
 		}
 
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
+	}
+
+	pub fn qs_eql(&self, args: Args) -> Result<bool, crate::error::KeyError> {
+		if let Some(rhs) = args.arg(0)?.downcast_ref::<Self>() {
+			Ok(*self == *rhs)
+		} else {
+			Ok(false)
+		}
 	}
 
 	#[inline]

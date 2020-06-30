@@ -64,12 +64,12 @@ impl Binding {
 				for (i, arg) in args.args(..)?.as_ref().iter().enumerate() {
 					// `+1` because we don't start at 0
 					binding.set_attr(Object::from(format!("_{}", i/* + 1*/)), arg.clone())?;
-					// binding.set_attr(Object::from(format!("_{}", i + 1)), arg.clone())?;
+					// binding.set_attr_old(Object::from(format!("_{}", i + 1)), arg.clone())?;
 				}
 
-				binding.set_attr("__args__", Object::from(Vec::from(args.args(..)?)))?;
+				binding.set_attr_lit("__args__", Object::from(Vec::from(args.args(..)?)));
 				if let Some(callee) = stack.read().expect("bad stack").last() {
-					binding.set_attr("__callee__", callee.as_ref().clone())?;
+					binding.set_attr_lit("__callee__", callee.as_ref().clone());
 				}
 				Binding(binding)
 			};
@@ -113,10 +113,10 @@ impl Binding {
 					binding.set_attr(Object::from(format!("_{}", i)), (*arg).clone())?;
 				}
 
-				binding.set_attr("__args__", Object::from(types::List::from(args)))?;
+				binding.set_attr_lit("__args__", Object::from(types::List::from(args)));
 
 				if let Some(callee) = stack.read().expect("bad stack").last() {
-					binding.set_attr("__callee__", callee.as_ref().clone())?;
+					binding.set_attr_lit("__callee__", callee.as_ref().clone());
 					binding.add_parent(callee.as_ref().clone())?;
 				}
 

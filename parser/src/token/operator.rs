@@ -53,19 +53,14 @@ macro_rules! operator_enum {
 			}
 		}
 
-		impl Display for Operator {
-			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-				match self {
-					$(
-						Operator::$variant => Display::fmt($repr, f),
-					)+
-				}
-			}
-		}
-
 		impl Operator {
 			pub const MAX_PRECEDENCE: usize = operator_enum!(; MAX_PRECEDENCE $($ord)+) as usize;
 
+			pub fn repr(&self) -> &'static str {
+				match self {
+					$(Operator::$variant => $repr),+
+				}
+			}
 			pub fn precedence(&self) -> usize {
 				match self {
 					$(Operator::$variant => $ord,)+
@@ -106,6 +101,12 @@ operator_enum!{
 	WithBlock("{}" () 1)
 }
 
+impl Display for Operator {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		Display::fmt(&self.repr(), f)
+	}
+}
+
 impl From<Operator> for Token {
 	fn from(op: Operator) -> Token {
 		Token::Operator(op)
@@ -129,10 +130,3 @@ impl quest_core::ToObject for Operator {
 		Object::from(self.to_string())
 	}
 }
-
-impl quest_core::obj::EqKey for Operator {
-	fn eq_key(&self, key: &quest_core::obj::Key) -> quest_core::Result<bool> {
-		self.to_string().as_str().eq_key(key)
-	}
-}
-
