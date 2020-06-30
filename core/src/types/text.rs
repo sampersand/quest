@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Text(Cow<'static, str>);
 
 impl Debug for Text {
@@ -40,7 +40,7 @@ impl Text {
 	pub fn evaluate(&self) -> crate::Result<Object> {
 		match self.as_ref() {
 			"__this__" => Ok(Binding::instance().as_ref().clone()),
-			"__args__" => Binding::instance().get_attr_old("__args__"),
+			"__args__" => Binding::instance().get_attr_lit("__args__"),
 			"__stack__" => Ok(Binding::with_stack(|s| {
 				let mut stack = s.read().expect("couldn't read stack")
 					.iter()
@@ -49,7 +49,7 @@ impl Text {
 				stack.reverse();
 				stack.into()
 			})),
-			_ => Binding::instance().as_ref().dot_get_attr(self.as_ref())
+			_ => Binding::instance().as_ref().dot_get_attr(&self.to_string().into())
 		}
 	}
 
@@ -162,7 +162,7 @@ impl Text {
 	}
 
 	#[allow(non_snake_case)]
-	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+	pub fn qs___inspect__(&self, _: Args) -> Result<Self, !> {
 		Ok(format!("{:?}", self).into())
 	}
 
@@ -191,12 +191,12 @@ impl Text {
 	}
 
 	#[inline]
-	pub fn qs_clone(&self, _: Args) -> Result<Text, !> {
+	pub fn qs_clone(&self, _: Args) -> Result<Self, !> {
 		Ok(self.clone())
 	}
 
 	pub fn qs_call(this: &Object, _: Args) -> crate::Result<Object> {
-		if let Ok(this) = this.try_downcast_ref::<Text>() {
+		if let Ok(this) = this.try_downcast_ref::<Self>() {
 			this.evaluate()
 		} else {
 			Binding::instance().as_ref().dot_get_attr(this)
@@ -206,7 +206,7 @@ impl Text {
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.clone();
 
-		if let Some(this) = this.downcast_ref::<Text>() {
+		if let Some(this) = this.downcast_ref::<Self>() {
 			if this.as_ref() == __THIS__ {
 				return Ok(Binding::set_binding(rhs).as_ref().clone())
 			}
@@ -225,18 +225,18 @@ impl Text {
 
 	#[inline]
 	pub fn qs_cmp(&self, args: Args) -> crate::Result<std::cmp::Ordering> {
-		let rhs = args.arg(0)?.downcast_call::<Text>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 		Ok(self.cmp(&rhs))
 	}
 
-	pub fn qs_add(&self, args: Args) -> crate::Result<Text> {
-		let rhs = args.arg(0)?.downcast_call::<Text>()?;
+	pub fn qs_add(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 		Ok(self.clone() + rhs)
 	}
 
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Text>()?;
-		*this.try_downcast_mut::<Text>()? += rhs;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		*this.try_downcast_mut::<Self>()? += rhs;
 		Ok(this.clone())
 	}
 
@@ -244,47 +244,37 @@ impl Text {
 	pub fn qs_len(&self, _: Args) -> Result<usize, !> {
 		Ok(self.len())
 	}
-}
 
-mod impls {
-	use super::*;
-	use crate::{Object, Result, ArgsOld, types};
-	// "[]~" => (|args| todo!("[]~")),
-	// "clear" => (|args| todo!("clear")),
-
-	fn correct_index(idx: isize, len: usize) -> Option<usize> {
+	fn correct_index(&self, idx: isize) -> Option<usize> {
 		if !idx.is_negative() {
-			if (idx as usize) < len {
+			if (idx as usize) < self.len() {
 				Some(idx as usize)
 			} else {
 				None
 			}
 		} else {
 			let idx = (-idx) as usize;
-			if idx <= len {
-				Some(len - idx)
+			if idx <= self.len() {
+				Some(self.len() - idx)
 			} else {
 				None
 			}
 		}
 	}
 
-	pub fn index(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Text>()?;
-
-		let len = this.0.len();
+	pub fn qs_get(&self, args: Args) -> crate::Result<Object> {
 		let start = args.arg(0)?
-			.try_downcast_ref::<types::Number>()?
+			.try_downcast_ref::<Number>()?
 			.floor() as isize;
 
 		let end = args.arg(1)
 			.ok()
-			.map(Object::downcast_call::<types::Number>)
+			.map(Object::downcast_call::<Number>)
 			.transpose()?
 			.map(|x| x.floor() as isize);
 
 		let start =
-			if let Some(start) = correct_index(start, len) {
+			if let Some(start) = self.correct_index(start) {
 				start
 			} else {
 				return Ok(Object::default())
@@ -292,71 +282,106 @@ mod impls {
 
 		match end {
 			None =>
-				Ok(this.0.chars()
+				Ok(self.0.chars()
 					.nth(start)
 					.map(|x| x.to_string().into())
 					.unwrap_or_default()),
 			Some(end) => {
-				let end = correct_index(end, len).map(|x| x + 1).unwrap_or(len);
+				let end = self.correct_index(end).map(|x| x + 1).unwrap_or(self.len());
 				if end < start {
 					Ok(Object::default())
 				} else {
-					Ok(this.0[start..end].to_owned().into())
+					Ok(self.0[start..end].to_owned().into())
 				}
 			}
 		}
 	}
 
-	pub fn shift(args: ArgsOld) -> Result<Object> {
-		let this = &mut args.this()?.try_downcast_mut::<types::Text>()?.0;
-		if this.len() == 0 {
+	pub fn qs_set(_this: &Object, _args: Args) -> crate::Result<Object> {
+		todo!()
+	}
+
+	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		this.try_downcast_mut::<Self>()?.0.to_mut().push_str(rhs.as_ref());
+		Ok(this.clone())
+	}
+
+	pub fn qs_pop(&mut self, _args: Args) -> crate::Result<Object> {
+		todo!()
+	}
+
+	pub fn qs_unshift(_this: &Object, _args: Args) -> crate::Result<Object> {
+		todo!()
+	}
+
+	pub fn qs_shift(&mut self, _: Args) -> crate::Result<Object> {
+		if self.len() == 0 {
 			Ok(Object::default())
 		} else {
-			Ok(this.to_mut().remove(0).to_string().into())
+			Ok(self.0.to_mut().remove(0).to_string().into())
 		}
 	}
 
-	pub fn push(args: ArgsOld) -> Result<Object> {
-		let this_obj = args.this()?;
-		let arg = args.arg(0)?.downcast_call::<types::Text>()?.0;
-		this_obj.try_downcast_mut::<types::Text>()?.0.to_mut().push_str(arg.as_ref());
-		Ok(this_obj.clone())
+
+	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
+		this.try_downcast_mut::<Self>()?.0.to_mut().clear();
+		Ok(this.clone())
 	}
 
-	pub fn clear(args: ArgsOld) -> Result<Object> {
-		let this_obj = args.this()?;
-		this_obj.try_downcast_mut::<types::Text>()?.0.to_mut().clear();
-		Ok(this_obj.clone())
-	}
-
-	pub fn index_assign(_args: ArgsOld) -> Result<Object> { todo!("[]=") } // "[]=
-	pub fn index_of(_args: ArgsOld) -> Result<Object> { todo!("index_of") } // "index_of"
-	pub fn split(_args: ArgsOld) -> Result<Object> { todo!("split") } // "split"
-	pub fn reverse(_args: ArgsOld) -> Result<Object> { todo!("reverse") } // "reverse"
+	pub fn qs_split(&self, _: Args) -> crate::Result<Object> { todo!("split") }
+	pub fn qs_reverse(&self, _: Args) -> crate::Result<Object> { todo!("reverse") }
 }
 
 impl_object_type!{
-for Text [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
+for Text 
+{
+	fn new_object(self) -> Object where Self: Sized {
+		use lazy_static::lazy_static;
+		use std::collections::HashMap;
+		use std::sync::RwLock;
+
+		lazy_static! {
+			static ref OBJECTS: RwLock<HashMap<Text, Object>> = RwLock::new(HashMap::new());
+		}
+
+		// this is a hack until I get `quest_core::init()` working
+		if self.as_ref().starts_with(|x| 'A' <= x && x <= 'Z') {
+			return Object::new_with_parent(self, vec![Text::mapping()]);
+		}
+
+		if let Some(obj) = OBJECTS.read().unwrap().get(&self) {
+			return obj.deep_clone();
+		}
+
+		let mut objs = OBJECTS.write().unwrap();
+
+		objs.entry(self.clone())
+			.or_insert_with(|| Object::new_with_parent(self, vec![Text::mapping()]))
+			.deep_clone()
+	}
+}
+[(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
 	"@text" => function Text::qs_at_text,
 	"__inspect__"  => method Text::qs___inspect__,
-	"@num"  => method Text::qs_at_num,
-	"@list" => method Text::qs_at_list,
-	"@bool" => method Text::qs_at_bool,
-	"clone" => method Text::qs_clone,
-	"()"    => function Text::qs_call,
-	"="     => function Text::qs_assign,
-	"<=>"   => method Text::qs_cmp,
-	"=="    => method Text::qs_eql,
-	"+"     => method Text::qs_add,
-	"+="    => function Text::qs_add_assign,
-	"len"   => method Text::qs_len,
-	"get"   => (impls::index),
-	"shift" => (impls::shift),
-	"push" => (impls::push),
-	"clear" => (impls::clear),
-	"[]" => (impls::index),
-	"[]=" => (impls::index_assign),
-	"index_of" => (impls::index_of),
-	"split" => (impls::split),
-	"reverse" => (impls::reverse),
+	"@num"    => method Text::qs_at_num,
+	"@list"   => method Text::qs_at_list,
+	"@bool"   => method Text::qs_at_bool,
+	"clone"   => method Text::qs_clone,
+	"()"      => function Text::qs_call,
+	"="       => function Text::qs_assign,
+	"<=>"     => method Text::qs_cmp,
+	"=="      => method Text::qs_eql,
+	"+"       => method Text::qs_add,
+	"+="      => function Text::qs_add_assign,
+	"len"     => method Text::qs_len,
+	"get"     => method Text::qs_get,
+	"set"     => function Text::qs_set,
+	"push"    => function Text::qs_push,
+	"pop"     => method_mut Text::qs_pop,
+	"unshift" => function Text::qs_unshift,
+	"shift"   => method_mut Text::qs_shift,
+	"clear"   => function Text::qs_clear,
+	"split"   => method_mut Text::qs_split,
+	"reverse" => method Text::qs_reverse,
 }

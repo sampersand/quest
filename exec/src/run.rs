@@ -4,7 +4,7 @@ mod buf_stream;
 pub use buf_stream::BufStream;
 use repl::Repl;
 use quest_core::{Object, Binding, Args};
-use crate::{Error, Result};
+use crate::Result;
 use std::path::Path;
 use std::convert::TryFrom;
 

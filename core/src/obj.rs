@@ -89,6 +89,7 @@ impl Object {
 		T: Any + Debug + Send + Sync + Clone,
 		P: Into<attributes::Parents>
 	{
+		// println!("creating new object: {:?} ({:?})", data, std::any::type_name::<T>());
 		Object::from_parts(Data::new(data), Attributes::new(parents))
 	}
 
@@ -123,7 +124,7 @@ impl Object {
 	}
 
 	pub fn eq_obj(&self, rhs: &Object) -> Result<bool> {
-		self.call_attr_old("==", &[rhs])
+		self.call_attr_lit("==", &[rhs])
 			.map(|res| res.downcast_ref::<types::Boolean>()
 				.map(|b| bool::from(*b))
 				.unwrap_or(false))
@@ -287,11 +288,8 @@ impl Object {
 }
 
 impl Object {
-	pub fn dot_get_attr<K: ?Sized>(&self, attr: &K) -> Result<Object>
-	where
-		K: Debug + ToObject
-	{
-		let result = self.get_attr_old(attr)?;
+	pub fn dot_get_attr(&self, attr: &Object) -> Result<Object> {
+		let result = self.get_attr(attr)?;
 
 		// remove this hack? lol
 		if result.is_a::<types::RustFn>() || format!("{:?}", result).starts_with("Object(Block") ||
@@ -306,56 +304,14 @@ impl Object {
 		}
 	}
 
-	pub fn get_value_old<K: ?Sized>(&self, attr: &K) -> Result<Value>
-	where
-		K: ToObject
-	{
-		self.get_value(&attr.to_object())?
-		// // TODO: attr missing should be within `mapping`
-		// self.0.mapping.read().expect("cannot read")
-		// 	.get(attr)?
-			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
-	}
-
-	#[inline]
-	pub fn get_attr_old<K: ?Sized>(&self, attr: &K) -> Result<Object>
-	where
-		K: ToObject 
-	{
-		self.get_value_old(attr).map(|x| x.into())
-	}
-
-	#[inline]
-	pub fn has_attr_old<K: ?Sized>(&self, attr: &K) -> Result<bool>
-	where
-		K: ToObject
-	{
-		self.has_attr(&attr.to_object())
-	}
-
-	pub fn call_attr_old<'s, 'o: 's, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
-	where
-		K: ToObject,
-		A: Into<Args<'s, 'o>>
-	{
-		// static mut FOO: i32 = 0;
-		// unsafe {
-		// 	FOO += 1;
-		// 	if FOO > 10000 {
-		// 		panic!();
-		// 	}
-		// }
-		// println!("{:?} {:?}", self.typename(), attr);
-		self.get_value_old(attr)?.call(self, args.into())
-	}
-
 	pub fn call_attr_old_old<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
 	where
 		K: ToObject,
 		A: Into<ArgsOld<'a>>
 	{
-		// println!("OLD {:?} {:?}", self.typename(), attr);
-		match self.get_value_old(attr)? {
+		let a = self.get_value(&attr.to_object())?
+			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() })?;
+		match a {
 			Value::RustFn(rustfn) => {
 				let mut args = args.into();
 				args.add_this(self.clone());

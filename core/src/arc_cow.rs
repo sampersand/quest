@@ -65,6 +65,7 @@ impl<T: Clone> ArcCow<T> {
 		match std::mem::replace(&mut *data, Ownership::__Cloning) {
 			Ownership::Owned(owned) => {
 				*data = Ownership::Shared(Arc::new(owned));
+
 				data.clone()
 			},
 			shared @ Ownership::Shared(..) => shared.clone(),
@@ -91,6 +92,7 @@ impl<T: Clone> ArcCow<T> {
 	pub fn with_mut<F: FnOnce(&mut T) -> R, R>(&self, func: F) -> R {
 		let mut data = self.0.write().expect("couldn't write");
 
+			// println!("becoming owned");
 		if let Ownership::Shared(shared) = &*data {
 			*data = Ownership::Owned(shared.as_ref().clone());
 		}

@@ -1,3 +1,4 @@
+use std::{fmt::Debug, any::Any};
 use crate::Object;
 
 #[macro_use]
@@ -5,7 +6,7 @@ pub mod macros;
 
 mod convert;
 
-pub trait ObjectType : std::fmt::Debug + std::any::Any + Send + Sync + Clone {
+pub trait ObjectType : Debug + Any + Send + Sync + Clone {
 	fn mapping() -> Object;
 
 	#[inline]

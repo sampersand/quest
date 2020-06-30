@@ -26,7 +26,7 @@ impl Iterator for Repl {
 }
 
 impl Seek for Repl {
-	fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+	fn seek(&mut self, _pos: SeekFrom) -> io::Result<u64> {
 		unimplemented!()
 	}
 }
@@ -38,7 +38,7 @@ impl Contexted for Repl {
 }
 
 impl Stream for Repl {
-	fn starts_with(&mut self, s: &str) -> quest_parser::Result<bool> {
+	fn starts_with(&mut self, _s: &str) -> quest_parser::Result<bool> {
 		unimplemented!()
 		// self.read_next_line_if_applicable()?;
 		// Ok(self.as_ref().starts_with(s))

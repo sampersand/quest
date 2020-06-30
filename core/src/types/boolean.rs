@@ -196,12 +196,6 @@ impl Boolean {
 		Ok(this.clone())
 	}
 
-	/// Clones this.
-	#[inline]
-	pub fn qs_clone(this: &Object, _: Args) -> Result<Object, !> {
-		Ok(this.deep_clone())
-	}
-
 	/// See if a this is equal to the first argument.
 	///
 	/// Unlike most methods, the first argument is not implicitly converted to a  [`Boolean`] first.
@@ -308,9 +302,9 @@ for Boolean {
 		}
 
 		if self.into_inner() { 
-			TRUE.clone()
+			TRUE.deep_clone()
 		} else {
-			FALSE.clone()
+			FALSE.deep_clone()
 		}
 	}
 }
@@ -319,7 +313,6 @@ for Boolean {
 	"__inspect__" => method Boolean::qs___inspect__,
 	"@num"  => method Boolean::qs_at_num,
 	"@bool" => function Boolean::qs_at_bool,
-	"clone" => function Boolean::qs_clone,
 	"=="    => method Boolean::qs_eql,
 	"!"     => method Boolean::qs_not,
 	"&"     => method Boolean::qs_bitand,
@@ -355,12 +348,6 @@ mod tests {
 				Boolean::TRUE);
 		assert_eq!(*Boolean::qs_at_bool(&false.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(),
 				Boolean::FALSE);
-	}
-
-	#[test]
-	fn clone() {
-		assert_eq!(*Boolean::qs_clone(&true.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(), Boolean::TRUE);
-		assert_eq!(*Boolean::qs_clone(&false.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(), Boolean::FALSE);
 	}
 
 	#[test]

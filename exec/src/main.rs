@@ -1,10 +1,10 @@
+#![deny(warnings)]
 #![allow(deprecated)]
-#![allow(unused)]
 
 mod run;
 mod error;
 
-use error::{Error, Result};
+use error::Result;
 use run::BufStream;
 use quest_core::Object;
 use clap::Clap;
@@ -50,39 +50,32 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 }
 
 pub fn init() {
-	use quest_core::types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding};
+	use quest_core::types::{ObjectType, RustFn, Text, rustfn::Binding};
 	use quest_parser::{Stream, expression::Executable};
-	use quest_core::ArgsOld;
 
-	Text::mapping().set_attr_lit("eval", RustFn::new("Text::eval", |args| {
-		let obj = args.this()?.try_downcast_ref::<Text>()?;
-		let binding = args.arg(0);
-
-		if let Ok(binding) = binding {
-			let mut args = ArgsOld::from(args.args(1..)
-				.map(|x| x.as_ref().to_vec())
-				.unwrap_or_else(|_| vec![]));
-			args.add_this(binding.clone());
-
-
-			Binding::new_stackframe_old(args, |_| {
-				quest_parser::Expression::parse_stream(BufStream::from(obj.to_string()).tokens())
-					.map_err(|err| err.to_string())?
-					.execute()
-					.map_err(Into::into)
-			})
-		} else {
-			quest_parser::Expression::parse_stream(BufStream::from(obj.to_string()).tokens())
+	Text::mapping().set_attr_lit("eval", RustFn::new("Text::eval", |this, args| {
+		fn execute_text(text: String) -> quest_core::Result<Object> {
+			quest_parser::Expression::parse_stream(BufStream::from(text).tokens())
 				.map_err(|err| err.to_string())?
 				.execute()
 				.map_err(Into::into)
+		}
+
+		let this = this.try_downcast_ref::<Text>()?;
+
+		if let Ok(binding) = args.arg(0) {
+			Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
+		} else {
+			execute_text(this.to_string())
 		}
 	}));
 }
 
 fn main() {
-	// run::run_file("../factorial.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();
-	// return;
+	// run::run_file("code.ignore/fib.qs", vec![&"--".into(), &"10_000".into()].into()).unwrap();
+	// run::run_file("code.ignore/ib.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();
+
+	// if true { return; }
 	quest_core::init();
 	quest_parser::init();
 	init();

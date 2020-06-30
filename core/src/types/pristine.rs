@@ -1,10 +1,15 @@
 use crate::{Object, Args};
 use crate::types::{Text, Number, Boolean};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pristine;
 
 impl Pristine {
+	#[allow(non_snake_case)]
+	pub fn qs___inspect__(this: &Object, _: Args) -> Result<Text, !> {
+		Ok(format!("<{}:{}>", this.typename(), this.id()).into())
+	}
+
 	#[inline]
 	#[allow(non_snake_case)]
 	pub fn qs___id__(this: &Object, _: Args) -> Result<Number, !> {
@@ -16,7 +21,7 @@ impl Pristine {
 	pub fn qs___call_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
 		let rest = args.args(1..).unwrap_or_default();
-		this.call_attr_old_old(attr, rest)
+		this.call_attr(attr, rest)
 	}
 
 	#[inline]
@@ -71,16 +76,9 @@ impl Pristine {
 	}
 }
 
-impl Pristine {
-	
-	#[allow(non_snake_case)]
-	pub fn qs___inspect__(this: &Object, _: Args) -> Result<Text, !> {
-		Ok(format!("<{}:{}>", this.typename(), this.id()).into())
-	}
-}
-
 impl_object_type!{
 for Pristine [(init_parent) (parents Pristine)]:
+	"__inspect__" => function Pristine::qs___inspect__,
 	"__id__" => function Pristine::qs___id__,
 	"__keys__" => function Pristine::qs___keys__,
 	"__call_attr__" => function Pristine::qs___call_attr__,
@@ -88,7 +86,6 @@ for Pristine [(init_parent) (parents Pristine)]:
 	"__set_attr__" => function Pristine::qs___set_attr__,
 	"__has_attr__" => function Pristine::qs___has_attr__,
 	"__del_attr__" => function Pristine::qs___del_attr__,
-	"__inspect__" => function Pristine::qs___inspect__,
 	"::" => function Pristine::qs___get_attr__,
 	"." => function Pristine::qs_dot_get_attr,
 	".=" => function Pristine::qs___set_attr__

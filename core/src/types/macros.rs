@@ -22,41 +22,11 @@ macro_rules! dummy_object {
 	};
 
 	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:path { $($args:tt)* }) =>{
-		#[derive(Debug, Clone)]
+		#[derive(Debug, Clone, Hash)]
 		$vis struct $obj$(($($types),*))?;
 		impl_object_type!(for $obj [(parents $parent)]: $($args)* );
 	};
 }
-
-#[cfg(test)]
-macro_rules! call_impl {
-	($fnc:ident($this:expr $(,$args:expr)*) -> $ret:ty) => {{
-		#[allow(unused)]
-		use crate::types::{self, *, rustfn::ArgsOld};
-		impls::$fnc({
-			let mut args = ArgsOld::new(vec![$($args.into()),*]);
-			args.add_this($this.into());
-			args
-		}).unwrap().downcast_ref::<$ret>().unwrap()
-	}};
-}
-
-#[cfg(test)]
-macro_rules! assert_call_eq {
-	(for $ty:ty; $($lhs:expr, $rhs:ident($this:expr $(,$args:expr)*) -> $ret:ty),* $(,)?) => {{
-		#[allow(unused)]
-		use crate::types::{self, *, rustfn::ArgsOld};
-		#[cfg(test)]
-		<$ty>::_wait_for_setup_to_finish();
-		let mut which = 1;
-		$(
-			assert_eq!($lhs, *call_impl!($rhs($this $(,$args)*) -> $ret), "Bad test #{}", which);
-			#[allow(unused)]
-			{ which += 1; }
-		)*
-	}};
-}
-
 
 #[macro_export]
 macro_rules! impl_object_type {
@@ -125,7 +95,7 @@ macro_rules! impl_object_type {
 	}};
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => function $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::method(
+		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr), |x, a| {
 				$val(x, a).map(Object::from).map_err(From::from)
 			})
@@ -134,7 +104,7 @@ macro_rules! impl_object_type {
 	}};
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::method(
+		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|x, a| {
 				$val(&*x.try_downcast_ref::<$obj>().expect(concat!(stringify!($obj), "::", $attr)), a)
@@ -147,7 +117,7 @@ macro_rules! impl_object_type {
 
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method_mut $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::method(
+		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|x, a| {
 				$val(&mut *x.try_downcast_mut()?, a)
@@ -155,13 +125,6 @@ macro_rules! impl_object_type {
 					.map_err(From::from)
 			}
 		));
-		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
-	}};
-
-	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::new(
-			concat!(stringify!($obj), "::", $attr), $val)
-		);
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
@@ -213,6 +176,7 @@ macro_rules! impl_object_type {
 					impl_object_type!(@SET_PARENT class $($args)*);
 
 					class.set_attr_lit("name", Object::from(stringify!($obj)));
+
 					impl_object_type!(@SET_ATTRS class $obj; $($body)*);
 
 					#[cfg(test)]

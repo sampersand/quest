@@ -1,6 +1,6 @@
 use crate::{Object, Result, Args};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BoundFunction;
 
 impl BoundFunction {

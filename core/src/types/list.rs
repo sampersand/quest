@@ -450,7 +450,7 @@ impl List {
 	/// ```
 	#[inline]
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_mut::<List>()?.clear();
+		this.try_downcast_mut::<Self>()?.clear();
 		Ok(this.clone())
 	}
 
@@ -572,7 +572,7 @@ impl List {
 	/// ```
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
-		this.try_downcast_mut::<List>()?.push(rhs.clone());
+		this.try_downcast_mut::<Self>()?.push(rhs.clone());
 		Ok(this.clone())
 	}
 
@@ -608,7 +608,7 @@ impl List {
 	/// ```
 	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
-		this.try_downcast_mut::<List>()?.unshift(rhs.clone());
+		this.try_downcast_mut::<Self>()?.unshift(rhs.clone());
 		Ok(this.clone())
 	}
 
@@ -640,7 +640,7 @@ impl List {
 	/// assert(["a", "b"] + [] == ["a", "b"]);
 	/// ```
 	pub fn qs_add(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 		Ok(self + rhs)
 	}
 
@@ -655,9 +655,9 @@ impl List {
 	/// assert(list == [1, 2, 3, 4]);
 	/// ```
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		*this.try_downcast_mut::<List>()? += rhs;
+		*this.try_downcast_mut::<Self>()? += rhs;
 
 		Ok(this.clone())
 	}
@@ -674,7 +674,7 @@ impl List {
 	/// assert(["1", "b", "c"] - [1, "c", "c", "e"] == ["1", "b"]);
 	/// ```
 	pub fn qs_sub(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 		self.try_sub(rhs)
 	}
 
@@ -691,9 +691,9 @@ impl List {
 	/// assert(list == ["1", "b"]);
 	/// ```
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<List>()?.try_sub_assign(rhs)?;
+		this.try_downcast_mut::<Self>()?.try_sub_assign(rhs)?;
 
 		Ok(this.clone())
 	}
@@ -711,7 +711,7 @@ impl List {
 	/// assert([1, 2, 3] & [1, 2, 4] == [1, 2]);
 	/// ```
 	pub fn qs_bitand(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 		self.try_bitand(rhs)
 	}
 
@@ -732,9 +732,9 @@ impl List {
 	/// assert(list == [2]);
 	/// ```
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<List>()?.try_bitand_assign(rhs)?;
+		this.try_downcast_mut::<Self>()?.try_bitand_assign(rhs)?;
 
 		Ok(this.clone())
 	}
@@ -751,7 +751,7 @@ impl List {
 	/// assert(["a", "b", "c"] | ["c", "b", "d", "e"] == ["a", "b", "c", "d", "e"]);
 	/// ```
 	pub fn qs_bitor(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 		self.try_bitor(rhs)
 	}
 
@@ -772,9 +772,9 @@ impl List {
 	/// assert(list == [1, 2, "a", 4, 3]);
 	/// ```
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<List>()?.try_bitor_assign(rhs)?;
+		this.try_downcast_mut::<Self>()?.try_bitor_assign(rhs)?;
 
 		Ok(this.clone())
 	}
@@ -792,7 +792,7 @@ impl List {
 	/// assert([1, 2, 3] ^ [1, 2, 4] == [3, 4]);
 	/// ```
 	pub fn qs_bitxor(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 		self.try_bitxor(rhs)
 	}
 
@@ -813,9 +813,9 @@ impl List {
 	/// assert(list == [4, 3, 2]);
 	/// ```
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<List>()?;
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<List>()?.try_bitxor_assign(rhs)?;
+		this.try_downcast_mut::<Self>()?.try_bitxor_assign(rhs)?;
 
 		Ok(this.clone())
 	}

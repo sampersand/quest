@@ -1,7 +1,7 @@
 use crate::{Args, Object, Error, Result};
 use crate::types::{Boolean, Text, Number};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Kernel;
 
 fn display(args: &[&Object], newline: bool) -> Result<()> {
@@ -30,7 +30,7 @@ impl Kernel {
 			args.arg(1)?.clone()
 		} else {
 			args.arg(2).map(Clone::clone).unwrap_or_default()
-		}.call_attr_old("()", &[])
+		}.call_attr_lit("()", &[])
 	}
 
 	pub fn qs_disp(_: &Object, args: Args) -> Result<Object> {
@@ -48,8 +48,8 @@ impl Kernel {
 		// 	b.set_attr_old("name", Object::from("while"))?;
 
 			let mut result = Object::default();
-			while cond.call_attr_old("()", &[])?.downcast_call::<Boolean>()?.into() {
-				result = body.call_attr_old("()", &[])?;
+			while cond.call_attr_lit("()", &[])?.downcast_call::<Boolean>()?.into() {
+				result = body.call_attr_lit("()", &[])?;
 			};
 			Ok(result)
 		// })
@@ -60,7 +60,7 @@ impl Kernel {
 		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
 			// b.set_attr_old("name", Object::from("loop"))?;
 			loop {
-				body.call_attr_old("()", &[])?;
+				body.call_attr_lit("()", &[])?;
 			}
 		// })
 	}
@@ -215,7 +215,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 mod tests {
 	#[test]
 	fn constants_exist() {
-		use crate::{Object, types::*};
+		use crate::types::*;
 
 		macro_rules! assert_exists_eq {
 			($($key:literal $ty:ty, $val:expr),*) => {
@@ -223,7 +223,7 @@ mod tests {
 					assert_eq!(
 						$val,
 						*Kernel::mapping()
-							.get_attr_old(&Object::from($key))
+							.get_attr_lit($key)
 							.unwrap().downcast_ref::<$ty>().unwrap(),
 						"constant {:?} doesn't exist or is wrong value",
 						$key
@@ -243,7 +243,7 @@ mod tests {
 
 	#[test]
 	fn classes_exist() {
-		use crate::{Object, types::*};
+		use crate::types::*;
 		Kernel::_wait_for_setup_to_finish();
 
 		macro_rules! assert_mapping_eq {
@@ -251,7 +251,7 @@ mod tests {
 				$({
 					let expected = <$class as ObjectType>::mapping();
 					let got = Object::from(Kernel)
-						.get_attr_old(&Object::from($key))
+						.get_attr_lit($key)
 						.unwrap();
 					assert!(
 						expected.is_identical(&got),

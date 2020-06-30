@@ -2,11 +2,11 @@ use crate::{Object, Args, Result};
 use crate::types::Number;
 use std::cmp::Ordering;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Comparable;
 
 fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
-	let num = lhs.call_attr_old("<=>", &[rhs])?.downcast_call::<Number>()?;
+	let num = lhs.call_attr_lit("<=>", &[rhs])?.downcast_call::<Number>()?;
 	if num < Number::ZERO {
 		Ok(Ordering::Less)
 	} else if num > Number::ZERO {
@@ -58,22 +58,22 @@ impl From<Ordering> for crate::Object {
 #[allow(unused)]
 #[cfg(test)]
 mod tests {
-	use crate::Object;
-	dummy_object!(struct DummyCmp(f32); {
-		"<=>" => (|args| {
-			let this = args.this()?.try_downcast_ref::<DummyCmp>()?;
-			let other = args.arg(0)?.try_downcast_ref::<DummyCmp>()?;
+	// use crate::Object;
+	// dummy_object!(struct DummyCmp(f32); {
+	// 	"<=>" => function (|this, | {
+	// 		let this = args.this()?.try_downcast_ref::<DummyCmp>()?;
+	// 		let other = args.arg(0)?.try_downcast_ref::<DummyCmp>()?;
 
-			Ok(this.0.partial_cmp(&other.0)
-				.map(Into::into)
-				.unwrap_or_default())
-		})
-	});
+	// 		Ok(this.0.partial_cmp(&other.0)
+	// 			.map(Into::into)
+	// 			.unwrap_or_default())
+	// 	})
+	// });
 
 	#[test]
 	#[ignore]
 	fn lth() {
-		let _obj = Object::from(DummyCmp(12.0));
+		// let _obj = Object::from(DummyCmp(12.0));
 		// assert_eq!(, );
 		// Ok((cmp(args)? == Ordering::Less).into())
 		unimplemented!()

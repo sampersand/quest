@@ -102,30 +102,49 @@ operator_enum!{
 }
 
 impl Display for Operator {
+	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		Display::fmt(&self.repr(), f)
 	}
 }
 
+impl From<Operator> for &'static str {
+	#[inline]
+	fn from(op: Operator) -> Self {
+		op.repr()
+	}
+}
+
+impl std::hash::Hash for Operator {
+	#[inline]
+	fn hash<H: std::hash::Hasher>(&self, h: &mut H) {
+		self.repr().hash(h)
+	}
+}
+
 impl From<Operator> for Token {
+	#[inline]
 	fn from(op: Operator) -> Token {
 		Token::Operator(op)
 	}
 }
 
 impl PartialOrd for Operator {
+	#[inline]
 	fn partial_cmp(&self, rhs: &Operator) -> Option<std::cmp::Ordering> {
 		Some(self.cmp(&rhs))
 	}
 }
 
 impl Ord for Operator {
+	#[inline]
 	fn cmp(&self, rhs: &Operator) -> std::cmp::Ordering {
 		self.precedence().cmp(&rhs.precedence())
 	}
 }
 
 impl quest_core::ToObject for Operator {
+	#[inline]
 	fn to_object(&self) -> Object {
 		Object::from(self.to_string())
 	}

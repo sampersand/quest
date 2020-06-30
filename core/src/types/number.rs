@@ -32,6 +32,7 @@ impl PartialEq for Number {
 }
 
 impl Hash for Number {
+	#[inline]
 	fn hash<H: Hasher>(&self, h: &mut H) {
 		// in the future, we should probably change how floats hash
 		match self.0 {
@@ -42,6 +43,7 @@ impl Hash for Number {
 }
 
 impl Default for Number {
+	#[inline]
 	fn default() -> Number {
 		Number::ZERO
 	}
@@ -61,6 +63,7 @@ impl Debug for Number {
 }
 
 impl Display for Number {
+	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self.0 {
 			Inner::Integer(n) => Display::fmt(&n, f),
@@ -105,6 +108,7 @@ impl Number {
 	pub const  INF: Self = Number(Inner::Float(f64::INFINITY));
 
 
+	#[inline]
 	pub fn ceil(self) -> IntegerType {
 		match self.0 {
 			Inner::Integer(i) => i,
@@ -112,6 +116,7 @@ impl Number {
 		}
 	}
 
+	#[inline]
 	pub fn floor(self) -> IntegerType {
 		match self.0 {
 			Inner::Integer(i) => i,
@@ -197,6 +202,7 @@ impl Number {
 }
 
 impl PartialOrd for Number {
+	#[inline]
 	fn partial_cmp(&self, rhs: &Number) -> Option<Ordering> {
 		Some(self.cmp(rhs))
 	}
@@ -219,6 +225,7 @@ impl Ord for Number {
 pub struct NotAnInteger(f64);
 
 impl Display for NotAnInteger {
+	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		write!(f, "{} is not a whole number", self.0)
 	}
@@ -258,18 +265,21 @@ impl From<FloatType> for Number {
 }
 
 impl From<IntegerType> for Number {
+	#[inline]
 	fn from(n: IntegerType) -> Number {
 		Number(Inner::Integer(n))
 	}
 }
 
 impl From<FloatType> for Object {
+	#[inline]
 	fn from(f: FloatType) -> Self {
 		Number::from(f).into()
 	}
 }
 
 impl From<IntegerType> for Object {
+	#[inline]
 	fn from(n: IntegerType) -> Self {
 		Number::from(n).into()
 	}
@@ -303,6 +313,7 @@ macro_rules! impl_math_ops {
 		$(
 			impl std::ops::$trait for Number {
 				type Output = Self;
+				#[inline]
 				fn $fn(mut self, rhs: Self) -> Self {
 					use std::ops::$trait_assign;
 					self.$fn_assign(rhs);
@@ -335,6 +346,7 @@ impl_math_ops! {
 
 impl std::ops::Div for Number {
 	type Output = Self;
+	#[inline]
 	fn div(mut self, rhs: Self) -> Self {
 		self /= rhs;
 		self
@@ -360,6 +372,7 @@ macro_rules! impl_bitwise_ops {
 		$(
 			impl std::ops::$trait for Number {
 				type Output = Result<Self, NotAnInteger>;
+				#[inline]
 				fn $fn(mut self, rhs: Number) -> Self::Output {
 					self.$fn_assign(rhs)?;
 					Ok(self)
@@ -391,6 +404,7 @@ impl_bitwise_ops! {
 
 impl std::ops::Neg for Number {
 	type Output = Self;
+	#[inline]
 	fn neg(self) -> Self {
 		match self.0 {
 			Inner::Integer(i) => Number::from(-i),
@@ -401,6 +415,7 @@ impl std::ops::Neg for Number {
 
 impl std::ops::Not for Number {
 	type Output = Result<Self, NotAnInteger>;
+	#[inline]
 	fn not(self) -> Self::Output {
 		Ok(Number::from(!IntegerType::try_from(self)?))
 	}
@@ -408,6 +423,7 @@ impl std::ops::Not for Number {
 }
 
 impl Number {
+	#[inline]
 	pub fn abs(self) -> Number {
 		match self.0 {
 			Inner::Integer(i) => Number::from(i.abs()),
@@ -415,6 +431,7 @@ impl Number {
 		}
 	}
 
+	#[inline]
 	pub fn pow(mut self, rhs: Number) -> Number {
 		self.pow_assign(rhs);
 		self
@@ -434,12 +451,14 @@ impl Number {
 }
 
 impl From<Number> for Text {
+	#[inline]
 	fn from(n: Number) -> Self {
 		Text::new(n.to_string())
 	}
 }
 
 impl From<Number> for Boolean {
+	#[inline]
 	fn from(n: Number) -> Self {
 		if n == Number::ZERO {
 			Boolean::FALSE
@@ -450,161 +469,255 @@ impl From<Number> for Boolean {
 }
 
 impl Number {
-	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object, !> {
-		Ok(this.clone())
-	}
-
-	pub fn qs_clone(this: &Object, _: Args) -> Result<Object, !> {
-		Ok(this.deep_clone())
-	}
-
+	#[inline]
 	#[allow(non_snake_case)]
 	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
 		Ok(format!("{:?}", self).into())
 	}
-}
 
-mod impls {
-	use super::*;
-	use crate::{Object, Result, ArgsOld, types::{Text, Boolean}};
-	
-	pub fn at_text(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
+	#[inline]
+	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.clone())
+	}
 
+	pub fn qs_at_text(&self, args: Args) -> crate::Result<Text> {
 		if let Ok(radix) = args.arg(0) {
 			let radix = radix.downcast_call::<Number>()?.floor();
-			this.to_string_radix(radix as _)
+			self.to_string_radix(radix as _)
 				.map_err(|err| err.to_string().into())
-				.map(Object::from)
+				.map(Text::from)
 		} else {
-			Ok(Text::from(*this).into())
+			Ok(Text::from(*self))
 		}
 	}
 
-	pub fn at_bool(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
-
-		Ok(Boolean::from(*this).into())
+	#[inline]
+	pub fn qs_at_bool(&self, _: Args) -> Result<Boolean, !> {
+		Ok(Boolean::from(*self))
 	}
 
-	#[allow(non_upper_case_globals)]
-	pub const call: fn(ArgsOld) -> Result<Object> = mul;
-
-	macro_rules! define_math_opers {
-		($($fn:ident $fn_assign:ident)*) => {
-			$(
-				pub fn $fn(args: ArgsOld) -> Result<Object> {
-					let this = args.this()?.try_downcast_ref::<Number>()?;
-					let rhs = args.arg(0)?.downcast_call::<Number>()?;
-
-					#[allow(unused)]
-					use std::ops::*;
-					Ok(this.$fn(rhs).into())
-				}
-
-				pub fn $fn_assign(args: ArgsOld) -> Result<Object> {
-					let this_obj = args.this()?;
-					let rhs = args.arg(0)?.downcast_call::<Number>()?;
-					let this = &mut this_obj.try_downcast_mut::<Number>()?;
-
-					#[allow(unused)]
-					use std::ops::*;
-					this.$fn_assign(rhs);
-
-					Ok(this_obj.clone())
-				}
-			)*
-		};
+	#[inline]
+	pub fn qs_call(&self, args: Args) -> crate::Result<Self> {
+		self.qs_mul(args)
 	}
 
-	define_math_opers!{
-		add add_assign sub sub_assign mul mul_assign
-		div div_assign rem rem_assign pow pow_assign
+	#[inline]
+	pub fn qs_add(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+
+		Ok(*self + rhs)
 	}
 
-	macro_rules! define_bitwise_opers {
-		($($fn:ident $fn_assign:ident)*) => {
-			$(
-				pub fn $fn(args: ArgsOld) -> Result<Object> {
-					let this = args.this()?.try_downcast_ref::<Number>()?;
-					let rhs = args.arg(0)?.downcast_call::<Number>()?;
+	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-					use std::ops::*;
-					this.$fn(rhs)
-						.map_err(|err| err.to_string().into())
-						.map(Object::from)
-				}
+		*this.try_downcast_mut::<Self>()? += rhs;
 
-				pub fn $fn_assign(args: ArgsOld) -> Result<Object> {
-					let this_obj = args.this()?;
-					let rhs = args.arg(0)?.downcast_call::<Number>()?;
-					let this = &mut this_obj.try_downcast_mut::<Number>()?;
-					this.$fn_assign(rhs).map_err(|err| err.to_string())?;
-					Ok(this_obj.clone())
-				}
-			)*
-		};
+		Ok(this.clone())
 	}
 
-	define_bitwise_opers! {
-		bitand bitand_assign bitor bitor_assign bitxor bitxor_assign
-		shl shl_assign shr shr_assign
+	#[inline]
+	pub fn qs_sub(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+
+		Ok(*self - rhs)
 	}
 
-	pub fn neg(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
+	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		Ok((-*this).into())
+		*this.try_downcast_mut::<Self>()? -= rhs;
+
+		Ok(this.clone())
 	}
 
-	#[allow(non_upper_case_globals)]
-	pub const pos: fn(ArgsOld) -> Result<Object> = abs;
+	#[inline]
+	pub fn qs_mul(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-	pub fn bitnot(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
-
-		(!*this)
-			.map_err(|err| err.to_string().into())
-			.map(Object::from)
+		Ok(*self * rhs)
 	}
 
-	pub fn abs(args: ArgsOld) -> Result<Object> {
-		let this = *args.this()?.try_downcast_ref::<Number>()?;
+	pub fn qs_mul_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		Ok(this.abs().into())
+		*this.try_downcast_mut::<Self>()? *= rhs;
+
+		Ok(this.clone())
 	}
 
-	pub fn eql(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
-		let rhs = args.arg(0)?.downcast_ref::<Number>();
+	#[inline]
+	pub fn qs_div(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
+		Ok(*self / rhs)
 	}
 
-	pub fn cmp(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
+	pub fn qs_div_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+
+		*this.try_downcast_mut::<Self>()? /= rhs;
+
+		Ok(this.clone())
+	}
+
+	#[inline]
+	pub fn qs_mod(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+
+		Ok(*self % rhs)
+	}
+
+	pub fn qs_mod_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+
+		*this.try_downcast_mut::<Self>()? %= rhs;
+
+		Ok(this.clone())
+	}
+
+	#[inline]
+	pub fn qs_pow(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+
+		Ok(self.pow(rhs))
+	}
+
+	pub fn qs_pow_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+
+		let mut this_mut = this.try_downcast_mut::<Self>()?;
+		*this_mut = this_mut.pow(rhs);
+
+		Ok(this.clone())
+	}
+
+	#[inline]
+	pub fn qs_bitand(&self, args: Args) -> crate::Result<Self> {
 		let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
-		Ok(this.cmp(&rhs).into())
+		(*self & rhs).map_err(|err| err.to_string().into())
 	}
 
-	pub fn floor(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
+	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
-		Ok(this.floor().into())
+		this.try_downcast_mut::<Number>()?.bitand_assign(rhs).map_err(|err| err.to_string())?;
+
+		Ok(this.clone())
 	}
 
-	pub fn ceil(args: ArgsOld) -> Result<Object> {
-		let this = args.this()?.try_downcast_ref::<Number>()?;
+	#[inline]
+	pub fn qs_bitor(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
 
-		Ok(this.ceil().into())
+		(*self | rhs).map_err(|err| err.to_string().into())
 	}
 
-	pub fn round(_args: ArgsOld) -> Result<Object> {
+	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		this.try_downcast_mut::<Number>()?.bitor_assign(rhs).map_err(|err| err.to_string())?;
+
+		Ok(this.clone())
+	}
+
+	#[inline]
+	pub fn qs_bitxor(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		(*self ^ rhs).map_err(|err| err.to_string().into())
+	}
+
+	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		this.try_downcast_mut::<Number>()?.bitxor_assign(rhs).map_err(|err| err.to_string())?;
+
+		Ok(this.clone())
+	}
+
+	#[inline]
+	pub fn qs_shl(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		(*self << rhs).map_err(|err| err.to_string().into())
+	}
+
+	pub fn qs_shl_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		this.try_downcast_mut::<Number>()?.shl_assign(rhs).map_err(|err| err.to_string())?;
+
+		Ok(this.clone())
+	}
+
+	#[inline]
+	pub fn qs_shr(&self, args: Args) -> crate::Result<Self> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		(*self >> rhs).map_err(|err| err.to_string().into())
+	}
+
+	pub fn qs_shr_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		this.try_downcast_mut::<Number>()?.shr_assign(rhs).map_err(|err| err.to_string())?;
+
+		Ok(this.clone())
+	}
+
+
+	#[inline]
+	pub fn qs_neg(&self, _: Args) -> Result<Self, !> {
+		Ok(-*self)
+	}
+
+	#[inline]
+	pub fn qs_pos(&self, args: Args) -> Result<Self, !> {
+		self.qs_abs(args)
+	}
+
+	#[inline]
+	pub fn qs_bitnot(&self, _: Args) -> crate::Result<Self> {
+		Ok((!*self).map_err(|x| x.to_string())?)
+	}
+
+	#[inline]
+	pub fn qs_abs(&self, _: Args) -> Result<Self, !> {
+		Ok(self.abs())
+	}
+
+	#[inline]
+	pub fn qs_eql(&self, args: Args) -> Result<bool, crate::error::KeyError> {
+		let rhs = args.arg(0)?.downcast_ref::<Number>();
+		Ok(rhs.map(|rhs| *self == *rhs).unwrap_or(false))
+	}
+
+	#[inline]
+	pub fn qs_cmp(&self, args: Args) -> crate::Result<std::cmp::Ordering> {
+		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+
+		Ok(self.cmp(&rhs))
+	}
+
+	#[inline]
+	pub fn qs_floor(&self, _: Args) -> Result<Self, !> {
+		Ok(Number::from(self.floor()))
+	}
+
+	#[inline]
+	pub fn qs_ceil(&self, _: Args) -> Result<Self, !> {
+		Ok(Number::from(self.ceil()))
+	}
+
+	#[inline]
+	pub fn qs_round(&self, _: Args) -> Result<Self, !> {
 		unimplemented!("round");
 	}
 
-	pub fn sqrt(_args: ArgsOld) -> Result<Object> {
+	#[inline]
+	pub fn qs_sqrt(&self, _: Args) -> Result<Self, !> {
 		unimplemented!("sqrt")
 	}
 }
@@ -612,7 +725,6 @@ mod impls {
 impl_object_type!{
 	for Number 
 {
-	#[inline]
 	fn new_object(self) -> Object where Self: Sized {
 		use lazy_static::lazy_static;
 		use std::collections::HashMap;
@@ -623,13 +735,14 @@ impl_object_type!{
 		}
 
 		if let Some(obj) = OBJECTS.read().unwrap().get(&self) {
-			return obj.clone();
+			return obj.deep_clone();
 		}
 
 		let mut objs = OBJECTS.write().unwrap();
 
-		objs.entry(self).or_insert_with(|| Object::new_with_parent(self, vec![Number::mapping()]))
-			.clone()
+		objs.entry(self)
+			.or_insert_with(|| Object::new_with_parent(self, vec![Number::mapping()]))
+			.deep_clone()
 	}
 }
 
@@ -639,35 +752,35 @@ impl_object_type!{
 	"NAN" => const Number::NAN,
 	"INF" => const Number::INF,
 
-	"@text" => impls::at_text,
+	"@text" => method Number::qs_at_text,
 	"__inspect__" => method Number::qs___inspect__,
 	"@num" => function Number::qs_at_num,
-	"@bool" => impls::at_bool,
-	"clone" => function Number::qs_clone,
+	"@bool" => method Number::qs_at_bool,
 
-	"+"  => impls::add,   "+="  => impls::add_assign,
-	"-"  => impls::sub,   "-="  => impls::sub_assign,
-	"*"  => impls::mul,   "*="  => impls::mul_assign,
-	"/"  => impls::div,   "/="  => impls::div_assign,
-	"%"  => impls::rem,   "%="  => impls::rem_assign,
-	"**" => impls::pow,   "**=" => impls::pow_assign,
-	"&" => impls::bitand, "&="  => impls::bitand_assign,
-	"|" => impls::bitor,  "|="  => impls::bitor_assign,
-	"^" => impls::bitxor, "^="  => impls::bitxor_assign,
-	"<<" => impls::shl,   "<<=" => impls::shl_assign,
-	">>" => impls::shr,   ">>=" => impls::shr_assign,
-	"-@" => impls::neg,
-	"+@" => impls::pos,
-	"~" => impls::bitnot,
-	"<=>" => impls::cmp,
+	"+"  => method Number::qs_add,    "+="  => function Number::qs_add_assign,
+	"-"  => method Number::qs_sub,    "-="  => function Number::qs_sub_assign,
+	"*"  => method Number::qs_mul,    "*="  => function Number::qs_mul_assign,
+	"/"  => method Number::qs_div,    "/="  => function Number::qs_div_assign,
+	"%"  => method Number::qs_mod,    "%="  => function Number::qs_mod_assign,
+	"**" => method Number::qs_pow,    "**=" => function Number::qs_pow_assign,
+	"&"  => method Number::qs_bitand, "&="  => function Number::qs_bitand_assign,
+	"|"  => method Number::qs_bitor,  "|="  => function Number::qs_bitor_assign,
+	"^"  => method Number::qs_bitxor, "^="  => function Number::qs_bitxor_assign,
+	"<<" => method Number::qs_shl,    "<<=" => function Number::qs_shl_assign,
+	">>" => method Number::qs_shr,    ">>=" => function Number::qs_shr_assign,
 
-	"()" => impls::call,
-	"==" => impls::eql,
-	"abs" => impls::abs,
-	"round" => impls::round,
-	"ceil" => impls::ceil,
-	"floor" => impls::floor,
-	"sqrt" => impls::sqrt,
+	"-@"  => method Number::qs_neg,
+	"+@"  => method Number::qs_pos,
+	"~"   => method Number::qs_bitnot,
+	"abs" => method Number::qs_abs,
+	"<=>" => method Number::qs_cmp,
+	"()"  => method Number::qs_call,
+	"=="  => method Number::qs_eql,
+
+	"round" => method Number::qs_round,
+	"ceil"  => method Number::qs_ceil,
+	"floor" => method Number::qs_floor,
+	"sqrt"  => method Number::qs_sqrt,
 }
 
 #[cfg(test)]

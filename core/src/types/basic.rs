@@ -2,7 +2,7 @@ use crate::{Object, Args};
 
 use crate::literals::{EQL, AT_BOOL, NOT,  __INSPECT__};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Basic;
 
 impl Basic {
@@ -13,7 +13,7 @@ impl Basic {
 
 	#[inline]
 	pub fn qs_at_text(this: &Object, args: Args) -> crate::Result<Object> {
-		this.call_attr_old(__INSPECT__.clone(), args)
+		this.call_attr_lit(__INSPECT__, args)
 	}
 
 	#[inline]
@@ -23,12 +23,17 @@ impl Basic {
 
 	#[inline]
 	pub fn qs_neq(this: &Object, args: Args) -> crate::Result<Object> {
-		this.call_attr_old(EQL.clone(), args)?.call_attr_old(NOT.clone(), &[])
+		this.call_attr_lit(EQL, args)?.call_attr_lit(NOT, &[])
 	}
 
 	#[inline]
 	pub fn qs_not(this: &Object, args: Args) -> crate::Result<Object> {
-		this.call_attr_old(AT_BOOL.clone(), args)?.call_attr_old(NOT.clone(), &[])
+		this.call_attr_lit(AT_BOOL, args)?.call_attr_lit(NOT, &[])
+	}
+
+	#[inline]
+	pub fn qs_clone(this: &Object, _: Args) -> Result<Object, !> {
+		Ok(this.deep_clone())
 	}
 }
 
@@ -36,6 +41,7 @@ impl_object_type!{
 for Basic [(parents super::Kernel)]:
 	"@bool" => function Basic::qs_at_bool,
 	"@text" => function Basic::qs_at_text,
+	"clone" => function Basic::qs_clone,
 	"==" => function Basic::qs_eql,
 	"!=" => function Basic::qs_neq,
 	"!" => function Basic::qs_not,
@@ -47,7 +53,7 @@ for Basic [(parents super::Kernel)]:
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{Object};
+	// use crate::{Object};
 
 	dummy_object!(struct Dummy;);
 
@@ -83,24 +89,23 @@ mod tests {
 
 	#[test]
 	fn neq() {
-		dummy_object!(struct DummyEqlOverride(i32, bool); {
-			"==" => (|args| Ok({
-				let this = args.this()?.try_downcast_ref::<DummyEqlOverride>()?;
-				if this.1 {
-					this.0 == args.arg(0)?.try_downcast_ref::<DummyEqlOverride>()?.0
-				} else {
-					false
-				}
-			}.into()))
-		});
+		// dummy_object!(struct DummyEqlOverride(i32, bool); {
+		// 	"==" => function (|this: &DummyEqlOverride, args| Ok({
+		// 		if this.1 {
+		// 			this.0 == args.arg(0)?.try_downcast_ref::<DummyEqlOverride>()?.0
+		// 		} else {
+		// 			false
+		// 		}
+		// 	}.into()))
+		// });
 
-		let _dummy: Object = Dummy.into();
+		// let _dummy: Object = Dummy.into();
 
-		// TODO: remove the need to `_wait_for_setup_to_finish`...
-		use super::super::ObjectType;
-		DummyEqlOverride::_wait_for_setup_to_finish();
-		Dummy::_wait_for_setup_to_finish();
-		crate::types::Number::_wait_for_setup_to_finish();
+		// // TODO: remove the need to `_wait_for_setup_to_finish`...
+		// use super::super::ObjectType;
+		// DummyEqlOverride::_wait_for_setup_to_finish();
+		// Dummy::_wait_for_setup_to_finish();
+		// crate::types::Number::_wait_for_setup_to_finish();
 
 		// assert_call_eq!(for Basic;
 		// 	Boolean::FALSE, neq(dummy.clone(), dummy.clone()) -> Boolean,
@@ -120,15 +125,15 @@ mod tests {
 
 	#[test]
 	fn not() {
-		dummy_object!(struct DummyBoolOverride(bool); crate::types::Basic {
-			"@bool" => (|args| {
-				Ok(args.this()?.try_downcast_ref::<DummyBoolOverride>()?.0.into())
-			})
-		});
+		// dummy_object!(struct DummyBoolOverride(bool); crate::types::Basic {
+		// 	"@bool" => (|args| {
+		// 		Ok(args.this()?.try_downcast_ref::<DummyBoolOverride>()?.0.into())
+		// 	})
+		// });
 
-		use super::super::ObjectType;
-		DummyBoolOverride::_wait_for_setup_to_finish();
-		Dummy::_wait_for_setup_to_finish();
+		// use super::super::ObjectType;
+		// DummyBoolOverride::_wait_for_setup_to_finish();
+		// Dummy::_wait_for_setup_to_finish();
 
 		// assert_call_eq!(for Basic;
 		// 	Boolean::FALSE, not(Dummy) -> Boolean,
