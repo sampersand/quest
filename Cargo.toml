@@ -3,5 +3,5 @@
 members = [
 	"core",
 	"parser",
-	"exec"
+	"bin"
 ]

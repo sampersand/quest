@@ -174,21 +174,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "quest-bin"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "quest-core",
+ "quest-parser",
+]
+
+[[package]]
 name = "quest-core"
 version = "0.2.2"
 dependencies = [
  "lazy_static",
  "rand",
  "regex",
-]
-
-[[package]]
-name = "quest-exec"
-version = "0.1.0"
-dependencies = [
- "clap",
- "quest-core",
- "quest-parser",
 ]
 
 [[package]]
