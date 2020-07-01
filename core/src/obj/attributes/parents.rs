@@ -100,7 +100,6 @@ impl Parents {
 	}
 	pub fn to_object(&self) -> Object {
 		let mut inner = self.0.write().unwrap();
-		println!("converitng to object");
 		match *inner {
 			Inner::None => {
 				let obj = Object::default();

@@ -15,7 +15,7 @@ literals! {
 	__THIS__ "__this__" __INSPECT__ "__inspect__" __KEYS__ "__keys__" __STACK__ "__stack__"
 
 	// conversions
-	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list" AT_MAP "@map"
+	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list"
 
 	// common functions
 	CLONE "clone" HASH "hash"
