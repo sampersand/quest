@@ -2,6 +2,7 @@ use crate::{Result, Stream};
 use crate::token::{Tokenizable, TokenizeResult};
 use crate::expression::Executable;
 use std::fmt::{self, Display, Formatter};
+use super::Text;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct Variable(quest_core::types::Text);
@@ -20,41 +21,23 @@ impl Executable for Variable {
 	}
 }
 
-#[inline]
-fn is_variable_start(c: char) -> bool {
-	!c.is_ascii() || c.is_ascii_alphabetic() || c == '_' || c == '@'
-}
-
-#[inline]
-fn is_variable_body(c: char) -> bool {
-	is_variable_start(c) || c.is_ascii_digit()
-}
 
 impl Tokenizable for Variable {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		let mut variable =
-			match stream.next().transpose()? {
-				Some(chr) if is_variable_start(chr) => chr.to_string(),
-				Some(_) => {
-					try_seek!(stream, -1);
-					return Ok(TokenizeResult::None)
+		match stream.next().transpose()? {
+			Some('$') =>
+				if let TokenizeResult::Some(text) = Text::try_tokenize(stream)? {
+					Ok(TokenizeResult::Some(Variable(text)))
+				} else {
+					Err(parse_error!(stream, UnterminatedQuote))
 				},
-				None => return Ok(TokenizeResult::None)
-			};
-
-		while let Some(chr) = stream.next().transpose()? { 
-			if is_variable_body(chr) {
-				variable.push(chr)
-			} else {
+			Some(_) => {
 				try_seek!(stream, -1);
-				break;
-			}
+				Ok(TokenizeResult::None)
+			},
+			None => Ok(TokenizeResult::None)
 		}
-
-		variable.shrink_to_fit();
-
-		Ok(TokenizeResult::Some(Variable(variable.into())))
 	}
 }
 
