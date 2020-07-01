@@ -3,6 +3,16 @@
 #![feature(never_type)]
 extern crate rand;
 
+macro_rules! unreachable_debug_or_unchecked {
+	() => {
+		if cfg!(debug_assertions) {
+			unreachable!()
+		} else {
+			unsafe { ::std::hint::unreachable_unchecked() }
+		}
+	};
+}
+
 mod shared_cow;
 pub mod error;
 

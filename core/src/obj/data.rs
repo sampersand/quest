@@ -1,5 +1,5 @@
 #![allow(unused)]
-use std::any::Any;
+use std::any::{Any, type_name};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Deref, DerefMut};
@@ -34,7 +34,7 @@ impl Clone for Data {
 
 		match data.as_ref().unwrap() {
 			// we literally just swapped it away from owned
-			Ownership::Owned(_) => unsafe { std::hint::unreachable_unchecked() },
+			Ownership::Owned(_) => unreachable_debug_or_unchecked!(),
 			Ownership::Shared(ref data) => Data {
 				data: RwLock::new(Some(Ownership::Shared(data.clone()))),
 				details: self.details.clone()
@@ -51,7 +51,7 @@ impl Data {
 			details: Arc::new(Details {
 				dbg: |x, f| T::fmt(x.downcast_ref::<T>().expect("bad val given to debug"), f),
 				clone: |x| Box::new(T::clone(x.downcast_ref::<T>().expect("bad val given to clone"))),
-				typename: std::any::type_name::<T>(),
+				typename: type_name::<T>(),
 			})
 		}
 	}
@@ -94,6 +94,9 @@ impl Data {
 			}
 		}
 
+		debug_assert!(self.is_a::<T>(), "internal error: cannot downcast from {} to {}",
+			self.typename(), type_name::<T>());
+
 		Caster::<'a, T>(self.data.read().expect("poison error"), PhantomData)
 	}
 
@@ -129,10 +132,13 @@ impl Data {
 
 				match self.0.as_mut().unwrap() {
 					Ownership::Owned(ref mut owned) => owned.downcast_mut().unwrap(),
-					Ownership::Shared(_) => unsafe { std::hint::unreachable_unchecked() }
+					Ownership::Shared(_) => unreachable_debug_or_unchecked!()
 				}
 			}
 		}
+
+		debug_assert!(self.is_a::<T>(), "internal error: cannot downcast from {} to {}",
+			self.typename(), type_name::<T>());
 
 		Caster::<'a, T>(self.data.write().expect("poison error"), PhantomData, &self.details)
 	}

@@ -43,7 +43,7 @@ impl From<String> for Error {
 
 impl From<!> for Error {
 	fn from(_: !) -> Self {
-		unsafe { std::hint::unreachable_unchecked() }
+		unreachable_debug_or_unchecked!();
 	}
 }
 

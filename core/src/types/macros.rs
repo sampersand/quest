@@ -139,6 +139,7 @@ macro_rules! impl_object_type {
 		#[cfg(test)]
 		impl_object_type!(@SETUP_INIT $($args)*);
 
+		// don't fix any unsafety here 
 		impl $crate::types::ObjectType for $obj {
 			#[cfg(test)]
 			fn _wait_for_setup_to_finish() {

@@ -133,15 +133,16 @@ impl Attributes {
 	}
 
 	pub fn has(&self, key: &Object) -> Result<bool> {
-		if key.is_a::<Text>() {
-			return self.has_lit(unsafe { key.downcast_ref_unchecked::<Text>().as_ref() });
+		if let Some(text) = key.downcast_ref::<Text>() {
+			return self.has_lit(text.as_ref());
 		}
+
 		self.data.with_ref(|inner| Ok(inner.map.has_obj(key)? || inner.parents.has_obj(key)?))
 	}
 
 	pub fn get(&self, key: &Object) -> Result<Option<Value>> {
-		if key.is_a::<Text>() {
-			return self.get_lit(unsafe { key.downcast_ref_unchecked::<Text>().as_ref() });
+		if let Some(text) = key.downcast_ref::<Text>() {
+			return self.get_lit(text.as_ref());
 		}
 
 		self.data.with_ref(|inner| {
@@ -154,18 +155,16 @@ impl Attributes {
 	}
 
 	pub fn set(&self, key: Object, value: Value) -> Result<()> {
-		if key.is_a::<Text>() {
-			let key = unsafe { key.downcast_ref_unchecked::<Text>() };
-			self.set_lit(str_to_static(key.as_ref()), value);
-			return Ok(())
+		if let Some(text) = key.downcast_ref::<Text>() {
+			return Ok(self.set_lit(str_to_static(text.as_ref()), value));
 		}
 
 		self.data.with_mut(|inner| inner.map.set_obj(key, value))
 	}
 
 	pub fn del(&self, key: &Object) -> Result<Option<Value>> {
-		if key.is_a::<Text>() {
-			return Ok(self.del_lit(unsafe { key.downcast_ref_unchecked::<Text>().as_ref() }));
+		if let Some(text) = key.downcast_ref::<Text>() {
+			return Ok(self.del_lit(text.as_ref()));
 		}
 
 		self.data.with_mut(|inner| inner.map.del_obj(key))
