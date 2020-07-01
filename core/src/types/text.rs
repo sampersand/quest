@@ -149,7 +149,11 @@ impl From<&'_ Text> for Text {
 impl<'a> TryFrom<&'a Text> for Number {
 	type Error = <Number as TryFrom<&'a str>>::Error;
 	fn try_from(text: &Text) -> Result<Self, Self::Error> {
-		Self::try_from(text.as_ref())
+		if text.as_ref().is_empty() {
+			Ok(Self::ZERO)
+		} else {
+			Self::try_from(text.as_ref())
+		}
 	}
 }
 
