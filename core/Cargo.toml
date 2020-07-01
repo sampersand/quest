@@ -11,3 +11,4 @@ readme = "../README.md"
 [dependencies]
 rand = "0.7.0"
 lazy_static = "1.4"
+regex = "1.3"

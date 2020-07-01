@@ -70,6 +70,13 @@ impl From<Text> for String {
 	}
 }
 
+impl From<char> for Text {
+	#[inline]
+	fn from(c: char) -> Self {
+		c.to_string().into()
+	}
+}
+
 impl From<String> for Text {
 	#[inline]
 	fn from(txt: String) -> Self {
@@ -307,11 +314,11 @@ impl Text {
 		todo!()
 	}
 
-	pub fn qs_shift(&mut self, _: Args) -> crate::Result<Object> {
+	pub fn qs_shift(&mut self, _: Args) -> crate::Result<Text> {
 		if self.len() == 0 {
-			Ok(Object::default())
+			Ok(Text::default())
 		} else {
-			Ok(self.0.to_mut().remove(0).to_string().into())
+			Ok(self.0.to_mut().remove(0).into())
 		}
 	}
 
@@ -323,6 +330,12 @@ impl Text {
 
 	pub fn qs_split(&self, _: Args) -> crate::Result<Object> { todo!("split") }
 	pub fn qs_reverse(&self, _: Args) -> crate::Result<Object> { todo!("reverse") }
+
+	pub fn qs_match(&self, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let re = regex::Regex::new(rhs.as_ref()).expect("bad regex");
+		Ok(re.is_match(self.as_ref()).into())
+	}
 }
 
 impl_object_type!{
@@ -361,11 +374,13 @@ for Text
 	"@bool"   => method Text::qs_at_bool,
 	"clone"   => method Text::qs_clone,
 	"()"      => function Text::qs_call,
+
 	"="       => function Text::qs_assign,
 	"<=>"     => method Text::qs_cmp,
 	"=="      => method Text::qs_eql,
 	"+"       => method Text::qs_add,
 	"+="      => function Text::qs_add_assign,
+
 	"len"     => method Text::qs_len,
 	"get"     => method Text::qs_get,
 	"set"     => function Text::qs_set,
@@ -376,4 +391,6 @@ for Text
 	"clear"   => function Text::qs_clear,
 	"split"   => method_mut Text::qs_split,
 	"reverse" => method Text::qs_reverse,
+	"match" => method Text::qs_match
+	// "strip"   => function Text::qs_strip,
 }

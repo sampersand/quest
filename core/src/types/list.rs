@@ -33,6 +33,7 @@ impl IntoIterator for List {
 
 }
 
+/// Rust-centric list methods
 impl List {
 	/// Create a new list.
 	#[inline]
@@ -232,6 +233,7 @@ impl std::ops::AddAssign for List {
 	}
 }
 
+/// "Try" operators
 impl List {
 	#[inline]
 	pub fn try_sub(&self, other: List) -> crate::Result<List> {
@@ -333,7 +335,7 @@ fn correct_index(idx: isize, len: usize) -> Option<usize> {
 	}
 }
 
-
+/// Quest methods
 impl List {
 	/// Simply returns the list.
 	///
@@ -820,7 +822,6 @@ impl List {
 		Ok(this.clone())
 	}
 }
-
 
 impl_object_type!{
 for List [(parents super::Basic) (convert "@list")]:

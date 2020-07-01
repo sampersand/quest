@@ -3,7 +3,7 @@ use quest_core::{Object, Args, Binding};
 
 use crate::Result;
 use crate::token::{Token, ParenType};
-use crate::stream::Contexted;
+use crate::stream::{Context, Contexted};
 use crate::expression::{Constructable, Expression, PutBack, Executable};
 use std::fmt::{self, Debug, Display, Formatter};
 
@@ -17,7 +17,7 @@ enum Line {
 pub struct Block {
 	lines: Vec<Line>,
 	paren_type: ParenType,
-	returns: bool
+	context: Context,
 }
 
 impl Debug for Block {
@@ -26,7 +26,7 @@ impl Debug for Block {
 			f.debug_struct("Block")
 				.field("lines", &self.lines)
 				.field("paren_type", &self.paren_type)
-				.field("returns", &self.returns)
+				.field("context", &self.context)
 				.finish()
 		} else {
 			write!(f, "Block({})", self)
@@ -53,7 +53,7 @@ impl Display for Block {
 
 			Display::fmt(line, f)?;
 
-			if i < self.lines.len() && (i != self.lines.len() - 1 || !self.returns) {
+			if i < self.lines.len() && i != self.lines.len() - 1 {
 				write!(f, ";")?
 			}
 
@@ -141,16 +141,12 @@ impl Block {
 
 			let mut ret = last.execute()?;
 
-			if self.returns {
-				if self.paren_type == ParenType::Square {
-					ret = ret.force_multiple();
-				}
-
-				return Ok(Some(ret));
+			if self.paren_type == ParenType::Square {
+				ret = ret.force_multiple();
 			}
-		}
 
-		if self.paren_type == ParenType::Square {
+			Ok(Some(ret))
+		} else if self.paren_type == ParenType::Square {
 			Ok(Some(LineResult::Multiple(vec![])))
 		} else {
 			Ok(None)
@@ -158,9 +154,9 @@ impl Block {
 	}
 
 	fn run_block_to_object(&self) -> quest_core::Result<quest_core::Object> {
-			let lines = self.run_block()?;
-			let lines_obj = lines.map(Object::from).unwrap_or_default();
-			Ok(lines_obj)
+		let lines = self.run_block()?;
+		let lines_obj = lines.map(Object::from).unwrap_or_default();
+		Ok(lines_obj)
 	}
 
 	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
@@ -195,7 +191,11 @@ impl Constructable for Block {
 				None => return Ok(None)
 			};
 
-		let mut block = Block { lines: vec![], paren_type: paren, returns: false };
+		let mut block = Block {
+			lines: vec![],
+			paren_type: paren,
+			context: ctor.context().clone(),
+		};
 		let mut curr_line: Option<Line> = None;
 
 		while let Some(tkn) = ctor.next().transpose()? {
@@ -209,12 +209,10 @@ impl Constructable for Block {
 				},
 
 				rparen @ Token::Right(..) => return Err(parse_error!(ctor, UnexpectedToken(rparen))),
-				Token::Endline => {
-					block.returns = false;
+				Token::Endline => 
 					if let Some(curr_line) = curr_line.take() {
 						block.lines.push(curr_line);
-					}
-				},
+					},
 				Token::Comma => 
 					match curr_line {
 						Some(Line::Multiple(_)) => { /* do nothing; commas are used to make `multiple` */},
@@ -223,7 +221,6 @@ impl Constructable for Block {
 					},
 
 				other => {
-					block.returns = true;
 					ctor.put_back(Ok(other));
 					let expr = Expression::try_construct(ctor)?;
 					match curr_line {
@@ -245,7 +242,14 @@ impl Block {
 	pub fn qs_call(this: &Object, args: Args) -> quest_core::Result<Object> {
 		let this_cloned = this.try_downcast_ref::<Block>()?.clone();
 		Binding::new_stackframe(Some(this.clone()), args, move |_| {
-			this_cloned.run_block_to_object()
+			match this_cloned.run_block_to_object() {
+				Ok(v) => Ok(v),
+				Err(err @ quest_core::Error::Return { .. }) => Err(err),
+				Err(err) => {
+					println!("{:?}", this_cloned.context);
+					Err(err)
+				}
+			}
 		})
 
 	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
