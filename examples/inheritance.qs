@@ -1,38 +1,38 @@
 # Implementing the idea of inheritance in quest.
 # this is done through manipulations of the the `__parents__` variable.
-$Person = {
-	$() = {
-		$__parents__ = [_0];
+Person = {
+	'()' = {
+		__parents__ = [$_0];
 
-		$first = _1;
-		$last = _2;
+		first = $_1;
+		last = $_2;
 
-		__this__
+		$__this__
 	};
 
-	$SAYS_WHAT = 'hi';
-	$@text = { _0.$first + ' ' + _0.$last };
-	$speak = { disp(_0, 'says:', _0.$SAYS_WHAT); };
+	SAYS_WHAT = 'hi';
+	@text = { $_0.first + ' ' + $_0.last };
+	speak = { $disp($_0, 'says:', $_0.SAYS_WHAT) };
 
-	__this__
+	$__this__
 }();
 
-$Child = {
-	$__parents__ = [Person];
+Child = {
+	__parents__ = [$Person];
 
-	$SAYS_WHAT = "Waa! I want food!";
+	SAYS_WHAT = "Waa! I want food!";
 
-	$@text = {
+	@text = {
 		# this is bad, lol: todo builtin `super` function
-		$parent_ims = _0.$__parents__.$get(0).$__parents__.$get(0);
-		"Baby '" + parent_ims::$@text(_0) + "'"
+		parent_ims = $_0.__parents__.get(0).__parents__.get(0);
+		"Baby '" + $parent_ims::@text($_0) + "'"
 	};
 
-	__this__
+	$__this__
 }();
 
-$sam = Person('Sam', 'W');
-$child = Child('Sammie', 'Boy');
+sam = $Person('Sam', 'W');
+child = $Child('Sammie', 'Boy');
 
-sam.$speak(); # Sam W says: hi
-child.$speak(); # Baby 'Sammie Boy' says: Waa! I want food!
+$sam.speak(); # Sam W says: hi
+$child.speak(); # Baby 'Sammie Boy' says: Waa! I want food!

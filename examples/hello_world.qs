@@ -1,13 +1,13 @@
 # Simply printing it
-disp("Hello, world!");
+$disp("Hello, world!");
 
 # Using variables
-$where = "world";
-disp("Hello, " + where + "!");
+where = "world";
+$disp("Hello, " + $where + "!");
 
 # Using a function
-$greet = {
-	disp("Hello, " + _1 + "!");
+greet = {
+	$disp("Hello, " + $_1 + "!");
 };
 
-greet("world");
+$greet("world");
