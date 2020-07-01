@@ -42,7 +42,20 @@ impl Scope {
 }
 
 impl_object_type!{
-for Scope [(parents super::Basic)]:
+for Scope /*{
+	#[inline]
+	fn new_object(self) -> Object where Self: Sized {
+		use lazy_static::lazy_static;
+		use crate::types::ObjectType;
+
+		lazy_static! {
+			static ref SCOPE: Object = Object::new_with_parent(Scope, vec![Scope::mapping()]);
+		}
+
+		SCOPE.deep_clone()
+	}
+}*/
+[(parents super::Basic)]:
 	"@text" => function Scope::qs_at_text,
 	"super" => function Scope::qs_super,
 }

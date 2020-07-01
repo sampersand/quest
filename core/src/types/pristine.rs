@@ -40,6 +40,13 @@ use crate::types::{Text, Boolean};
 ///    the first parental chain that has one is returned.
 /// 5. If nothing succeeds, (either an error or [`Null`] is returned. I haven't figured out which
 ///    is the best yet.)
+///
+/// [`Null`]: crate::types::Null;
+///
+/// ## `:#`
+/// 
+/// Stack frame literal references have bene added to Quest: `:#` is identical to
+/// `__stack__.$get(#)`, but allows for shorter mannerisms such as `return(:1)`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pristine;
 
@@ -53,9 +60,9 @@ impl Pristine {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert("1" == 1.$__inspect__());
-	/// assert('"2"' == 2.$__inspect__());
-	/// assert('["2", 3]' = ["2", 3].$__inspect__());
+	/// assert(  == 1.$__inspect__() == "1" );
+	/// assert(  == 2.$__inspect__() == '"2"' );
+	/// assert(  == ["2", 3].$__inspect__() == '["2", 3]' );
 	/// ```
 	#[allow(non_snake_case)]
 	pub fn qs___inspect__(this: &Object, _: Args) -> Result<Text, !> {
@@ -91,6 +98,9 @@ impl Pristine {
 	/// The `__get_attr__` method and the `::` infix operator are identical, but each has their own
 	/// advantage: `__get_attr__` doesn't require specifying `__this__` (e.g. `__get_attr__($foo)`),
 	/// whereas `::` is shorter and generally more idiomatic of other languages.
+	///
+	/// The `__get_attr__` method is useful when trying to reference a function without automatically
+	/// having it become a [`BoundFunction`](crate::types::BoundFunction).
 	/// 
 	/// # Arguments
 	///
@@ -98,7 +108,14 @@ impl Pristine {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $x = qs__get_attr__
+	/// $print_fruit = {
+	/// 	disp("I love to eat", _0);
+	/// };
+	/// 
+	/// ["bananas", "oranges", "melons"].$each(__this__::$greet);
+	/// # => I love to eat bananas
+	/// # => I love to eat oranges
+	/// # => I love to eat melons
 	/// ```
 	#[inline]
 	#[allow(non_snake_case)]
@@ -107,6 +124,7 @@ impl Pristine {
 		this.get_attr(attr)
 	}
 
+	/// Set an attribute on the object
 	#[inline]
 	#[allow(non_snake_case)]
 	pub fn qs___set_attr__(this: &Object, args: Args) -> crate::Result<Object> {
