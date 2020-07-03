@@ -267,7 +267,7 @@ impl Block {
 
 impl_object_type!{
 for Block [(parents quest_core::types::Function)]:
-	"@text" => method Block::qs_at_text,
+	"@text" => method_old Block::qs_at_text,
 	"()" => function Block::qs_call
 }
 

@@ -121,13 +121,13 @@ for Null {
 	}
 }
 [(parents super::Basic)]:
-	"@text" => method Null::qs_at_text,
-	"__inspect__" => method Null::qs___inspect__,
-	"@bool" => method Null::qs_at_bool,
-	"@list" => method Null::qs_at_list,
-	"@num" => method Null::qs_at_num,
-	"()" => method Null::qs_call,
-	"==" => method Null::qs_eql,
+	"@text" => method_old Null::qs_at_text,
+	"__inspect__" => method_old Null::qs___inspect__,
+	"@bool" => method_old Null::qs_at_bool,
+	"@list" => method_old Null::qs_at_list,
+	"@num" => method_old Null::qs_at_num,
+	"()" => method_old Null::qs_call,
+	"==" => method_old Null::qs_eql,
 }
 
 #[cfg(test)]

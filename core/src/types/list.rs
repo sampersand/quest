@@ -825,36 +825,36 @@ impl List {
 
 impl_object_type!{
 for List [(parents super::Basic) (convert "@list")]:
-	"@text" => method List::qs_at_text,
-	"__inspect__" => method List::qs___inspect__,
-	"@bool" => method List::qs_at_bool,
+	"@text" => method_old List::qs_at_text,
+	"__inspect__" => method_old List::qs___inspect__,
+	"@bool" => method_old List::qs_at_bool,
 	"@list" => function List::qs_at_list,
-	"clone" => method List::qs_clone,
+	"clone" => method_old List::qs_clone,
 
 	"clear" => function List::qs_clear,
-	"find" => method List::qs_find,
-	"len" => method List::qs_len,
+	"find" => method_old List::qs_find,
+	"len" => method_old List::qs_len,
 
-	"get" => method List::qs_get,
+	"get" => method_old List::qs_get,
 	"set" => function List::qs_set,
-	"join" => method List::qs_join,
+	"join" => method_old List::qs_join,
 
 	"<<" => function List::qs_push,
 	"push" => function List::qs_push,
-	"pop" => method_mut List::qs_pop,
+	"pop" => method_old_mut List::qs_pop,
 	"unshift" => function List::qs_unshift,
-	"shift" => method_mut List::qs_shift,
+	"shift" => method_old_mut List::qs_shift,
 
-	"=="    => method List::qs_eql,
-	"+" => method List::qs_add,
+	"=="    => method_old List::qs_eql,
+	"+" => method_old List::qs_add,
 	"+=" => function List::qs_add_assign,
-	"-" => method List::qs_sub,
+	"-" => method_old List::qs_sub,
 	"-=" => function List::qs_sub_assign,
-	"&" => method List::qs_bitand,
+	"&" => method_old List::qs_bitand,
 	"&=" => function List::qs_bitand_assign,
-	"|" => method List::qs_bitor,
+	"|" => method_old List::qs_bitor,
 	"|=" => function List::qs_bitor_assign,
-	"^" => method List::qs_bitxor,
+	"^" => method_old List::qs_bitxor,
 	"^=" => function List::qs_bitxor_assign,
 }
 

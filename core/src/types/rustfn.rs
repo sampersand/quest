@@ -87,7 +87,7 @@ impl RustFn {
 
 impl_object_type!{
 for RustFn [(parents super::Function)]:
-	"__inspect__" => method RustFn::qs___inspect__,
-	"@text" => method RustFn::qs_at_text,
-	"()" => method RustFn::qs_call,
+	"__inspect__" => method_old RustFn::qs___inspect__,
+	"@text" => method_old RustFn::qs_at_text,
+	"()" => method_old RustFn::qs_call,
 }

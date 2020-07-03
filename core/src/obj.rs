@@ -162,6 +162,24 @@ impl Object {
 			}.into())
 	}
 
+
+	pub fn try_with_ref<T, O, E, F>(&self, f: F) -> crate::Result<O>
+	where
+		T: Any,
+		E: Into<crate::Error>,
+		F: FnOnce(&T) -> Result<O, E>,
+	{
+		self.with_ref(|opt|
+			match opt {
+				Some(opt) => f(opt).map_err(Into::into),		
+				None => Err(TypeError::WrongType {
+					expected: type_name::<T>(),
+					got: self.typename()
+				}.into())
+			}
+		)
+	}
+
 	#[inline]
 	pub fn with_ref<T: Any, R, F: FnOnce(Option<&T>) -> R>(&self, f: F) -> R {
 		self.0.data.with_ref(f)
@@ -172,7 +190,6 @@ impl Object {
 		self.0.data.with_ref_unchecked(f)
 	}
 
-	#[inline]
 	pub fn try_with_mut<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Any,
