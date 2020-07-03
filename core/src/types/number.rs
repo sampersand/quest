@@ -233,6 +233,13 @@ impl Display for NotAnInteger {
 
 impl std::error::Error for NotAnInteger {}
 
+impl From<NotAnInteger> for crate::Error {
+	#[inline]
+	fn from(n: NotAnInteger) -> Self {
+		crate::error::ValueError::Messaged(n.to_string()).into()
+	}
+}
+
 macro_rules! impl_try_from_number {
 	($($ty:ty)*) => {
 		$(
@@ -250,6 +257,7 @@ macro_rules! impl_try_from_number {
 }
 
 impl_try_from_number!(u8 u16 u32 u64 u128 i8 i16 i32 i64 i128);
+
 
 impl From<FloatType> for Number {
 	fn from(f: FloatType) -> Number {
@@ -368,7 +376,7 @@ impl std::ops::DivAssign for Number {
 }
 
 macro_rules! impl_bitwise_ops {
-	($($trait:ident $fn:ident $fn_assign:ident)*) => {
+	($($trait:ident $fn:ident $fn_assign:ident $fn_num:ident)*) => {
 		$(
 			impl std::ops::$trait for Number {
 				type Output = Result<Self, NotAnInteger>;
@@ -386,7 +394,7 @@ macro_rules! impl_bitwise_ops {
 
 					match self.0 {
 						Inner::Float(n) => Err(NotAnInteger(n)),
-						Inner::Integer(ref mut n) => Ok(n.$fn_assign(IntegerType::try_from(rhs)?))
+						Inner::Integer(ref mut n) => Ok(n.$fn_num(IntegerType::try_from(rhs)?))
 					}
 				}
 			}
@@ -395,11 +403,11 @@ macro_rules! impl_bitwise_ops {
 }
 
 impl_bitwise_ops! {
-	BitAnd bitand bitand_assign
-	BitOr bitor bitor_assign
-	BitXor bitxor bitxor_assign
-	Shl shl shl_assign
-	Shr shr shr_assign
+	BitAnd bitand try_bitand_assign bitand_assign
+	BitOr bitor try_bitor_assign bitor_assign
+	BitXor bitxor try_bitxor_assign bitxor_assign
+	Shl shl try_shl_assign shl_assign
+	Shr shr try_shr_assign shr_assign
 }
 
 impl std::ops::Neg for Number {
@@ -468,6 +476,16 @@ impl From<Number> for Boolean {
 	}
 }
 
+fn get_rhs(this: &Object, args: Args) -> crate::Result<Number> {
+	let rhs = args.arg(0)?;
+	if this.is_identical(rhs) {
+		// OPTIMIZE: this can be optimized, as we check to see if it's a list twice.
+		this.try_downcast_map(Number::clone)
+	} else {
+		rhs.call_downcast_map(Number::clone)
+	}
+}
+
 impl Number {
 	#[inline]
 	#[allow(non_snake_case)]
@@ -482,7 +500,7 @@ impl Number {
 
 	pub fn qs_at_text(&self, args: Args) -> crate::Result<Text> {
 		if let Ok(radix) = args.arg(0) {
-			let radix = radix.downcast_call::<Number>()?.floor();
+			let radix = radix.call_downcast_map(|n: &Number| n.floor())?;
 			self.to_string_radix(radix as _)
 				.map_err(|err| err.to_string().into())
 				.map(Text::from)
@@ -503,172 +521,123 @@ impl Number {
 
 	#[inline]
 	pub fn qs_add(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-
-		Ok(*self + rhs)
+		args.arg(0)?.call_downcast_map(|rhs: &Self| *self + *rhs)
 	}
 
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| Ok(*num += rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| *this += rhs).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_sub(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-
-		Ok(*self - rhs)
+		args.arg(0)?.call_downcast_map(|rhs: &Self| *self - *rhs)
 	}
 
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| Ok(*num -= rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| *this -= rhs).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_mul(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-
-		Ok(*self * rhs)
+		args.arg(0)?.call_downcast_map(|rhs: &Self| *self * *rhs)
 	}
 
 	pub fn qs_mul_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| Ok(*num *= rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| *this *= rhs).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_div(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-
-		Ok(*self / rhs)
+		args.arg(0)?.call_downcast_map(|rhs: &Self| *self / *rhs)
 	}
 
 	pub fn qs_div_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| Ok(*num /= rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| *this /= rhs).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_mod(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-
-		Ok(*self % rhs)
+		args.arg(0)?.call_downcast_map(|rhs: &Self| *self % *rhs)
 	}
 
 	pub fn qs_mod_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| Ok(*num %= rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| *this %= rhs).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_pow(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-
-		Ok(self.pow(rhs))
+		args.arg(0)?.call_downcast_map(|rhs: &Self| self.pow(*rhs))
 	}
 
 	pub fn qs_pow_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| Ok(*num = num.pow(rhs)))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| this.pow_assign(rhs)).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_bitand(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
-
-		(*self & rhs).map_err(|err| err.to_string().into())
+		args.arg(0)?.call_downcast_and_then(|rhs: &Self| *self & *rhs)
 	}
 
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| num.bitand_assign(rhs)
-			.map_err(|err| err.to_string().into()))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitand_assign(rhs)).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_bitor(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
-
-		(*self | rhs).map_err(|err| err.to_string().into())
+		args.arg(0)?.call_downcast_and_then(|rhs: &Self| *self | *rhs)
 	}
 
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| num.bitor_assign(rhs)
-			.map_err(|err| err.to_string().into()))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitor_assign(rhs)).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_bitxor(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
-
-		(*self ^ rhs).map_err(|err| err.to_string().into())
+		args.arg(0)?.call_downcast_and_then(|rhs: &Self| *self ^ *rhs)
 	}
 
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| num.bitxor_assign(rhs)
-			.map_err(|err| err.to_string().into()))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitxor_assign(rhs)).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_shl(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
-
-		(*self << rhs).map_err(|err| err.to_string().into())
+		args.arg(0)?.call_downcast_and_then(|rhs: &Self| *self << *rhs)
 	}
 
 	pub fn qs_shl_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| num.shl_assign(rhs)
-			.map_err(|err| err.to_string().into()))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_shl_assign(rhs)).map(|_| this.clone())
 	}
 
 	#[inline]
 	pub fn qs_shr(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
-
-		(*self >> rhs).map_err(|err| err.to_string().into())
+		args.arg(0)?.call_downcast_and_then(|rhs: &Self| *self >> *rhs)
 	}
 
 	pub fn qs_shr_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		let rhs = get_rhs(this, args)?;
 
-		this.try_with_mut(|num: &mut Self| num.shr_assign(rhs)
-			.map_err(|err| err.to_string().into()))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_shr_assign(rhs)).map(|_| this.clone())
 	}
 
 
@@ -694,13 +663,13 @@ impl Number {
 
 	#[inline]
 	pub fn qs_eql(&self, args: Args) -> Result<bool, crate::error::KeyError> {
-		let rhs = args.arg(0)?.downcast_ref::<Number>();
-		Ok(rhs.map(|rhs| *self == *rhs).unwrap_or(false))
+		let rhs = args.arg(0)?.downcast_and_then(Number::clone);
+		Ok(rhs.map(|rhs| *self == rhs).unwrap_or(false))
 	}
 
 	#[inline]
 	pub fn qs_cmp(&self, args: Args) -> crate::Result<std::cmp::Ordering> {
-		let rhs = args.arg(0)?.downcast_call::<Number>()?;
+		let rhs = args.arg(0)?.call_downcast_and_then::<Self, _, !, _>(|n| Ok(*n))?;
 
 		Ok(self.cmp(&rhs))
 	}

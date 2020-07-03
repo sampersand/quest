@@ -61,13 +61,13 @@ pub fn init() {
 				.map_err(Into::into)
 		}
 
-		let this = this.try_downcast_ref::<Text>()?;
-
-		if let Ok(binding) = args.arg(0) {
-			Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
-		} else {
-			execute_text(this.to_string())
-		}
+		this.try_downcast_and_then::<Text, _, _, _>(|this| {
+			if let Ok(binding) = args.arg(0) {
+				Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
+			} else {
+				execute_text(this.to_string())
+			}
+		})
 	}));
 }
 

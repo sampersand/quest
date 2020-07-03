@@ -110,8 +110,7 @@ impl List {
 	/// If `joiner` is omitted, nothing is inserted between elements.
 	pub fn join(&self, joiner: Option<&str>) -> crate::Result<Text> {
 		Ok(self.iter()
-			.map(|obj| obj.downcast_call::<Text>()
-				.map(|txt| txt.as_ref().to_string()))
+			.map(|obj| obj.call_downcast_map(Text::to_string))
 			.collect::<crate::Result<Vec<_>>>()?
 			.join(joiner.unwrap_or_default()).into())
 	}
@@ -199,7 +198,7 @@ impl TryFrom<&'_ List> for Text {
 	fn try_from(l: &List) -> crate::Result<Self> {
 		let mut t = vec![];
 		for item in l.iter() {
-			t.push(item.call_attr_lit(__INSPECT__, &[])?.downcast_call::<Text>()?.to_string());
+			t.push(item.call_attr_lit(__INSPECT__, &[])?.call_downcast_map(Text::to_string)?)
 		}
 		Ok(format!("[{}]", t.join(", ")).into())
 	}
@@ -236,12 +235,12 @@ impl std::ops::AddAssign for List {
 /// "Try" operators
 impl List {
 	#[inline]
-	pub fn try_sub(&self, other: List) -> crate::Result<List> {
+	pub fn try_sub(&self, other: &List) -> crate::Result<List> {
 		let mut dup = self.clone();
 		dup.try_sub_assign(other).and(Ok(dup))
 	}
 
-	pub fn try_sub_assign(&mut self, other: List) -> crate::Result<()>  {
+	pub fn try_sub_assign(&mut self, other: &List) -> crate::Result<()>  {
 		let mut i = 0;
 
 		while i < self.len() {
@@ -256,13 +255,14 @@ impl List {
 	}
 
 	#[inline]
-	pub fn try_bitand(&self, other: List) -> crate::Result<List> {
+	pub fn try_bitand(&self, other: &List) -> crate::Result<List> {
 		let mut dup = self.clone();
 		dup.try_bitand_assign(other).and(Ok(dup))
 	}
 
-	pub fn try_bitand_assign(&mut self, mut other: List) -> crate::Result<()>  {
+	pub fn try_bitand_assign(&mut self, other: &List) -> crate::Result<()>  {
 		let mut i = 0;
+		let mut other = other.clone();
 
 		while i < self.len() {
 			if let Some(j) = other.find(&self.0[i])? {
@@ -277,12 +277,12 @@ impl List {
 	}
 
 	#[inline]
-	pub fn try_bitor(&self, other: List) -> crate::Result<List> {
+	pub fn try_bitor(&self, other: &List) -> crate::Result<List> {
 		let mut dup = self.clone();
 		dup.try_bitor_assign(other).and(Ok(dup))
 	}
 
-	pub fn try_bitor_assign(&mut self, other: List) -> crate::Result<()>  {
+	pub fn try_bitor_assign(&mut self, other: &List) -> crate::Result<()>  {
 		let mut i = 0;
 
 		while i < other.len() {
@@ -297,13 +297,14 @@ impl List {
 	}
 
 	#[inline]
-	pub fn try_bitxor(&self, other: List) -> crate::Result<List> {
+	pub fn try_bitxor(&self, other: &List) -> crate::Result<List> {
 		let mut dup = self.clone();
 		dup.try_bitxor_assign(other).and(Ok(dup))
 	}
 
-	pub fn try_bitxor_assign(&mut self, mut other: List) -> crate::Result<()>  {
+	pub fn try_bitxor_assign(&mut self, other: &List) -> crate::Result<()>  {
 		let mut i = 0;
+		let mut other = other.clone();
 
 		while i < other.len() {
 			if let Some(j) = self.find(&other.0[i])? {
@@ -452,8 +453,8 @@ impl List {
 	/// ```
 	#[inline]
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_with_mut(|list: &mut Self| Ok(list.clear()))?;
-		Ok(this.clone())
+		this.try_downcast_mut_map(|list: &mut Self| list.clear())
+			.map(|_| this.clone())
 	}
 
 	/// Get the length of the list
@@ -494,9 +495,10 @@ impl List {
 	/// assert(list.$get(1, Number::$INF) == [2, 3, false]);
 	/// ```
 	pub fn qs_get(&self, args: Args) -> crate::Result<Object> {
-		let start = args.arg(0)?.downcast_call::<Number>()?.floor() as isize;
+		let start = args.arg(0)?.call_downcast_map(|n: &Number| n.floor())? as _;
+
 		match args.arg(1) {
-			Ok(stop) => Ok(self.get_rng(start, stop.downcast_call::<Number>()?.floor() as isize)),
+			Ok(stop) => Ok(self.get_rng(start, stop.call_downcast_map(|n: &Number| n.floor())? as _)),
 			Err(_) => Ok(self.get(start))
 		}
 	}
@@ -533,7 +535,7 @@ impl List {
 	/// ```
 	pub fn qs_join(&self, args: Args) -> crate::Result<Text> {
 		if let Ok(arg) = args.arg(0) {
-			self.join(Some(arg.downcast_call::<Text>()?.as_ref()))
+			arg.call_downcast_and_then(|delim: &Text| self.join(Some(delim.as_ref())))
 		} else {
 			self.join(None)
 		}
@@ -551,11 +553,7 @@ impl List {
 	/// assert([1, 2, "a"] != [1, "a", 2]);
 	/// ```
 	pub fn qs_eql(&self, args: Args) -> crate::Result<bool> {
-		if let Some(rhs) = args.arg(0)?.downcast_ref::<List>() {
-			self.eql(&rhs)
-		} else {
-			Ok(false)
-		}
+		args.arg(0)?.downcast_and_then(|arg| self.eql(arg)).unwrap_or(Ok(false))
 	}
 
 	/// Add an element to the back of the list, returning the list.
@@ -573,9 +571,9 @@ impl List {
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
-		this.try_with_mut(|list: &mut Self| Ok(list.push(rhs.clone())))?;
-		Ok(this.clone())
+		let rhs = args.arg(0)?.clone();
+		this.try_downcast_mut_map(|this: &mut Self| this.push(rhs))
+			.map(|_| this.clone())
 	}
 
 	/// Remove an element from the end of the list, returning [`Null`](crate::types::Null) if empty.
@@ -609,9 +607,9 @@ impl List {
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
 	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
-		this.try_with_mut(|list: &mut Self| Ok(list.unshift(rhs.clone())))?;
-		Ok(this.clone())
+		let rhs = args.arg(0)?.clone();
+		this.try_downcast_mut_map(|this: &mut Self| this.unshift(rhs))
+			.map(|_| this.clone())
 	}
 
 	/// Remove an element from the front of the list, returning [`Null`](crate::types::Null) if empty.
@@ -642,8 +640,7 @@ impl List {
 	/// assert(["a", "b"] + [] == ["a", "b"]);
 	/// ```
 	pub fn qs_add(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		Ok(self + rhs)
+		args.arg(0)?.call_downcast_map(|rhs: &Self| self + rhs.clone())
 	}
 
 	/// Adds a list to the end of this one, in place, returning the first list.
@@ -657,11 +654,10 @@ impl List {
 	/// assert(list == [1, 2, 3, 4]);
 	/// ```
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|list: &mut Self| Ok(*list += rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| *this += rhs)
+			.map(|_| this.clone())
 	}
 
 	/// Returns a new list of elements in the first list but not the second.
@@ -676,8 +672,7 @@ impl List {
 	/// assert(["1", "b", "c"] - [1, "c", "c", "e"] == ["1", "b"]);
 	/// ```
 	pub fn qs_sub(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		self.try_sub(rhs)
+		args.arg(0)?.call_downcast_and_then(|rhs| self.try_sub(rhs))
 	}
 
 	/// Delete all elements in the first list that are also in the second.
@@ -693,11 +688,10 @@ impl List {
 	/// assert(list == ["1", "b"]);
 	/// ```
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|this: &mut Self| this.try_sub_assign(rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_sub_assign(&rhs))
+			.map(|_| this.clone())
 	}
 
 	/// Get the intersection of two lists, i.e. the common elements
@@ -713,8 +707,7 @@ impl List {
 	/// assert([1, 2, 3] & [1, 2, 4] == [1, 2]);
 	/// ```
 	pub fn qs_bitand(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		self.try_bitand(rhs)
+		args.arg(0)?.call_downcast_and_then(|rhs| self.try_bitand(rhs))
 	}
 
 	/// Deletes all elements in the current list not common to both lists.
@@ -734,11 +727,10 @@ impl List {
 	/// assert(list == [2]);
 	/// ```
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|this: &mut Self| this.try_bitand_assign(rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitand_assign(&rhs))
+			.map(|_| this.clone())
 	}
 
 	/// Get the union of two lists, i.e. the combination of all elements
@@ -753,8 +745,7 @@ impl List {
 	/// assert(["a", "b", "c"] | ["c", "b", "d", "e"] == ["a", "b", "c", "d", "e"]);
 	/// ```
 	pub fn qs_bitor(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		self.try_bitor(rhs)
+		args.arg(0)?.call_downcast_and_then(|rhs| self.try_bitor(rhs))
 	}
 
 	/// Adds all unique elements in the second list to the original one.
@@ -774,11 +765,10 @@ impl List {
 	/// assert(list == [1, 2, "a", 4, 3]);
 	/// ```
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|this: &mut Self| this.try_bitor_assign(rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitor_assign(&rhs))
+			.map(|_| this.clone())
 	}
 
 	/// Get the list of elements in only one list.
@@ -794,8 +784,7 @@ impl List {
 	/// assert([1, 2, 3] ^ [1, 2, 4] == [3, 4]);
 	/// ```
 	pub fn qs_bitxor(&self, args: Args) -> crate::Result<List> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		self.try_bitxor(rhs)
+		args.arg(0)?.call_downcast_and_then(|rhs: &Self| self.try_bitxor(&rhs))
 	}
 
 	/// Deletes all elements in the current list not common to both lists.
@@ -815,11 +804,10 @@ impl List {
 	/// assert(list == [4, 3, 2]);
 	/// ```
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|this: &mut Self| this.try_bitxor_assign(rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitxor_assign(&rhs))
+			.map(|_| this.clone())
 	}
 }
 

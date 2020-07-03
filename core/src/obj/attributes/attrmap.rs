@@ -26,8 +26,7 @@ impl Debug for AttrMap {
 
 fn eq_literal(obj: &Object, lit: Literal) -> Result<bool> {
 	obj.call_attr_lit("==", &[&lit.into()])?
-		.downcast_call::<Boolean>()
-		.map(Boolean::into_inner)
+		.call_downcast_map(|x: &Boolean| x.into_inner())
 }
 
 

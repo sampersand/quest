@@ -6,7 +6,8 @@ use std::cmp::Ordering;
 pub struct Comparable;
 
 fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
-	let num = lhs.call_attr_lit("<=>", &[rhs])?.downcast_call::<Number>()?;
+	let num = lhs.call_attr_lit("<=>", &[rhs])?.call_downcast_map(Number::clone)?;
+
 	if num < Number::ZERO {
 		Ok(Ordering::Less)
 	} else if num > Number::ZERO {

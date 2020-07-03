@@ -55,7 +55,7 @@ impl Attributes {
 	}
 
 	pub fn add_parent(&self, parent: Object) -> Result<()> {
-		self.data.with_mut(|inner| inner.parents.add_parent(parent))
+		self.data.downcast_mut_and_then(|inner| inner.parents.add_parent(parent))
 	}
 
 	pub fn keys(&self, include_parents: bool) -> Result<Vec<Object>> {
@@ -64,7 +64,7 @@ impl Attributes {
 		keys.push(__PARENTS__.into());
 		keys.push(__ID__.into());
 
-		let x: Result<()> = self.data.with_ref(|inner| {
+		let x: Result<()> = self.data.downcast_and_then(|inner| {
 			keys.extend(inner.map.keys());
 			if include_parents {
 				keys.extend(inner.parents.keys()?);
@@ -86,7 +86,7 @@ impl Attributes {
 		if (&__ID__).borrow() == key || (&__PARENTS__).borrow() == key {
 			Ok(true)
 		} else {
-			self.data.with_ref(|inner| Ok(inner.map.has_lit(key) || inner.parents.has_lit(key)?))
+			self.data.downcast_and_then(|inner| Ok(inner.map.has_lit(key) || inner.parents.has_lit(key)?))
 		}
 	}
 
@@ -98,7 +98,7 @@ impl Attributes {
 			return Ok(Some(Object::from(self.id()).into()))
 		}
 
-		self.data.with_ref(|inner| {
+		self.data.downcast_and_then(|inner| {
 			if (&__PARENTS__).borrow() == key {
 				Ok(Some(inner.parents.to_object().into()))
 			} else if let Some(lit) = inner.map.get_lit(key).cloned() {
@@ -110,7 +110,7 @@ impl Attributes {
 	}
 
 	pub fn set_lit(&self, key: Literal, val: Value) {
-		self.data.with_mut(|inner| {
+		self.data.downcast_mut_and_then(|inner| {
 			if __PARENTS__ == key {
 				inner.parents = Parents::from(Object::from(val));
 			} else {
@@ -123,7 +123,7 @@ impl Attributes {
 	where
 		for <'a> &'a str: Borrow<K>
 	{
-		self.data.with_mut(|inner| {
+		self.data.downcast_mut_and_then(|inner| {
 			if (&__PARENTS__).borrow() == key {
 				Some(std::mem::replace(&mut inner.parents, Parents::default()).into())
 			} else {
@@ -133,19 +133,19 @@ impl Attributes {
 	}
 
 	pub fn has(&self, key: &Object) -> Result<bool> {
-		if let Some(text) = key.downcast_ref::<Text>() {
-			return self.has_lit(text.as_ref());
+		if let Some(res) = key.downcast_and_then(|text: &Text| self.has_lit(text.as_ref())) {
+			return res
 		}
 
-		self.data.with_ref(|inner| Ok(inner.map.has_obj(key)? || inner.parents.has_obj(key)?))
+		self.data.downcast_and_then(|inner| Ok(inner.map.has_obj(key)? || inner.parents.has_obj(key)?))
 	}
 
 	pub fn get(&self, key: &Object) -> Result<Option<Value>> {
-		if let Some(text) = key.downcast_ref::<Text>() {
-			return self.get_lit(text.as_ref());
+		if let Some(res) = key.downcast_and_then(|text: &Text| self.get_lit(text.as_ref())) {
+			return res;
 		}
 
-		self.data.with_ref(|inner| {
+		self.data.downcast_and_then(|inner| {
 			if let Some(obj) = inner.map.get_obj(key)? {
 				Ok(Some(obj.clone()))
 			} else {
@@ -155,19 +155,19 @@ impl Attributes {
 	}
 
 	pub fn set(&self, key: Object, value: Value) -> Result<()> {
-		if let Some(text) = key.downcast_ref::<Text>() {
-			return Ok(self.set_lit(str_to_static(text.as_ref()), value));
+		if let Some(lit) = key.downcast_and_then(|text: &Text| str_to_static(text.as_ref())) {
+			return Ok(self.set_lit(lit, value));
 		}
 
-		self.data.with_mut(|inner| inner.map.set_obj(key, value))
+		self.data.downcast_mut_and_then(|inner| inner.map.set_obj(key, value))
 	}
 
 	pub fn del(&self, key: &Object) -> Result<Option<Value>> {
-		if let Some(text) = key.downcast_ref::<Text>() {
-			return Ok(self.del_lit(text.as_ref()));
+		if let Some(res) = key.downcast_and_then(|text: &Text| self.del_lit(text.as_ref())) {
+			return Ok(res);
 		}
 
-		self.data.with_mut(|inner| inner.map.del_obj(key))
+		self.data.downcast_mut_and_then(|inner| inner.map.del_obj(key))
 	}
 }
 

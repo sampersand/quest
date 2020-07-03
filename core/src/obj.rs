@@ -1,14 +1,14 @@
 use crate::{Args, ArgsOld};
 use crate::error::{TypeError, KeyError};
 use crate::types::{self, ObjectType};
-use crate::literals::Literal;
+use crate::types::{Boolean};
+use crate::literals::{EQL, Literal};
 
 use std::borrow::Borrow;
 use std::hash::Hash;
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, type_name};
-use std::ops::{Deref, DerefMut};
 
 mod data;
 mod attributes;
@@ -124,12 +124,11 @@ impl Object {
 	}
 
 	pub fn eq_obj(&self, rhs: &Object) -> crate::Result<bool> {
-		self.call_attr_lit("==", &[rhs])
-			.map(|res| res.downcast_ref::<types::Boolean>()
-				.map(|b| bool::from(*b))
-				.unwrap_or(false))
+		self.call_attr_lit(EQL, &[rhs])
+			.map(|obj| obj.downcast_and_then::<Boolean, _, _>(|b| b.into_inner()).unwrap_or(false))
 	}
 
+	#[inline]
 	pub fn deep_clone(&self) -> Object {
 		Object::from_parts(self.0.data.clone(), self.0.attrs.clone())
 	}
@@ -141,99 +140,84 @@ impl Object {
 		self.0.data.is_a::<T>()
 	}
 
-	pub fn try_downcast_clone<T: Any + Clone>(&self) -> crate::Result<T> {
-		self.downcast_clone()
-			.ok_or_else(|| TypeError::WrongType {
-				expected: type_name::<T>(),
-				got: self.typename(),
-			}.into())
+	#[inline]
+	pub fn try_downcast_map<T, O, F>(&self, f: F) -> crate::Result<O>
+	where
+		T: Any,
+		F: FnOnce(&T) -> O,
+	{
+		self.try_downcast_and_then::<T, O, !, _>(|x| Ok(f(x)))
 	}
 
 	#[inline]
-	pub fn downcast_clone<T: Any + Clone>(&self) -> Option<T> {
-		self.downcast_ref::<T>().map(|x| x.clone())
+	pub fn try_downcast_mut_map<T, O, F>(&self, f: F) -> crate::Result<O>
+	where
+		T: Any,
+		F: FnOnce(&mut T) -> O
+	{
+		self.try_downcast_mut_and_then::<T, O, !, _>(|x| Ok(f(x)))
 	}
 
-	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> crate::Result<impl Deref<Target = T> + 'a> {
-		self.downcast_ref::<T>()
-			.ok_or_else(|| TypeError::WrongType {
-				expected: type_name::<T>(),
-				got: self.typename(),
-			}.into())
-	}
-
-
-	pub fn try_with_ref<T, O, E, F>(&self, f: F) -> crate::Result<O>
+	pub fn try_downcast_and_then<T, O, E, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Any,
 		E: Into<crate::Error>,
 		F: FnOnce(&T) -> Result<O, E>,
 	{
-		self.with_ref(|opt|
-			match opt {
-				Some(opt) => f(opt).map_err(Into::into),		
-				None => Err(TypeError::WrongType {
-					expected: type_name::<T>(),
-					got: self.typename()
-				}.into())
-			}
-		)
+		self.downcast_and_then(|opt| f(opt).map_err(Into::into))
+			.unwrap_or_else(|| Err(TypeError::WrongType {
+				expected: type_name::<T>(),
+				got: self.typename()
+			}.into()))
 	}
 
-	#[inline]
-	pub fn with_ref<T: Any, R, F: FnOnce(Option<&T>) -> R>(&self, f: F) -> R {
-		self.0.data.with_ref(f)
-	}
-
-	#[inline]
-	pub unsafe fn with_ref_unchecked<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
-		self.0.data.with_ref_unchecked(f)
-	}
-
-	pub fn try_with_mut<T, O, F>(&self, f: F) -> crate::Result<O>
+	pub fn try_downcast_mut_and_then<T, O, E, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Any,
-		F: FnOnce(&mut T) -> crate::Result<O>
+		E: Into<crate::Error>,
+		F: FnOnce(&mut T) -> Result<O, E>
 	{
-		self.with_mut(|opt|
-			opt.ok_or_else(||
-					TypeError::WrongType { expected: type_name::<T>(), got: self.typename() }.into())
-				.and_then(f)
-		)
+		self.downcast_mut_and_then(|opt| f(opt).map_err(Into::into))
+			.unwrap_or_else(|| Err(TypeError::WrongType {
+				expected: type_name::<T>(),
+				got: self.typename()
+			}.into()))
 	}
 
 	#[inline]
-	pub fn with_mut<T: Any, R, F: FnOnce(Option<&mut T>) -> R>(&self, f: F) -> R {
-		self.0.data.with_mut(f)
+	pub fn downcast_and_then<T, R, F>(&self, f: F) -> Option<R>
+	where
+		T: Any,
+		F: FnOnce(&T) -> R
+	{
+		self.0.data.downcast_and_then(|x| x.map(f))
 	}
 
 	#[inline]
-	pub unsafe fn with_mut_unchecked<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> R {
-		self.0.data.with_mut_unchecked(f)
+	pub fn downcast_mut_and_then<T, R, F>(&self, f: F) -> Option<R>
+	where
+		T: Any,
+		F: FnOnce(&mut T) -> R
+	{
+		self.0.data.downcast_mut_and_then(|x| x.map(f))
 	}
 
 	#[inline]
-	#[deprecated]
-	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
-		self.0.data.downcast_ref()
+	pub unsafe fn downcast_unchecked_and_then<T, R, F>(&self, f: F) -> R
+	where
+		T: Any, 
+		F: FnOnce(&T) -> R
+	{
+		self.0.data.downcast_unchecked_and_then(f)
 	}
 
 	#[inline]
-	#[deprecated]
-	pub unsafe fn downcast_ref_unchecked<'a, T: Any>(&'a self) -> impl Deref<Target=T> + 'a {
-		self.0.data.downcast_ref_unchecked()
-	}
-
-	#[inline]
-	#[deprecated]
-	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
-		self.0.data.downcast_mut()
-	}
-
-	#[inline]
-	#[deprecated]
-	pub unsafe fn downcast_mut_unchecked<'a, T: Any>(&'a self) -> impl DerefMut<Target=T> + 'a {
-		self.0.data.downcast_mut_unchecked()
+	pub unsafe fn downcast_mut_unchecked_and_then<T, R, F>(&self, f: F) -> R
+	where
+		T: Any, 
+		F: FnOnce(&mut T) -> R
+	{
+		self.0.data.downcast_mut_unchecked_and_then(f)
 	}
 }
 

@@ -84,7 +84,7 @@ impl<T> SharedCow<T> {
 		}
 	}
 
-	pub fn with_ref<F: FnOnce(&T) -> R, R>(&self, func: F) -> R {
+	pub fn downcast_and_then<F: FnOnce(&T) -> R, R>(&self, func: F) -> R {
 		let data_ptr = self.data.get();
 		match unsafe { &*data_ptr } {
 			Data::Shared(arc) => func(arc),
@@ -139,7 +139,7 @@ impl<T: Clone> SharedCow<T> {
 		}
 	}
 
-	pub fn with_mut<F: FnOnce(&mut T) -> R, R>(&self, func: F) -> R {
+	pub fn downcast_mut_and_then<F: FnOnce(&mut T) -> R, R>(&self, func: F) -> R {
 		// we have to lock regardless, because we will be accessing `Owned`.
 		let _lock = self.own_lock.write().expect("can't write lock");
 

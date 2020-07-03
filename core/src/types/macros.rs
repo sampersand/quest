@@ -107,7 +107,7 @@ macro_rules! impl_object_type {
 		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|this, args| {
-				this.try_with_ref::<$obj, _, _, _>(|this_data|
+				this.try_downcast_and_then::<$obj, _, _, _>(|this_data|
 					$val(this_data, args, this)
 						.map(Object::from)
 						.map_err(From::from)
@@ -121,9 +121,9 @@ macro_rules! impl_object_type {
 		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|this, args| {
-				$val(&*this.try_downcast_ref::<$obj>().expect(concat!(stringify!($obj), "::", $attr)), args)
+				this.try_downcast_and_then(|this| $val(this, args)
 					.map(Object::from)
-					.map_err(From::from)
+					.map_err($crate::Error::from))
 			}
 		));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
@@ -134,7 +134,7 @@ macro_rules! impl_object_type {
 		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|this, args| {
-				this.try_with_mut(|data| $val(data, args).map(Into::into).map_err(Into::into))
+				this.try_downcast_mut_and_then(|data| $val(data, args).map(Object::from).map_err($crate::Error::from))
 			}
 		));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);

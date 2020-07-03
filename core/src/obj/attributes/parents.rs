@@ -1,4 +1,5 @@
 use crate::{Object, Result};
+use crate::types::List;
 use super::Value;
 use std::hash::Hash;
 use std::borrow::Borrow;
@@ -119,8 +120,7 @@ impl Parents {
 		match *self.0.read().unwrap() {
 			Inner::None => f([].iter()),
 			Inner::Builtin(ref parents) => f(parents.iter()),
-			Inner::Object(ref object) => 
-				object.downcast_call::<crate::types::List>().and_then(|list| f(list.iter()))
+			Inner::Object(ref object) => object.call_downcast_and_then(|l: &List| f(l.iter()))
 		}
 	}
 

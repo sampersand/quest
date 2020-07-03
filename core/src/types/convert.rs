@@ -7,12 +7,16 @@ pub trait Convertible : Any + Sized + Clone {
 }
 
 impl Object {
-	pub fn downcast_call<T: Convertible>(&self) -> crate::Result<T> {
-		self.call_attr_lit(T::CONVERT_FUNC, crate::Args::default())
-			.and_then(|o| o.try_downcast_clone())
+	#[inline]
+	pub fn call_downcast_map<T, O, F>(&self, f: F) -> crate::Result<O>
+	where
+		T: Convertible + Any,
+		F: FnOnce(&T) -> O
+	{
+		self.call_downcast_and_then::<T, O, !, _>(|x| Ok(f(x)))
 	}
 
-	pub fn with_ref_call<T, O, E, F>(&self, f: F) -> crate::Result<O>
+	pub fn call_downcast_and_then<T, O, E, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Convertible + Any,
 		E: Into<crate::Error>,
@@ -20,13 +24,13 @@ impl Object {
 	{
 		if self.is_a::<T>() {
 			unsafe {
-				self.with_ref_unchecked(f).map_err(Into::into)
+				self.downcast_unchecked_and_then(f).map_err(Into::into)
 			}
 		} else {
 			self.call_attr_lit(T::CONVERT_FUNC, &[]).and_then(|obj| {
 				if self.is_a::<T>() {
 					unsafe {
-						self.with_ref_unchecked(f).map_err(Into::into)
+						self.downcast_unchecked_and_then(f).map_err(Into::into)
 					}
 				} else {
 					Err(crate::error::TypeError::ConversionReturnedBadType {

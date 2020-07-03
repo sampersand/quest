@@ -70,36 +70,36 @@ impl Data {
 	}
 
 	#[inline]
-	pub fn with_ref<T: Any, R, F: FnOnce(Option<&T>) -> R>(&self, f: F) -> R {
+	pub fn downcast_and_then<T: Any, R, F: FnOnce(Option<&T>) -> R>(&self, f: F) -> R {
 		if self.is_a::<T>() {
-			unsafe { self.with_ref_unchecked(|x| f(Some(x))) }
+			unsafe { self.downcast_unchecked_and_then(|x| f(Some(x))) }
 		} else { 
 			f(None)
 		}
 	}
 
 	#[inline]
-	pub unsafe fn with_ref_unchecked<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
+	pub unsafe fn downcast_unchecked_and_then<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
 		f(&*self.downcast_ref_unchecked::<T>())
 	}
 
 	#[inline]
-	pub fn with_mut<T: Any, R, F: FnOnce(Option<&mut T>) -> R>(&self, f: F) -> R {
+	pub fn downcast_mut_and_then<T: Any, R, F: FnOnce(Option<&mut T>) -> R>(&self, f: F) -> R {
 		if self.is_a::<T>() {
-			unsafe { self.with_mut_unchecked(|x| f(Some(x))) }
+			unsafe { self.downcast_mut_unchecked_and_then(|x| f(Some(x))) }
 		} else { 
 			f(None)
 		}
 	}
 
 	#[inline]
-	pub unsafe fn with_mut_unchecked<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> R {
+	pub unsafe fn downcast_mut_unchecked_and_then<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> R {
 		f(&mut *self.downcast_mut_unchecked::<T>())
 	}
 
 	#[inline]
 	#[deprecated]
-	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
+	fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
 		if self.is_a::<T>() {
 			Some(unsafe { self.downcast_ref_unchecked() })
 		} else {
@@ -109,7 +109,7 @@ impl Data {
 
 	#[inline]
 	#[deprecated]
-	pub unsafe fn downcast_ref_unchecked<'a, T: Any>(&'a self) -> impl Deref<Target=T> + 'a {
+	unsafe fn downcast_ref_unchecked<'a, T: Any>(&'a self) -> impl Deref<Target=T> + 'a {
 		use std::sync::RwLockReadGuard;
 		use std::marker::PhantomData;
 
@@ -132,7 +132,7 @@ impl Data {
 
 	#[inline]
 	#[deprecated]
-	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
+	fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
 		if self.is_a::<T>() {
 			Some(unsafe { self.downcast_mut_unchecked() })
 		} else {
@@ -142,7 +142,7 @@ impl Data {
 
 	#[inline]
 	#[deprecated]
-	pub unsafe fn downcast_mut_unchecked<'a, T: Any>(&'a self) -> impl DerefMut<Target=T> + 'a {
+	unsafe fn downcast_mut_unchecked<'a, T: Any>(&'a self) -> impl DerefMut<Target=T> + 'a {
 		use std::{sync::RwLockWriteGuard, marker::PhantomData};
 
 		struct Caster<'a, T>(RwLockWriteGuard<'a, Option<Ownership>>, PhantomData<T>, &'a Details);

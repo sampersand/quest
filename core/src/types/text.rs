@@ -1,6 +1,6 @@
 use crate::{Object, Args};
 use crate::error::{ValueError};
-use crate::literals::{__THIS__, __STACK__};
+use crate::literals::{Literal, __THIS__, __STACK__};
 use crate::types::{Number, List, Boolean};
 use crate::Binding;
 use std::borrow::Cow;
@@ -33,7 +33,7 @@ impl Text {
 	}
 
 	#[inline]
-	pub const fn new_static(txt: &'static str) -> Self {
+	pub const fn new_static(txt: Literal) -> Self {
 		Text(Cow::Borrowed(txt))
 	}
 
@@ -56,9 +56,16 @@ impl Text {
 	}
 }
 
-impl From<&'static str> for Text {
+impl PartialEq<str> for Text {
 	#[inline]
-	fn from(txt: &'static str) -> Self {
+	fn eq(&self, rhs: &str) -> bool {
+		self.as_ref() == rhs
+	}
+}
+
+impl From<Literal> for Text {
+	#[inline]
+	fn from(txt: Literal) -> Self {
 		Text::new_static(txt)
 	}
 }
@@ -91,9 +98,9 @@ impl From<String> for Object {
 	}
 }
 
-impl From<&'static str> for Object {
+impl From<Literal> for Object {
 	#[inline]
-	fn from(txt: &'static str) -> Self {
+	fn from(txt: Literal) -> Self {
 		Text::from(txt).into()
 	}
 }
@@ -181,7 +188,7 @@ impl Text {
 
 	pub fn qs_at_num(&self, args: Args) -> crate::Result<Number> {
 		if let Ok(radix) = args.arg(0) {
-			let radix = radix.downcast_call::<Number>()?;
+			let radix = radix.call_downcast_map(Number::clone)?;
 			let radix = u32::try_from(radix)
 				.map_err(|err| ValueError::Messaged(format!("bad radix '{}': {}", radix, err)))?;
 
@@ -199,50 +206,38 @@ impl Text {
 	}
 
 	pub fn qs_call(this: &Object, _: Args) -> crate::Result<Object> {
-		if let Ok(this) = this.try_downcast_ref::<Self>() {
-			this.evaluate()
-		} else {
-			Binding::instance().as_ref().dot_get_attr(this)
-		}
+		this.downcast_and_then::<Self, _, _>(|this| this.evaluate())
+			.unwrap_or_else(|| Binding::instance().as_ref().dot_get_attr(this))
 	}
 
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.clone();
 
-		if let Some(this) = this.downcast_ref::<Self>() {
-			if this.as_ref() == __THIS__ {
-				return Ok(Binding::set_binding(rhs).into())
-			}
+		if this.downcast_and_then(|this: &Self| this == __THIS__).unwrap_or(false) {
+			return Ok(Binding::set_binding(rhs).into())
 		}
 
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
 	}
 
-	pub fn qs_eql(&self, args: Args) -> Result<bool, crate::error::KeyError> {
-		if let Some(rhs) = args.arg(0)?.downcast_ref::<Self>() {
-			Ok(*self == *rhs)
-		} else {
-			Ok(false)
-		}
+	pub fn qs_eql(&self, args: Args) -> crate::Result<bool> {
+		Ok(args.arg(0)?.downcast_and_then(|rhs: &Self| self == rhs).unwrap_or(false).into())
 	}
 
 	#[inline]
 	pub fn qs_cmp(&self, args: Args) -> crate::Result<std::cmp::Ordering> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		Ok(self.cmp(&rhs))
+		args.arg(0)?.call_downcast_map(|rhs| self.cmp(rhs))
 	}
 
 	pub fn qs_add(&self, args: Args) -> crate::Result<Self> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		Ok(self.clone() + rhs)
+		args.arg(0)?.call_downcast_map(|rhs: &Self| self.clone() + rhs.clone())
 	}
 
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|txt: &mut Self| Ok(*txt += rhs))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|txt: &mut Self| *txt += rhs)
+			.map(|_| this.clone())
 	}
 
 	#[inline]
@@ -268,13 +263,11 @@ impl Text {
 	}
 
 	pub fn qs_get(&self, args: Args) -> crate::Result<Object> {
-		let start = args.arg(0)?
-			.try_downcast_ref::<Number>()?
-			.floor() as isize;
+		let start = args.arg(0)?.try_downcast_and_then::<Number, _, !, _>(|n| Ok(n.floor() as isize))?;
 
 		let end = args.arg(1)
 			.ok()
-			.map(Object::downcast_call::<Number>)
+			.map(|x| x.call_downcast_map(Number::clone))
 			.transpose()?
 			.map(|x| x.floor() as isize);
 
@@ -307,9 +300,15 @@ impl Text {
 	}
 
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.try_downcast_map(Text::clone)?;
+		// if this.is_identical(rhs) {
+		// 	this.try_downcast_mut_map(|txt: &mut Self| this.push_str(this));
+		// }
 
-		this.try_with_mut(|txt: &mut Self| Ok(txt.0.to_mut().push_str(rhs.as_ref())))?;
+		// this.try_downcast_mut_map(|txt: &mut Self| *txt += rhs)
+		// 	.map(|_| this.clone())
+
+		this.try_downcast_mut_map(|txt: &mut Self| txt.0.to_mut().push_str(rhs.as_ref()))?;
 
 		Ok(this.clone())
 	}
@@ -332,16 +331,15 @@ impl Text {
 
 
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_with_mut(|this: &mut Self| Ok(this.0.to_mut().clear()))?;
-
-		Ok(this.clone())
+		this.try_downcast_mut_map(|this: &mut Self| this.0.to_mut().clear())
+			.map(|_| this.clone())
 	}
 
 	pub fn qs_split(&self, _: Args) -> crate::Result<Object> { todo!("split") }
 	pub fn qs_reverse(&self, _: Args) -> crate::Result<Object> { todo!("reverse") }
 
 	pub fn qs_match(&self, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Self>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 		let re = regex::Regex::new(rhs.as_ref()).expect("bad regex");
 		Ok(re.is_match(self.as_ref()).into())
 	}

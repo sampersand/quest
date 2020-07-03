@@ -7,7 +7,7 @@ pub struct Scope;
 impl Scope {
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Text> {
 		if let Ok(name) = this.get_attr_lit("name") {
-			name.downcast_call::<Text>()
+			name.call_downcast_map(Text::clone)
 		} else {
 			Ok(Text::new_static("<unnamed scope>"))
 		}

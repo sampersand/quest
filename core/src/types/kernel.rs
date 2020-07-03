@@ -7,7 +7,7 @@ pub struct Kernel;
 fn display(args: &[&Object], newline: bool) -> Result<()> {
 	print!("{}",
 		args.iter()
-			.map(|x| x.downcast_call::<Text>().map(|x| x.to_string()))
+			.map(|x| object_to_string(*x))
 			.collect::<Result<Vec<_>>>()?
 			.join(" ")
 	);
@@ -24,9 +24,19 @@ fn display(args: &[&Object], newline: bool) -> Result<()> {
 	}
 }
 
+#[inline]
+fn is_object_truthy(object: &Object) -> Result<bool> {
+	object.call_downcast_map(Boolean::clone).map(bool::from)
+}
+
+#[inline]
+fn object_to_string(object: &Object) -> Result<String> {
+	object.call_downcast_map(Text::to_string)
+}
+
 impl Kernel {
 	pub fn qs_if(_: &Object, args: Args) -> Result<Object> {
-		if args.arg(0)?.downcast_call::<Boolean>()?.into() {
+		if is_object_truthy(args.arg(0)?)? {
 			args.arg(1)?.clone()
 		} else {
 			args.arg(2).map(Clone::clone).unwrap_or_default()
@@ -48,7 +58,7 @@ impl Kernel {
 		// 	b.set_attr_old("name", Object::from("while"))?;
 
 			let mut result = Object::default();
-			while cond.call_attr_lit("()", &[])?.downcast_call::<Boolean>()?.into() {
+			while is_object_truthy(&cond.call_attr_lit("()", &[])?)? {
 				result = body.call_attr_lit("()", &[])?;
 			};
 			Ok(result)
@@ -72,8 +82,8 @@ impl Kernel {
 	pub fn qs_quit(_: &Object, args: Args) -> Result<!> {
 		let code = args.arg(0)
 			.ok()
-			.and_then(|x| x.downcast_call::<Number>().ok())
-			.map(|x| x.floor())
+			.map(|x| x.call_downcast_map(|n: &Number| n.floor()))
+			.transpose()?
 			.unwrap_or(1);
 
 		if let Ok(msg) = args.arg(1) {
@@ -85,11 +95,11 @@ impl Kernel {
 
 	pub fn qs_system(_: &Object, args: Args) -> Result<Object> {
 		use std::process::Command;
-		let cmd = args.arg(0)?.downcast_call::<Text>()?;
-		let mut command = Command::new(cmd.as_ref());
+		let cmd = object_to_string(args.arg(0)?)?;
+		let mut command = Command::new(cmd);
 
 		for arg in args.args(1..).unwrap_or_default().as_ref() {
-			command.arg(arg.downcast_call::<Text>()?.as_ref());
+			command.arg(object_to_string(arg)?);
 		}
 
 		command.output()
@@ -104,10 +114,10 @@ impl Kernel {
 		let mut end: FloatType = 1.0;
 
 		if let Ok(start_num) = args.arg(0) {
-			start = start_num.downcast_call::<Number>()?.floor() as _;
+			start = start_num.call_downcast_map(|n: &Number| n.floor() as _)?;
 
 			if let Ok(end_num) = args.arg(1) {
-				end = end_num.downcast_call::<Number>()?.floor() as _;
+				end = end_num.call_downcast_map(|n: &Number| n.floor() as _)?;
 			} else {
 				end = start;
 				start = 0.0;
@@ -147,12 +157,12 @@ impl Kernel {
 
 	pub fn qs_assert(_: &Object, args: Args) -> Result<Object> {
 		let arg = args.arg(0)?;
-		if arg.downcast_call::<Boolean>()?.into_inner() {
+		if is_object_truthy(arg)? {
 			Ok(arg.clone())
 		} else {
 			Err(Error::AssertionFailed(
 				if let Ok(msg) = args.arg(1) {
-					Some(msg.downcast_call::<Text>()?.into())
+					Some(object_to_string(msg)?)
 				} else {
 					None
 				})
@@ -222,9 +232,10 @@ mod tests {
 				$(
 					assert_eq!(
 						$val,
-						*Kernel::mapping()
+						Kernel::mapping()
 							.get_attr_lit($key)
-							.unwrap().downcast_ref::<$ty>().unwrap(),
+							.unwrap()
+							.downcast_and_then(<$ty>::clone).unwrap(),
 						"constant {:?} doesn't exist or is wrong value",
 						$key
 					);

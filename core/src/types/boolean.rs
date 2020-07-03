@@ -174,7 +174,7 @@ impl Boolean {
 	/// Inspect the boolean.
 	#[allow(non_snake_case)]
 	pub fn qs___inspect__(this: &Object, _: Args) -> Result<Text> {
-		this.try_with_ref::<Self, _, !, _>(|bool| Ok(format!("{:?}", bool).into()))
+		this.try_downcast_and_then::<Self, _, !, _>(|bool| Ok(format!("{:?}", bool).into()))
 	}
 
 	/// Convert this into a [`Number`].
@@ -182,7 +182,7 @@ impl Boolean {
 	/// This is simply a wrapper around [`Number::from(Boolean)`](Number#impl-From<Boolean>).
 	#[inline]
 	pub fn qs_at_num(this: &Object, _: Args) -> Result<Number> {
-		this.try_with_ref::<Self, _, !, _>(|bool| Ok(Number::from(*bool)))
+		this.try_downcast_and_then::<Self, _, !, _>(|bool| Ok(Number::from(*bool)))
 	}
 
 	/// Convert this into a [`Text`].
@@ -190,7 +190,7 @@ impl Boolean {
 	/// This is simply a wrapper around [`Text::from(Boolean)`](Number#impl-From<Boolean>).
 	#[inline]
 	pub fn qs_at_text(this: &Object, _: Args) -> Result<Text> {
-		this.try_with_ref::<Self, _, !, _>(|bool| Ok(Text::from(*bool)))
+		this.try_downcast_and_then::<Self, _, !, _>(|bool| Ok(Text::from(*bool)))
 	}
 
 	/// Convert this into a [`Boolean`].
@@ -210,10 +210,8 @@ impl Boolean {
 		if this.is_identical(rhs) {
 			Ok(Boolean::new(true))
 		} else {
-			this.try_with_ref::<Self, _, !, _>(|lhs| {
-				rhs.with_ref::<Self, _, _>(|rhs| {
-					Ok(Boolean::new(Some(lhs) == rhs))
-				})
+			this.try_downcast_and_then::<Self, _, !, _>(|lhs| {
+				Ok(rhs.downcast_and_then::<Self, _, _>(|rhs| lhs == rhs).unwrap_or(false).into())
 			})
 		}
 	}
@@ -224,10 +222,8 @@ impl Boolean {
 	pub fn qs_cmp(this: &Object, args: Args) -> Result<std::cmp::Ordering> {
 		let rhs = args.arg(0)?;
 
-		this.try_with_ref::<Self, _, _, _>(|lhs| {
-			rhs.with_ref_call::<Self, _, !, _>(|rhs| {
-				Ok(lhs.cmp(rhs))
-			})
+		this.try_downcast_and_then::<Self, _, _, _>(|lhs| {
+			rhs.call_downcast_map(|rhs| lhs.cmp(rhs))
 		})
 	}
 
@@ -241,7 +237,7 @@ impl Boolean {
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
 	pub fn qs_bitand(&self, args: Args) -> Result<Boolean> {
-		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		Ok(*self & rhs)
 	}
@@ -250,9 +246,9 @@ impl Boolean {
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|bool: &mut Self| Ok(*bool &= rhs))?;
+		this.try_downcast_mut_map(|bool: &mut Self| *bool &= rhs)?;
 
 		Ok(this.clone())
 	}
@@ -261,7 +257,7 @@ impl Boolean {
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
 	pub fn qs_bitor(&self, args: Args) -> Result<Boolean> {
-		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		Ok(*self | rhs)
 	}
@@ -270,9 +266,9 @@ impl Boolean {
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|bool: &mut Self| Ok(*bool |= rhs))?;
+		this.try_downcast_mut_map(|bool: &mut Self| *bool |= rhs)?;
 
 		Ok(this.clone())
 	}
@@ -281,7 +277,7 @@ impl Boolean {
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
 	pub fn qs_bitxor(&self, args: Args) -> Result<Boolean> {
-		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		Ok(*self ^ rhs)
 	}
@@ -290,9 +286,9 @@ impl Boolean {
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_with_mut(|bool: &mut Self| Ok(*bool ^= rhs))?;
+		this.try_downcast_mut_map(|bool: &mut Self| *bool ^= rhs)?;
 
 		Ok(this.clone())
 	}
@@ -360,10 +356,8 @@ mod tests {
 
 	#[test]
 	fn at_bool() {
-		assert_eq!(*Boolean::qs_at_bool(&true.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(),
-				Boolean::TRUE);
-		assert_eq!(*Boolean::qs_at_bool(&false.into(), args!()).unwrap().downcast_ref::<Boolean>().unwrap(),
-				Boolean::FALSE);
+		assert_eq!(Boolean::qs_at_bool(&true.into(), args!()).unwrap().downcast_and_then(Boolean::clone).unwrap(), Boolean::TRUE);
+		assert_eq!(Boolean::qs_at_bool(&false.into(), args!()).unwrap().downcast_and_then(Boolean::clone).unwrap(), Boolean::FALSE);
 	}
 
 	#[test]

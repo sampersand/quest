@@ -70,7 +70,7 @@ mod tests {
 	#[test]
 	fn at_text() {
 		assert_eq!(
-			*Basic::qs_at_text(&Basic.into(), args!()).unwrap().downcast_ref::<Text>().unwrap(),
+			Basic::qs_at_text(&Basic.into(), args!()).unwrap().downcast_and_then(Text::clone).unwrap(),
 			Pristine::qs___inspect__(&Basic.into(), args!()).unwrap()
 		);
 		/* we don't test this, as the output is unspecified in general */
