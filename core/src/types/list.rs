@@ -452,7 +452,7 @@ impl List {
 	/// ```
 	#[inline]
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_mut::<Self>()?.clear();
+		this.try_with_mut(|list: &mut Self| Ok(list.clear()))?;
 		Ok(this.clone())
 	}
 
@@ -574,7 +574,7 @@ impl List {
 	/// ```
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
-		this.try_downcast_mut::<Self>()?.push(rhs.clone());
+		this.try_with_mut(|list: &mut Self| Ok(list.push(rhs.clone())))?;
 		Ok(this.clone())
 	}
 
@@ -610,7 +610,7 @@ impl List {
 	/// ```
 	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
-		this.try_downcast_mut::<Self>()?.unshift(rhs.clone());
+		this.try_with_mut(|list: &mut Self| Ok(list.unshift(rhs.clone())))?;
 		Ok(this.clone())
 	}
 
@@ -659,7 +659,7 @@ impl List {
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		*this.try_downcast_mut::<Self>()? += rhs;
+		this.try_with_mut(|list: &mut Self| Ok(*list += rhs))?;
 
 		Ok(this.clone())
 	}
@@ -695,7 +695,7 @@ impl List {
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<Self>()?.try_sub_assign(rhs)?;
+		this.try_with_mut(|this: &mut Self| this.try_sub_assign(rhs))?;
 
 		Ok(this.clone())
 	}
@@ -736,7 +736,7 @@ impl List {
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<Self>()?.try_bitand_assign(rhs)?;
+		this.try_with_mut(|this: &mut Self| this.try_bitand_assign(rhs))?;
 
 		Ok(this.clone())
 	}
@@ -776,7 +776,7 @@ impl List {
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<Self>()?.try_bitor_assign(rhs)?;
+		this.try_with_mut(|this: &mut Self| this.try_bitor_assign(rhs))?;
 
 		Ok(this.clone())
 	}
@@ -817,7 +817,7 @@ impl List {
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Self>()?;
 
-		this.try_downcast_mut::<Self>()?.try_bitxor_assign(rhs)?;
+		this.try_with_mut(|this: &mut Self| this.try_bitxor_assign(rhs))?;
 
 		Ok(this.clone())
 	}

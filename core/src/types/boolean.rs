@@ -236,7 +236,7 @@ impl Boolean {
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
 
-		*this.try_downcast_mut::<Boolean>()? &= rhs;
+		this.try_with_mut(|bool: &mut Self| Ok(*bool &= rhs))?;
 
 		Ok(this.clone())
 	}
@@ -256,7 +256,7 @@ impl Boolean {
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
 
-		*this.try_downcast_mut::<Boolean>()? |= rhs;
+		this.try_with_mut(|bool: &mut Self| Ok(*bool |= rhs))?;
 
 		Ok(this.clone())
 	}
@@ -276,7 +276,7 @@ impl Boolean {
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Boolean>()?;
 
-		*this.try_downcast_mut::<Boolean>()? ^= rhs;
+		this.try_with_mut(|bool: &mut Self| Ok(*bool ^= rhs))?;
 
 		Ok(this.clone())
 	}

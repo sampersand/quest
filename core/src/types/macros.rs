@@ -120,9 +120,7 @@ macro_rules! impl_object_type {
 		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|x, a| {
-				$val(&mut *x.try_downcast_mut()?, a)
-					.map(Object::from)
-					.map_err(From::from)
+				x.try_with_mut(|x| $val(x, a).map(Into::into).map_err(Into::into))
 			}
 		));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);

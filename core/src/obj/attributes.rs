@@ -194,4 +194,3 @@ fn str_to_static(key: &str) -> &'static str {
 		}
 	})
 }
-

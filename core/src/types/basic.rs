@@ -1,14 +1,14 @@
 use crate::{Object, Args};
-
 use crate::literals::{EQL, AT_BOOL, NOT,  __INSPECT__};
+use crate::types::Boolean;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Basic;
 
 impl Basic {
 	#[inline]
-	pub fn qs_at_bool(_: &Object, _: Args) -> crate::Result<bool> {
-		Ok(true.into())
+	pub fn qs_at_bool(_: &Object, _: Args) -> crate::Result<Boolean> {
+		Ok(Boolean::TRUE)
 	}
 
 	#[inline]
@@ -17,7 +17,7 @@ impl Basic {
 	}
 
 	#[inline]
-	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<bool> {
+	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Boolean> {
 		Ok(this.is_identical(args.arg(0)?).into())
 	}
 
@@ -53,17 +53,26 @@ for Basic [(parents super::Kernel)]:
 #[cfg(test)]
 mod tests {
 	use super::*;
-	// use crate::{Object};
-
-	dummy_object!(struct Dummy;);
+	use crate::types::{Text, Pristine};
 
 	#[test]
 	fn at_bool() {
-		assert_eq!(Basic::qs_at_bool(&Dummy.into(), args!()).unwrap(), true);
+		assert_eq!(Basic::qs_at_bool(&Basic.into(), args!()).unwrap(), Boolean::TRUE);
+	}
+
+	#[test]
+	fn panicc() {
+		#[allow(dead_code)]
+		enum Flags { Foo = 1, Bar = 2, Baz = 4 };
+		panic!("{:?}", std::mem::size_of::<Flags>());
 	}
 
 	#[test]
 	fn at_text() {
+		assert_eq!(
+			*Basic::qs_at_text(&Basic.into(), args!()).unwrap().downcast_ref::<Text>().unwrap(),
+			Pristine::qs___inspect__(&Basic.into(), args!()).unwrap()
+		);
 		/* we don't test this, as the output is unspecified in general */
 	}
 

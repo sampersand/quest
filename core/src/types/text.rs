@@ -239,7 +239,9 @@ impl Text {
 
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		*this.try_downcast_mut::<Self>()? += rhs;
+
+		this.try_with_mut(|txt: &mut Self| Ok(*txt += rhs))?;
+
 		Ok(this.clone())
 	}
 
@@ -306,7 +308,9 @@ impl Text {
 
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.downcast_call::<Self>()?;
-		this.try_downcast_mut::<Self>()?.0.to_mut().push_str(rhs.as_ref());
+
+		this.try_with_mut(|txt: &mut Self| Ok(txt.0.to_mut().push_str(rhs.as_ref())))?;
+
 		Ok(this.clone())
 	}
 
@@ -328,7 +332,8 @@ impl Text {
 
 
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_mut::<Self>()?.0.to_mut().clear();
+		this.try_with_mut(|this: &mut Self| Ok(this.0.to_mut().clear()))?;
+
 		Ok(this.clone())
 	}
 

@@ -8,6 +8,7 @@ macro_rules! unreachable_debug_or_unchecked {
 		if cfg!(debug_assertions) {
 			unreachable!()
 		} else {
+			#[allow(unused_unsafe)]
 			unsafe { ::std::hint::unreachable_unchecked() }
 		}
 	};

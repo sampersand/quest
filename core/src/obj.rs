@@ -1,4 +1,4 @@
-use crate::{Result, Args, ArgsOld};
+use crate::{Args, ArgsOld};
 use crate::error::{TypeError, KeyError};
 use crate::types::{self, ObjectType};
 use crate::literals::Literal;
@@ -7,7 +7,7 @@ use std::borrow::Borrow;
 use std::hash::Hash;
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
-use std::any::Any;
+use std::any::{Any, type_name};
 use std::ops::{Deref, DerefMut};
 
 mod data;
@@ -89,7 +89,7 @@ impl Object {
 		T: Any + Debug + Send + Sync + Clone,
 		P: Into<attributes::Parents>
 	{
-		// println!("creating new object: {:?} ({:?})", data, std::any::type_name::<T>());
+		// println!("creating new object: {:?} ({:?})", data, type_name<T>());
 		Object::from_parts(Data::new(data), Attributes::new(parents))
 	}
 
@@ -123,7 +123,7 @@ impl Object {
 		Arc::ptr_eq(&self.0, &rhs.0)
 	}
 
-	pub fn eq_obj(&self, rhs: &Object) -> Result<bool> {
+	pub fn eq_obj(&self, rhs: &Object) -> crate::Result<bool> {
 		self.call_attr_lit("==", &[rhs])
 			.map(|res| res.downcast_ref::<types::Boolean>()
 				.map(|b| bool::from(*b))
@@ -141,10 +141,10 @@ impl Object {
 		self.0.data.is_a::<T>()
 	}
 
-	pub fn try_downcast_clone<T: Any + Clone>(&self) -> Result<T> {
+	pub fn try_downcast_clone<T: Any + Clone>(&self) -> crate::Result<T> {
 		self.downcast_clone()
 			.ok_or_else(|| TypeError::WrongType {
-				expected: std::any::type_name::<T>(),
+				expected: type_name::<T>(),
 				got: self.typename(),
 			}.into())
 	}
@@ -154,60 +154,88 @@ impl Object {
 		self.downcast_ref::<T>().map(|x| x.clone())
 	}
 
-	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> Result<impl Deref<Target = T> + 'a> {
+	pub fn try_downcast_ref<'a, T: Any>(&'a self) -> crate::Result<impl Deref<Target = T> + 'a> {
 		self.downcast_ref::<T>()
 			.ok_or_else(|| TypeError::WrongType {
-				expected: std::any::type_name::<T>(),
+				expected: type_name::<T>(),
 				got: self.typename(),
 			}.into())
 	}
 
 	#[inline]
+	pub fn with_ref<T: Any, R, F: FnOnce(Option<&T>) -> R>(&self, f: F) -> R {
+		self.0.data.with_ref(f)
+	}
+
+	#[inline]
+	pub unsafe fn with_ref_unchecked<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
+		self.0.data.with_ref_unchecked(f)
+	}
+
+	#[inline]
+	pub fn try_with_mut<T, O, F>(&self, f: F) -> crate::Result<O>
+	where
+		T: Any,
+		F: FnOnce(&mut T) -> crate::Result<O>
+	{
+		self.with_mut(|opt|
+			opt.ok_or_else(||
+					TypeError::WrongType { expected: type_name::<T>(), got: self.typename() }.into())
+				.and_then(f)
+		)
+	}
+
+	#[inline]
+	pub fn with_mut<T: Any, R, F: FnOnce(Option<&mut T>) -> R>(&self, f: F) -> R {
+		self.0.data.with_mut(f)
+	}
+
+	#[inline]
+	pub unsafe fn with_mut_unchecked<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> R {
+		self.0.data.with_mut_unchecked(f)
+	}
+
+	#[inline]
+	#[deprecated]
 	pub fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
 		self.0.data.downcast_ref()
 	}
 
 	#[inline]
+	#[deprecated]
 	pub unsafe fn downcast_ref_unchecked<'a, T: Any>(&'a self) -> impl Deref<Target=T> + 'a {
 		self.0.data.downcast_ref_unchecked()
 	}
 
-	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> Result<impl DerefMut<Target = T> + 'a> {
-		self.downcast_mut::<T>()
-			.ok_or_else(|| TypeError::WrongType {
-				expected: std::any::type_name::<T>(),
-				got: self.typename(),
-			}.into())
-	}
-
-
 	#[inline]
+	#[deprecated]
 	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
 		self.0.data.downcast_mut()
 	}
 
 	#[inline]
+	#[deprecated]
 	pub unsafe fn downcast_mut_unchecked<'a, T: Any>(&'a self) -> impl DerefMut<Target=T> + 'a {
 		self.0.data.downcast_mut_unchecked()
 	}
 }
 
 impl Object {
-	pub fn has_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Result<bool>
+	pub fn has_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> crate::Result<bool>
 	where
 		for <'a> &'a str: Borrow<K>
 	{
 		self.0.attrs.has_lit(attr)
 	}
 
-	pub fn get_value_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Result<Option<Value>>
+	pub fn get_value_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> crate::Result<Option<Value>>
 	where
 		for <'a> &'a str: Borrow<K>
 	{
 		self.0.attrs.get_lit(attr)
 	}
 
-	pub fn get_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Result<Object>
+	pub fn get_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> crate::Result<Object>
 	where
 		for <'a> &'a str: Borrow<K>,
 		K: ToObject 
@@ -228,7 +256,7 @@ impl Object {
 		self.0.attrs.del_lit(attr)
 	}
 
-	pub fn call_attr_lit<'s, 'o: 's, A, K: ?Sized>(&self, attr: &K, args: A) -> Result<Object>
+	pub fn call_attr_lit<'s, 'o: 's, A, K: ?Sized>(&self, attr: &K, args: A) -> crate::Result<Object>
 	where
 		for <'a> &'a str: Borrow<K>,
 		K: Hash + Eq + ToObject,
@@ -239,31 +267,31 @@ impl Object {
 			.call(self, args.into())
 	}
 
-	pub fn has_attr(&self, attr: &Object) -> Result<bool> {
+	pub fn has_attr(&self, attr: &Object) -> crate::Result<bool> {
 		self.0.attrs.has(attr)
 	}
 
-	pub fn get_value(&self, attr: &Object) -> Result<Option<Value>> {
+	pub fn get_value(&self, attr: &Object) -> crate::Result<Option<Value>> {
 		self.0.attrs.get(attr)
 	}
 
-	pub fn get_attr(&self, attr: &Object) -> Result<Object> {
+	pub fn get_attr(&self, attr: &Object) -> crate::Result<Object> {
 		self.0.attrs.get(attr)?
 			.map(Object::from)
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
 	}
 
-	pub fn set_attr<V: Into<Value>>(&self, attr: Object, value: V) -> Result<()> {
+	pub fn set_attr<V: Into<Value>>(&self, attr: Object, value: V) -> crate::Result<()> {
 		self.0.attrs.set(attr, value.into())
 	}
 
-	pub fn del_attr(&self, attr: &Object) -> Result<Object> {
+	pub fn del_attr(&self, attr: &Object) -> crate::Result<Object> {
 		self.0.attrs.del(attr)?
 			.map(Object::from)
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
 	}
 
-	pub fn call_attr<'s, 'o: 's, A>(&self, attr: &Object, args: A) -> Result<Object>
+	pub fn call_attr<'s, 'o: 's, A>(&self, attr: &Object, args: A) -> crate::Result<Object>
 	where
 		A: Into<Args<'s, 'o>>
 	{
@@ -275,7 +303,7 @@ impl Object {
 }
 
 impl Object {
-	pub fn dot_get_attr(&self, attr: &Object) -> Result<Object> {
+	pub fn dot_get_attr(&self, attr: &Object) -> crate::Result<Object> {
 		let result = self.get_attr(attr)?;
 
 		// remove this hack? lol
@@ -291,7 +319,7 @@ impl Object {
 		}
 	}
 
-	pub fn call_attr_old_old<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> Result<Object>
+	pub fn call_attr_old_old<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> crate::Result<Object>
 	where
 		K: ToObject,
 		A: Into<ArgsOld<'a>>
@@ -315,12 +343,12 @@ impl Object {
 	}
 
 	#[inline]
-	pub fn add_parent(&self, val: Object) -> Result<()> {
+	pub fn add_parent(&self, val: Object) -> crate::Result<()> {
 		self.0.attrs.add_parent(val)
 	}
 
 	#[inline]
-	pub fn mapping_keys(&self, include_parents: bool) -> Result<Vec<Object>> {
+	pub fn mapping_keys(&self, include_parents: bool) -> crate::Result<Vec<Object>> {
 		self.0.attrs.keys(include_parents)
 	}
 }
