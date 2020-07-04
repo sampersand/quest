@@ -30,7 +30,7 @@ impl<'s, 'o: 's> Args<'s, 'o> {
 		impl<'s, 'o: 's> Iterator for Iter<'s, 'o> {
 			type Item = &'o Object;
 			fn next(&mut self) -> Option<Self::Item> {
-				self.0.next().map(|x| *x)
+				self.0.next().copied()
 			}
 		}
 
@@ -106,9 +106,9 @@ impl<'s, 'o: 's> IntoIterator for Args<'s, 'o> {
 impl<'o> Args<'_, 'o> {
 	pub fn arg(&self, idx: usize) -> Result<&'o Object, KeyError> {
 		self.0.get(idx)
-			.map(|x| *x)
+			.copied()
 			.ok_or_else(|| KeyError::OutOfBounds { idx: idx as isize, len: self.0.len() })
-	}	
+	}
 
 	pub fn args<I>(&self, idx: I) -> Result<Args<'_, 'o>, KeyError>
 	where

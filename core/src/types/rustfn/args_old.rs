@@ -21,7 +21,7 @@ impl Debug for ArgsOld<'_> {
 
 impl From<crate::Args<'_, '_>> for ArgsOld<'static> {
 	fn from(args: crate::Args<'_, '_>) -> Self {
-		args.into_iter().map(|x| x.clone()).map(|x| x.clone()).collect()
+		args.into_iter().cloned().collect()
 	}
 }
 impl<'s> ArgsOld<'s> {
@@ -50,7 +50,7 @@ impl From<ArgsOld<'_>> for Vec<Object> {
 
 impl From<&'_ [&'_ Object]> for ArgsOld<'static> {
 	fn from(args: &[&Object]) -> Self {
-		ArgsOld::new(args.into_iter().map(|x| (*x).clone()).collect::<Vec<_>>())
+		ArgsOld::new(args.iter().map(|x| (*x).clone()).collect::<Vec<_>>())
 	}
 }
 

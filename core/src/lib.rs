@@ -1,5 +1,9 @@
 #![deny(warnings)]
-#![allow(deprecated)]
+#![allow(
+	deprecated,
+	// TODO
+	clippy::missing_safety_doc,
+)]
 #![feature(never_type)]
 extern crate rand;
 

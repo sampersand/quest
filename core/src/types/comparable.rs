@@ -7,13 +7,7 @@ pub struct Comparable;
 
 fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
 	let num = lhs.call_attr_lit("<=>", &[rhs])?.downcast_call::<Number>()?;
-	if num < Number::ZERO {
-		Ok(Ordering::Less)
-	} else if num > Number::ZERO {
-		Ok(Ordering::Greater)
-	} else {
-		Ok(Ordering::Equal)
-	}
+	Ok(num.cmp(&Number::ZERO))
 }
 
 impl Comparable {

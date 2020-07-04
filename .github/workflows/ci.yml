@@ -35,7 +35,7 @@ jobs:
 
       # Workaround for https://github.com/rust-lang/cargo/issues/6669
       - name: Run doctests
-        run: cargo test --workspace --docs --verbose
+        run: cargo test --workspace --doc --verbose
 
   # Ensure clippy doesn't complain.
   clippy:

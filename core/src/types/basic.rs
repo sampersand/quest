@@ -8,7 +8,7 @@ pub struct Basic;
 impl Basic {
 	#[inline]
 	pub fn qs_at_bool(_: &Object, _: Args) -> crate::Result<bool> {
-		Ok(true.into())
+		Ok(true)
 	}
 
 	#[inline]
@@ -18,7 +18,7 @@ impl Basic {
 
 	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<bool> {
-		Ok(this.is_identical(args.arg(0)?).into())
+		Ok(this.is_identical(args.arg(0)?))
 	}
 
 	#[inline]

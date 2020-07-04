@@ -70,7 +70,7 @@ impl<T: Clone> SharedCow<T> {
 
 				data.clone()
 			},
-			shared @ Ownership::Shared(..) => shared.clone(),
+			shared @ Ownership::Shared(..) => shared,
 			Ownership::__Cloning => unreachable!()
 		}
 	}

@@ -84,7 +84,7 @@ impl<T: Any + ObjectType> From<T> for Object {
 
 impl Object {
 	#[inline]
-	pub fn new_with_parent<T, P>(data: T, parents: P) -> Self 
+	pub fn new_with_parent<T, P>(data: T, parents: P) -> Self
 	where
 		T: Any + Debug + Send + Sync + Clone,
 		P: Into<attributes::Parents>
@@ -150,6 +150,8 @@ impl Object {
 	}
 
 	#[inline]
+	// Seems to be https://github.com/rust-lang/rust-clippy/issues/4824
+	#[allow(clippy::map_clone)]
 	pub fn downcast_clone<T: Any + Clone>(&self) -> Option<T> {
 		self.downcast_ref::<T>().map(|x| x.clone())
 	}
@@ -210,7 +212,7 @@ impl Object {
 	pub fn get_attr_lit<K: Hash + Eq + ?Sized>(&self, attr: &K) -> Result<Object>
 	where
 		for <'a> &'a str: Borrow<K>,
-		K: ToObject 
+		K: ToObject
 	{
 		self.get_value_lit(attr)?
 			.map(Object::from)
@@ -285,7 +287,7 @@ impl Object {
 			bound_res.set_attr_lit("__bound_object_owner__", self.clone());
 			bound_res.add_parent(result.clone())?;
 			bound_res.set_attr_lit("__bound_object__", result);
-			Ok(bound_res)	
+			Ok(bound_res)
 		} else {
 			Ok(result)
 		}
