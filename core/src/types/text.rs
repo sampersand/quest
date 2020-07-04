@@ -172,7 +172,7 @@ impl Text {
 	}
 
 	#[allow(non_snake_case)]
-	pub fn qs___inspect__(&self, _: Args) -> Result<Self, !> {
+	pub fn qs_inspect(&self, _: Args) -> Result<Self, !> {
 		Ok(format!("{:?}", self).into())
 	}
 
@@ -375,7 +375,7 @@ for Text
 }
 [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
 	"@text" => function Text::qs_at_text,
-	"__inspect__"  => method_old Text::qs___inspect__,
+	"inspect"  => method_old Text::qs_inspect,
 	"@num"    => method_old Text::qs_at_num,
 	"@list"   => method_old Text::qs_at_list,
 	"@bool"   => method_old Text::qs_at_bool,

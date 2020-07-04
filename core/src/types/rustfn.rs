@@ -67,7 +67,7 @@ impl From<RustFn> for Text {
 impl RustFn {
 	#[allow(non_snake_case)]
 	#[inline]
-	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+	pub fn qs_inspect(&self, _: Args) -> Result<Text, !> {
 		Ok(format!("{:?}", self).into())
 	}
 
@@ -87,7 +87,7 @@ impl RustFn {
 
 impl_object_type!{
 for RustFn [(parents super::Function)]:
-	"__inspect__" => method_old RustFn::qs___inspect__,
+	"inspect" => method_old RustFn::qs_inspect,
 	"@text" => method_old RustFn::qs_at_text,
 	"()" => method_old RustFn::qs_call,
 }

@@ -1,4 +1,4 @@
-use crate::{Object, Result, Args};
+use crate::{Object, Result, Args, attrs};
 use crate::types::{Number, Text};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops;
@@ -171,223 +171,183 @@ impl ops::Not for Boolean {
 	}
 }
 
-impl Boolean {
+impl attrs::Inspect for Boolean {
 	/// Inspects the [`Boolean`].
 	///
+	/// This is identical to [`<Boolean as AtText>::call`]
 	/// # Quest Examples
 	/// ```quest
-	/// assert(true.$__inspect__() == "true");
-	/// assert(false.$__inspect__() == "false");
+	/// assert(true.$inspect() == "true");
+	/// assert(false.$inspect() == "false");
 	/// ```
-	#[allow(non_snake_case)]
 	#[inline]
-	pub fn qs___inspect__(this: &Object, _: Args) -> Result<Text> {
-		this.try_downcast_map(|this: &Self| format!("{:?}", this).into())
+	fn qs_inspect(this: &Object, args: Args) -> Result<Object> {
+		<Self as attrs::AtText>::qs_at_text(this, args)
 	}
+}
 
+impl attrs::AtNumber for Boolean {
 	/// Convert this into a [`Number`].
 	///
 	/// [`true`](Boolean::TRUE) becomes [`1`](Number::ONE) and [`false`](Boolean::FALSE) becomes
 	/// [`0`](Number::ZERO)
-	///
 	/// # Quest Examples
 	/// ```quest
 	/// assert(1 + true == 2);
 	/// assert(99 * false == 0);
 	/// ```
 	#[inline]
-	pub fn qs_at_num(this: &Object, _: Args) -> Result<Number> {
-		this.try_downcast_map(|this: &Self| Number::from(*this))
+	fn qs_at_num(this: &Object, _: Args) -> Result<Object> {
+		this.try_downcast_map(|this: &Self| Number::from(*this).into())
 	}
+}
 
+impl attrs::AtText for Boolean {
 	/// Convert this into a [`Text`].
 	///
-	/// # Quest Examples
-	/// ```quest
-	/// assert("are dogs cool? " + true == "are dogs cool? true");
-	/// assert("? " + true == "are dogs cool? true");
-	/// ```
+	/// [`true`](Boolean::TRUE) becomes `"true"` and [`false`](Boolean::FALSE) becomes `"false"`.
 	#[inline]
-	pub fn qs_at_text(this: &Object, _: Args) -> Result<Text> {
-		this.try_downcast_map(|this: &Self| Text::from(*this))
+	fn qs_at_text(this: &Object, _: Args) -> Result<Object> {
+		this.try_downcast_map(|this: &Self| Text::from(*this).into())
 	}
+}
 
-	/// Convert this into a [`Boolean`].
+impl attrs::AtBoolean for Boolean {
+	/// Converts this into a [`Boolean`]
 	///
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// This simply calls [`Object::deep_clone`](crate::Object::deep_clone)
 	#[inline]
-	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
-		Ok(this.clone())
+	fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
+		Ok(this.deep_clone())
 	}
+}
 
+impl attrs::Eql for Boolean {
 	/// See if a this is equal to the first argument.
 	///
 	/// Unlike most methods, the first argument is not implicitly converted to a  [`Boolean`] first.
 	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required) The value to compare against
 	#[inline]
-	pub fn qs_eql(this: &Object, args: Args) -> Result<Boolean> {
+	fn qs_eql(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?;
 
 		this.try_downcast_map(|lhs: &Self| {
 			rhs.downcast_and_then(|rhs: &Self| lhs == rhs).unwrap_or(false).into()
 		})
 	}
+}
 
+impl attrs::Cmp for Boolean {
 	/// Compares this to the first argument.
 	///
-	/// The first eargument is converted to a [`Boolean`] if it isn't already.
-	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required, `@bool`) The value to compare against
 	#[inline]
-	pub fn qs_cmp(this: &Object, args: Args) -> Result<std::cmp::Ordering> {
+	fn qs_cmp(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?;
 
-		this.try_downcast_and_then(|lhs: &Self| {
-			rhs.call_downcast_map(|rhs: &Self| lhs.cmp(rhs))
+		this.try_downcast_map(|lhs: &Self| {
+			rhs.call_downcast_map(|rhs: &Self| lhs.cmp(rhs).into())
+				.unwrap_or_default()
 		})
 	}
+}
 
+impl attrs::Not for Boolean {
 	/// Logical NOT of this.
-	///
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
 	#[inline]
-	pub fn qs_not(this: &Object, _: Args) -> Result<Object> {
+	fn qs_not(this: &Object, _: Args) -> Result<Object> {
 		this.try_downcast_map(|this: &Self| (!*this).into())
 	}
+}
 
+impl attrs::BitAnd for Boolean {
 	/// Logical AND of this and the first argument.
 	///
-	/// The first argument is converted to a [`Boolean`] if it isn't already.
-	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	pub fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
+	fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_map(|this: &Self| (*this & rhs).into())
 	}
+}
 
+impl attrs::BitAndAssign for Boolean {
 	/// In-place logical AND of this and the first argument.
 	///
-	/// The first argument is converted to a [`Boolean`] if it isn't already.
-	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
+	fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut_map(|this: &mut Self| *this &= rhs)
 			.map(|_| this.clone())
 	}
+}
 
+impl attrs::BitOr for Boolean {
 	/// Logical OR of this and the first argument.
 	///
-	/// The first argument is converted to a [`Boolean`] if it isn't already.
-	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	pub fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
+	fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_map(|this: &Self| (*this | rhs).into())
 	}
+}
 
+impl attrs::BitOrAssign for Boolean {
 	/// In-place logical OR of this and the first argument.
 	///
-	/// The first argument is converted to a [`Boolean`] if it isn't already.
-	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
+	fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut_map(|this: &mut Self| *this |= rhs)
 			.map(|_| this.clone())
 	}
+}
 
+impl attrs::BitXor for Boolean {
 	/// Logical XOR of this and the first argument.
 	///
-	/// The first argument is converted to a [`Boolean`] if it isn't already.
-	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	pub fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
+	fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_map(|this: &Self| (*this ^ rhs).into())
 	}
+}
 
+impl attrs::BitXorAssign for Boolean {
 	/// In-place logical XOR of this and the first argument.
 	///
-	/// The first argument is converted to a [`Boolean`] if it isn't already.
-	///
 	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
+	fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut_map(|this: &mut Self| *this ^= rhs)
 			.map(|_| this.clone())
 	}
+}
 
-	/// The hash for this.
-	///
-	/// # Arguments
-	/// 
-	/// # Quest Examples
-	/// ```quest
-	/// 
-	/// ```
+impl attrs::Hash for Boolean {
 	#[inline]
-	pub fn qs_hash(_this: &Object, _args: Args) -> Result<Object> {
-		todo!("hash for Boolean")
+	fn qs_hash(this: &Object, _: Args) -> Result<Object> {
+		this.try_downcast_map(|this: &Self| crate::utils::hash(this).into())
 	}
 }
 
@@ -413,101 +373,326 @@ for Boolean {
 	}
 }
 [(parents super::Basic) (convert "@bool")]:
-	"@text" => function Boolean::qs_at_text,
-	"__inspect__" => function Boolean::qs___inspect__,
-	"@num"  => function Boolean::qs_at_num,
-	"@bool" => function Boolean::qs_at_bool,
-	"=="    => function Boolean::qs_eql,
-	"!"     => function Boolean::qs_not,
-	"&"     => function Boolean::qs_bitand,
-	"&="    => function Boolean::qs_bitand_assign,
-	"|"     => function Boolean::qs_bitor,
-	"|="    => function Boolean::qs_bitor_assign,
-	"^"     => function Boolean::qs_bitxor,
-	"^="    => function Boolean::qs_bitxor_assign,
-	"<=>"   => function Boolean::qs_cmp,
-	"hash"  => function Boolean::qs_hash,
+	"@text"   => function <Boolean as attrs::AtText>::qs_at_text,
+	"inspect" => function <Boolean as attrs::Inspect>::qs_inspect,
+	"@num"    => function <Boolean as attrs::AtNumber>::qs_at_num,
+	"@bool"   => function <Boolean as attrs::AtBoolean>::qs_at_bool,
+	"=="      => function <Boolean as attrs::Eql>::qs_eql,
+	"!"       => function <Boolean as attrs::Not>::qs_not,
+	"&"       => function <Boolean as attrs::BitAnd>::qs_bitand,
+	"&="      => function <Boolean as attrs::BitAndAssign>::qs_bitand_assign,
+	"|"       => function <Boolean as attrs::BitOr>::qs_bitor,
+	"|="      => function <Boolean as attrs::BitOrAssign>::qs_bitor_assign,
+	"^"       => function <Boolean as attrs::BitXor>::qs_bitxor,
+	"^="      => function <Boolean as attrs::BitXorAssign>::qs_bitxor_assign,
+	"<=>"     => function <Boolean as attrs::Cmp>::qs_cmp,
+	"hash"    => function <Boolean as attrs::Hash>::qs_hash,
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::attrs::*;
 
 
 	#[test]
 	fn at_num() {
-		assert_eq!(Boolean::qs_at_num(&true.into(), args!()).unwrap(), Number::ONE);
-		assert_eq!(Boolean::qs_at_num(&false.into(), args!()).unwrap(), Number::ZERO);
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_downcast_eq!(Number; Boolean::qs_at_num(&true.into(), args!()).unwrap(), Number::ONE);
+		assert_downcast_eq!(Number; Boolean::qs_at_num(&false.into(), args!()).unwrap(), Number::ZERO);
+
+		assert_downcast_eq!(Number; Boolean::qs_at_num(&true.into(), args!(false)).unwrap(), Number::ONE);
 	}
 
 	#[test]
 	fn at_text() {
-		assert_eq!(Boolean::qs_at_text(&Object::from(Boolean::TRUE), args!()).unwrap(), Text::from("true"));
-		assert_eq!(Boolean::qs_at_text(&Object::from(Boolean::FALSE), args!()).unwrap(), Text::from("false"));
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_downcast_eq!(Text; Boolean::qs_at_text(&true.into(), args!()).unwrap(), Text::new_static("true"));
+		assert_downcast_eq!(Text; Boolean::qs_at_text(&false.into(), args!()).unwrap(), Text::new_static("false"));
+
+		assert_downcast_eq!(Text; Boolean::qs_at_text(&true.into(), args!(false)).unwrap(), Text::new_static("true"));
 	}
+
 
 	#[test]
 	fn at_bool() {
-		assert_eq!(Boolean::qs_at_bool(&true.into(), args!()).unwrap().downcast_and_then(Boolean::clone).unwrap(), Boolean::TRUE);
-		assert_eq!(Boolean::qs_at_bool(&false.into(), args!()).unwrap().downcast_and_then(Boolean::clone).unwrap(), Boolean::FALSE);
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		{
+			let ref orig = Object::from(true);
+			let ref dup = Boolean::qs_at_bool(orig, args!()).unwrap();
+			assert!(!orig.is_identical(dup));
+			assert_downcast_both_eq!(Boolean; orig, dup);
+		}
+
+		{
+			let ref orig = Object::from(false);
+			let ref dup = Boolean::qs_at_bool(orig, args!()).unwrap();
+			assert!(!orig.is_identical(dup));
+			assert_downcast_both_eq!(Boolean; orig, dup);
+		}
+
+		{
+			let ref orig = Object::from(false);
+			let ref dup = Boolean::qs_at_bool(orig, args!(true)).unwrap();
+			assert!(!orig.is_identical(dup));
+			assert_downcast_both_eq!(Boolean; orig, dup);
+		}
 	}
 
 	#[test]
 	fn eql() {
-		assert_eq!(Boolean::qs_eql(&true.into(), args!(true)).unwrap(), true);
-		assert_eq!(Boolean::qs_eql(&true.into(), args!(false)).unwrap(), false);
-		assert_eq!(Boolean::qs_eql(&false.into(), args!(true)).unwrap(), false);
-		assert_eq!(Boolean::qs_eql(&false.into(), args!(false)).unwrap(), true);
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_downcast_eq!(Boolean; Boolean::qs_eql(&true.into(), args!(true)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Boolean::qs_eql(&true.into(), args!(false)).unwrap(), false);
+		assert_downcast_eq!(Boolean; Boolean::qs_eql(&false.into(), args!(true)).unwrap(), false);
+		assert_downcast_eq!(Boolean; Boolean::qs_eql(&false.into(), args!(false)).unwrap(), true);
+
+		assert_missing_parameter!(Boolean::qs_eql(&true.into(), args!()), 0);
+		assert_missing_parameter!(Boolean::qs_eql(&false.into(), args!()), 0);
+		assert_downcast_eq!(Boolean; Boolean::qs_eql(&false.into(), args!(false, true)).unwrap(), true);
 	}
 
 	#[test]
 	fn not() {
-		assert_downcast_eq!(Boolean; Boolean::qs_not(&true.into(), args!()), false);
-		assert_downcast_eq!(Boolean; Boolean::qs_not(&false.into(), args!()), true);
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_downcast_eq!(Boolean; Boolean::qs_not(&true.into(), args!()).unwrap(), false);
+		assert_downcast_eq!(Boolean; Boolean::qs_not(&false.into(), args!()).unwrap(), true);
+
+		assert_downcast_eq!(Boolean; Boolean::qs_not(&true.into(), args!(true)).unwrap(), false);
+
 	}
 
 	#[test]
 	fn bitand() {
-		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(true)), true);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(false)), false);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&false.into(), args!(true)), false);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&false.into(), args!(false)), false);
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(true)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(false)).unwrap(), false);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&false.into(), args!(true)).unwrap(), false);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&false.into(), args!(false)).unwrap(), false);
+
+		assert_missing_parameter!(Boolean::qs_bitand(&true.into(), args!()), 0);
+		assert_missing_parameter!(Boolean::qs_bitand(&false.into(), args!()), 0);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(true, false)).unwrap(), true);
 	}
 
 	#[test]
-	#[ignore]
-	fn bitand_assign() { todo!() }
+	fn bitand_assign() {
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		{
+			let ref orig = Object::from(true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(orig.clone())).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(true, false)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(false)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+		}
+
+		{
+			let ref orig = Object::from(false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(orig.clone())).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(false)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+		}
+
+	}
 
 	#[test]
 	fn bitor() {
-		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&true.into(), args!(true)), true);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&true.into(), args!(false)), true);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(true)), true);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(false)), false);
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&true.into(), args!(true)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&true.into(), args!(false)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(true)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(false)).unwrap(), false);
+
+		assert_missing_parameter!(Boolean::qs_bitor(&true.into(), args!()), 0);
+		assert_missing_parameter!(Boolean::qs_bitor(&false.into(), args!()), 0);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(false, true)).unwrap(), false);
 	}
 
 	#[test]
-	#[ignore]
-	fn bitor_assign() { todo!() }
+	fn bitor_assign() {
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		{
+			let ref orig = Object::from(false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(orig.clone())).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(false)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(false, true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+		}
+
+		{
+			let ref orig = Object::from(true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(orig.clone())).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(false)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+		}
+	}
+
 
 	#[test]
 	fn bitxor() {
-		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&true.into(), args!(true)), false);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&true.into(), args!(false)), true);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(true)), true);
-		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(false)), false);
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&true.into(), args!(true)).unwrap(), false);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&true.into(), args!(false)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(true)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(false)).unwrap(), false);
+
+		assert_missing_parameter!(Boolean::qs_bitxor(&true.into(), args!()), 0);
+		assert_missing_parameter!(Boolean::qs_bitxor(&false.into(), args!()), 0);
+		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(false, true)).unwrap(), false);
 	}
 
 	#[test]
-	#[ignore]
-	fn bitxor_assign() { todo!() }
+	fn bitxor_assign() {
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
+		{
+			let ref orig = Object::from(false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(orig.clone())).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(false)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(false, true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+		}
+
+		{
+			let ref orig = Object::from(true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(false)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(false, true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(orig.clone())).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+			// orig is now false
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, true);
+			// orig is now true
+
+			assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(true)).unwrap()));
+			assert_downcast_eq!(Boolean; orig, false);
+
+			assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+		}
+	}
 
 	#[test]
-	#[ignore]
-	fn cmp() { todo!(); }
+	fn cmp() {
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		let gt = Number::ONE;
+		let lt = -Number::ONE;
+		let eq = Number::ZERO;
+
+		assert_downcast_eq!(Number; Boolean::qs_cmp(&true.into(), args!(false)).unwrap(), gt);
+		assert_downcast_eq!(Number; Boolean::qs_cmp(&true.into(), args!(true)).unwrap(), eq);
+		assert_downcast_eq!(Number; Boolean::qs_cmp(&false.into(), args!(true)).unwrap(), lt);
+		assert_downcast_eq!(Number; Boolean::qs_cmp(&false.into(), args!(false)).unwrap(), eq);
+
+		// make sure reflexive comparisons work
+		let t = Object::from(true);
+		assert_downcast_eq!(Number; Boolean::qs_cmp(&t, args!(t.clone())).unwrap(), eq);
+
+		let f = Object::from(false);
+		assert_downcast_eq!(Number; Boolean::qs_cmp(&f, args!(f.clone())).unwrap(), eq);
+
+		// ensure that Null is returned for types that don't implement `@bool`
+		#[derive(Debug, Clone)]
+		struct Dummy;
+		impl_object_type! { for Dummy [(parents crate::types::Pristine)]: }
+
+		assert!(!Object::from(Dummy).has_attr_lit(crate::literals::AT_BOOL).unwrap());
+		assert!(Boolean::qs_cmp(&true.into(), args!(Dummy)).unwrap().is_a::<crate::types::Null>());
+
+		// make sure it responds correctly to too few parameters
+		assert_missing_parameter!(Boolean::qs_cmp(&true.into(), args!()), 0);
+
+		// make sure it responds correctly to too many parameters
+		assert_downcast_eq!(Number; Boolean::qs_cmp(&false.into(), args!(false, true)).unwrap(), eq);
+	}
 
 	#[test]
-	#[ignore]
-	fn hash() { todo!(); }
+	fn hash() {
+		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_downcast_both_eq!(Number;
+			Boolean::qs_hash(&true.into(), args!()).unwrap(),
+			Boolean::qs_hash(&true.into(), args!()).unwrap());
+
+		assert_downcast_both_eq!(Number;
+			Boolean::qs_hash(&false.into(), args!()).unwrap(),
+			Boolean::qs_hash(&false.into(), args!()).unwrap());
+
+		assert_downcast_both_ne!(Number;
+			Boolean::qs_hash(&true.into(), args!()).unwrap(),
+			Boolean::qs_hash(&false.into(), args!()).unwrap());
+
+
+		// make sure it responds correctly to too many parameters
+		assert_downcast_both_eq!(Number;
+			Boolean::qs_hash(&true.into(), args!(false)).unwrap(),
+			Boolean::qs_hash(&true.into(), args!()).unwrap());
+	}
 }
+
+
+
+
+
+
+
+
+
+

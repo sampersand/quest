@@ -69,7 +69,7 @@ impl From<Null> for Text {
 impl Null {
 	#[allow(non_snake_case)]
 	#[inline]
-	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+	pub fn qs_inspect(&self, _: Args) -> Result<Text, !> {
 		Ok(Text::from(*self))
 	}
 
@@ -122,7 +122,7 @@ for Null {
 }
 [(parents super::Basic)]:
 	"@text" => method_old Null::qs_at_text,
-	"__inspect__" => method_old Null::qs___inspect__,
+	"inspect" => method_old Null::qs_inspect,
 	"@bool" => method_old Null::qs_at_bool,
 	"@list" => method_old Null::qs_at_list,
 	"@num" => method_old Null::qs_at_num,

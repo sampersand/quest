@@ -489,7 +489,7 @@ fn get_rhs(this: &Object, args: Args) -> crate::Result<Number> {
 impl Number {
 	#[inline]
 	#[allow(non_snake_case)]
-	pub fn qs___inspect__(&self, _: Args) -> Result<Text, !> {
+	pub fn qs_inspect(&self, _: Args) -> Result<Text, !> {
 		Ok(format!("{:?}", self).into())
 	}
 
@@ -726,7 +726,7 @@ impl_object_type!{
 	"INF" => const Number::INF,
 
 	"@text" => method_old Number::qs_at_text,
-	"__inspect__" => method_old Number::qs___inspect__,
+	"inspect" => method_old Number::qs_inspect,
 	"@num" => function Number::qs_at_num,
 	"@bool" => method_old Number::qs_at_bool,
 

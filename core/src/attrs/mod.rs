@@ -1,17 +1,14 @@
-use crate::{Literal, Object, Args, Result};
+//! Traits for methods within quest
 
-pub trait AtNumber {
-	const METHOD: Literal = "@num";
+/// Converting from one quest type to another
+mod convert;
 
-	fn at_num(this: &Object, args: Args) -> Result<Object>;
-}
+/// Miscellaneous extra traits
+mod misc;
 
+/// Operators from quest
+mod operators;
 
-impl AtNumber for crate::types::Boolean {
-	/// Convert this into a [`Number`].
-	///
-	/// This is simply a wrapper around [`Number::from(Boolean)`](Number#impl-From<Boolean>).
-	fn at_num(this: &Object, _: Args) -> Result<Object> {
-		this.try_downcast_map(|this: &Self| crate::types::Number::from(*this).into())
-	}
-}
+pub use self::convert::*;
+pub use self::misc::*;
+pub use self::operators::*;

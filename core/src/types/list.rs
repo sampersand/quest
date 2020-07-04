@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::literals::__INSPECT__;
+use crate::literals::INSPECT;
 use crate::types::{Text, Boolean, Number};
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -198,7 +198,7 @@ impl TryFrom<&'_ List> for Text {
 	fn try_from(l: &List) -> crate::Result<Self> {
 		let mut t = vec![];
 		for item in l.iter() {
-			t.push(item.call_attr_lit(__INSPECT__, &[])?.call_downcast_map(Text::to_string)?)
+			t.push(item.call_attr_lit(INSPECT, &[])?.call_downcast_map(Text::to_string)?)
 		}
 		Ok(format!("[{}]", t.join(", ")).into())
 	}
@@ -379,11 +379,11 @@ impl List {
 	/// ```quest
 	/// $list = [1, "a", true];
 	///
-	/// assert(list.$__inspect__() == '[1, "a", true]')
+	/// assert(list.$inspect() == '[1, "a", true]')
 	/// ```
 	#[inline]
 	#[allow(non_snake_case)]
-	pub fn qs___inspect__(&self, args: Args) -> crate::Result<Text> {
+	pub fn qs_inspect(&self, args: Args) -> crate::Result<Text> {
 		self.qs_at_text(args)
 	}
 
@@ -814,7 +814,7 @@ impl List {
 impl_object_type!{
 for List [(parents super::Basic) (convert "@list")]:
 	"@text" => method_old List::qs_at_text,
-	"__inspect__" => method_old List::qs___inspect__,
+	"inspect" => method_old List::qs_inspect,
 	"@bool" => method_old List::qs_at_bool,
 	"@list" => function List::qs_at_list,
 	"clone" => method_old List::qs_clone,

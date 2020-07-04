@@ -1,11 +1,50 @@
 #[cfg(test)]
-macro_rules! assert_downcast_eq {
-	($lhs:expr, $rhs:expr) => {
-		$lhs.unwrap().downcast_and_then(|lhs| assert_eq!(*lhs, $rhs)).unwrap()
+macro_rules! assert_missing_parameter {
+	($res:expr, $idx:expr $(, len=$len:pat)?)=> {
+		assert_matches!($res, Err($crate::Error::KeyError($crate::error::KeyError::OutOfBounds {
+			idx: $idx, $(len: $len,)? .. })));
 	};
-	($ty:ty; $lhs:expr, $rhs:expr) => {
+}
 
-		$lhs.unwrap().downcast_and_then::<$ty, _, _>(|lhs| assert_eq!(*lhs, $rhs)).unwrap()
+#[cfg(test)]
+macro_rules! assert_matches {
+	($lhs:expr, $pat:pat $(|$other:pat)*) => {{
+		let lhs = $lhs;
+		assert!(
+			matches!(lhs, $pat $($other)|*),
+			"{:?} doesn't match {}",
+			lhs,
+			concat!(stringify!($pat) $(, concat!(" | ", stringify!($other))),*)
+		);
+	}};
+}
+
+#[cfg(test)]
+macro_rules! assert_downcast_eq {
+	($ty:ty; $lhs:expr, $rhs:expr) => {
+		$lhs.downcast_and_then::<$ty, _, _>(|lhs| assert_eq!(*lhs, $rhs)).unwrap()
+	};
+}
+
+#[cfg(test)]
+macro_rules! assert_downcast_both_eq {
+	($ty:ty; $lhs:expr, $rhs:expr) => {
+		$lhs.downcast_and_then::<$ty, _, _>(|lhs| {
+			$rhs.downcast_and_then::<$ty, _, _>(|rhs| {
+				assert_eq!(lhs, rhs)
+			})
+		}).unwrap()
+	};
+}
+
+#[cfg(test)]
+macro_rules! assert_downcast_both_ne {
+	($ty:ty; $lhs:expr, $rhs:expr) => {
+		$lhs.downcast_and_then::<$ty, _, _>(|lhs| {
+			$rhs.downcast_and_then::<$ty, _, _>(|rhs| {
+				assert_ne!(lhs, rhs)
+			})
+		}).unwrap()
 	};
 }
 

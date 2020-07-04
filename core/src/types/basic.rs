@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::literals::{EQL, AT_BOOL, NOT,  __INSPECT__};
+use crate::literals::{EQL, AT_BOOL, NOT, INSPECT};
 use crate::types::Boolean;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -13,7 +13,7 @@ impl Basic {
 
 	#[inline]
 	pub fn qs_at_text(this: &Object, args: Args) -> crate::Result<Object> {
-		this.call_attr_lit(__INSPECT__, args)
+		this.call_attr_lit(INSPECT, args)
 	}
 
 	#[inline]
@@ -71,7 +71,7 @@ mod tests {
 	fn at_text() {
 		assert_eq!(
 			Basic::qs_at_text(&Basic.into(), args!()).unwrap().downcast_and_then(Text::clone).unwrap(),
-			Pristine::qs___inspect__(&Basic.into(), args!()).unwrap()
+			Pristine::qs_inspect(&Basic.into(), args!()).unwrap()
 		);
 		/* we don't test this, as the output is unspecified in general */
 	}

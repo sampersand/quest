@@ -18,7 +18,7 @@ use crate::types::{Text, Boolean};
 ///
 /// `__id__` is an unique identifier for each object and cannot be changed. (You _can_ assign to
 /// `__id__`, but if you ever try to read it, you'll end up with the object's original id.) This is
-/// used in multiple places, including the default `__inspect__` and `==` implementations.
+/// used in multiple places, including the default `inspect` and `==` implementations.
 ///
 /// ## `__parents__`
 ///
@@ -56,16 +56,16 @@ impl Pristine {
 	/// # Difference from `@text`
 	///
 	/// This differs from `@text` by their goals: `@text` is used to convert to a [`Text`] object,
-	/// whereas `__inspect__` is used to get a debugging representation.
+	/// whereas `inspect` is used to get a debugging representation.
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(  == 1.$__inspect__() == "1" );
-	/// assert(  == 2.$__inspect__() == '"2"' );
-	/// assert(  == ["2", 3].$__inspect__() == '["2", 3]' );
+	/// assert(  == 1.$inspect() == "1" );
+	/// assert(  == 2.$inspect() == '"2"' );
+	/// assert(  == ["2", 3].$inspect() == '["2", 3]' );
 	/// ```
 	#[allow(non_snake_case)]
-	pub fn qs___inspect__(this: &Object, _: Args) -> Result<Text, !> {
+	pub fn qs_inspect(this: &Object, _: Args) -> Result<Text, !> {
 		Ok(format!("<{}:{}>", this.typename(), this.id()).into())
 	}
 
@@ -181,7 +181,7 @@ impl Pristine {
 
 impl_object_type!{
 for Pristine [(init_parent) (parents Pristine)]:
-	"__inspect__" => function Pristine::qs___inspect__,
+	"inspect" => function Pristine::qs_inspect,
 	"__keys__" => function Pristine::qs___keys__,
 	"__call_attr__" => function Pristine::qs___call_attr__,
 	"__get_attr__" => function Pristine::qs___get_attr__,
