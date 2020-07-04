@@ -3,6 +3,8 @@ use std::sync::{Arc, RwLock};
 #[derive(Debug)]
 pub struct SharedCow<T: Clone, >(RwLock<Ownership<T>>);
 
+// False positive, this isn't an implementation of the non-exhaustive pattern.
+#[allow(clippy::manual_non_exhaustive)]
 #[derive(Debug, Clone)]
 enum Ownership<T> {
 	Owned(T),
@@ -104,15 +106,3 @@ impl<T: Clone> SharedCow<T> {
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -393,7 +393,7 @@ for Text
 	"unshift" => function Text::qs_unshift,
 	"shift"   => method_mut Text::qs_shift,
 	"clear"   => function Text::qs_clear,
-	"split"   => method_mut Text::qs_split,
+	"split"   => method Text::qs_split,
 	"reverse" => method Text::qs_reverse,
 	"match" => method Text::qs_match
 	// "strip"   => function Text::qs_strip,
