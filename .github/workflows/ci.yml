@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Build
+        run: cargo build --workspace --all-targets --verbose
+
+      - name: Run tests
+        run: cargo test --workspace --all-targets --verbose
+
+      # Workaround for https://github.com/rust-lang/cargo/issues/6669
+      - name: Run doctests
+        run: cargo test --workspace --docs --verbose
+
+  # Ensure clippy doesn't complain.
+  clippy:
+    name: Clippy
+
+    strategy:
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: clippy
+
+      - name: Lint with clippy
+        run: cargo clippy --all-targets --workspace --verbose -- -D warnings

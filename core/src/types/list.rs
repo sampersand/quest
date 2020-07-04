@@ -84,7 +84,7 @@ impl List {
 				return Object::default()
 			};
 
-		let stop = correct_index(stop, self.len()).map(|x| x + 1).unwrap_or(self.len());
+		let stop = correct_index(stop, self.len()).map(|x| x + 1).unwrap_or_else(|| self.len());
 		if stop < start {
 			Object::default()
 		} else {
@@ -245,7 +245,7 @@ impl List {
 		let mut i = 0;
 
 		while i < self.len() {
-			if let Some(_) = other.find(&self.0[i])? {
+			if other.find(&self.0[i])?.is_some() {
 				self.0.to_mut().remove(i);
 			} else {
 				i += 1;
@@ -286,7 +286,7 @@ impl List {
 		let mut i = 0;
 
 		while i < other.len() {
-			if !self.find(&other.0[i])?.is_some() {
+			if self.find(&other.0[i])?.is_none() {
 				self.0.to_mut().push(other.0[i].clone());
 			}
 
