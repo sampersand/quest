@@ -98,7 +98,7 @@ mod tests {
 
 	#[test]
 	fn neq() {
-		// dummy_object!(struct DummyEqlOverride(i32, bool); {
+		// dummy_object_old!(struct DummyEqlOverride(i32, bool); {
 		// 	"==" => function (|this: &DummyEqlOverride, args| Ok({
 		// 		if this.1 {
 		// 			this.0 == args.arg(0)?.try_downcast_ref::<DummyEqlOverride>()?.0
@@ -134,7 +134,7 @@ mod tests {
 
 	#[test]
 	fn not() {
-		// dummy_object!(struct DummyBoolOverride(bool); crate::types::Basic {
+		// dummy_object_old!(struct DummyBoolOverride(bool); crate::types::Basic {
 		// 	"@bool" => (|args| {
 		// 		Ok(args.this()?.try_downcast_ref::<DummyBoolOverride>()?.0.into())
 		// 	})

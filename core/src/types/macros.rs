@@ -1,4 +1,15 @@
 #[cfg(test)]
+macro_rules! assert_downcast_eq {
+	($lhs:expr, $rhs:expr) => {
+		$lhs.unwrap().downcast_and_then(|lhs| assert_eq!(*lhs, $rhs)).unwrap()
+	};
+	($ty:ty; $lhs:expr, $rhs:expr) => {
+
+		$lhs.unwrap().downcast_and_then::<$ty, _, _>(|lhs| assert_eq!(*lhs, $rhs)).unwrap()
+	};
+}
+
+#[cfg(test)]
 macro_rules! args {
 	() => { $crate::Args::default() };
 	($($args:expr),+) => {
@@ -8,17 +19,18 @@ macro_rules! args {
 
 
 #[cfg(test)]
-macro_rules! dummy_object {
+#[deprecated]
+macro_rules! dummy_object_old {
 	($vis:vis struct $obj:ident $(($($types:ty),*))?;) =>{
-		dummy_object!($vis struct $obj $(($($types),*))?; $crate::types::Basic {});
+		dummy_object_old!($vis struct $obj $(($($types),*))?; $crate::types::Basic {});
 	};
 
 	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:ty) =>{
-		dummy_object!($vis struct $obj $(($($types),*))?; $parent {});
+		dummy_object_old!($vis struct $obj $(($($types),*))?; $parent {});
 	};
 
 	($vis:vis struct $obj:ident $(($($types:ty),*))?; { $($args:tt)* }) =>{
-		dummy_object!($vis struct $obj $(($($types),*))?; $crate::types::Basic { $($args)* });
+		dummy_object_old!($vis struct $obj $(($($types),*))?; $crate::types::Basic { $($args)* });
 	};
 
 	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:path { $($args:tt)* }) =>{

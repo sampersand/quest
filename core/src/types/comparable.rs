@@ -6,7 +6,8 @@ use std::cmp::Ordering;
 pub struct Comparable;
 
 fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
-	let num = lhs.call_attr_lit("<=>", &[rhs])?.call_downcast_map(Number::clone)?;
+	let num = lhs.call_attr_lit("<=>", &[rhs])?
+		.call_downcast_map(Number::clone)?;
 
 	if num < Number::ZERO {
 		Ok(Ordering::Less)
@@ -18,20 +19,24 @@ fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
 }
 
 impl Comparable {
+	#[inline]
 	pub fn qs_lth(this: &Object, args: Args) -> Result<bool> {
-		Ok(compare(this, args.arg(0)?)? == Ordering::Less)
+		compare(this, args.arg(0)?).map(|ord| ord == Ordering::Less)
 	}
 
+	#[inline]
 	pub fn qs_gth(this: &Object, args: Args) -> Result<bool> {
-		Ok(compare(this, args.arg(0)?)? == Ordering::Greater)
+		compare(this, args.arg(0)?).map(|ord| ord == Ordering::Greater)
 	}
 
+	#[inline]
 	pub fn qs_leq(this: &Object, args: Args) -> Result<bool> {
-		Ok(compare(this, args.arg(0)?)? != Ordering::Greater)
+		compare(this, args.arg(0)?).map(|ord| ord != Ordering::Greater)
 	}
 
+	#[inline]
 	pub fn qs_geq(this: &Object, args: Args) -> Result<bool> {
-		Ok(compare(this, args.arg(0)?)? != Ordering::Less)
+		compare(this, args.arg(0)?).map(|ord| ord != Ordering::Less)
 	}
 }
 
@@ -42,11 +47,10 @@ for Comparable [(parents super::Basic)]:
 	">" => function Comparable::qs_gth,
 	"<=" => function Comparable::qs_leq,
 	">=" => function Comparable::qs_geq,
-	// "==" => impls::eql,
-	// "!=" => impls::neq,
 }
 
 impl From<Ordering> for crate::Object {
+	#[inline]
 	fn from(ord: Ordering) -> Self {
 		match ord {
 			Ordering::Less => -1,
@@ -56,15 +60,23 @@ impl From<Ordering> for crate::Object {
 	}
 }
 
-#[allow(unused)]
+
 #[cfg(test)]
 mod tests {
-	// use crate::Object;
-	// dummy_object!(struct DummyCmp(f32); {
-	// 	"<=>" => function (|this, | {
-	// 		let this = args.this()?.try_downcast_ref::<DummyCmp>()?;
-	// 		let other = args.arg(0)?.try_downcast_ref::<DummyCmp>()?;
+	// use super::*;
 
+	// #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+	// struct DummyCmp(f32);
+
+	// impl_object_type!(f)
+
+
+	// dummy_object_old!(struct DummyCmp(f32); {
+	// 	"<=>" => function (|this, args| {
+	// 		let this = this.downcast_and_then(DummyCmp::clone)?;
+	// 		let rhs = rhs.downcast_and_then(DummyCmp::clone)?;
+
+	// 		Ok(this.cmp(other))
 	// 		Ok(this.0.partial_cmp(&other.0)
 	// 			.map(Into::into)
 	// 			.unwrap_or_default())

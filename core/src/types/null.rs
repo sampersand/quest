@@ -149,7 +149,7 @@ mod tests {
 		assert_eq!(Null.qs_at_text(args!()).unwrap(), Text::new_static("null"));
 	}
 
-	dummy_object!(struct Dummy;);
+	dummy_object_old!(struct Dummy;);
 
 	#[test]
 	fn call() {
