@@ -82,7 +82,7 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic]
+	// #[should_panic]
 	fn eql_no_arg() {
 		// call_impl!(eql(Dummy) -> Boolean);
 	}
@@ -118,7 +118,7 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic]
+	// #[should_panic]
 	fn neq_no_arg() {
 		// call_impl!(neq(Dummy) -> Boolean);
 	}
