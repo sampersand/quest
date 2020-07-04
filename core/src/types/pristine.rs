@@ -101,7 +101,7 @@ impl Pristine {
 	///
 	/// The `__get_attr__` method is useful when trying to reference a function without automatically
 	/// having it become a [`BoundFunction`](crate::types::BoundFunction).
-	/// 
+	///
 	/// # Arguments
 	///
 	/// 1. (required) the argument to look up.
@@ -109,9 +109,9 @@ impl Pristine {
 	/// # Quest Examples
 	/// ```quest
 	/// $print_fruit = {
-	/// 	disp("I love to eat", _0);
+	///     disp("I love to eat", _0);
 	/// };
-	/// 
+	///
 	/// ["bananas", "oranges", "melons"].$each(__this__::$greet);
 	/// # => I love to eat bananas
 	/// # => I love to eat oranges
