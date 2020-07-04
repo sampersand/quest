@@ -172,7 +172,13 @@ impl ops::Not for Boolean {
 }
 
 impl Boolean {
-	/// Inspect the boolean.
+	/// Inspects the [`Boolean`].
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(true.$__inspect__() == "true");
+	/// assert(false.$__inspect__() == "false");
+	/// ```
 	#[allow(non_snake_case)]
 	#[inline]
 	pub fn qs___inspect__(this: &Object, _: Args) -> Result<Text> {
@@ -181,7 +187,14 @@ impl Boolean {
 
 	/// Convert this into a [`Number`].
 	///
-	/// This is simply a wrapper around [`Number::from(Boolean)`](Number#impl-From<Boolean>).
+	/// [`true`](Boolean::TRUE) becomes [`1`](Number::ONE) and [`false`](Boolean::FALSE) becomes
+	/// [`0`](Number::ZERO)
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(1 + true == 2);
+	/// assert(99 * false == 0);
+	/// ```
 	#[inline]
 	pub fn qs_at_num(this: &Object, _: Args) -> Result<Number> {
 		this.try_downcast_map(|this: &Self| Number::from(*this))
@@ -189,7 +202,11 @@ impl Boolean {
 
 	/// Convert this into a [`Text`].
 	///
-	/// This is simply a wrapper around [`Text::from(Boolean)`](Number#impl-From<Boolean>).
+	/// # Quest Examples
+	/// ```quest
+	/// assert("are dogs cool? " + true == "are dogs cool? true");
+	/// assert("? " + true == "are dogs cool? true");
+	/// ```
 	#[inline]
 	pub fn qs_at_text(this: &Object, _: Args) -> Result<Text> {
 		this.try_downcast_map(|this: &Self| Text::from(*this))
@@ -197,7 +214,10 @@ impl Boolean {
 
 	/// Convert this into a [`Boolean`].
 	///
-	/// This is simply a wrapper around [`Boolean::clone`](#method.clone).
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.clone())
@@ -206,6 +226,13 @@ impl Boolean {
 	/// See if a this is equal to the first argument.
 	///
 	/// Unlike most methods, the first argument is not implicitly converted to a  [`Boolean`] first.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Boolean> {
 		let rhs = args.arg(0)?;
@@ -217,7 +244,14 @@ impl Boolean {
 
 	/// Compares this to the first argument.
 	///
-	/// The first argument is converted to a [`Boolean`] if it isn't already.
+	/// The first eargument is converted to a [`Boolean`] if it isn't already.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_cmp(this: &Object, args: Args) -> Result<std::cmp::Ordering> {
 		let rhs = args.arg(0)?;
@@ -228,6 +262,11 @@ impl Boolean {
 	}
 
 	/// Logical NOT of this.
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_not(this: &Object, _: Args) -> Result<Object> {
 		this.try_downcast_map(|this: &Self| (!*this).into())
@@ -236,6 +275,13 @@ impl Boolean {
 	/// Logical AND of this and the first argument.
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
@@ -246,6 +292,13 @@ impl Boolean {
 	/// In-place logical AND of this and the first argument.
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
@@ -257,6 +310,13 @@ impl Boolean {
 	/// Logical OR of this and the first argument.
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
@@ -267,6 +327,13 @@ impl Boolean {
 	/// In-place logical OR of this and the first argument.
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
@@ -278,6 +345,13 @@ impl Boolean {
 	/// Logical XOR of this and the first argument.
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
@@ -288,6 +362,13 @@ impl Boolean {
 	/// In-place logical XOR of this and the first argument.
 	///
 	/// The first argument is converted to a [`Boolean`] if it isn't already.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
@@ -297,6 +378,13 @@ impl Boolean {
 	}
 
 	/// The hash for this.
+	///
+	/// # Arguments
+	/// 
+	/// # Quest Examples
+	/// ```quest
+	/// 
+	/// ```
 	#[inline]
 	pub fn qs_hash(_this: &Object, _args: Args) -> Result<Object> {
 		todo!("hash for Boolean")

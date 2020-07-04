@@ -22,6 +22,7 @@ pub fn init() {
 	/* todo: move all mapping initialization stuff here. */
 }
 
+pub mod attrs;
 pub mod utils;
 pub mod obj;
 pub mod types;
@@ -31,6 +32,7 @@ use shared_cow::SharedCow;
 pub use obj::{Object, ToObject};
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
+pub use literals::Literal;
 
 #[deprecated]
 pub use types::rustfn::ArgsOld;

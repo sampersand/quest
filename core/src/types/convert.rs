@@ -28,9 +28,9 @@ impl Object {
 			}
 		} else {
 			self.call_attr_lit(T::CONVERT_FUNC, &[]).and_then(|obj| {
-				if self.is_a::<T>() {
+				if obj.is_a::<T>() {
 					unsafe {
-						self.downcast_unchecked_and_then(f).map_err(Into::into)
+						obj.downcast_unchecked_and_then(f).map_err(Into::into)
 					}
 				} else {
 					Err(crate::error::TypeError::ConversionReturnedBadType {
