@@ -1,4 +1,5 @@
 use crate::{Object, Args, Result};
+use crate::literals::CMP;
 use crate::types::Number;
 use std::cmp::Ordering;
 
@@ -6,16 +7,8 @@ use std::cmp::Ordering;
 pub struct Comparable;
 
 fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
-	let num = lhs.call_attr_lit("<=>", &[rhs])?
-		.call_downcast_map(Number::clone)?;
-
-	if num < Number::ZERO {
-		Ok(Ordering::Less)
-	} else if num > Number::ZERO {
-		Ok(Ordering::Greater)
-	} else {
-		Ok(Ordering::Equal)
-	}
+	let num = lhs.call_attr_lit(CMP, &[rhs])?.call_downcast_map(Number::clone)?;
+	Ok(num.cmp(&Number::ZERO))
 }
 
 impl Comparable {

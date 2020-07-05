@@ -139,7 +139,7 @@ impl Data {
 		}
 
 		impl<'a, T: 'static> DerefMut for Caster<'a, T> {
-			fn deref_mut<'b>(&'b mut self) -> &'b mut T {
+			fn deref_mut(&mut self) -> &mut T {
 				if let Ownership::Shared(ref shared) = self.0.as_ref().unwrap() {
 					*self.0 = Some(Ownership::Owned((self.2.clone)(&**shared)))
 				}

@@ -114,7 +114,7 @@ impl Attributes {
 			if __PARENTS__ == key {
 				inner.parents = Parents::from(Object::from(val));
 			} else {
-				inner.map.set_lit(key, val.into());
+				inner.map.set_lit(key, val);
 			}
 		})
 	}
@@ -125,7 +125,7 @@ impl Attributes {
 	{
 		self.data.downcast_mut_and_then(|inner| {
 			if (&__PARENTS__).borrow() == key {
-				Some(std::mem::replace(&mut inner.parents, Parents::default()).into())
+				Some(std::mem::take(&mut inner.parents).into())
 			} else {
 				inner.map.del_lit(key)
 			}
@@ -156,7 +156,8 @@ impl Attributes {
 
 	pub fn set(&self, key: Object, value: Value) -> Result<()> {
 		if let Some(lit) = key.downcast_and_then(|text: &Text| str_to_static(text.as_ref())) {
-			return Ok(self.set_lit(lit, value));
+			self.set_lit(lit, value);
+			return Ok(());
 		}
 
 		self.data.downcast_mut_and_then(|inner| inner.map.set_obj(key, value))

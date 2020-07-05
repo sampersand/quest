@@ -1,6 +1,10 @@
 #![deny(warnings)]
+#![allow(
+	// TODO
+	clippy::missing_safety_doc,
+)]
+
 #![feature(never_type)]
-extern crate rand;
 
 macro_rules! unreachable_debug_or_unchecked {
 	() => {

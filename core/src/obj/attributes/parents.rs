@@ -125,7 +125,7 @@ impl Parents {
 	}
 
 	pub fn keys(&self) -> Result<Vec<Object>> {
-		self.with_iter(|iter| Ok(iter.map(|x| x.clone()).collect()))
+		self.with_iter(|iter| Ok(iter.cloned().collect()))
 	}
 
 	pub fn has_lit<K: Hash + Eq + ?Sized>(&self, key: &K) -> Result<bool>

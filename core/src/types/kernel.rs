@@ -144,7 +144,7 @@ impl Kernel {
 
 				Ok(buf.into())
 			},
-			Err(err) => Err(Error::Messaged(format!("couldn't read from stdin: {}", err).into()))
+			Err(err) => Err(Error::Messaged(format!("couldn't read from stdin: {}", err)))
 		}
 	}
 

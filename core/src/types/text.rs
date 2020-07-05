@@ -51,6 +51,12 @@ impl Text {
 	}
 
 	#[inline]
+	pub fn is_empty(&self) -> bool {
+		self.0.is_empty()
+	}
+
+
+	#[inline]
 	pub fn into_inner(self) -> Cow<'static, str> {
 		self.0
 	}
@@ -286,7 +292,7 @@ impl Text {
 					.map(|x| x.to_string().into())
 					.unwrap_or_default()),
 			Some(end) => {
-				let end = self.correct_index(end).map(|x| x + 1).unwrap_or(self.len());
+				let end = self.correct_index(end).map(|x| x + 1).unwrap_or_else(|| self.len());
 				if end < start {
 					Ok(Object::default())
 				} else {
@@ -323,7 +329,7 @@ impl Text {
 	}
 
 	pub fn qs_shift(&mut self, _: Args) -> crate::Result<Text> {
-		if self.len() == 0 {
+		if self.is_empty() {
 			Ok(Text::default())
 		} else {
 			Ok(self.0.to_mut().remove(0).into())

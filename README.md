@@ -1,4 +1,7 @@
 # Quest
+
+[![CI](https://github.com/sampersand/quest/workflows/CI/badge.svg)](https://github.com/sampersand/quest/actions)
+
 A language based around extensibility and freedom
 
 # What's Quest
@@ -87,8 +90,8 @@ $Person = {
 
 	# Define the conversion to a text object
 	$@text = {
-		# the 0th argument is the object this method was called upon; it generally equates to the 
-		# `self`/`this` of other languages.
+		# the 0th argument is the object this method was called upon; it
+		# generally equates to the `self`/`this` of other languages.
 		_0.$first + " " + _0.$last
 	};
 
@@ -131,12 +134,13 @@ The `return` keyword is a bit different than other languages. Because there is n
 
 ```quest
 $make_dinner = {
-	$the_magic_word = prompt("what's the magic word?");
+	$the_magic_word = prompt("what's the magic word? ");
 	if(the_magic_word != "please", {
 		disp("You didn't say 'please'!");
-		# Return `false` two stackframes up. The current stackframe is this block, so
-		# the one above that is the `make_dinner`'s body.
-		return(__stack__.$get(2), false);
+		# `:0` is the current stackframe, `:1` is the stackframe above this one
+		# in this case, that's the `$make_dinner` stackframe. return `false` from
+		# that stackframe.
+		return(:1, false);
 	});
 
 	collect_ingredients();
@@ -152,7 +156,7 @@ $make_dinner = {
 disp(if(make_dinner(), { "time to eat!" }, { "aww" }));
 ```
 
-However, this also removes the need for `continue` and `break` keywords that so many other languages have:
+This also removes the need for `continue` and `break` keywords that so many other languages have:
 ```quest
 $i = 0;
 while({ i < 100 }, {
@@ -162,7 +166,7 @@ while({ i < 100 }, {
 	if(i % 2, {
 		# Return from the while loops's body's stackframe.
 		# This is analogous to `continue`.
-		return(__stack__.$get(2));
+		return(:1);
 	});
 
 	disp("i =", i);
@@ -171,9 +175,9 @@ while({ i < 100 }, {
 		disp("stopping.");
 		# Return from the while loop's stackframe. 
 		# This is analogous to `break`.
-		return(__stack__.$get(3));
+		return(:2);
 	})
-});
+});}
 
 disp("done");
 
@@ -215,7 +219,7 @@ disp(x, $x(), 'x'(), __this__.'x', __this__.$x); # => 5 5 5 5 5
 ```
 
 ## Everything is fair game
-Most runtime languages allow for assigning arbitrary values to any object. However, Quest takes this a step further, and allows _everything_ to have attributes added/removed from them, including primitives like numbers. (For those mathy-folks, every Quest object is a singleton object.)
+Most runtime languages support some form of instance variables that can be added to objects. However, Quest takes this a step further, and allows _everything_ to have attributes added/removed from them, including primitives like numbers. (For those language-savvy folks, every Quest object is a singleton object.)
 
 ```quest
 # define the `square` method on 
@@ -232,11 +236,8 @@ disp(twelve.$cube); # => 1728
 disp(12.$__has_attr__($cube)); # => false
 ```
 
-## MORE
-I should probably add more discussion of Quest's features.
+## More
+See the `examples` folder for more examples of what Quest can do!
 
-# TODO 
-- Cleanup the documentation?
-- Cleaning up of hacky code
-- Finish implementation of builtin objects
-- Create an enumerable type
+## TODO
+I should probably add more discussion of Quest's features.
