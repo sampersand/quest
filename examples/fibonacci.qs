@@ -4,7 +4,7 @@
 # set to the return value of the block.
 $fibonacci = {
 	# initialize memo to a blank object.
-	$memo = { __this__ }();
+	$memo = { :0 /* return the current stakframe */ }();
 	# then assign some values to it.
 	memo.0 = 0;
 	memo.1 = 1;

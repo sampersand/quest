@@ -5,7 +5,7 @@ $Frac = {
 		$__parents__ = [Frac];
 		$numer = _1;
 		$denom = _2;
-		__this__
+		:0 # return the current stackframe
 	};
 
 	$+ = {
@@ -19,5 +19,7 @@ $Frac = {
 	$@text = { _0.$numer.$@text() + '/' + _0.$denom };
 	$@num  = { _0.$numer / _0.$denom };
 
-	__this__
+	:0 # return the current stackframe
 }();
+
+:0

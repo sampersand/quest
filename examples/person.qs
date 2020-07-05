@@ -4,14 +4,14 @@ $Person = {
 		$__parents__ = [Person];
 		$first = _1;
 		$last = _2;
-		__this__
+		:0 # return the current stackframe
 	};
 
 	$@text = {
 		_0.$first + " " + _0.$last
 	};
 
-	__this__
+	:0 # return the current stackframe
 }();
 
 $sam = Person("Sam", "W");

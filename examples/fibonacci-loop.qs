@@ -1,5 +1,6 @@
 # This program I use to benchmark how fast quest is becoming!
-# When I first started, `50,000` times took 176 seconds... lol
+# When I first started, `50,000` times took 176 seconds... lol.
+# At last run, this took ~1.6 seconds to run. Not shabby, but not great either
 
 $fib_loop = {
 	if(!_1, { return(:1, 0) });

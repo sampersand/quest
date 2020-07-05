@@ -10,12 +10,12 @@ $Person = {
 		$name = _1;
 		$age = _2;
 
-		__this__
+		:0 # return the current stackframe
 	};
 
 	$<=> = { _0.$age <=> _1.$age };
 
-	__this__
+	:0 # return the current stackframe
 }();
 
 $john = Person("john doe", 20);

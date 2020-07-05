@@ -11,7 +11,7 @@ $Person = {
 		$first = _1;
 		$last = _2;
 
-		__this__
+		:0 # return the current stackframe
 	};
 
 	$instance_methods = {
@@ -22,10 +22,10 @@ $Person = {
 			_0.$first + " " + _0.$last
 		};
 
-		__this__
+		:0 # return the current stackframe
 	}();
 
-	__this__
+	:0 # return the current stackframe
 }();
 
 $sam = Person("Sam", "W");
@@ -33,4 +33,3 @@ $sam = Person("Sam", "W");
 disp(Person); # => Person
 disp(sam); # => Sam W
 disp(sam.$class == Person); # => true
-
