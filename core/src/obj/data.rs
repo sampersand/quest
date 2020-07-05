@@ -80,6 +80,7 @@ impl Data {
 
 	#[inline]
 	pub unsafe fn downcast_unchecked_and_then<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
+		#[allow(deprecated)]
 		f(&*self.downcast_ref_unchecked::<T>())
 	}
 
@@ -94,17 +95,8 @@ impl Data {
 
 	#[inline]
 	pub unsafe fn downcast_mut_unchecked_and_then<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> R {
+		#[allow(deprecated)]
 		f(&mut *self.downcast_mut_unchecked::<T>())
-	}
-
-	#[inline]
-	#[deprecated]
-	fn downcast_ref<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
-		if self.is_a::<T>() {
-			Some(unsafe { self.downcast_ref_unchecked() })
-		} else {
-			None
-		}
 	}
 
 	#[inline]
@@ -128,16 +120,6 @@ impl Data {
 			self.typename(), type_name::<T>());
 
 		Caster::<'a, T>(self.data.read().expect("poison error"), PhantomData)
-	}
-
-	#[inline]
-	#[deprecated]
-	fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
-		if self.is_a::<T>() {
-			Some(unsafe { self.downcast_mut_unchecked() })
-		} else {
-			None
-		}
 	}
 
 	#[inline]

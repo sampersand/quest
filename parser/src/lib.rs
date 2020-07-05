@@ -1,4 +1,3 @@
-// #![allow(deprecated)]
 #![allow(clippy::module_inception)]
 
 #![feature(never_type)]

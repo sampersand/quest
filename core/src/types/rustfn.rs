@@ -1,9 +1,7 @@
 mod args;
-mod args_old;
 mod binding;
 
 pub use args::Args;
-pub use args_old::ArgsOld;
 pub use binding::Binding;
 
 use crate::Object;
@@ -45,14 +43,8 @@ impl RustFn {
 	}
 
 	#[inline]
-	// eventually, we'll remove the `generic` thing.
 	pub fn call(&self, obj: &Object, args: Args) -> crate::Result<Object> {
 		(self.1)(obj, args)
-	}
-
-	#[inline]
-	pub fn call_old(&self, args: ArgsOld) -> crate::Result<Object> {
-		(self.1)(args.this()?, args.args(..)?.as_ref().iter().collect())
 	}
 }
 

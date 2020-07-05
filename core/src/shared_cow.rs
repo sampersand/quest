@@ -102,36 +102,6 @@ impl<T> SharedCow<T> {
 }
 
 impl<T: Clone> SharedCow<T> {
-	// #[deprecated]
-	// pub fn lock<'a>(&'a self) -> impl std::ops::DerefMut<Target=T> + 'a {
-	// 	use std::{sync::RwLockWriteGuard};
-
-	// 	struct Caster<'a, T>(RwLockWriteGuard<'a, ()>, &'a SharedCow<T>);
-	// 	impl<'a, T> std::ops::Deref for Caster<'a, T> {
-	// 		type Target = T;
-	// 		fn deref(&self) -> &T {
-	// 			match unsafe { &*self.1.data.get() } {
-	// 				Data::Owned(owned) => &owned,
-	// 				Data::Shared(shared) => shared.as_ref()
-	// 			}
-	// 		}
-	// 	}
-
-	// 	impl<'a, T: Clone> std::ops::DerefMut for Caster<'a, T> {
-	// 		fn deref_mut(&mut self) -> &mut T {
-	// 			unsafe { 
-	// 				self.1.ensure_owned();
-	// 				match &mut *self.1.data.get() {
-	// 					Data::Owned(ref mut owned) => owned,
-	// 					Data::Shared(_) => unreachable!()
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-
-	// 	Caster(self.own_lock.write().expect("poison error"), self)
-	// }
-
 	unsafe fn ensure_owned(&self) {
 		if let Data::Shared(shared) = &*self.data.get() {
 			// we use `replace` because we want the arc to drop itself.

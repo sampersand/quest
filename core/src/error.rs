@@ -47,16 +47,6 @@ impl From<!> for Error {
 	}
 }
 
-#[deprecated]
-impl From<crate::types::Text> for Error {
-	fn from(err: crate::types::Text) -> Self { Error::Messaged(err.into()) }
-}
-
-#[deprecated]
-impl From<&'_ str> for Error {
-	fn from(err: &'_ str) -> Self { Error::Messaged(err.into()) }
-}
-
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {

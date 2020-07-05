@@ -1,4 +1,5 @@
-use crate::{Object, Args, types};
+use crate::{Object, Args};
+use crate::types::{Scope, List};
 use std::sync::RwLock;
 use std::ops::Deref;
 
@@ -46,61 +47,6 @@ impl Binding {
 	}
 
 
-	#[deprecated]
-	pub fn new_stackframe_old<F>(args: crate::ArgsOld, func: F) -> crate::Result<Object>
-	where
-		F: FnOnce(&Binding) -> crate::Result<Object>,
-	{
-		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
-		impl Drop for StackGuard<'_> {
-			fn drop(&mut self) {
-				let mut stack = self.0.write().expect("stack poisoned");
-				match stack.pop() {
-					None => eprintln!("nothing left to pop?"),
-					Some(binding) if binding.0.is_identical(self.1.as_ref()) => {},
-					// this is now ok, as you can set __this__.
-					Some(_binding) => {/*eprintln!("bindings don't match: {:?}", binding)*/}
-				}
-			}
-		}
-
-		Binding::with_stack(|stack| {
-			let binding = {
-				let binding = Object::from(types::Scope);
-
-				if let Ok(caller) = args.this() {
-					binding.add_parent(caller.clone())?;
-				}
-
-				for (i, arg) in args.args(..)?.as_ref().iter().enumerate() {
-					// `+1` because we don't start at 0
-					binding.set_attr(Object::from(format!("_{}", i/* + 1*/)), arg.clone())?;
-					// binding.set_attr_old(Object::from(format!("_{}", i + 1)), arg.clone())?;
-				}
-
-				binding.set_attr_lit("__args__", Object::from(Vec::from(args.args(..)?)));
-				if let Some(callee) = stack.read().expect("bad stack").last() {
-					binding.set_attr_lit("__callee__", Object::from(callee.clone()));
-				}
-				Binding(binding)
-			};
-
-			{
-				let mut stack = stack.write().expect("stack poisoned");
-				stack.push(binding.clone());
-			};
-
-
-			let _guard = StackGuard(stack, &binding);
-			
-			match func(&binding) {
-				Err(crate::Error::Return { to, obj }) if to.as_ref().eq_obj(binding.as_ref())?
-					=> Ok(obj),
-				other => other
-			}
-		})
-	}
-
 	pub fn new_stackframe<F>(parent: Option<Object>, args: Args, func: F) -> crate::Result<Object>
 	where
 		F: FnOnce(&Binding) -> crate::Result<Object>,
@@ -114,7 +60,7 @@ impl Binding {
 
 		Binding::with_stack(|stack| {
 			let binding = {
-				let binding = Object::from(types::Scope);
+				let binding = Object::from(Scope);
 
 				if let Some(parent) = parent {
 					binding.add_parent(parent)?;
@@ -124,7 +70,7 @@ impl Binding {
 					binding.set_attr(Object::from(format!("_{}", i)), (*arg).clone())?;
 				}
 
-				binding.set_attr_lit("__args__", Object::from(types::List::from(args)));
+				binding.set_attr_lit("__args__", Object::from(List::from(args)));
 
 				if let Some(callee) = stack.read().expect("bad stack").last() {
 					binding.set_attr_lit("__callee__", callee.as_ref().clone());
@@ -154,7 +100,7 @@ impl Binding {
 	pub fn with_stack<F: FnOnce(&RwLock<Stack>) -> R, R>(func: F) -> R {
 		thread_local!(
 			// static STACK: RwLock<Stack> = RwLock::new(vec![]);
-			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(types::Scope))]);
+			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(Scope))]);
 		);
 
 		STACK.with(func)

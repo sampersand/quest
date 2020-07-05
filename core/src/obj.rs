@@ -1,4 +1,4 @@
-use crate::{Args, ArgsOld};
+use crate::Args;
 use crate::error::{TypeError, KeyError};
 use crate::types::{self, ObjectType};
 use crate::types::{Boolean};
@@ -324,29 +324,6 @@ impl Object {
 			Ok(bound_res)	
 		} else {
 			Ok(result)
-		}
-	}
-
-	pub fn call_attr_old_old<'a, K: ?Sized, A>(&self, attr: &K, args: A) -> crate::Result<Object>
-	where
-		K: ToObject,
-		A: Into<ArgsOld<'a>>
-	{
-		let a = self.get_value(&attr.to_object())?
-			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() })?;
-		match a {
-			Value::RustFn(rustfn) => {
-				let mut args = args.into();
-				args.add_this(self.clone());
-				rustfn.call_old(args)
-			},
-
-			Value::Object(object) => {
-				let bound_attr = Object::new(crate::types::BoundFunction);
-				bound_attr.set_attr_lit("__bound_object_owner__", self.clone());
-				bound_attr.set_attr_lit("__bound_object__", object);
-				bound_attr.call_attr_old_old("()", args)
-			}
 		}
 	}
 

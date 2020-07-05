@@ -149,7 +149,9 @@ mod tests {
 		assert_eq!(Null.qs_at_text(args!()).unwrap(), Text::new_static("null"));
 	}
 
-	dummy_object_old!(struct Dummy;);
+	#[derive(Debug, Clone)]
+	struct Dummy;
+	impl_object_type! { for Dummy [(parents super::super::Basic)]: }
 
 	#[test]
 	fn call() {

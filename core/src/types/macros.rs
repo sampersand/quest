@@ -56,29 +56,6 @@ macro_rules! args {
 	};
 }
 
-
-#[cfg(test)]
-#[deprecated]
-macro_rules! dummy_object_old {
-	($vis:vis struct $obj:ident $(($($types:ty),*))?;) =>{
-		dummy_object_old!($vis struct $obj $(($($types),*))?; $crate::types::Basic {});
-	};
-
-	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:ty) =>{
-		dummy_object_old!($vis struct $obj $(($($types),*))?; $parent {});
-	};
-
-	($vis:vis struct $obj:ident $(($($types:ty),*))?; { $($args:tt)* }) =>{
-		dummy_object_old!($vis struct $obj $(($($types),*))?; $crate::types::Basic { $($args)* });
-	};
-
-	($vis:vis struct $obj:ident $(($($types:ty),*))?; $parent:path { $($args:tt)* }) =>{
-		#[derive(Debug, Clone, Hash)]
-		$vis struct $obj$(($($types),*))?;
-		impl_object_type!(for $obj [(parents $parent)]: $($args)* );
-	};
-}
-
 #[macro_export]
 macro_rules! impl_object_type {
 	(@CONVERTIBLE $_obj:ty;) => {};

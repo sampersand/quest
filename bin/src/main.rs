@@ -1,5 +1,4 @@
 #![deny(warnings)]
-#![allow(deprecated)]
 
 mod run;
 mod error;

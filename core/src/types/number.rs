@@ -691,7 +691,10 @@ impl Number {
 
 	#[inline]
 	pub fn qs_sqrt(&self, _: Args) -> Result<Self, !> {
-		unimplemented!("sqrt")
+		match self.0 {
+			Inner::Integer(n) => Ok(Self::from((n as FloatType).powf(0.5))),
+			Inner::Float(n) => Ok(Self::from(n.sqrt()))
+		}
 	}
 }
 

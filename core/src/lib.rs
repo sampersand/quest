@@ -1,5 +1,4 @@
 #![deny(warnings)]
-#![allow(deprecated)]
 #![feature(never_type)]
 extern crate rand;
 
@@ -32,6 +31,3 @@ pub use obj::{Object, ToObject};
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
 pub use literals::Literal;
-
-#[deprecated]
-pub use types::rustfn::ArgsOld;

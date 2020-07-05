@@ -43,7 +43,7 @@ pub use kernel::Kernel;
 pub use basic::Basic;
 pub use bound_function::BoundFunction;
 pub use function::Function;
-pub use rustfn::{RustFn, ArgsOld};
+pub use rustfn::RustFn;
 // pub use block::Block;
 pub use scope::Scope;
 pub use null::Null;
