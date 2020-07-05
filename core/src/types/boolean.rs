@@ -664,13 +664,3 @@ mod tests {
 			Boolean::qs_hash(&true.into(), args!()).unwrap());
 	}
 }
-
-
-
-
-
-
-
-
-
-
