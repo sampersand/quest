@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::types::{Text, Boolean};
+use crate::types::Boolean;
 
 /// The base type that all other Quest types inherit from.
 ///
@@ -65,7 +65,7 @@ impl Pristine {
 	/// assert(  == ["2", 3].$inspect() == '["2", 3]' );
 	/// ```
 	#[allow(non_snake_case)]
-	pub fn qs_inspect(this: &Object, _: Args) -> Result<Text, !> {
+	pub fn qs_inspect(this: &Object, _: Args) -> Result<Object, !> {
 		Ok(format!("<{}:{}>", this.typename(), this.id()).into())
 	}
 

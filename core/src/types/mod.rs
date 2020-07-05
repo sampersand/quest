@@ -19,23 +19,22 @@ pub trait ObjectType : Debug + Any + Send + Sync + Clone {
 	fn _wait_for_setup_to_finish() {}
 }
 
-pub mod pristine;
-pub mod kernel;
-pub mod basic;
+mod pristine;
+mod kernel;
+mod basic;
 
-pub mod function;
-pub mod comparable;
-pub mod bound_function;
+mod function;
+mod comparable;
+mod bound_function;
+mod scope;
 pub mod rustfn;
-// pub mod block;
-pub mod scope;
 
-pub mod null;
-pub mod boolean;
+mod null;
+mod boolean;
 pub mod number;
-pub mod text;
+mod text;
 
-pub mod list;
+mod list;
 
 pub use convert::Convertible;
 pub use comparable::Comparable;

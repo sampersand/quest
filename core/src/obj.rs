@@ -132,6 +132,13 @@ impl Object {
 	pub fn deep_clone(&self) -> Object {
 		Object::from_parts(self.0.data.clone(), self.0.attrs.clone())
 	}
+
+	#[inline]
+	pub(crate) fn _ptr_hash(&self) -> u64 {
+		#[derive(Hash)]
+		struct Raw(*const Internal);
+		crate::utils::hash(&Raw(Arc::as_ptr(&self.0)))
+	}
 }
 
 impl Object {

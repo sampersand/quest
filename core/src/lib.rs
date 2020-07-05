@@ -22,7 +22,6 @@ pub fn init() {
 	/* todo: move all mapping initialization stuff here. */
 }
 
-pub mod attrs;
 pub mod utils;
 pub mod obj;
 pub mod types;

@@ -1,4 +1,4 @@
-use crate::{Object, Result, Args, attrs};
+use crate::{Object, Result, Args};
 use crate::types::{Number, Text};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops;
@@ -171,7 +171,8 @@ impl ops::Not for Boolean {
 	}
 }
 
-impl attrs::Inspect for Boolean {
+/// Quest functions
+impl Boolean {
 	/// Inspects the [`Boolean`].
 	///
 	/// This is identical to [`<Boolean as AtText>::call`]
@@ -181,12 +182,10 @@ impl attrs::Inspect for Boolean {
 	/// assert(false.$inspect() == "false");
 	/// ```
 	#[inline]
-	fn qs_inspect(this: &Object, args: Args) -> Result<Object> {
-		<Self as attrs::AtText>::qs_at_text(this, args)
+	pub fn qs_inspect(this: &Object, args: Args) -> Result<Object> {
+		Self::qs_at_text(this, args)
 	}
-}
 
-impl attrs::AtNumber for Boolean {
 	/// Convert this into a [`Number`].
 	///
 	/// [`true`](Boolean::TRUE) becomes [`1`](Number::ONE) and [`false`](Boolean::FALSE) becomes
@@ -197,32 +196,26 @@ impl attrs::AtNumber for Boolean {
 	/// assert(99 * false == 0);
 	/// ```
 	#[inline]
-	fn qs_at_num(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object> {
 		this.try_downcast_map(|this: &Self| Number::from(*this).into())
 	}
-}
 
-impl attrs::AtText for Boolean {
 	/// Convert this into a [`Text`].
 	///
 	/// [`true`](Boolean::TRUE) becomes `"true"` and [`false`](Boolean::FALSE) becomes `"false"`.
 	#[inline]
-	fn qs_at_text(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object> {
 		this.try_downcast_map(|this: &Self| Text::from(*this).into())
 	}
-}
 
-impl attrs::AtBoolean for Boolean {
 	/// Converts this into a [`Boolean`]
 	///
 	/// This simply calls [`Object::deep_clone`](crate::Object::deep_clone)
 	#[inline]
-	fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.deep_clone())
 	}
-}
 
-impl attrs::Eql for Boolean {
 	/// See if a this is equal to the first argument.
 	///
 	/// Unlike most methods, the first argument is not implicitly converted to a  [`Boolean`] first.
@@ -230,22 +223,20 @@ impl attrs::Eql for Boolean {
 	/// # Arguments
 	/// 1. (required) The value to compare against
 	#[inline]
-	fn qs_eql(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?;
 
 		this.try_downcast_map(|lhs: &Self| {
 			rhs.downcast_and_then(|rhs: &Self| lhs == rhs).unwrap_or(false).into()
 		})
 	}
-}
 
-impl attrs::Cmp for Boolean {
 	/// Compares this to the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The value to compare against
 	#[inline]
-	fn qs_cmp(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_cmp(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?;
 
 		this.try_downcast_map(|lhs: &Self| {
@@ -253,100 +244,84 @@ impl attrs::Cmp for Boolean {
 				.unwrap_or_default()
 		})
 	}
-}
 
-impl attrs::Not for Boolean {
 	/// Logical NOT of this.
 	#[inline]
-	fn qs_not(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_not(this: &Object, _: Args) -> Result<Object> {
 		this.try_downcast_map(|this: &Self| (!*this).into())
 	}
-}
 
-impl attrs::BitAnd for Boolean {
 	/// Logical AND of this and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_map(|this: &Self| (*this & rhs).into())
 	}
-}
 
-impl attrs::BitAndAssign for Boolean {
 	/// In-place logical AND of this and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut_map(|this: &mut Self| *this &= rhs)
 			.map(|_| this.clone())
 	}
-}
 
-impl attrs::BitOr for Boolean {
 	/// Logical OR of this and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_map(|this: &Self| (*this | rhs).into())
 	}
-}
 
-impl attrs::BitOrAssign for Boolean {
 	/// In-place logical OR of this and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut_map(|this: &mut Self| *this |= rhs)
 			.map(|_| this.clone())
 	}
-}
 
-impl attrs::BitXor for Boolean {
 	/// Logical XOR of this and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_map(|this: &Self| (*this ^ rhs).into())
 	}
-}
 
-impl attrs::BitXorAssign for Boolean {
 	/// In-place logical XOR of this and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The right-hand side
 	#[inline]
-	fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut_map(|this: &mut Self| *this ^= rhs)
 			.map(|_| this.clone())
 	}
-}
 
-impl attrs::Hash for Boolean {
 	#[inline]
-	fn qs_hash(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_hash(this: &Object, _: Args) -> Result<Object> {
 		this.try_downcast_map(|this: &Self| crate::utils::hash(this).into())
 	}
 }
@@ -373,27 +348,25 @@ for Boolean {
 	}
 }
 [(parents super::Basic) (convert "@bool")]:
-	"@text"   => function <Boolean as attrs::AtText>::qs_at_text,
-	"inspect" => function <Boolean as attrs::Inspect>::qs_inspect,
-	"@num"    => function <Boolean as attrs::AtNumber>::qs_at_num,
-	"@bool"   => function <Boolean as attrs::AtBoolean>::qs_at_bool,
-	"=="      => function <Boolean as attrs::Eql>::qs_eql,
-	"!"       => function <Boolean as attrs::Not>::qs_not,
-	"&"       => function <Boolean as attrs::BitAnd>::qs_bitand,
-	"&="      => function <Boolean as attrs::BitAndAssign>::qs_bitand_assign,
-	"|"       => function <Boolean as attrs::BitOr>::qs_bitor,
-	"|="      => function <Boolean as attrs::BitOrAssign>::qs_bitor_assign,
-	"^"       => function <Boolean as attrs::BitXor>::qs_bitxor,
-	"^="      => function <Boolean as attrs::BitXorAssign>::qs_bitxor_assign,
-	"<=>"     => function <Boolean as attrs::Cmp>::qs_cmp,
-	"hash"    => function <Boolean as attrs::Hash>::qs_hash,
+	"@text"   => function Boolean::qs_at_text,
+	"inspect" => function Boolean::qs_inspect,
+	"@num"    => function Boolean::qs_at_num,
+	"@bool"   => function Boolean::qs_at_bool,
+	"=="      => function Boolean::qs_eql,
+	"!"       => function Boolean::qs_not,
+	"&"       => function Boolean::qs_bitand,
+	"&="      => function Boolean::qs_bitand_assign,
+	"|"       => function Boolean::qs_bitor,
+	"|="      => function Boolean::qs_bitor_assign,
+	"^"       => function Boolean::qs_bitxor,
+	"^="      => function Boolean::qs_bitxor_assign,
+	"<=>"     => function Boolean::qs_cmp,
+	"hash"    => function Boolean::qs_hash,
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::attrs::*;
-
 
 	#[test]
 	fn at_num() {

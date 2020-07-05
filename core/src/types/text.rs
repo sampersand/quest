@@ -63,6 +63,7 @@ impl PartialEq<str> for Text {
 	}
 }
 
+
 impl From<Literal> for Text {
 	#[inline]
 	fn from(txt: Literal) -> Self {
