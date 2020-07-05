@@ -43,6 +43,3 @@ impl Object {
 		}
 	}
 }
-
-
-
