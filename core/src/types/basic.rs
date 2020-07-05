@@ -92,15 +92,13 @@ mod tests {
 
 	#[test]
 	fn at_bool() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Basic, "@bool");
 		assert_downcast_eq!(Boolean; Basic::qs_at_bool(&Basic.into(), args!()).unwrap(), true);
 		assert_downcast_eq!(Boolean; Basic::qs_at_bool(&Basic.into(), args!(false)).unwrap(), true);
 	}
 
 	#[test]
 	fn at_text() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
 		#[derive(Debug, Clone)]
 		struct Dummy(i64);
 
@@ -110,16 +108,19 @@ mod tests {
 			}
 		}
 
+		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Basic, "@text");
+
 		let dummy = Object::from(Dummy(12));
 
-		assert_downcast_eq!(Text; dummy.call_attr_lit("inspect", &[]).unwrap(), *"12");
+		assert_downcast_eq!(Text; dummy.call_attr_lit(INSPECT, &[]).unwrap(), *"12");
 		assert_downcast_eq!(Text; Basic::qs_at_text(&dummy, args!()).unwrap(), *"12");
 		assert_downcast_eq!(Text; Basic::qs_at_text(&dummy, args!(13)).unwrap(), *"12");
 	}
 
 	#[test]
 	fn eql() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Basic, "==");
 
 		let ref obj1 = Object::from(Basic);
 		let ref obj2 = Object::from(Basic);
@@ -135,7 +136,6 @@ mod tests {
 
 	#[test]
 	fn neq() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 		#[derive(Debug, Clone, PartialEq)]
 		struct Dummy(i64);
@@ -152,6 +152,7 @@ mod tests {
 		}
 
 		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Basic, "!=");
 
 		let ref obj1 = Object::from(Dummy(12));
 		let ref obj2 = Object::from(Dummy(12));
@@ -182,6 +183,7 @@ mod tests {
 			}
 		}
 
+		assert_contains!(Basic, "!");
 		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 		assert_downcast_eq!(Boolean; Basic::qs_not(&Dummy(true).into(), args!()).unwrap(), false);
@@ -192,7 +194,7 @@ mod tests {
 
 	#[test]
 	fn hash() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Basic, "hash");
 
 		let ref obj1 = Object::from(Basic);
 		let ref obj2 = Object::from(Basic);
@@ -208,8 +210,6 @@ mod tests {
 
 	#[test]
 	fn clone() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
 		#[derive(Debug, Clone, PartialEq)]
 		struct Dummy(i32);
 
@@ -221,6 +221,7 @@ mod tests {
 			}
 		}
 
+		assert_contains!(Basic, "clone");
 		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 		let ref obj = Object::from(Dummy(12));

@@ -370,7 +370,7 @@ mod tests {
 
 	#[test]
 	fn at_num() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "@num");
 		<Number as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 		assert_downcast_eq!(Number; Boolean::qs_at_num(&true.into(), args!()).unwrap(), Number::ONE);
@@ -381,7 +381,7 @@ mod tests {
 
 	#[test]
 	fn at_text() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "@text");
 		<Text as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 		assert_downcast_eq!(Text; Boolean::qs_at_text(&true.into(), args!()).unwrap(), Text::new_static("true"));
@@ -393,7 +393,7 @@ mod tests {
 
 	#[test]
 	fn at_bool() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "@bool");
 
 		{
 			let ref orig = Object::from(true);
@@ -419,7 +419,7 @@ mod tests {
 
 	#[test]
 	fn eql() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "==");
 
 		assert_downcast_eq!(Boolean; Boolean::qs_eql(&true.into(), args!(true)).unwrap(), true);
 		assert_downcast_eq!(Boolean; Boolean::qs_eql(&true.into(), args!(false)).unwrap(), false);
@@ -433,7 +433,8 @@ mod tests {
 
 	#[test]
 	fn not() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "!");
+
 		assert_downcast_eq!(Boolean; Boolean::qs_not(&true.into(), args!()).unwrap(), false);
 		assert_downcast_eq!(Boolean; Boolean::qs_not(&false.into(), args!()).unwrap(), true);
 
@@ -443,7 +444,7 @@ mod tests {
 
 	#[test]
 	fn bitand() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "&");
 
 		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(true)).unwrap(), true);
 		assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(false)).unwrap(), false);
@@ -457,7 +458,7 @@ mod tests {
 
 	#[test]
 	fn bitand_assign() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "&=");
 
 		{
 			let ref orig = Object::from(true);
@@ -496,7 +497,8 @@ mod tests {
 
 	#[test]
 	fn bitor() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "|");
+
 		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&true.into(), args!(true)).unwrap(), true);
 		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&true.into(), args!(false)).unwrap(), true);
 		assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(true)).unwrap(), true);
@@ -509,7 +511,7 @@ mod tests {
 
 	#[test]
 	fn bitor_assign() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "|=");
 
 		{
 			let ref orig = Object::from(false);
@@ -548,7 +550,8 @@ mod tests {
 
 	#[test]
 	fn bitxor() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "^");
+
 		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&true.into(), args!(true)).unwrap(), false);
 		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&true.into(), args!(false)).unwrap(), true);
 		assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(true)).unwrap(), true);
@@ -561,7 +564,7 @@ mod tests {
 
 	#[test]
 	fn bitxor_assign() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "^=");
 
 		{
 			let ref orig = Object::from(false);
@@ -607,7 +610,7 @@ mod tests {
 
 	#[test]
 	fn cmp() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "<=>");
 
 		let gt = Number::ONE;
 		let lt = -Number::ONE;
@@ -642,7 +645,7 @@ mod tests {
 
 	#[test]
 	fn hash() {
-		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_contains!(Boolean, "hash");
 		<Number as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 		assert_downcast_both_eq!(Number;
@@ -656,7 +659,6 @@ mod tests {
 		assert_downcast_both_ne!(Number;
 			Boolean::qs_hash(&true.into(), args!()).unwrap(),
 			Boolean::qs_hash(&false.into(), args!()).unwrap());
-
 
 		// make sure it responds correctly to too many parameters
 		assert_downcast_both_eq!(Number;

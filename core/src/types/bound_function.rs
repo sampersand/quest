@@ -7,6 +7,7 @@ use crate::literals::CALL;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BoundFunction;
 
+/// Quest functions
 impl BoundFunction {
 	/// Call this function with the specified args, passing them on to the unbound object.
 	pub fn qs_call(this: &Object, args: Args) -> Result<Object> {
@@ -22,5 +23,14 @@ for BoundFunction [(parents super::Basic)]:
 	"()" => function BoundFunction::qs_call,
 }
 
+#[cfg(test)]
+mod tests {
+	use super::*;
 
+	#[test]
+	fn call() {
+		assert_contains!(BoundFunction, "()");
 
+		// TODO: this
+	}
+}

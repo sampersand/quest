@@ -7,6 +7,15 @@ macro_rules! assert_missing_parameter {
 }
 
 #[cfg(test)]
+macro_rules! assert_contains {
+	($ty:ty, $method:literal) => {{
+		<$ty as $crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert!(<$ty as $crate::types::ObjectType>::mapping().has_attr_lit($method).unwrap());
+	}};
+}
+
+
+#[cfg(test)]
 macro_rules! assert_matches {
 	($lhs:expr, $pat:pat $(|$other:pat)*) => {{
 		let lhs = $lhs;
