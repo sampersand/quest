@@ -4,7 +4,7 @@ pub fn hash<T: std::hash::Hash + 'static>(data: &T) -> u64 {
 	use std::hash::{Hash, Hasher};
 	use std::any::TypeId;
 
-	let ref mut hasher = DefaultHasher::new();
+	let hasher = &mut DefaultHasher::new();
 
 	TypeId::of::<T>().hash(hasher);
 	data.hash(hasher);

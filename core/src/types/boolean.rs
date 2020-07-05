@@ -371,6 +371,8 @@ mod tests {
 	#[test]
 	fn at_num() {
 		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<Number as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
 		assert_downcast_eq!(Number; Boolean::qs_at_num(&true.into(), args!()).unwrap(), Number::ONE);
 		assert_downcast_eq!(Number; Boolean::qs_at_num(&false.into(), args!()).unwrap(), Number::ZERO);
 
@@ -380,6 +382,8 @@ mod tests {
 	#[test]
 	fn at_text() {
 		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<Text as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
 		assert_downcast_eq!(Text; Boolean::qs_at_text(&true.into(), args!()).unwrap(), Text::new_static("true"));
 		assert_downcast_eq!(Text; Boolean::qs_at_text(&false.into(), args!()).unwrap(), Text::new_static("false"));
 
@@ -639,6 +643,7 @@ mod tests {
 	#[test]
 	fn hash() {
 		<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<Number as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 		assert_downcast_both_eq!(Number;
 			Boolean::qs_hash(&true.into(), args!()).unwrap(),

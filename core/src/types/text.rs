@@ -227,7 +227,7 @@ impl Text {
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
 	}
 
-	pub fn qs_eql(&self, args: Args) -> crate::Result<bool> {
+	pub fn qs_eql(&self, args: Args) -> crate::Result<Object> {
 		Ok(args.arg(0)?.downcast_and_then(|rhs: &Self| self == rhs).unwrap_or(false).into())
 	}
 
