@@ -1,4 +1,7 @@
 # Quest
+
+[![CI](https://github.com/sampersand/quest/workflows/CI/badge.svg)](https://github.com/sampersand/quest/actions)
+
 A language based around extensibility and freedom
 
 # What's Quest
