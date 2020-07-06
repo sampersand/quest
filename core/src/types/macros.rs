@@ -133,9 +133,7 @@ macro_rules! impl_object_type {
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => function $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr_lit($attr, $crate::types::RustFn::new(
-			concat!(stringify!($obj), "::", $attr), |this, args| {
-				$val(this, args).map(Object::from).map_err(From::from)
-			})
+			concat!(stringify!($obj), "::", $attr), $val)
 		);
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};

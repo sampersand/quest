@@ -353,8 +353,8 @@ impl List {
 	/// assert(clone == list);
 	/// ```
 	#[inline]
-	pub fn qs_at_list(this: &Object, _: Args) -> Result<Object, !> {
-		Ok(this.clone())
+	pub fn qs_at_list(this: &Object, _: Args) -> crate::Result<Object> {
+		Ok(this.deep_clone())
 	}
 
 	/// Attempts to convert this into a [`Text`].

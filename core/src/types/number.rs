@@ -494,7 +494,7 @@ impl Number {
 	}
 
 	#[inline]
-	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object, !> {
+	pub fn qs_at_num(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
 

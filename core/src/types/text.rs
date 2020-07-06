@@ -174,7 +174,7 @@ impl<'a> TryFrom<&'a Text> for Number {
 
 impl Text {
 	#[inline]
-	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object, !> {
+	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
 

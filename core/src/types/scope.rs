@@ -5,12 +5,9 @@ use crate::types::Text;
 pub struct Scope;
 
 impl Scope {
-	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Text> {
-		if let Ok(name) = this.get_attr_lit("name") {
-			name.call_downcast_map(Text::clone)
-		} else {
-			Ok(Text::new_static("<unnamed scope>"))
-		}
+	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object> {
+		Ok(this.get_attr_lit("name")
+				.unwrap_or_else(|_| Text::new_static("<unnamed scope>").into()))
 	}
 
 	pub fn qs_super(_this: &Object, _args: Args) -> Result<Object> {

@@ -213,7 +213,7 @@ impl Boolean {
 	/// This simply calls [`Object::deep_clone`](crate::Object::deep_clone)
 	#[inline]
 	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
-		Ok(this.deep_clone())
+		Ok(this.clone())
 	}
 
 	/// See if a this is equal to the first argument.

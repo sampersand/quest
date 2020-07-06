@@ -65,7 +65,7 @@ impl Kernel {
 		// })
 	}
 
-	pub fn qs_loop(_: &Object, args: Args) -> Result<!> {
+	pub fn qs_loop(_: &Object, args: Args) -> Result<Object> {
 		let body = args.arg(0)?;
 		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
 			// b.set_attr_old("name", Object::from("loop"))?;
@@ -79,7 +79,7 @@ impl Kernel {
 		todo!("r#for")
 	}
 
-	pub fn qs_quit(_: &Object, args: Args) -> Result<!> {
+	pub fn qs_quit(_: &Object, args: Args) -> Result<Object> {
 		let code = args.arg(0)
 			.ok()
 			.map(|x| x.call_downcast_map(|n: &Number| n.floor()))
