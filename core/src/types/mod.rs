@@ -51,4 +51,4 @@ pub use boolean::Boolean;
 pub use number::Number;
 pub use text::Text;
 pub use list::List;
-pub use regex::Regex;
+pub use self::regex::Regex;
