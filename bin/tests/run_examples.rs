@@ -14,7 +14,7 @@ fn should_skip(p: &Path) -> bool {
 
 #[test]
 fn run_examples() {
-	let exe = dbg!(env!("CARGO_BIN_EXE_quest_exec"));
+	let exe = dbg!(env!("CARGO_BIN_EXE_quest-exec"));
 	let manifest_dir = dbg!(env!("CARGO_MANIFEST_DIR"));
 	let examples_dir = dbg!(Path::new(manifest_dir).join("../examples"));
 	let mut failed = false;

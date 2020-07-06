@@ -33,6 +33,7 @@ mod null;
 mod boolean;
 pub mod number;
 mod text;
+mod regex;
 
 mod list;
 
@@ -44,10 +45,10 @@ pub use basic::Basic;
 pub use bound_function::BoundFunction;
 pub use function::Function;
 pub use rustfn::RustFn;
-// pub use block::Block;
 pub use scope::Scope;
 pub use null::Null;
 pub use boolean::Boolean;
 pub use number::Number;
 pub use text::Text;
 pub use list::List;
+pub use regex::Regex;
