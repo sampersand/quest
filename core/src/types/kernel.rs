@@ -200,6 +200,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"Scope" => const super::Scope::mapping(),
 	"Text" => const super::Text::mapping(),
 	"Comparable" => const super::Comparable::mapping(),
+	"Tcp" => const super::tcp::Tcp::mapping(),
 
 	"if" => function Kernel::qs_if, 
 	"disp" => function Kernel::qs_disp,

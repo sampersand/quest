@@ -29,6 +29,8 @@ mod bound_function;
 mod scope;
 pub mod rustfn;
 
+pub mod tcp;
+
 mod null;
 mod boolean;
 pub mod number;
