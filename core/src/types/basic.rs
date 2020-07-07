@@ -10,8 +10,7 @@ pub struct Basic;
 
 /// Quest functions
 impl Basic {
-
-	/// Convert an object to a [`Boolean`](crate::types::Boolean)
+	/// Convert `this` into a [`Boolean`](crate::types::Boolean).
 	///
 	/// All objects are [`true`](crate::types::Boolean::TRUE) by default.
 	#[inline]
@@ -19,7 +18,7 @@ impl Basic {
 		Ok(true.into())
 	}
 
-	/// Converts an object to a [`Text`](crate::types::Text)
+	/// Converts `this` into a [`Text`](crate::types::Text).
 	///
 	/// This is simply a redirect to the `inspect` method.
 	#[inline]
@@ -27,24 +26,30 @@ impl Basic {
 		this.call_attr_lit(INSPECT, args)
 	}
 
-	/// See if two objects are equal.
+	/// See if `this` is equal to the first argument.
 	///
 	/// Unless overriden, objects are the same when they are the _exact same object_.
+	///
+	/// # Arguments
+	/// 1. (required) The other object.
 	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
 		Ok(this.is_identical(args.arg(0)?).into())
 	}
 
-	/// See if two objects aren't equal
+	/// See if `this` isn't equal to the first argument.
 	///
 	/// This simply calls the `==` method and then the `!` method on the result.
+	///
+	/// # Arguments
+	/// 1. (required) The other object.
 	#[inline]
 	pub fn qs_neq(this: &Object, args: Args) -> Result<Object> {
 		this.call_attr_lit(EQL, args)?
 		    .call_attr_lit(NOT, &[])
 	}
 
-	/// Get the logical inverse of the object.
+	/// Get the logical inverse of `this`.
 	///
 	/// This simply calls the `@bool` method and then the `!` method on the result.
 	#[inline]
@@ -53,7 +58,7 @@ impl Basic {
 		    .call_attr_lit(NOT, &[])
 	}
 
-	/// Get a hash of this object.
+	/// Get a hash of `this`.
 	///
 	/// This generates a unique hash per object, by taking the object's `ptr`'s hash.
 	#[inline]
@@ -61,13 +66,21 @@ impl Basic {
 		Ok(this._ptr_hash().into())
 	}
 
-	/// Creates a clone of the object.
+	/// Creates a clone of `this`.
 	///
 	/// This doesn't actually clone the underlying data—it marks it as "shared", and if it's modified
 	/// it will be cloned.
 	#[inline]
 	pub fn qs_clone(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.deep_clone())
+	}
+
+	/// Simply returns `this`.
+	///
+	/// This is useful for passing methods around to functions.
+	#[inline]
+	pub fn qs_itself(this: &Object, _: Args) -> Result<Object> {
+		Ok(this.clone())
 	}
 }
 
@@ -80,6 +93,7 @@ for Basic [(parents super::Kernel)]:
 	"!" => function Basic::qs_not,
 	"clone" => function Basic::qs_clone,
 	"hash" => function Basic::qs_hash,
+	"itself" => function Basic::qs_itself,
 	// "||"    => impls::or,
 	// "&&"    => impls::and,
 }
@@ -229,6 +243,13 @@ mod tests {
 		assert!(!obj.is_identical(&clone));
 		assert!(obj.eq_obj(&clone).unwrap());
 
+	}
+	#[test]
+	fn itself() {
+		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		let ref obj = Object::from(Basic);
+		assert!(obj.is_identical(&Basic::qs_itself(obj, args!()).unwrap()));
 	}
 }
 
