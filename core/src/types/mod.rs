@@ -33,7 +33,7 @@ mod null;
 mod boolean;
 pub mod number;
 mod text;
-
+pub mod regex;
 mod list;
 
 pub use convert::Convertible;

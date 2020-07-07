@@ -10,7 +10,7 @@ use quest_core::Object;
 pub use quest_core::types::Number;
 
 /// The error that can occur whilst trying to parse a Number
-pub type ParseError = quest_core::types::number::FromStrError;
+pub use quest_core::types::number::FromStrError as ParseError;
 
 impl Executable for Number {
 	fn execute(&self) -> quest_core::Result<Object> {

@@ -7,6 +7,7 @@ use std::fmt::{self, Display, Formatter};
 pub enum ErrorType {
 	CantReadStream(std::io::Error),
 	BadNumber(crate::token::primative::number::ParseError),
+	BadRegex(crate::token::primative::regex::RegexError),
 	UnterminatedBlockComment,
 	UnknownTokenStart(char),
 	UnterminatedQuote,
@@ -71,7 +72,8 @@ impl Display for ErrorType {
 		use ErrorType::*;
 		match self {
 			CantReadStream(err) => write!(f, "can't read next character: {}", err),
-			BadNumber(num) => write!(f, "bad number `{}`", num),
+			BadNumber(num) => write!(f, "bad number: {}", num),
+			BadRegex(err) => write!(f, "bad regex: {}", err),
 			UnknownTokenStart(chr) => write!(f, "unknown token start `{}`", chr),
 			UnterminatedQuote => write!(f, "unterminated quote"),
 			BadEscapeChar(chr) => write!(f, "bad escape char `{}`", chr),
@@ -90,7 +92,8 @@ impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
 		match self.r#type {
 			ErrorType::CantReadStream(ref err) => Some(err),
-			ErrorType::BadNumber(ref err) => err.source(),
+			ErrorType::BadNumber(ref err) => Some(err),
+			ErrorType::BadRegex(ref err) => Some(err),
 			_ => None
 		}
 	}

@@ -8,19 +8,24 @@ pub mod text;
 pub mod number;
 pub mod variable;
 pub mod stackpos;
+pub mod regex;
 
 
-/// A text literal .
-pub type Text = text::Text;
+/// A text literal.
+pub use text::Text;
 
-/// A number literal .
-pub type Number = number::Number;
+/// A number literal.
+pub use number::Number;
 
-/// A variable literal .
+/// A variable literal.
 pub use variable::Variable;
 
-/// A stackpos literal
+/// A stackpos literal.
 pub use stackpos::StackPos;
+
+/// A regex literal.
+pub use self::regex::Regex;
+
 
 /// Represents a primative value in Quest.
 ///
@@ -43,6 +48,7 @@ pub enum Primative {
 	/// See [`Variable`](#) for more information on parsing.
 	Variable(Variable),
 
+	Regex(Regex),
 	StackPos(StackPos)
 }
 
@@ -52,6 +58,7 @@ impl Display for Primative {
 			Primative::Text(t) => Display::fmt(&t, f),
 			Primative::Number(n) => Display::fmt(&n, f),
 			Primative::Variable(v) => Display::fmt(&v, f),
+			Primative::Regex(r) => Display::fmt(&r, f),
 			Primative::StackPos(s) => Display::fmt(&s, f),
 		}
 	}
@@ -63,6 +70,7 @@ impl Executable for Primative {
 			Primative::Text(t) => t.execute(),
 			Primative::Number(n) => n.execute(),
 			Primative::Variable(v) => v.execute(),
+			Primative::Regex(r) => r.execute(),
 			Primative::StackPos(s) => s.execute(),
 		}
 	}
@@ -88,6 +96,11 @@ impl Tokenizable for Primative {
 		}
 
 		match Text::try_tokenize(stream)?.map(Primative::Text) {
+			TokenizeResult::None => { /* do nothing, parse the next one */ },
+			other => return Ok(other)
+		}
+
+		match Regex::try_tokenize(stream)?.map(Primative::Regex) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}

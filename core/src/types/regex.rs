@@ -3,20 +3,34 @@ use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
 use crate::types::Text;
 
+/// An error that is caused by a bad regex being parsed.
+pub use ::regex::Error as RegexError;
+
+// TODO: figure out how to get this from the library
+/// Regex options. simply used for 
+pub type RegexOptions = String;
+
 #[derive(Clone)]
-pub struct Regex(regex::Regex);
+pub struct Regex(regex::Regex, RegexOptions);
+
+impl Default for Regex {
+	#[inline]
+	fn default() -> Self {
+		Self::new("").expect("default shouldn't fail")
+	}
+}
 
 impl Display for Regex {
 	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		write!(f, "/{}/", self.as_str())
+		write!(f, "/{}/{}", self.0.as_str(), self.1)
 	}
 }
 
 impl Debug for Regex {
 	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		f.debug_tuple("Regex").field(&self.as_str()).finish()
+		f.debug_tuple("Regex").field(&self.0.as_str()).field(&self.1).finish()
 	}
 }
 
@@ -24,33 +38,19 @@ impl Eq for Regex {}
 impl PartialEq for Regex {
 	#[inline]
 	fn eq(&self, rhs: &Regex) -> bool {
-		self.as_str() == rhs.as_str()
-	}
-}
-
-impl PartialEq<str> for Regex {
-	#[inline]
-	fn eq(&self, rhs: &str) -> bool {
-		self.as_str() == rhs
+		self.0.as_str() == rhs.0.as_str() && self.1 == rhs.1
 	}
 }
 
 impl Regex {
 	#[inline]
-	pub fn new(re: &str) -> Result<Regex, regex::Error> {
+	pub fn new(re: &str) -> Result<Regex, RegexError> {
 		Self::try_from(re)
 	}
 
 	#[inline]
-	pub fn as_str(&self) -> &str {
-		self.as_ref()
-	}
-}
-
-impl AsRef<str> for Regex {
-	#[inline]
-	fn as_ref(&self) -> &str {
-		self.0.as_str()
+	pub fn new_with_options(re: regex::Regex, opts: RegexOptions) -> Regex {
+		Self(re, opts)
 	}
 }
 
@@ -64,16 +64,16 @@ impl AsRef<regex::Regex> for Regex {
 impl From<regex::Regex> for Regex {
 	#[inline]
 	fn from(re: regex::Regex) -> Self {
-		Self(re)
+		Self::new_with_options(re, Default::default())
 	}
 }
 
 impl<'a> TryFrom<&'a str> for Regex {
-	type Error = regex::Error;
+	type Error = RegexError;
 
 	#[inline]
-	fn try_from(re: &'a str) -> Result<Self, regex::Error> {
-		regex::Regex::new(re).map(Self)
+	fn try_from(re: &'a str) -> Result<Self, RegexError> {
+		regex::Regex::new(re).map(Self::from)
 	}
 }
 
@@ -117,14 +117,34 @@ impl Regex {
 		})
 	}
 
-	/// Checks to see if the first argument matches.
+	/// Returns an Array of matched values.
 	///
-	/// The first argument is converted to a [`Text`] before matching
-	pub fn qs_matches(this: &Object, args: Args) -> crate::Result<Object> {
+	/// The first argument is converted to a [`Text`] before matching.
+	pub fn qs_match(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
 
 		this.try_downcast_and_then(|this: &Self| {
-			rhs.try_downcast_map(|rhs: &Text| {
+			rhs.call_downcast_map(|rhs: &Text| {
+				this.0
+					.captures(rhs.as_ref())
+					.map(|x| x.iter().map(|m| {
+							m.map(|m| Object::from(m.as_str().to_string()))
+								.unwrap_or_default()
+						}).collect::<Vec<_>>()
+						.into()
+					).unwrap_or_default()
+			})
+		})
+	}
+
+	/// Checks to see if the first argument matches.
+	///
+	/// The first argument is converted to a [`Text`] before matching.
+	pub fn qs_does_match(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?;
+
+		this.try_downcast_and_then(|this: &Self| {
+			rhs.call_downcast_map(|rhs: &Text| {
 				this.0.is_match(rhs.as_ref()).into()
 			})
 		})
@@ -137,5 +157,6 @@ for Regex [(parents super::Basic) (convert "@regex")]:
 	"@text"   => function Regex::qs_at_text,
 	"inspect" => function Regex::qs_inspect,
 	"=="      => function Regex::qs_eql,
-	"matches" => function Regex::qs_matches,
+	"does_match" => function Regex::qs_does_match,
+	"match" => function Regex::qs_match,
 }

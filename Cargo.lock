@@ -196,6 +196,7 @@ name = "quest-parser"
 version = "0.2.0"
 dependencies = [
  "quest-core",
+ "regex",
  "tempfile",
 ]
 
