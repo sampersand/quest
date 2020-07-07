@@ -1,4 +1,4 @@
-use crate::{Object, Args};
+use crate::{Object, Args, Result};
 
 use crate::types::{Boolean, List, Number, Text};
 use std::fmt::{self, Display, Formatter};
@@ -67,41 +67,39 @@ impl From<Null> for Text {
 
 
 impl Null {
-	#[allow(non_snake_case)]
 	#[inline]
-	pub fn qs_inspect(&self, _: Args) -> Result<Text, !> {
-		Ok(Text::from(*self))
+	pub fn qs_inspect(_: &Object, _: Args) -> Result<Object> {
+		Ok(Text::from(Null).into())
 	}
 
 	#[inline]
-	pub fn qs_at_bool(&self, _: Args) -> Result<Boolean, !> {
-		Ok(Boolean::from(*self))
+	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
+		Ok(Boolean::from(Null).into())
 	}
 
 	#[inline]
-	pub fn qs_at_list(&self, _: Args) -> Result<List, !> {
-		Ok(List::from(*self))
+	pub fn qs_at_list(_: &Object, _: Args) -> Result<Object> {
+		Ok(List::from(Null).into())
 	}
 
 	#[inline]
-	pub fn qs_at_num(&self, _: Args) -> Result<Number, !> {
-		Ok(Number::from(*self))
+	pub fn qs_at_num(_: &Object, _: Args) -> Result<Object> {
+		Ok(Number::from(Null).into())
 	}
 
 	#[inline]
-	pub fn qs_at_text(&self, _: Args) -> Result<Text, !> {
-		Ok(Text::from(*self))
+	pub fn qs_at_text(_: &Object, _: Args) -> Result<Object> {
+		Ok(Text::from(Null).into())
 	}
 
 	#[inline]
-	pub fn qs_call(&self, _: Args) -> Result<Null, !> {
-		Ok(*self)
+	pub fn qs_call(_: &Object, _: Args) -> Result<Object> {
+		Ok(Null.into())
 	}
 
 	#[inline]
-	pub fn qs_eql(&self, args: Args) -> Result<bool, crate::error::KeyError> {
-		let rhs = args.arg(0)?;
-		Ok(rhs.is_a::<Null>())
+	pub fn qs_eql(_: &Object, args: Args) -> Result<Object> {
+		Ok(args.arg(0)?.is_a::<Null>().into())
 	}
 }
 
@@ -121,13 +119,13 @@ for Null {
 	}
 }
 [(parents super::Basic)]:
-	"@text" => method_old Null::qs_at_text,
-	"inspect" => method_old Null::qs_inspect,
-	"@bool" => method_old Null::qs_at_bool,
-	"@list" => method_old Null::qs_at_list,
-	"@num" => method_old Null::qs_at_num,
-	"()" => method_old Null::qs_call,
-	"==" => method_old Null::qs_eql,
+	"@text" => function Null::qs_at_text,
+	"inspect" => function Null::qs_inspect,
+	"@bool" => function Null::qs_at_bool,
+	"@list" => function Null::qs_at_list,
+	"@num" => function Null::qs_at_num,
+	"()" => function Null::qs_call,
+	"==" => function Null::qs_eql,
 }
 
 #[cfg(test)]
@@ -136,33 +134,41 @@ mod tests {
 
 	#[test]
 	fn at_bool() {
-		assert_eq!(Null.qs_at_bool(args!()).unwrap(), Boolean::FALSE);
+		<Null as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		assert_downcast_eq!(Boolean; Null::qs_at_bool(&Null.into(), args!()).unwrap(), false);
+		assert_downcast_eq!(Boolean; Null::qs_at_bool(&Null.into(), args!(true)).unwrap(), false);
 	}
 
 	#[test]
 	fn at_num() {
-		assert_eq!(Null.qs_at_num(args!()).unwrap(), Number::ZERO);
+		assert_downcast_eq!(Number; Null::qs_at_num(&Null.into(), args!()).unwrap(), Number::ZERO);
+		assert_downcast_eq!(Number; Null::qs_at_num(&Null.into(), args!(true)).unwrap(),
+			Number::ZERO);
 	}
 
 	#[test]
 	fn at_text() {
-		assert_eq!(Null.qs_at_text(args!()).unwrap(), Text::new_static("null"));
+		assert_downcast_eq!(Text; Null::qs_at_text(&Null.into(), args!()).unwrap(),
+			Text::new_static("null"));
 	}
 
 	#[derive(Debug, Clone)]
 	struct Dummy;
-	impl_object_type! { for Dummy [(parents super::super::Basic)]: }
+	impl_object_type! { for Dummy [(parents crate::types::Basic)]: }
 
 	#[test]
 	fn call() {
-		assert_eq!(Null.qs_call(args!()).unwrap(), Null);
-		assert_eq!(Null.qs_call(args!(Dummy)).unwrap(), Null);
-		assert_eq!(Null.qs_call(args!(Dummy, Dummy)).unwrap(), Null);
+		assert!(Null::qs_call(&Null.into(), args!()).unwrap().is_a::<Null>());
+		assert!(Null::qs_call(&Null.into(), args!(Dummy)).unwrap().is_a::<Null>());
+		assert!(Null::qs_call(&Null.into(), args!(Dummy, Dummy)).unwrap().is_a::<Null>());
 	}
 
 	#[test]
 	fn eql() {
-		assert_eq!(Null.qs_eql(args!(Dummy)).unwrap(), false);
-		assert_eq!(Null.qs_eql(args!(Null)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Null::qs_eql(&Null.into(), args!(Dummy)).unwrap(), false);
+		assert_downcast_eq!(Boolean; Null::qs_eql(&Null.into(), args!(Null)).unwrap(), true);
+		assert_downcast_eq!(Boolean; Null::qs_eql(&Null.into(), args!(Null, Dummy)).unwrap(), true);
+
+		assert_missing_parameter!(Null::qs_eql(&Null.into(), args!()), 0);
 	}
 }

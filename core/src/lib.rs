@@ -1,10 +1,9 @@
 #![deny(warnings)]
+#![feature(never_type)]
 #![allow(
 	// TODO
 	clippy::missing_safety_doc,
 )]
-
-#![feature(never_type)]
 
 macro_rules! unreachable_debug_or_unchecked {
 	() => {

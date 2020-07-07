@@ -33,7 +33,6 @@ mod null;
 mod boolean;
 pub mod number;
 mod text;
-mod regex;
 
 mod list;
 
