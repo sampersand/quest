@@ -15,7 +15,7 @@ impl Runner for Repl {
 
 impl Repl {
 	pub fn new() -> Self {
-		Repl { context: Context::new(Some("<repl>".into())) }
+		Self { context: Context::new(Some("<repl>".into())) }
 	}
 }
 impl Iterator for Repl {

@@ -10,7 +10,7 @@ use quest_core::Object;
 pub use quest_core::types::Number;
 
 /// The error that can occur whilst trying to parse a Number
-pub type ParseError = quest_core::types::number::FromStrError;
+pub use quest_core::types::number::FromStrError as ParseError;
 
 impl Executable for Number {
 	fn execute(&self) -> quest_core::Result<Object> {
@@ -26,13 +26,14 @@ impl Executable for Number {
 fn try_tokenize_radix<S: Stream>(stream: &mut S, radix: u32) -> Result<Number> {
 	let mut number = String::with_capacity(1);
 
-	while let Some(chr) = stream.next().transpose()? {
+	while let Some(chr) = stream.next_non_underscore().transpose()? {
 		match chr {
-			'_' => { /* do nothing, underscores are ignored */ },
-			'0'..='9' | 'a'..='z' | 'A'..='Z' => number.push(chr),
-			_ => {
+			chr @ '0'..='9'
+				| chr @ 'a'..='z'
+				| chr @ 'A'..='Z' => number.push(chr),
+			chr => {
 				// we've reached a non-number value, go back..
-				try_seek!(stream, -1);
+				unseek_char!(stream; chr);
 				break
 			}
 		}
@@ -53,22 +54,13 @@ fn try_tokenize_radix<S: Stream>(stream: &mut S, radix: u32) -> Result<Number> {
 ///   ([eE][+-]?[\d_]+\) # Position::Mantissa
 /// ```
 fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
-	let mut number = String::with_capacity(1);
-
 	#[derive(PartialEq)]
 	enum Position { Integer, Decimal, Mantissa }
 
+	let mut number = String::with_capacity(1);
 	let mut pos = Position::Integer;
 
-	fn next_non_underscore<S: Stream>(stream: &mut S) -> Result<Option<char>> {
-		match stream.next().transpose()? {
-			Some('_') => next_non_underscore(stream),
-			Some(chr) => Ok(Some(chr)),
-			None => Ok(None)
-		}
-	}
-
-	while let Some(chr) = next_non_underscore(stream)? {
+	while let Some(chr) = stream.next_non_underscore().transpose()? {
 		match chr {
 			// no matter where we are, we always accept a decimal
 			'0'..='9' => number.push(chr),
@@ -82,14 +74,15 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 						number.push(digit);
 						pos = Position::Decimal;
 					},
-					Some(_) => {
-						try_seek!(stream, -2); // unseek both the current char and the `.`
+					Some(chr) => {
+						// unseek both the current char and the `.`
+						unseek_char!(stream; chr, '.');
 						break;
 					},
 					// This means we have a dangling period. Let some other tokenizer deal with that,
 					// and just happily parse our digit.
 					None => {
-						try_seek!(stream, -1);
+						unseek_char!(stream; '.');
 						break;
 					}
 				}
@@ -98,18 +91,19 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 			// we're an exponential number.
 			'e' | 'E' if pos != Position::Mantissa => {
 				number.push('e');
+
 				// Reead the optional `+` or `-` following an `e`
-				match next_non_underscore(stream)? {
+				match stream.next_non_underscore().transpose()? {
 					Some(chr @ '+') | Some(chr @ '-') => number.push(chr),
-					Some(_) => try_seek!(stream, -1),
-					_ => {}
+					Some(chr) => unseek_char!(stream; chr),
+					None => { /* do nothing */ }
 				}
+
 				pos = Position::Mantissa
 			},
-			'_' => { /* ignore underscores entirely */ }
-			_ => {
+			chr => {
 				// any other character indicates we're done looking
-				try_seek!(stream, -1);
+				unseek_char!(stream; chr);
 				break
 			}
 		}
@@ -120,6 +114,7 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 		.map_err(|err| parse_error!(stream, BadNumber(err)))
 }
 
+#[allow(clippy::use_self)]
 impl Tokenizable for Number {
 	type Item = Self;
 	/// Try to parse a literal number from the given stream.
@@ -146,8 +141,8 @@ impl Tokenizable for Number {
 	/// Underscores are allowed in most places, where they are completely ignored. The only time an
 	/// underscore is significant is directly after the `.` in floats (e.g. `12._3`), as that implies
 	/// an element access, e.g. the tokens '12' '.' '_3'.
+	
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-
 		match stream.next().transpose()? {
 			// If we find a zero, we could have `0x...` syntax
 			Some('0') => {
@@ -163,8 +158,10 @@ impl Tokenizable for Number {
 					// Allow for literal binary numbers (which match /^0b[01_]+/i)
 					Some('b') | Some('B') => try_tokenize_radix(stream,  2).map(TokenizeResult::Some),
 					// Any other trailing value indicates we're dealing with a number with a leading zero
-					Some(_) => {
-						try_seek!(stream, -2);
+					Some(chr) => {
+						unseek_char!(stream; chr, '0');
+						let y: &&i32 = &&0;
+						let _ = y.clone();
 						try_tokenize_basic(stream).map(TokenizeResult::Some)
 					},
 					// If we have no numbers remaining, we read a literal zero.
@@ -173,14 +170,14 @@ impl Tokenizable for Number {
 			},
 
 			// If we read a digit, then try parsing a basic number.
-			Some('1'..='9') => {
-				try_seek!(stream, -1);
+			Some(chr @ '1'..='9') => {
+				unseek_char!(stream; chr);
 				try_tokenize_basic(stream).map(TokenizeResult::Some)
 			},
 
 			// If we read anything else, it's not number.
-			Some(_) => {
-				try_seek!(stream, -1);
+			Some(chr) => {
+				unseek_char!(stream; chr);
 				Ok(TokenizeResult::None)
 			},
 

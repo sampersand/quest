@@ -10,6 +10,7 @@ pub use key_error::KeyError;
 pub use value_error::ValueError;
 
 #[derive(Debug)]
+#[allow(clippy::pub_enum_variant_names)]
 #[non_exhaustive]
 pub enum Error {
 	/// Something internal that shouldn't have occured

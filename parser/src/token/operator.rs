@@ -44,7 +44,7 @@ macro_rules! operator_enum {
 				$({
 					let o = operator_enum!(; TRY_PARSE $repr $(($($ident)?))?);
 					if o.map(|x| stream.next_if_starts_with(x)).transpose()?.unwrap_or(false) {
-						return Ok(TokenizeResult::Some(Operator::$variant))
+						return Ok(TokenizeResult::Some(Self::$variant))
 					}
 				})+
 				{
@@ -56,21 +56,24 @@ macro_rules! operator_enum {
 		impl Operator {
 			pub const MAX_PRECEDENCE: usize = operator_enum!(; MAX_PRECEDENCE $($ord)+) as usize;
 
-			pub fn repr(&self) -> &'static str {
+			#[must_use]
+			pub const fn repr(&self) -> &'static str {
 				match self {
-					$(Operator::$variant => $repr),+
-				}
-			}
-			pub fn precedence(&self) -> usize {
-				match self {
-					$(Operator::$variant => $ord,)+
+					$(Self::$variant => $repr),+
 				}
 			}
 
-
-			pub fn assoc(&self) -> Associativity {
+			#[must_use]
+			pub const fn precedence(&self) -> usize {
 				match self {
-					$(Operator::$variant => operator_enum!(; ASSOC $($assoc)?),)+
+					$(Self::$variant => $ord,)+
+				}
+			}
+
+			#[must_use]
+			pub const fn assoc(&self) -> Associativity {
+				match self {
+					$(Self::$variant => operator_enum!(; ASSOC $($assoc)?),)+
 				}
 			}
 		}
@@ -125,28 +128,28 @@ impl std::hash::Hash for Operator {
 
 impl PartialEq for Operator {
 	#[inline]
-	fn eq(&self, rhs: &Operator) -> bool {
+	fn eq(&self, rhs: &Self) -> bool {
 		self.repr() == rhs.repr()
 	}
 }
 
 impl From<Operator> for Token {
 	#[inline]
-	fn from(op: Operator) -> Token {
-		Token::Operator(op)
+	fn from(op: Operator) -> Self {
+		Self::Operator(op)
 	}
 }
 
 impl PartialOrd for Operator {
 	#[inline]
-	fn partial_cmp(&self, rhs: &Operator) -> Option<std::cmp::Ordering> {
-		Some(self.cmp(&rhs))
+	fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+		Some(self.cmp(rhs))
 	}
 }
 
 impl Ord for Operator {
 	#[inline]
-	fn cmp(&self, rhs: &Operator) -> std::cmp::Ordering {
+	fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
 		self.precedence().cmp(&rhs.precedence())
 	}
 }

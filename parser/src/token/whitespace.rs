@@ -5,25 +5,18 @@ use crate::{Result, Stream};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Whitespace;
 
-pub enum Never {}
-impl From<Never> for super::Token {
-	fn from(_: Never) -> Self {
-		unreachable!()
-	}
-}
-
 impl Tokenizable for Whitespace {
-	type Item = Never;
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Never>> {
+	type Item = !;
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<!>> {
 		match stream.next().transpose()? {
 			Some(chr) if chr.is_whitespace() =>
 				while let Some(chr) = stream.next().transpose()? {
 					if !chr.is_whitespace() {
-						try_seek!(stream, -1);
+						unseek_char!(stream; chr);
 						return Ok(TokenizeResult::RestartParsing);
 					}
 				},
-			Some(_) => try_seek!(stream, -1),
+			Some(chr) => unseek_char!(stream; chr),
 			None => {}
 		}
 

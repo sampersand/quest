@@ -164,7 +164,7 @@ impl BoundOperator {
 	{
 
 		match ctor.next().transpose()? {
-			Some(Token::Operator(oper)) if parent_op.map(|parent_op| oper < parent_op).unwrap_or(true)
+			Some(Token::Operator(oper)) if parent_op.map_or(true, |parent_op| oper < parent_op)
 				=> build_op(oper, ctor, lhs),
 			Some(t @ Token::Operator(_))
 				| Some(t @ Token::Endline)
@@ -174,7 +174,7 @@ impl BoundOperator {
 				ctor.put_back(Ok(tkn));
 
 				// any other token indicates that we're being called
-				if parent_op.map(|parent_op| Operator::Call < parent_op).unwrap_or(true) {
+				if parent_op.map_or(true, |parent_op| Operator::Call < parent_op) {
 					build_op(Operator::Call, ctor, lhs)
 				} else {
 					ctor.put_back(Ok(Token::Operator(Operator::Call)));

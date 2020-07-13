@@ -8,19 +8,24 @@ pub mod text;
 pub mod number;
 pub mod variable;
 pub mod stackpos;
+pub mod regex;
 
 
-/// A text literal .
-pub type Text = text::Text;
+/// A text literal.
+pub use text::Text;
 
-/// A number literal .
-pub type Number = number::Number;
+/// A number literal.
+pub use number::Number;
 
-/// A variable literal .
+/// A variable literal.
 pub use variable::Variable;
 
-/// A stackpos literal
+/// A stackpos literal.
 pub use stackpos::StackPos;
+
+/// A regex literal.
+pub use self::regex::Regex;
+
 
 /// Represents a primative value in Quest.
 ///
@@ -43,16 +48,18 @@ pub enum Primative {
 	/// See [`Variable`](#) for more information on parsing.
 	Variable(Variable),
 
+	Regex(Regex),
 	StackPos(StackPos)
 }
 
 impl Display for Primative {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Primative::Text(t) => Display::fmt(&t, f),
-			Primative::Number(n) => Display::fmt(&n, f),
-			Primative::Variable(v) => Display::fmt(&v, f),
-			Primative::StackPos(s) => Display::fmt(&s, f),
+			Self::Text(t) => Display::fmt(&t, f),
+			Self::Number(n) => Display::fmt(&n, f),
+			Self::Variable(v) => Display::fmt(&v, f),
+			Self::Regex(r) => Display::fmt(&r, f),
+			Self::StackPos(s) => Display::fmt(&s, f),
 		}
 	}
 }
@@ -60,39 +67,45 @@ impl Display for Primative {
 impl Executable for Primative {
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		match self {
-			Primative::Text(t) => t.execute(),
-			Primative::Number(n) => n.execute(),
-			Primative::Variable(v) => v.execute(),
-			Primative::StackPos(s) => s.execute(),
+			Self::Text(t) => t.execute(),
+			Self::Number(n) => n.execute(),
+			Self::Variable(v) => v.execute(),
+			Self::Regex(r) => r.execute(),
+			Self::StackPos(s) => s.execute(),
 		}
 	}
 }
 
 impl From<Primative> for Token {
-	fn from(lit: Primative) -> Token {
-		Token::Primative(lit)
+	fn from(lit: Primative) -> Self {
+		Self::Primative(lit)
 	}
 }
 
 impl Tokenizable for Primative {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		match Variable::try_tokenize(stream)?.map(Primative::Variable) {
+		match Variable::try_tokenize(stream)?.map(Self::Variable) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		match Number::try_tokenize(stream)?.map(Primative::Number) {
+		match Number::try_tokenize(stream)?.map(Self::Number) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		match Text::try_tokenize(stream)?.map(Primative::Text) {
+		match Text::try_tokenize(stream)?.map(Self::Text) {
 			TokenizeResult::None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
-		Ok(StackPos::try_tokenize(stream)?.map(Primative::StackPos))
+		match Regex::try_tokenize(stream)?.map(Self::Regex) {
+			TokenizeResult::None => { /* do nothing, parse the next one */ },
+			other => return Ok(other)
+		}
+
+		Ok(StackPos::try_tokenize(stream)?.map(Self::StackPos))
 	}
 }
 

@@ -7,8 +7,8 @@ use crate::Result;
 pub struct Constructor<I>(I, Vec<Token>);
 
 impl<I> Constructor<I> {
-	pub fn new(iter: I) -> Self {
-		Constructor(iter, vec![])
+	pub const fn new(iter: I) -> Self {
+		Self(iter, Vec::new())
 	}
 }
 

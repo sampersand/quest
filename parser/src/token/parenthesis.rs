@@ -18,18 +18,21 @@ impl Display for ParenType {
 }
 
 impl ParenType {
-	pub fn left(&self) -> char {
+	#[must_use]
+	pub const fn left(&self) -> char {
 		match self {
-			ParenType::Round  => '(',
-			ParenType::Square => '[',
-			ParenType::Curly  => '{'
+			Self::Round  => '(',
+			Self::Square => '[',
+			Self::Curly  => '{'
 		}
 	}
-	pub fn right(&self) -> char {
+
+	#[must_use]
+	pub const fn right(&self) -> char {
 		match self {
-			ParenType::Round  => ')',
-			ParenType::Square => ']',
-			ParenType::Curly  => '}'
+			Self::Round  => ')',
+			Self::Square => ']',
+			Self::Curly  => '}'
 		}
 	}
 }
@@ -37,9 +40,9 @@ impl ParenType {
 impl From<ParenType> for Operator {
 	fn from(paren_type: ParenType) -> Self {
 		match paren_type {
-			ParenType::Round => Operator::Call,
-			ParenType::Square => Operator::Index,
-			ParenType::Curly => Operator::WithBlock,
+			ParenType::Round => Self::Call,
+			ParenType::Square => Self::Index,
+			ParenType::Curly => Self::WithBlock,
 		}
 	}
 }
@@ -66,8 +69,8 @@ impl Tokenizable for Parenthesis {
 			Some(']') => Ok(TokenizeResult::Some(Token::Right(ParenType::Square))),
 			Some('{') => Ok(TokenizeResult::Some(Token::Left(ParenType::Curly))),
 			Some('}') => Ok(TokenizeResult::Some(Token::Right(ParenType::Curly))),
-			Some(_) => {
-				try_seek!(stream, Current(-1));
+			Some(c) => {
+				unseek_char!(stream; c);
 				Ok(TokenizeResult::None)
 			},
 			None => Ok(TokenizeResult::None)

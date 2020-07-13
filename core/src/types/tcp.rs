@@ -39,9 +39,9 @@ for Tcp [(parents super::Basic)]:
 	},
 	"read" => function |this: &Object, _: Args| -> Result<Object> {
 		this.try_downcast_mut_and_then::<_, _, crate::Error, _>(|tcp: &mut Tcp| {
+			use std::io::{BufReader, BufRead};
 			let mut res = Vec::<u8>::with_capacity(5);
 			let tcp = tcp.0.lock().unwrap();
-			use std::io::{BufReader, BufRead};
 			let mut bufr = BufReader::new(&*tcp);
 			while bufr.read_until(b'\n', res.as_mut())
 				.map_err(|err| crate::Error::Messaged(err.to_string()))? != 0

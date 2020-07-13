@@ -64,6 +64,8 @@ impl Pristine {
 	/// assert(  == 2.$inspect() == '"2"' );
 	/// assert(  == ["2", 3].$inspect() == '["2", 3]' );
 	/// ```
+	///
+	/// [`Text`]: crate::types::Text
 	#[allow(non_snake_case)]
 	pub fn qs_inspect(this: &Object, _: Args) -> Result<Object> {
 		Ok(format!("<{}:{}>", this.typename(), this.id()).into())

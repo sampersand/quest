@@ -74,8 +74,8 @@ impl Tokenizable for Text {
 		match stream.next().transpose()? {
 			Some('$') => try_tokenize_dollar_sign(stream),
 			Some(quote @ '\"') | Some(quote @ '\'') => try_tokenize_quoted(stream, quote),
-			Some(_) => {
-				try_seek!(stream, -1);
+			Some(chr) => {
+				unseek_char!(stream; chr);
 				Ok(TokenizeResult::None)
 			},
 			None => Ok(TokenizeResult::None)

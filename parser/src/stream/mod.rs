@@ -3,7 +3,7 @@ mod context;
 mod token_iter;
 mod buf_stream;
 
-use std::io::Seek;
+use std::io::{Seek, SeekFrom};
 use crate::Result;
 
 /// A trait representing something that can be used to parse [`Token`](#)s from.
@@ -17,13 +17,21 @@ pub trait Stream : Seek + Contexted + Iterator<Item=Result<char>> {
 	/// seeking back if it doesn't.
 	fn starts_with(&mut self, s: &str) -> Result<bool>;
 
+	fn next_non_underscore(&mut self) -> Option<Result<char>> {
+		match self.next()? {
+			Ok('_') => self.next_non_underscore(),
+			other => Some(other)
+		}
+	}
+
 	/// If the stream starts with `s`, then seek forward that many bytes.
 	///
 	/// Returns `true` if the stream started with `s` and `false` if it didn't.
 	fn next_if_starts_with(&mut self, s: &str) -> Result<bool> {
 		if self.starts_with(s)? {
-			try_seek!(self, s.len() as _);
-			Ok(true)
+			self.seek(SeekFrom::Current(s.chars().count() as i64))
+				.map_err(|err| parse_error!(self, CantReadStream(err)))
+				.and(Ok(true))
 		} else {
 			Ok(false)
 		}

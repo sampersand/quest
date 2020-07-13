@@ -186,6 +186,7 @@ dependencies = [
 name = "quest-core"
 version = "0.2.2"
 dependencies = [
+ "bitflags",
  "lazy_static",
  "rand",
  "regex",
@@ -196,6 +197,7 @@ name = "quest-parser"
 version = "0.2.0"
 dependencies = [
  "quest-core",
+ "regex",
  "tempfile",
 ]
 

@@ -187,7 +187,6 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"null" => const Null::new(),
 
 	"Basic" => const super::Basic::mapping(),
-	"Regex" => const super::Regex::mapping(),
 	"Boolean" => const super::Boolean::mapping(),
 	"BoundFunction" => const super::BoundFunction::mapping(),
 	"Function" => const super::Function::mapping(),

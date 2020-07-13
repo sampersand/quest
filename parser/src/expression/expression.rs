@@ -14,9 +14,9 @@ pub enum Expression {
 impl Display for Expression {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Expression::Primative(prim) => Display::fmt(prim, f),
-			Expression::Block(block) => Display::fmt(block, f),
-			Expression::Operator(op) => Display::fmt(op, f),
+			Self::Primative(prim) => Display::fmt(prim, f),
+			Self::Block(block) => Display::fmt(block, f),
+			Self::Operator(op) => Display::fmt(op, f),
 		}
 	}
 }
@@ -25,28 +25,28 @@ impl Executable for Expression {
 	#[inline]
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		match self {
-			Expression::Primative(prim) => prim.execute(),
-			Expression::Block(block) => block.execute(),
-			Expression::Operator(op) => op.execute(),
+			Self::Primative(prim) => prim.execute(),
+			Self::Block(block) => block.execute(),
+			Self::Operator(op) => op.execute(),
 		}
 	}
 }
 
 impl From<Primative> for Expression {
 	fn from(prim: Primative) -> Self {
-		Expression::Primative(prim)
+		Self::Primative(prim)
 	}
 }
 
 impl From<Block> for Expression {
 	fn from(block: Block) -> Self {
-		Expression::Block(block)
+		Self::Block(block)
 	}
 }
 
 impl From<BoundOperator> for Expression {
 	fn from(oper: BoundOperator) -> Self {
-		Expression::Operator(oper)
+		Self::Operator(oper)
 	}
 }
 
@@ -54,7 +54,7 @@ impl From<BoundOperator> for Expression {
 impl Constructable for Expression {
 	type Item = Self;
 
-	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Expression>>
+	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Self>>
 	where
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
@@ -74,19 +74,19 @@ impl Constructable for Expression {
 }
 
 impl Expression {
-	pub fn try_construct<C>(ctor: &mut C) -> Result<Expression>
+	pub fn try_construct<C>(ctor: &mut C) -> Result<Self>
 	where
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
-		Expression::try_construct_precedence(ctor, None)?
+		Self::try_construct_precedence(ctor, None)?
 			.ok_or_else(|| parse_error!(ctor, ExpectedExpression))
 	}
 
-	pub fn try_construct_precedence<C>(ctor: &mut C, op: Option<Operator>) -> Result<Option<Expression>>
+	pub fn try_construct_precedence<C>(ctor: &mut C, op: Option<Operator>) -> Result<Option<Self>>
 	where
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
-		if let Some(primary) = Expression::try_construct_primary(ctor)? {
+		if let Some(primary) = Self::try_construct_primary(ctor)? {
 			BoundOperator::construct_operator(ctor, primary, op).map(Some)
 		} else {
 			Ok(None)
@@ -139,7 +139,7 @@ impl Expression {
 			}
 		}
 
-		Expression::try_construct(&mut WrappedBlock(Where::Start, Constructor::new(iter)))
+		Self::try_construct(&mut WrappedBlock(Where::Start, Constructor::new(iter)))
 	}
 }
 

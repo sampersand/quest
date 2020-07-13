@@ -41,10 +41,10 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 
 	match (file, eval) {
 		(Some(_), Some(_)) => panic!("both options set?"),
-		(Some(file), None) if file.to_str() == Some("-") => run::run_stdin(args),
-		(Some(file), None) => run::run_file(file, args),
-		(None, Some(expr)) => run::run_expression(expr, args),
-		(None, None)       => run::run_repl(args)
+		(Some(file), None) if file.to_str() == Some("-") => run::stdin(args),
+		(Some(file), None) => run::file(file, args),
+		(None, Some(expr)) => run::expression(expr, args),
+		(None, None)       => run::repl(args)
 	}
 }
 

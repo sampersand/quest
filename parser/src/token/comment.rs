@@ -1,4 +1,3 @@
-pub use super::whitespace::Never;
 use crate::token::{Tokenizable, TokenizeResult};
 use crate::{Stream, Result};
 
@@ -33,9 +32,9 @@ fn block_comment<S: Stream>(stream: &mut S) -> Result<()> {
 }
 
 impl Tokenizable for Comment {
-	type Item = Never;
+	type Item = !;
 	
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Never>> {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<!>> {
 		if stream.starts_with("##__EOF__##")? {
 			Ok(TokenizeResult::StopParsing)
 		} else if stream.starts_with("#")? {

@@ -9,37 +9,37 @@ pub enum Error {
 
 impl From<std::io::Error> for Error {
 	fn from(error: std::io::Error) -> Self {
-		Error::Io(error)
+		Self::Io(error)
 	}
 }
 
 impl From<quest_core::Error> for Error {
 	fn from(error: quest_core::Error) -> Self {
-		Error::Quest(error)
+		Self::Quest(error)
 	}
 }
 
 impl From<quest_parser::Error> for Error {
 	fn from(error: quest_parser::Error) -> Self {
-		Error::Parser(error)
+		Self::Parser(error)
 	}
 }
 
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Error::Quest(err) => Display::fmt(&err, f),
-			Error::Parser(err) => Display::fmt(&err, f),
-			Error::Io(err) => Display::fmt(&err, f),
+			Self::Quest(err) => Display::fmt(&err, f),
+			Self::Parser(err) => Display::fmt(&err, f),
+			Self::Io(err) => Display::fmt(&err, f),
 		}
 	}
 }
 impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
 		match self {
-			Error::Quest(err) => Some(err),
-			Error::Parser(err) => Some(err),
-			Error::Io(err) => Some(err)
+			Self::Quest(err) => Some(err),
+			Self::Parser(err) => Some(err),
+			Self::Io(err) => Some(err)
 		}
 	}
 }

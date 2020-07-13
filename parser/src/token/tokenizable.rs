@@ -11,19 +11,20 @@ pub enum TokenizeResult<T> {
 	None
 }
 
+	#[allow(clippy::use_self)]
 impl<T> TokenizeResult<T> {
 	pub fn map<F: FnOnce(T) -> Q, Q>(self, func: F) -> TokenizeResult<Q> {
 		match self {
-			TokenizeResult::Some(val) => TokenizeResult::Some(func(val)),
-			TokenizeResult::RestartParsing => TokenizeResult::RestartParsing,
-			TokenizeResult::StopParsing => TokenizeResult::StopParsing,
-			TokenizeResult::None => TokenizeResult::None
+			Self::Some(val) => TokenizeResult::Some(func(val)),
+			Self::RestartParsing => TokenizeResult::RestartParsing,
+			Self::StopParsing => TokenizeResult::StopParsing,
+			Self::None => TokenizeResult::None
 		}
 	}
 
-	pub fn map_none<F: FnOnce() -> T>(self, func: F) -> TokenizeResult<T> {
-		if matches!(self, TokenizeResult::None) {
-			TokenizeResult::Some(func())
+	pub fn map_none<F: FnOnce() -> T>(self, func: F) -> Self {
+		if matches!(self, Self::None) {
+			Self::Some(func())
 		} else {
 			self
 		}

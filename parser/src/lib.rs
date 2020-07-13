@@ -1,5 +1,4 @@
-#![allow(clippy::module_inception)]
-
+#![allow(clippy::module_inception, clippy::unnested_or_patterns)]
 #![feature(never_type)]
 #![deny(warnings)]
 

@@ -200,7 +200,7 @@ impl Constructable for Block {
 
 		while let Some(tkn) = ctor.next().transpose()? {
 			match tkn {
-				Token::Right(rparen) if rparen == paren => {
+				Token::Right(right_paren) if right_paren == paren => {
 					if let Some(curr_line) = curr_line {
 						block.lines.push(curr_line);
 					}
@@ -208,7 +208,8 @@ impl Constructable for Block {
 					return Ok(Some(block))
 				},
 
-				rparen @ Token::Right(..) => return Err(parse_error!(ctor, UnexpectedToken(rparen))),
+				right_paren @ Token::Right(..)
+					=> return Err(parse_error!(ctor, UnexpectedToken(right_paren))),
 				Token::Endline => 
 					if let Some(curr_line) = curr_line.take() {
 						block.lines.push(curr_line);
@@ -245,18 +246,9 @@ impl Block {
 			match this_cloned.run_block_to_object() {
 				Ok(v) => Ok(v),
 				Err(err @ quest_core::Error::Return { .. }) => Err(err),
-				Err(err) => {
-					println!("{:?}", this_cloned.context);
-					Err(err)
-				}
+				Err(err) => Err(err)
 			}
 		})
-
-	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
-	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
-	// }
-
-	// 	Block::call(this, args)
 	}
 
 	#[inline]

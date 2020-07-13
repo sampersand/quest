@@ -4,9 +4,11 @@ use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
 #[non_exhaustive]
+#[allow(clippy::module_name_repetitions)]
 pub enum ErrorType {
 	CantReadStream(std::io::Error),
 	BadNumber(crate::token::primative::number::ParseError),
+	BadRegex(crate::token::primative::regex::RegexError),
 	UnterminatedBlockComment,
 	UnknownTokenStart(char),
 	UnterminatedQuote,
@@ -32,8 +34,9 @@ pub struct Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Error {
-	pub fn new(context: Context, r#type: ErrorType) -> Self {
-		Error { context, r#type }
+	#[inline]
+	pub const fn new(context: Context, r#type: ErrorType) -> Self {
+		Self { context, r#type }
 	}
 }
 
@@ -43,8 +46,7 @@ impl Display for Error {
 
 		let Context { ref file, lineno, mut column, ref line } = self.context;
 		let file = file.as_ref()
-			.map(|x| x.to_string_lossy().to_owned().to_string())
-			.unwrap_or_else(|| "<eval>".to_string());
+			.map_or_else(|| "<eval>".to_string(), |x| x.to_string_lossy().to_owned().to_string());
 
 		// replace tabs with a standardized representation for error messages
 		let mut line = line.clone();
@@ -68,19 +70,19 @@ impl Display for Error {
 
 impl Display for ErrorType {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		use ErrorType::*;
 		match self {
-			CantReadStream(err) => write!(f, "can't read next character: {}", err),
-			BadNumber(num) => write!(f, "bad number `{}`", num),
-			UnknownTokenStart(chr) => write!(f, "unknown token start `{}`", chr),
-			UnterminatedQuote => write!(f, "unterminated quote"),
-			BadEscapeChar(chr) => write!(f, "bad escape char `{}`", chr),
-			UnterminatedBlockComment => write!(f, "unterminated block comment"),
-			UnexpectedToken(tkn) => write!(f, "unexpected token `{}`", tkn),
-			MissingClosingParen(paren) => write!(f, "missing closing paren `{}`", paren.right()),
-			ExpectedExpression => write!(f, "expected an expression"),
-			Message(msg) => write!(f, "{}", msg),
-			MessagedString(msg) => write!(f, "{}", msg),
+			Self::CantReadStream(err) => write!(f, "can't read next character: {}", err),
+			Self::BadNumber(num) => write!(f, "bad number: {}", num),
+			Self::BadRegex(err) => write!(f, "bad regex: {}", err),
+			Self::UnknownTokenStart(chr) => write!(f, "unknown token start `{}`", chr),
+			Self::UnterminatedQuote => write!(f, "unterminated quote"),
+			Self::BadEscapeChar(chr) => write!(f, "bad escape char `{}`", chr),
+			Self::UnterminatedBlockComment => write!(f, "unterminated block comment"),
+			Self::UnexpectedToken(tkn) => write!(f, "unexpected token `{}`", tkn),
+			Self::MissingClosingParen(paren) => write!(f, "missing closing paren `{}`", paren.right()),
+			Self::ExpectedExpression => write!(f, "expected an expression"),
+			Self::Message(msg) => write!(f, "{}", msg),
+			Self::MessagedString(msg) => write!(f, "{}", msg),
 		}
 	}
 }
@@ -90,12 +92,9 @@ impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
 		match self.r#type {
 			ErrorType::CantReadStream(ref err) => Some(err),
-			ErrorType::BadNumber(ref err) => err.source(),
+			ErrorType::BadNumber(ref err) => Some(err),
+			ErrorType::BadRegex(ref err) => Some(err),
 			_ => None
 		}
 	}
 }
-
-
-
-

@@ -25,12 +25,18 @@ impl Display for Token {
 			Token::Operator(o) => Display::fmt(o, f),
 			Token::Left(t) => Display::fmt(&t.left(), f),
 			Token::Right(t) => Display::fmt(&t.right(), f),
-			Token::Endline => write!(f, ";"),
-			Token::Comma => write!(f, ","),
+			Token::Endline => Display::fmt(&";", f),
+			Token::Comma => Display::fmt(&",", f),
 		}		
 	}
 }
 
+
+impl From<!> for Token {
+	fn from(_: !) -> Self {
+		unreachable!()
+	}
+}
 
 impl Token {
 	pub fn try_parse<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
@@ -38,6 +44,7 @@ impl Token {
 		macro_rules! try_tokenize {
 			($($ty:ty),*) => {
 				$(
+					#[allow(unreachable_code)]
 					match <$ty>::try_tokenize(stream)? {
 						TokenizeResult::Some(val) => return Ok(Some(val.into())),
 						TokenizeResult::RestartParsing => return Token::try_parse(stream),
@@ -58,7 +65,3 @@ impl Token {
 		}
 	}
 }
-
-
-
-

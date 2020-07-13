@@ -1,7 +1,7 @@
 use crate::{Object, Args};
 use crate::error::{ValueError};
 use crate::literals::{Literal, __THIS__, __STACK__};
-use crate::types::{Number, List, Boolean};
+use crate::types::{Number, List, Boolean, Regex};
 use crate::Binding;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
@@ -178,6 +178,15 @@ impl Text {
 		Ok(this.clone())
 	}
 
+	#[inline]
+	pub fn qs_at_regex(this: &Object, _: Args) -> crate::Result<Object> {
+		this.try_downcast_and_then(|this: &Self| {
+			Regex::try_from(this.as_ref())
+				.map(Object::from)
+				.map_err(|err| crate::Error::Messaged(err.to_string()))
+		})
+	}
+
 	#[allow(non_snake_case)]
 	pub fn qs_inspect(&self, _: Args) -> Result<Self, !> {
 		Ok(format!("{:?}", self).into())
@@ -252,21 +261,8 @@ impl Text {
 		Ok(self.len())
 	}
 
-	fn correct_index(&self, idx: isize) -> Option<usize> {
-		if !idx.is_negative() {
-			if (idx as usize) < self.len() {
-				Some(idx as usize)
-			} else {
-				None
-			}
-		} else {
-			let idx = (-idx) as usize;
-			if idx <= self.len() {
-				Some(self.len() - idx)
-			} else {
-				None
-			}
-		}
+	fn correct_index(&self, index: isize) -> Option<usize> {
+		crate::utils::correct_index(index, self.len())
 	}
 
 	pub fn qs_get(&self, args: Args) -> crate::Result<Object> {
@@ -321,18 +317,18 @@ impl Text {
 	}
 
 	pub fn qs_pop(&mut self, _args: Args) -> crate::Result<Object> {
-		todo!()
+		Ok(self.0.to_mut().pop().map(|x| x.to_string().into()).unwrap_or_default())
 	}
 
 	pub fn qs_unshift(_this: &Object, _args: Args) -> crate::Result<Object> {
 		todo!()
 	}
 
-	pub fn qs_shift(&mut self, _: Args) -> crate::Result<Text> {
+	pub fn qs_shift(&mut self, _: Args) -> crate::Result<Object> {
 		if self.is_empty() {
-			Ok(Text::default())
+			Ok(Object::default())
 		} else {
-			Ok(self.0.to_mut().remove(0).into())
+			Ok(Text::from(self.0.to_mut().remove(0)).into())
 		}
 	}
 
@@ -344,12 +340,6 @@ impl Text {
 
 	pub fn qs_split(&self, _: Args) -> crate::Result<Object> { todo!("split") }
 	pub fn qs_reverse(&self, _: Args) -> crate::Result<Object> { todo!("reverse") }
-
-	pub fn qs_match(&self, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
-		let re = regex::Regex::new(rhs.as_ref()).expect("bad regex");
-		Ok(re.is_match(self.as_ref()).into())
-	}
 }
 
 impl_object_type!{
@@ -382,6 +372,7 @@ for Text
 }
 [(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
 	"@text" => function Text::qs_at_text,
+	"@regex" => function Text::qs_at_regex,
 	"inspect"  => method_old Text::qs_inspect,
 	"@num"    => method_old Text::qs_at_num,
 	"@list"   => method_old Text::qs_at_list,
@@ -405,6 +396,5 @@ for Text
 	"clear"   => function Text::qs_clear,
 	"split"   => method_old_mut Text::qs_split,
 	"reverse" => method_old Text::qs_reverse,
-	"match" => method_old Text::qs_match
 	// "strip"   => function Text::qs_strip,
 }
