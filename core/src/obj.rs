@@ -48,13 +48,6 @@ impl From<!> for Object {
 
 impl Debug for Internal {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		struct DataDebug<'a>(&'a dyn Any, fn(&dyn Any, &mut Formatter) -> fmt::Result);
-		impl Debug for DataDebug<'_> {
-			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-				(self.1)(self.0, f)
-			}
-		}
-
 		if f.alternate() {
 			f.debug_struct("Object")
 				.field("data", &self.data)

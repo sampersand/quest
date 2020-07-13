@@ -198,6 +198,7 @@ dependencies = [
  "quest-core",
  "regex",
  "tempfile",
+ "unicode-xid",
 ]
 
 [[package]]

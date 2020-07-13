@@ -29,54 +29,36 @@ impl Executable for StackPos {
 impl Tokenizable for StackPos {
 	type Item = Self;
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
-		match stream.next().transpose()? {
-			Some(':') => 
-				match stream.next().transpose()? {
-					// oops! this is the `::` operator
-					Some(':') => {
-						try_seek!(stream, -2);
-						return Ok(TokenizeResult::None);
-					},
-					Some(_) => try_seek!(stream, -1),
-					None => {}
-				},
-			Some(_) => {
-				try_seek!(stream, -1);
-				return Ok(TokenizeResult::None)
-			},
-			None => return Ok(TokenizeResult::None)
-		};
-
-
-		fn next_non_underscore<S: Stream>(stream: &mut S) -> Result<Option<char>> {
+		let mut pos =
 			match stream.next().transpose()? {
-				Some('_') => next_non_underscore(stream),
-				Some(chr) => Ok(Some(chr)),
-				None => Ok(None)
-			}
-		}
+				Some(':') => 
+					match stream.next().transpose()? {
+						Some(chr @ '-')
+							| Some(chr @ '+') 
+							| Some(chr @ '0'..='9') => chr.to_string(),
+						Some(other) => {
+							unseek_char!(stream; other, ':');
+							return Ok(TokenizeResult::None)
+						},
+						None => {
+							unseek_char!(stream; ':');
+							return Ok(TokenizeResult::None)
+						}
+					},
+				Some(chr) => {
+					unseek_char!(stream; chr);
+					return Ok(TokenizeResult::None)
+				},
+				None => return Ok(TokenizeResult::None)
+			};
 
-
-		let mut pos = String::with_capacity(1);
-
-		match next_non_underscore(stream)? {
-			Some(chr @ '-') | Some(chr @ '+') => { 
-				pos.push(chr);
-				match next_non_underscore(stream)? {
-					Some(chr) if chr.is_ascii_digit() => pos.push(chr),
-					_ => return Err(parse_error!(stream, Message("unexpected end of stack pos literal")))
+		while let Some(chr) = stream.next_non_underscore().transpose()? { 
+			match chr {
+				chr @ '0'..='9' => pos.push(chr),
+				chr => {
+					unseek_char!(stream; chr);
+					break
 				}
-			},
-			Some(chr) if chr.is_ascii_digit() => pos.push(chr),
-			_ => return Err(parse_error!(stream, Message("unexpected end of stack pos literal")))
-		}
-
-		while let Some(chr) = next_non_underscore(stream)? { 
-			if chr.is_ascii_digit() {
-				pos.push(chr)
-			} else {
-				try_seek!(stream, -1);
-				break;
 			}
 		}
 

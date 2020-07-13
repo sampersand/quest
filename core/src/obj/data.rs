@@ -164,7 +164,6 @@ impl Debug for Data {
 		struct DataDebug<'a>(&'a (dyn Any + Send + Sync), fn(&dyn Any, &mut Formatter) -> fmt::Result);
 
 		impl Debug for DataDebug<'_> {
-			#[inline(always)]
 			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 				(self.1)(self.0, f)
 			}

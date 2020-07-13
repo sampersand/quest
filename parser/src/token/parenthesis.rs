@@ -66,8 +66,8 @@ impl Tokenizable for Parenthesis {
 			Some(']') => Ok(TokenizeResult::Some(Token::Right(ParenType::Square))),
 			Some('{') => Ok(TokenizeResult::Some(Token::Left(ParenType::Curly))),
 			Some('}') => Ok(TokenizeResult::Some(Token::Right(ParenType::Curly))),
-			Some(_) => {
-				try_seek!(stream, Current(-1));
+			Some(c) => {
+				unseek_char!(stream; c);
 				Ok(TokenizeResult::None)
 			},
 			None => Ok(TokenizeResult::None)

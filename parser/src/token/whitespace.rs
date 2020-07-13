@@ -19,11 +19,11 @@ impl Tokenizable for Whitespace {
 			Some(chr) if chr.is_whitespace() =>
 				while let Some(chr) = stream.next().transpose()? {
 					if !chr.is_whitespace() {
-						try_seek!(stream, -1);
+						unseek_char!(stream; chr);
 						return Ok(TokenizeResult::RestartParsing);
 					}
 				},
-			Some(_) => try_seek!(stream, -1),
+			Some(chr) => unseek_char!(stream; chr),
 			None => {}
 		}
 

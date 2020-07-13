@@ -33,10 +33,10 @@ impl<B: BufRead> Seek for BufStream<B> {
 			match pos {
 				SeekFrom::Start(n) => n as i64,
 				SeekFrom::Current(n) => self.context.column as i64 + n,
-				SeekFrom::End(n) => self.context.line.len() as i64 + n,
+				SeekFrom::End(n) => self.current_line_len() as i64 + n,
 			};
 
-		if pos < 0 || pos > self.context.line.len() as _ {
+		if pos < 0 || pos > self.current_line_len() as _ {
 			unreachable!(
 				"seeking before or beyond current line. pos={}, lineno={}, column={}, line={}",
 				pos, self.context.lineno, self.context.column, self.context.line)
@@ -97,12 +97,16 @@ impl<B: BufRead> BufStream<B> {
 		Ok(iter.as_str())
 	}
 
+	fn current_line_len(&self) -> usize {
+		self.context.line.chars().count()
+	}
+
 	/// If our [`context`](#structfield.context) is at the end of a line, read another line in.
 	fn read_next_line_if_applicable(&mut self) -> Result<()> {
 		use std::mem::{take, swap};
 
 		// if we're at the end of a line, try read a new line and update the lineno and column
-		if self.context.line.len() <= self.context.column {
+		if self.current_line_len() <= self.context.column {
 			// keep track of the old line in case we aren't able to read a new one (for err msgs)
 			let mut old_line = take(&mut self.context.line);
 

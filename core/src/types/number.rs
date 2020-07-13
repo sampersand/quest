@@ -40,7 +40,8 @@ impl PartialEq for Number {
 		use Inner::*;
 		match (self.0, rhs.0) {
 			(Integer(l), Integer(r)) => l == r,
-			(Float(l), Float(r)) => (l - r) < FloatType::EPSILON,
+			(Float(l), Float(r)) => (l - r) < FloatType::EPSILON ||
+				l.is_infinite() && r.is_infinite() && l.is_sign_positive() == r.is_sign_positive(),
 			(Integer(n), Float(f))
 				| (Float(f), Integer(n)) => (f - n as FloatType) < FloatType::EPSILON,
 		}
@@ -197,6 +198,13 @@ impl Number {
 			(Inner::Integer(l), Inner::Float(r)) => *self = (l as FloatType).powf(r).into(),
 			(Inner::Float(l), Inner::Integer(r)) => *self = l.powf(r as FloatType).into(),
 			(Inner::Float(l), Inner::Float(r)) => *self = l.powf(r).into()
+		}
+	}
+
+	pub fn is_nan(self) -> bool {
+		match self.0 {
+			Inner::Integer(_) => false,
+			Inner::Float(f) => f.is_nan()
 		}
 	}
 }
@@ -1067,67 +1075,15 @@ mod tests {
 
 			assert_exists_eq!("PI", Number::PI);
 			assert_exists_eq!("E", Number::E);
-			assert_exists_eq!("NAN", Number::NAN);
 			assert_exists_eq!("INF", Number::INF);
+			assert!(Number::mapping().get_attr_lit("NAN").unwrap()
+				.downcast_and_then(Number::clone).unwrap().is_nan());
 		}
 
 		#[test]
 		fn hash() {
 			<Number as crate::types::ObjectType>::_wait_for_setup_to_finish();
 		}
-// impl PartialEq for Number {
-// 	fn eq(&self, rhs: &Number) -> bool {
-// 		use Inner::*;
-// 		match (self.0, rhs.0) {
-// 			(Integer(l), Integer(r)) => l == r,
-// 			(Float(l), Float(r)) => (l - r) < FloatType::EPSILON,
-// 			(Integer(n), Float(f))
-// 				| (Float(f), Integer(n)) => (f - n as FloatType) < FloatType::EPSILON,
-// 		}
-// 	}
-// }
-
-// impl Hash for Number {
-// 	#[inline]
-// 	fn hash<H: Hasher>(&self, h: &mut H) {
-// 		// in the future, we should probably change how floats hash
-// 		match self.0 {
-// 			Inner::Integer(i) => i.hash(h),
-// 			Inner::Float(f) => f.to_bits().hash(h)
-// 		}
-// 	}
-// }
-
-// impl Default for Number {
-// 	/// The default number is [zero](Number::ZERO).
-// 	#[inline]
-// 	fn default() -> Number {
-// 		Number::ZERO
-// 	}
-// }
-
-// impl Debug for Number {
-// 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-// 		if f.alternate() {
-// 			match self.0 {
-// 				Inner::Integer(n) => write!(f, "Integer({:?})", n),
-// 				Inner::Float(n) => write!(f, "Float({:?})", n),
-// 			}
-// 		} else {
-// 			Display::fmt(self, f)
-// 		}
-// 	}
-// }
-
-// impl Display for Number {
-// 	#[inline]
-// 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-// 		match self.0 {
-// 			Inner::Integer(n) => Display::fmt(&n, f),
-// 			Inner::Float(n) => Display::fmt(&n, f),
-// 		}
-// 	}
-// }
 	}
 
 	#[test]
@@ -1136,7 +1092,7 @@ mod tests {
 		assert_eq!(Number::ONE, Number(Inner::Integer(1 as IntegerType)));
 		assert_eq!(Number::PI, Number(Inner::Float(std::f64::consts::PI)));
 		assert_eq!(Number::E, Number(Inner::Float(std::f64::consts::E)));
-		assert_eq!(Number::NAN, Number(Inner::Float(f64::NAN)));
+		assert!(Number(Inner::Float(f64::NAN)).is_nan());
 		assert_eq!(Number::INF, Number(Inner::Float(f64::INFINITY)));
 	}
 

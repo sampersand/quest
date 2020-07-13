@@ -36,8 +36,8 @@ impl Tokenizable for Variable {
 		let mut variable =
 			match stream.next().transpose()? {
 				Some(chr) if is_variable_start(chr) => chr.to_string(),
-				Some(_) => {
-					try_seek!(stream, -1);
+				Some(chr) => {
+					unseek_char!(stream; chr);
 					return Ok(TokenizeResult::None)
 				},
 				None => return Ok(TokenizeResult::None)
@@ -47,7 +47,7 @@ impl Tokenizable for Variable {
 			if is_variable_body(chr) {
 				variable.push(chr)
 			} else {
-				try_seek!(stream, -1);
+				unseek_char!(stream; chr);
 				break;
 			}
 		}
