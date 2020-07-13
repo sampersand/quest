@@ -245,18 +245,9 @@ impl Block {
 			match this_cloned.run_block_to_object() {
 				Ok(v) => Ok(v),
 				Err(err @ quest_core::Error::Return { .. }) => Err(err),
-				Err(err) => {
-					println!("{:?}", this_cloned.context);
-					Err(err)
-				}
+				Err(err) => Err(err)
 			}
 		})
-
-	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
-	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
-	// }
-
-	// 	Block::call(this, args)
 	}
 
 	#[inline]

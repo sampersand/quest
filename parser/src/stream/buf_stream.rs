@@ -11,7 +11,9 @@ pub struct BufStream<B: BufRead> {
 	/// The data to read from.
 	data: B,
 	/// The current context we're in.
-	context: Context
+	context: Context,
+
+	is_done: bool
 }
 
 impl<B: BufRead> Seek for BufStream<B> {
@@ -42,6 +44,7 @@ impl<B: BufRead> Seek for BufStream<B> {
 				pos, self.context.lineno, self.context.column, self.context.line)
 		}
 
+		self.is_done = false;
 		self.context.column = pos as usize;
 
 		Ok(self.context.column as u64)
@@ -55,13 +58,16 @@ impl<S: BufRead> Iterator for BufStream<S> {
 	/// If we're currently at the end of a line (or we haven't started reading), this will try to
 	/// read an entire line from the data it's given. At no other time will it read a line.
 	fn next(&mut self) -> Option<Result<char>> {
-		if let Err(err) = self.read_next_line_if_applicable() {
-			Some(Err(err))
-		} else if let Some(chr) = self.context.line.chars().nth(self.context.column) {
-			self.context.column += 1;
-			Some(Ok(chr))
-		} else {
-			None
+		if self.is_done { return None; }
+
+		match self.read_next_line_if_applicable() {
+			Err(err) => Some(Err(err)),
+			Ok(false) => None,
+			Ok(true) => {
+				let chr = self.context.line.chars().nth(self.context.column)?;
+				self.context.column += 1;
+				Some(Ok(chr))
+			}
 		}
 	}
 }
@@ -82,7 +88,7 @@ impl<B: BufRead> BufStream<B> {
 	/// Create a new [`BufStream`](#) for the given data, with an optional file being passed to
 	/// [`Context`](#)
 	pub fn new(data: B, file: Option<PathBuf>) -> Self {
-		BufStream { data, context: Context::new(file) }
+		BufStream { data, context: Context::new(file), is_done: false }
 	}
 
 	/// Get the current line
@@ -102,29 +108,35 @@ impl<B: BufRead> BufStream<B> {
 	}
 
 	/// If our [`context`](#structfield.context) is at the end of a line, read another line in.
-	fn read_next_line_if_applicable(&mut self) -> Result<()> {
+	fn read_next_line_if_applicable(&mut self) -> Result<bool> {
 		use std::mem::{take, swap};
 
 		// if we're at the end of a line, try read a new line and update the lineno and column
-		if self.current_line_len() <= self.context.column {
+		if self.current_line_len() > self.context.column {
+			Ok(true)
+		} else {
 			// keep track of the old line in case we aren't able to read a new one (for err msgs)
 			let mut old_line = take(&mut self.context.line);
 
 			match self.data.read_line(&mut self.context.line) {
 				// if there's nothing left to read, just keep the old line.
-				Ok(0) => swap(&mut old_line, &mut self.context.line),
+				Ok(0) => {
+					swap(&mut old_line, &mut self.context.line);
+					self.is_done = true;
+					Ok(false)
+				},
 				Ok(_) => {
-					self.context.lineno += 1;
 					self.context.column = 0;
+					self.context.lineno += 1;
+
+					Ok(true)
 				},
 				Err(err) => {
 					swap(&mut old_line, &mut self.context.line);
-					return Err(parse_error!(self, CantReadStream(err)));
+					Err(parse_error!(self, CantReadStream(err)))
 				}
 			}
 		}
-
-		Ok(())
 	}
 }
 

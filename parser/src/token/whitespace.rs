@@ -5,6 +5,7 @@ use crate::{Result, Stream};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Whitespace;
 
+#[derive(Debug)]
 pub enum Never {}
 impl From<Never> for super::Token {
 	fn from(_: Never) -> Self {

@@ -25,8 +25,8 @@ impl Display for Token {
 			Token::Operator(o) => Display::fmt(o, f),
 			Token::Left(t) => Display::fmt(&t.left(), f),
 			Token::Right(t) => Display::fmt(&t.right(), f),
-			Token::Endline => write!(f, ";"),
-			Token::Comma => write!(f, ","),
+			Token::Endline => Display::fmt(&";", f),
+			Token::Comma => Display::fmt(&",", f),
 		}		
 	}
 }
@@ -58,7 +58,3 @@ impl Token {
 		}
 	}
 }
-
-
-
-
