@@ -1,5 +1,5 @@
 use crate::{Result, Stream};
-use crate::token::{Tokenizable, TokenizeResult};
+use crate::token::Tokenizable;
 use crate::expression::Executable;
 
 use quest_core::types::regex::{Flag, Flags};
@@ -14,15 +14,14 @@ impl Executable for Regex {
 }
 
 impl Tokenizable for Regex {
-	type Item = Self;
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		let mut rxp =
 			match stream.next().transpose()? {
 				Some('/') => {
 					match stream.next().transpose()? {
 						Some(chr) if chr.is_ascii_whitespace() => {
 							unseek_char!(stream; '/', chr);
-							return Ok(TokenizeResult::None)
+							return Ok(None)
 						},
 						Some('/') => {
 							unseek_char!(stream; '/');
@@ -31,16 +30,16 @@ impl Tokenizable for Regex {
 						Some(chr) => chr.to_string(),
 						None => {
 							unseek_char!(stream; '/');
-							return Ok(TokenizeResult::None)
+							return Ok(None)
 						}
 					}
 				},
 				Some(chr) => {
 					unseek_char!(stream; chr);
-					return Ok(TokenizeResult::None)
+					return Ok(None)
 				},
 
-				None => return Ok(TokenizeResult::None)
+				None => return Ok(None)
 			};
 
 		while let Some(chr) = stream.next().transpose()? { 
@@ -76,7 +75,7 @@ impl Tokenizable for Regex {
 		}
 
 		Regex::new_with_options(&rxp, flags)
-			.map(TokenizeResult::Some)
+			.map(Some)
 			.map_err(|err| parse_error!(stream, BadRegex(err)))
 	}
 }

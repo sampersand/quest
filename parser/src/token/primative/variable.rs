@@ -1,5 +1,5 @@
 use crate::{Result, Stream};
-use crate::token::{Tokenizable, TokenizeResult};
+use crate::token::Tokenizable;
 use crate::expression::Executable;
 use std::fmt::{self, Display, Formatter};
 
@@ -31,16 +31,15 @@ fn is_variable_body(c: char) -> bool {
 }
 
 impl Tokenizable for Variable {
-	type Item = Self;
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		let mut variable =
 			match stream.next().transpose()? {
 				Some(chr) if is_variable_start(chr) => chr.to_string(),
 				Some(chr) => {
 					unseek_char!(stream; chr);
-					return Ok(TokenizeResult::None)
+					return Ok(None)
 				},
-				None => return Ok(TokenizeResult::None)
+				None => return Ok(None)
 			};
 
 		while let Some(chr) = stream.next().transpose()? { 
@@ -54,7 +53,7 @@ impl Tokenizable for Variable {
 
 		variable.shrink_to_fit();
 
-		Ok(TokenizeResult::Some(Variable(variable.into())))
+		Ok(Some(Self(variable.into())))
 	}
 }
 

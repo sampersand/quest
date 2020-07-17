@@ -10,13 +10,15 @@ macro_rules! unseek_char {
 
 pub mod primative;
 pub mod operator;
-pub mod tokenizable;
-pub mod parenthesis;
+pub mod paren_type;
 pub mod token;
 
+pub trait Tokenizable : Sized {
+	fn try_tokenize<S: crate::stream::Stream>(stream: &mut S) -> crate::Result<Option<Self>>;
+}
 
-pub use parenthesis::ParenType;
+
+pub use paren_type::ParenType;
 pub use operator::Operator;
 pub use primative::Primative;
-pub use tokenizable::{Tokenizable, TokenizeResult};
 pub use token::Token;

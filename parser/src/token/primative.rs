@@ -1,7 +1,7 @@
 use crate::Result;
 use crate::stream::Stream;
 use crate::expression::{Constructable, Executable};
-use crate::token::{Token, Tokenizable, TokenizeResult};
+use crate::token::{Token, Tokenizable};
 use std::fmt::{self, Display, Formatter};
 
 pub mod text;
@@ -83,25 +83,24 @@ impl From<Primative> for Token {
 }
 
 impl Tokenizable for Primative {
-	type Item = Self;
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		match Variable::try_tokenize(stream)?.map(Primative::Variable) {
-			TokenizeResult::None => { /* do nothing, parse the next one */ },
+			None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
 		match Number::try_tokenize(stream)?.map(Primative::Number) {
-			TokenizeResult::None => { /* do nothing, parse the next one */ },
+			None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
 		match Text::try_tokenize(stream)?.map(Primative::Text) {
-			TokenizeResult::None => { /* do nothing, parse the next one */ },
+			None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 
 		match Regex::try_tokenize(stream)?.map(Primative::Regex) {
-			TokenizeResult::None => { /* do nothing, parse the next one */ },
+			None => { /* do nothing, parse the next one */ },
 			other => return Ok(other)
 		}
 

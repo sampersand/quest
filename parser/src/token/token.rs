@@ -1,11 +1,6 @@
 use crate::Result;
 use crate::stream::Stream;
-
-use super::parenthesis::Parenthesis;
-use super::parenthesis::ParenType;
-use super::operator::Operator;
-use super::primative::Primative;
-use super::tokenizable::{Tokenizable, TokenizeResult};
+use crate::token::{ParenType, Operator, Primative, Tokenizable};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -95,30 +90,29 @@ fn parse_comment<S: Stream>(stream: &mut S) -> Result<CommentResult> {
 impl Token {
 	pub fn try_parse<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		parse_whitespace(stream)?;
+
 		match parse_comment(stream)? {
 			CommentResult::StopParsing => return Ok(None),
 			CommentResult::CommentRemoved => return Self::try_parse(stream),
 			CommentResult::NoCommentFound => {}
 		}
 
-		macro_rules! try_tokenize {
-			($($ty:ty),*) => {
-				$(
-					match <$ty>::try_tokenize(stream)? {
-						TokenizeResult::Some(val) => return Ok(Some(val.into())),
-						TokenizeResult::RestartParsing => return Self::try_parse(stream),
-						TokenizeResult::StopParsing => return Ok(None),
-						TokenizeResult::None => { /* do nothing, go to the next one */ }
-					}
-				)*
-			};
+		if let Some(prim) = Primative::try_tokenize(stream)? {
+			return Ok(Some(prim.into()))
+		} else if let Some(op) = Operator::try_tokenize(stream)? {
+			return Ok(Some(op.into()))
 		}
 
-		try_tokenize!(Primative, Parenthesis, Operator);
 
 		match stream.next().transpose()? {
 			Some(';') => Ok(Some(Self::Endline)),
 			Some(',') => Ok(Some(Self::Comma)),
+			Some('(') => Ok(Some(Self::Left(ParenType::Round))),
+			Some(')') => Ok(Some(Self::Right(ParenType::Round))),
+			Some('[') => Ok(Some(Self::Left(ParenType::Square))),
+			Some(']') => Ok(Some(Self::Right(ParenType::Square))),
+			Some('{') => Ok(Some(Self::Left(ParenType::Curly))),
+			Some('}') => Ok(Some(Self::Right(ParenType::Curly))),
 			Some(chr) => Err(parse_error!(stream, UnknownTokenStart(chr))),
 			None => Ok(None)
 		}

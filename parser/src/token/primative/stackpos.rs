@@ -1,5 +1,5 @@
 use crate::{Result, Stream};
-use crate::token::{Tokenizable, TokenizeResult};
+use crate::token::Tokenizable;
 use quest_core::Binding;
 use crate::expression::Executable;
 use std::fmt::{self, Display, Formatter};
@@ -27,8 +27,7 @@ impl Executable for StackPos {
 }
 
 impl Tokenizable for StackPos {
-	type Item = Self;
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		let mut pos =
 			match stream.next().transpose()? {
 				Some(':') => 
@@ -38,18 +37,18 @@ impl Tokenizable for StackPos {
 							| Some(chr @ '0'..='9') => chr.to_string(),
 						Some(other) => {
 							unseek_char!(stream; other, ':');
-							return Ok(TokenizeResult::None)
+							return Ok(Option::None)
 						},
 						None => {
 							unseek_char!(stream; ':');
-							return Ok(TokenizeResult::None)
+							return Ok(Option::None)
 						}
 					},
 				Some(chr) => {
 					unseek_char!(stream; chr);
-					return Ok(TokenizeResult::None)
+					return Ok(Option::None)
 				},
-				None => return Ok(TokenizeResult::None)
+				None => return Ok(Option::None)
 			};
 
 		while let Some(chr) = stream.next_non_underscore().transpose()? { 
@@ -65,7 +64,7 @@ impl Tokenizable for StackPos {
 		use std::str::FromStr;
 
 		match isize::from_str(&pos) {
-			Ok(pos) => Ok(TokenizeResult::Some(StackPos(pos))),
+			Ok(pos) => Ok(Some(Self(pos))),
 			Err(err) => Err(parse_error!(stream,
 				MessagedString(format!("invalid stack pos literal: {}", err))))
 		}

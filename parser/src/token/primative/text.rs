@@ -2,8 +2,7 @@
 
 use crate::{Result, Stream};
 use crate::expression::Executable;
-use crate::token::{Operator, Tokenizable, TokenizeResult};
-use crate::token::primative::Variable;
+use crate::token::{Operator, Tokenizable, primative::Variable};
 use quest_core::Object;
 
 /// A literal text is actually just a `quest_core::Text`.
@@ -16,7 +15,7 @@ impl Executable for Text {
 	}
 }
 
-fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<TokenizeResult<Text>> {
+fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Option<Text>> {
 	let mut text = String::new();
 
 	let starting_context = stream.context().clone();
@@ -37,7 +36,7 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Tokeniz
 				Some(chr) => return Err(parse_error!(stream, BadEscapeChar(chr))),
 				None      => return Err(parse_error!(context=starting_context, UnterminatedQuote)),
 			},
-			chr if chr == quote => return Ok(TokenizeResult::Some(text.into())),
+			chr if chr == quote => return Ok(Some(text.into())),
 			chr => text.push(chr)
 		}
 	}
@@ -46,14 +45,13 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Tokeniz
 }
 
 // valid syntax is `$variable_name` or `$operator`.
-fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Text>> {
+fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<Option<Text>> {
 	macro_rules! from_other {
 		($($p:ty),*) => {
 			$(
 				match <$p>::try_tokenize(stream)?.map(|val| val.to_string().into()) {
-					v @ TokenizeResult::Some(_) => return Ok(v),
-					TokenizeResult::None => {},
-					_ => return Err(parse_error!(stream, UnterminatedQuote))
+					v @ Some(_) => return Ok(v),
+					None => {},
 				}
 			)*
 		};
@@ -62,23 +60,22 @@ fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<TokenizeResult<
 	from_other!(Variable, Operator);
 
 	if stream.next_if_starts_with("()")? {
-		Ok(TokenizeResult::Some("()".into()))
+		Ok(Some("()".into()))
 	} else {
 		Err(parse_error!(stream, UnterminatedQuote))
 	}
 }
 
 impl Tokenizable for Text {
-	type Item = Self;
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		match stream.next().transpose()? {
 			Some('$') => try_tokenize_dollar_sign(stream),
 			Some(quote @ '\"') | Some(quote @ '\'') => try_tokenize_quoted(stream, quote),
 			Some(chr) => {
 				unseek_char!(stream; chr);
-				Ok(TokenizeResult::None)
+				Ok(None)
 			},
-			None => Ok(TokenizeResult::None)
+			None => Ok(None)
 		}
 	}
 }

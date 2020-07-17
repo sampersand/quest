@@ -2,7 +2,7 @@
 use crate::Result;
 use crate::expression::{PutBack, Constructable, Expression};
 use crate::stream::{Stream, Contexted};
-use crate::token::{Token, Tokenizable, TokenizeResult};
+use crate::token::{Token, Tokenizable};
 use quest_core::{Object, types};
 use std::cmp::Ordering;
 use std::io::BufRead;
@@ -38,17 +38,15 @@ macro_rules! operator_enum {
 		}
 
 		impl Tokenizable for Operator {
-			type Item = Self;
-
-			fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self::Item>> {
+			fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 				$({
 					let o = operator_enum!(; TRY_PARSE $repr $(($($ident)?))?);
 					if o.map(|x| stream.next_if_starts_with(x)).transpose()?.unwrap_or(false) {
-						return Ok(TokenizeResult::Some(Operator::$variant))
+						return Ok(Some(Operator::$variant))
 					}
 				})+
 				{
-					Ok(TokenizeResult::None)
+					Ok(None)
 				}
 			}
 		}

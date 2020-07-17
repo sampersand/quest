@@ -1,7 +1,7 @@
 //! Parsing a literal number.
 
 use crate::{Result, Stream};
-use crate::token::{Tokenizable, TokenizeResult};
+use crate::token::Tokenizable;
 use crate::expression::Executable;
 use std::convert::TryFrom;
 use quest_core::Object;
@@ -117,7 +117,6 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 }
 
 impl Tokenizable for Number {
-	type Item = Self;
 	/// Try to parse a literal number from the given stream.
 	///
 	/// There are two forms of valid numbers: "radix-based" and "normal"
@@ -142,7 +141,7 @@ impl Tokenizable for Number {
 	/// Underscores are allowed in most places, where they are completely ignored. The only time an
 	/// underscore is significant is directly after the `.` in floats (e.g. `12._3`), as that implies
 	/// an element access, e.g. the tokens '12' '.' '_3'.
-	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<TokenizeResult<Self>> {
+	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 
 		match stream.next().transpose()? {
 			// If we find a zero, we could have `0x...` syntax
@@ -150,38 +149,38 @@ impl Tokenizable for Number {
 				match stream.next().transpose()? {
 					// FUTURE: Add in support for arbitrary bases, eg '0u<base>...'
 					// Allow for literal hexadecimal numbers (which match /^0x[a-f\d_]+/i)
-					Some('x') | Some('X') => try_tokenize_radix(stream, 16).map(TokenizeResult::Some),
+					Some('x') | Some('X') => try_tokenize_radix(stream, 16).map(Some),
 					// Allow for literal decimal numbers (which match /^0d[\d_]+/i).
 					// This is only here for parallel with the other branches, and probably wont be used.
-					Some('d') | Some('D') => try_tokenize_radix(stream, 10).map(TokenizeResult::Some),
+					Some('d') | Some('D') => try_tokenize_radix(stream, 10).map(Some),
 					// Allow for literal octal numbers (which match /^0o[0-7_]+/i)
-					Some('o') | Some('O') => try_tokenize_radix(stream,  8).map(TokenizeResult::Some),
+					Some('o') | Some('O') => try_tokenize_radix(stream,  8).map(Some),
 					// Allow for literal binary numbers (which match /^0b[01_]+/i)
-					Some('b') | Some('B') => try_tokenize_radix(stream,  2).map(TokenizeResult::Some),
+					Some('b') | Some('B') => try_tokenize_radix(stream,  2).map(Some),
 					// Any other trailing value indicates we're dealing with a number with a leading zero
 					Some(chr) => {
 						unseek_char!(stream; chr, '0');
-						try_tokenize_basic(stream).map(TokenizeResult::Some)
+						try_tokenize_basic(stream).map(Some)
 					},
 					// If we have no numbers remaining, we read a literal zero.
-					None => Ok(TokenizeResult::Some(Number::ZERO)),
+					None => Ok(Some(Number::ZERO)),
 				}
 			},
 
 			// If we read a digit, then try parsing a basic number.
 			Some(chr @ '1'..='9') => {
 				unseek_char!(stream; chr);
-				try_tokenize_basic(stream).map(TokenizeResult::Some)
+				try_tokenize_basic(stream).map(Some)
 			},
 
 			// If we read anything else, it's not number.
 			Some(chr) => {
 				unseek_char!(stream; chr);
-				Ok(TokenizeResult::None)
+				Ok(None)
 			},
 
 			// If there's nothing left to read, we can't parse a number.
-			None => Ok(TokenizeResult::None)
+			None => Ok(None)
 		}
 	}
 }
@@ -354,57 +353,57 @@ mod tests {
 	mod tokenizable {
 		use super::*;
 
-		fn tkn<S: Stream>(stream: &mut S) -> TokenizeResult<Number> {
+		fn tkn<S: Stream>(stream: &mut S) -> Option<Number> {
 			Number::try_tokenize(stream).unwrap()
 		}
 
 		#[test]
 		fn before() {
-			assert_eq!(tkn(buf!("")), TokenizeResult::None);
-			assert_eq!(tkn(buf!(" ")), TokenizeResult::None);
-			assert_eq!(tkn(buf!(" 1")), TokenizeResult::None);
-			assert_eq!(tkn(buf!("_12")), TokenizeResult::None);
-			assert_eq!(tkn(buf!(".34")), TokenizeResult::None);
-			assert_eq!(tkn(buf!("\n34")), TokenizeResult::None);
+			assert_eq!(tkn(buf!("")), None);
+			assert_eq!(tkn(buf!(" ")), None);
+			assert_eq!(tkn(buf!(" 1")), None);
+			assert_eq!(tkn(buf!("_12")), None);
+			assert_eq!(tkn(buf!(".34")), None);
+			assert_eq!(tkn(buf!("\n34")), None);
 		}
 
 		#[test]
 		fn valid() {
-			assert_eq!(tkn(buf!("0")), TokenizeResult::Some(num!(0)));
-			assert_eq!(tkn(buf!("02")), TokenizeResult::Some(num!(2)));
-			assert_eq!(tkn(buf!("02")), TokenizeResult::Some(num!(2)));
-			assert_eq!(tkn(buf!("4.1e-4")), TokenizeResult::Some(num!(4.1e-4)));
+			assert_eq!(tkn(buf!("0")), Some(num!(0)));
+			assert_eq!(tkn(buf!("02")), Some(num!(2)));
+			assert_eq!(tkn(buf!("02")), Some(num!(2)));
+			assert_eq!(tkn(buf!("4.1e-4")), Some(num!(4.1e-4)));
 		}
 
 		#[test]
 		fn after() {
 			let buf = buf!("4.1.2");
-			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4.1)));
+			assert_eq!(tkn(buf), Some(num!(4.1)));
 			assert_eq!(buf.next().unwrap().unwrap(), '.');
 			assert_eq!(buf.next().unwrap().unwrap(), '2');
 
 			let buf = buf!("0 =");
-			assert_eq!(tkn(buf), TokenizeResult::Some(num!(0)));
+			assert_eq!(tkn(buf), Some(num!(0)));
 			assert_eq!(buf.next().unwrap().unwrap(), ' ');
 			assert_eq!(buf.next().unwrap().unwrap(), '=');
 
 			let buf = buf!("4.1e3e3");
-			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4.1e3)));
+			assert_eq!(tkn(buf), Some(num!(4.1e3)));
 			assert_eq!(buf.next().unwrap().unwrap(), 'e');
 			assert_eq!(buf.next().unwrap().unwrap(), '3');
 
 			let buf = buf!("4.1e3.5");
-			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4.1e3)));
+			assert_eq!(tkn(buf), Some(num!(4.1e3)));
 			assert_eq!(buf.next().unwrap().unwrap(), '.');
 			assert_eq!(buf.next().unwrap().unwrap(), '5');
 
 			let buf = buf!("4._2");
-			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4)));
+			assert_eq!(tkn(buf), Some(num!(4)));
 			assert_eq!(buf.next().unwrap().unwrap(), '.');
 			assert_eq!(buf.next().unwrap().unwrap(), '_');
 
 			let buf = buf!("4.e");
-			assert_eq!(tkn(buf), TokenizeResult::Some(num!(4)));
+			assert_eq!(tkn(buf), Some(num!(4)));
 			assert_eq!(buf.next().unwrap().unwrap(), '.');
 			assert_eq!(buf.next().unwrap().unwrap(), 'e');
 		}
