@@ -38,6 +38,10 @@ impl Contexted for Repl {
 }
 
 impl Stream for Repl {
+	fn _is_start_of_line(&self) -> bool {
+		unimplemented!()
+	}
+
 	fn starts_with(&mut self, _s: &str) -> quest_parser::Result<bool> {
 		unimplemented!()
 		// self.read_next_line_if_applicable()?;

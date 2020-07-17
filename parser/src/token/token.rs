@@ -20,8 +20,8 @@ impl Display for Token {
 			Self::Operator(o) => Display::fmt(o, f),
 			Self::Left(t) => Display::fmt(&t.left(), f),
 			Self::Right(t) => Display::fmt(&t.right(), f),
-			Self::Endline => Display::fmt(&";", f),
-			Self::Comma => Display::fmt(&",", f),
+			Self::Endline => Display::fmt(&';', f),
+			Self::Comma => Display::fmt(&',', f),
 		}		
 	}
 }
@@ -73,7 +73,7 @@ fn parse_comment<S: Stream>(stream: &mut S) -> Result<CommentResult> {
 			}
 		}
 
-		Err(parse_error!(context=begin_context, UnterminatedBlockComment))
+		Err(parse_error!(context=begin_context, CantTokenize(super::Error::UnterminatedBlockComment)))
 	}
 
 	if stream.starts_with("##__EOF__##")? {
@@ -103,7 +103,6 @@ impl Token {
 			return Ok(Some(op.into()))
 		}
 
-
 		match stream.next().transpose()? {
 			Some(';') => Ok(Some(Self::Endline)),
 			Some(',') => Ok(Some(Self::Comma)),
@@ -113,7 +112,7 @@ impl Token {
 			Some(']') => Ok(Some(Self::Right(ParenType::Square))),
 			Some('{') => Ok(Some(Self::Left(ParenType::Curly))),
 			Some('}') => Ok(Some(Self::Right(ParenType::Curly))),
-			Some(chr) => Err(parse_error!(stream, UnknownTokenStart(chr))),
+			Some(chr) => Err(parse_error!(stream, CantTokenize(super::Error::UnknownTokenStart(chr)))),
 			None => Ok(None)
 		}
 	}

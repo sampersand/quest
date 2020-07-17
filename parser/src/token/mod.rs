@@ -8,6 +8,13 @@ macro_rules! unseek_char {
 	}};
 }
 
+
+mod text;
+mod number;
+mod variable;
+mod stackpos;
+mod regex;
+mod error;
 pub mod primative;
 pub mod operator;
 pub mod paren_type;
@@ -17,7 +24,7 @@ pub trait Tokenizable : Sized {
 	fn try_tokenize<S: crate::stream::Stream>(stream: &mut S) -> crate::Result<Option<Self>>;
 }
 
-
+pub use error::Error;
 pub use paren_type::ParenType;
 pub use operator::Operator;
 pub use primative::Primative;

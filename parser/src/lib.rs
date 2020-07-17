@@ -1,4 +1,6 @@
+//! The crate that's responsible for parsing quest code.
 #![allow(clippy::module_inception)]
+// #![warn(missing_docs)]
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
 pub fn init() {

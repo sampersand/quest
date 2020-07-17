@@ -79,6 +79,10 @@ impl<B: BufRead> Contexted for BufStream<B> {
 }
 
 impl<B: BufRead> Stream for BufStream<B> {
+	fn _is_start_of_line(&self) -> bool {
+		self.context.column == 0
+	}
+
 	fn starts_with(&mut self, s: &str) -> Result<bool> {
 		self.line().map(|line| line.starts_with(s))
 	}

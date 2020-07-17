@@ -10,7 +10,7 @@ use quest_core::Object;
 pub use quest_core::types::Number;
 
 /// The error that can occur whilst trying to parse a Number
-pub use quest_core::types::number::FromStrError as ParseError;
+pub use quest_core::types::number::FromStrError as Error;
 
 impl Executable for Number {
 	fn execute(&self) -> quest_core::Result<Object> {
@@ -40,7 +40,7 @@ fn try_tokenize_radix<S: Stream>(stream: &mut S, radix: u32) -> Result<Number> {
 	}
 
 	Number::from_str_radix(&number, radix)
-		.map_err(|err| parse_error!(stream, BadNumber(err)))
+		.map_err(|err| parse_error!(stream, CantTokenize(err.into())))
 }
 
 /// This is a little more complex. To avoid using regex, the `Position` enum is used t
@@ -113,7 +113,7 @@ fn try_tokenize_basic<S: Stream>(stream: &mut S) -> Result<Number> {
 
 	// Try to parse a number from what we've gotten.
 	Number::try_from(number.as_str())
-		.map_err(|err| parse_error!(stream, BadNumber(err)))
+		.map_err(|err| parse_error!(stream, CantTokenize(err.into())))
 }
 
 impl Tokenizable for Number {
@@ -149,18 +149,18 @@ impl Tokenizable for Number {
 				match stream.next().transpose()? {
 					// FUTURE: Add in support for arbitrary bases, eg '0u<base>...'
 					// Allow for literal hexadecimal numbers (which match /^0x[a-f\d_]+/i)
-					Some('x') | Some('X') => try_tokenize_radix(stream, 16).map(Some),
+					Some('x') | Some('X') => Ok(Some(try_tokenize_radix(stream, 16)?)),
 					// Allow for literal decimal numbers (which match /^0d[\d_]+/i).
 					// This is only here for parallel with the other branches, and probably wont be used.
-					Some('d') | Some('D') => try_tokenize_radix(stream, 10).map(Some),
+					Some('d') | Some('D') => Ok(Some(try_tokenize_radix(stream, 10)?)),
 					// Allow for literal octal numbers (which match /^0o[0-7_]+/i)
-					Some('o') | Some('O') => try_tokenize_radix(stream,  8).map(Some),
+					Some('o') | Some('O') => Ok(Some(try_tokenize_radix(stream,  8)?)),
 					// Allow for literal binary numbers (which match /^0b[01_]+/i)
-					Some('b') | Some('B') => try_tokenize_radix(stream,  2).map(Some),
+					Some('b') | Some('B') => Ok(Some(try_tokenize_radix(stream,  2)?)),
 					// Any other trailing value indicates we're dealing with a number with a leading zero
 					Some(chr) => {
 						unseek_char!(stream; chr, '0');
-						try_tokenize_basic(stream).map(Some)
+						Ok(Some(try_tokenize_basic(stream)?))
 					},
 					// If we have no numbers remaining, we read a literal zero.
 					None => Ok(Some(Number::ZERO)),
@@ -170,7 +170,7 @@ impl Tokenizable for Number {
 			// If we read a digit, then try parsing a basic number.
 			Some(chr @ '1'..='9') => {
 				unseek_char!(stream; chr);
-				try_tokenize_basic(stream).map(Some)
+				Ok(Some(try_tokenize_basic(stream)?))
 			},
 
 			// If we read anything else, it's not number.

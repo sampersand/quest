@@ -1,10 +1,40 @@
 use crate::{Result, Stream};
 use crate::token::Tokenizable;
 use crate::expression::Executable;
-
 use quest_core::types::regex::{Flag, Flags};
-pub use quest_core::types::{Regex, regex::RegexError};
+use std::fmt::{self, Display, Formatter};
+pub use quest_core::types::Regex;
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Error {
+	QuestCore(quest_core::types::regex::RegexError),
+	UnterminatedRegex,
+}
+
+impl From<quest_core::types::regex::RegexError> for Error {
+	#[inline]
+	fn from(err: quest_core::types::regex::RegexError) -> Self {
+		Self::QuestCore(err)
+	}
+}
+
+impl Display for Error {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		match self {
+			Self::QuestCore(ref err) => Display::fmt(err, f),
+			Self::UnterminatedRegex => write!(f, "unterminated regex encounetered")
+		}
+	}
+}
+
+impl std::error::Error for Error {
+	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+		match self {
+			Self::QuestCore(err) => Some(err),
+			Self::UnterminatedRegex => None
+		}
+	}
+}
 
 impl Executable for Regex {
 	#[inline]
@@ -15,6 +45,7 @@ impl Executable for Regex {
 
 impl Tokenizable for Regex {
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
+		// TODO: make this more sophisticated.
 		let mut rxp =
 			match stream.next().transpose()? {
 				Some('/') => {
@@ -51,7 +82,8 @@ impl Tokenizable for Regex {
 							rxp.push('\\');
 							rxp.push(other);
 						},
-						None => return Err(parse_error!(stream, UnterminatedQuote))
+						None => return Err(parse_error!(stream, CantTokenize(
+							Error::UnterminatedRegex.into())))
 					},
 				'/' => break,
 				chr => rxp.push(chr)
@@ -76,7 +108,7 @@ impl Tokenizable for Regex {
 
 		Regex::new_with_options(&rxp, flags)
 			.map(Some)
-			.map_err(|err| parse_error!(stream, BadRegex(err)))
+			.map_err(|err| parse_error!(stream, CantTokenize(Error::from(err).into())))
 	}
 }
 

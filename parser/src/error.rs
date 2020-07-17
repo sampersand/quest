@@ -2,16 +2,14 @@ use crate::stream::Context;
 use crate::token::{Token, ParenType};
 use std::fmt::{self, Display, Formatter};
 
+/// The types of errors that can occur whilst parsing Quest code.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum ErrorType {
+	/// The stream wasn't able to be read from.
 	CantReadStream(std::io::Error),
-	BadNumber(crate::token::primative::number::ParseError),
-	BadRegex(crate::token::primative::regex::RegexError),
-	UnterminatedBlockComment,
-	UnknownTokenStart(char),
-	UnterminatedQuote,
-	BadEscapeChar(char),
+	/// An error happend whilst tokenizing
+	CantTokenize(crate::token::Error),
 	UnexpectedToken(Token),
 	Message(&'static str),
 	MessagedString(String),
@@ -22,6 +20,7 @@ pub enum ErrorType {
 	// Tokenize(TokenizeError),
 	// Constructable(ConstructableError)
 }
+
 
 #[derive(Debug)]
 pub struct Error {
@@ -72,12 +71,7 @@ impl Display for ErrorType {
 		use ErrorType::*;
 		match self {
 			CantReadStream(err) => write!(f, "can't read next character: {}", err),
-			BadNumber(num) => write!(f, "bad number: {}", num),
-			BadRegex(err) => write!(f, "bad regex: {}", err),
-			UnknownTokenStart(chr) => write!(f, "unknown token start `{}`", chr),
-			UnterminatedQuote => write!(f, "unterminated quote"),
-			BadEscapeChar(chr) => write!(f, "bad escape char `{}`", chr),
-			UnterminatedBlockComment => write!(f, "unterminated block comment"),
+			CantTokenize(err) => write!(f, "can't tokenize: {}", err),
 			UnexpectedToken(tkn) => write!(f, "unexpected token `{}`", tkn),
 			MissingClosingParen(paren) => write!(f, "missing closing paren `{}`", paren.right()),
 			ExpectedExpression => write!(f, "expected an expression"),
@@ -92,8 +86,7 @@ impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
 		match self.r#type {
 			ErrorType::CantReadStream(ref err) => Some(err),
-			ErrorType::BadNumber(ref err) => Some(err),
-			ErrorType::BadRegex(ref err) => Some(err),
+			ErrorType::CantTokenize(ref err) => Some(err),
 			_ => None
 		}
 	}
