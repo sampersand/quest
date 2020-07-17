@@ -11,8 +11,6 @@ macro_rules! unseek_char {
 pub mod primative;
 pub mod operator;
 pub mod tokenizable;
-pub mod whitespace;
-pub mod comment;
 pub mod parenthesis;
 pub mod token;
 

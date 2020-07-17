@@ -1,8 +1,5 @@
 #![allow(clippy::module_inception)]
 
-#![feature(never_type)]
-#![cfg_attr(test, deny(warnings))]
-
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
 pub fn init() {
 	use quest_core::types::ObjectType;

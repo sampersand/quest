@@ -8,6 +8,8 @@ enum Data<T> {
 	Shared(Arc<T>)
 }
 
+// TODO: use parking lot to replace this.
+
 pub struct SharedCow<T> {
 	own_lock: RwLock<()>,
 	data: UnsafeCell<Data<T>>,
@@ -33,6 +35,7 @@ impl<T: Default> Default for SharedCow<T> {
 impl<T> Clone for SharedCow<T> {
 	fn clone(&self) -> Self {
 		let data_ptr = self.data.get();
+		
 		
 		// if we're cloning a shared resource, then that's easy: just copy our arc.
 		if let Data::Shared(shared) = unsafe { &*data_ptr } {
