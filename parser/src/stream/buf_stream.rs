@@ -3,7 +3,7 @@ use crate::stream::{Context, Contexted, Stream};
 use std::io::{self, Cursor, Seek, SeekFrom, Stdin, BufReader, BufRead};
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 /// A [`Stream`](trait.Stream.html) based around a [`BufRead`](#)-able typpe
 #[derive(Debug, PartialEq, Eq, Clone, Default, Hash)]
@@ -33,7 +33,7 @@ impl<B: BufRead> Seek for BufStream<B> {
 	fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
 		let pos =
 			match pos {
-				SeekFrom::Start(n) => n as i64,
+				SeekFrom::Start(n) => n.try_into().expect("seeking past `i32::MAX`?"),
 				SeekFrom::Current(n) => self.context.column as i64 + n,
 				SeekFrom::End(n) => self.current_line_len() as i64 + n,
 			};
@@ -45,7 +45,7 @@ impl<B: BufRead> Seek for BufStream<B> {
 		}
 
 		self.is_done = false;
-		self.context.column = pos as usize;
+		self.context.column = pos.try_into().expect("column line is too long!");
 
 		Ok(self.context.column as u64)
 	}
@@ -87,8 +87,9 @@ impl<B: BufRead> Stream for BufStream<B> {
 impl<B: BufRead> BufStream<B> {
 	/// Create a new [`BufStream`](#) for the given data, with an optional file being passed to
 	/// [`Context`](#)
+	#[must_use]
 	pub fn new(data: B, file: Option<PathBuf>) -> Self {
-		BufStream { data, context: Context::new(file), is_done: false }
+		Self { data, context: Context::new(file), is_done: false }
 	}
 
 	/// Get the current line
@@ -142,8 +143,9 @@ impl<B: BufRead> BufStream<B> {
 
 impl BufStream<BufReader<Stdin>> {
 	/// Create a new [`BufStream`](#) from stdin.
+	#[must_use]
 	pub fn stdin() -> Self {
-		BufStream::new(BufReader::new(io::stdin()), Some("-".into()))
+		Self::new(BufReader::new(io::stdin()), Some("-".into()))
 	}
 }
 
@@ -153,7 +155,7 @@ impl<T: AsRef<[u8]>> From<T> for BufStream<Cursor<T>> {
 	/// This assumes that `data` comes from a non-file source. If a `file` is desired,
 	/// [`BufStream::new`](#) should be used.
 	fn from(data: T) -> Self {
-		BufStream::new(Cursor::new(data), None)
+		Self::new(Cursor::new(data), None)
 	}
 }
 
@@ -163,7 +165,7 @@ impl TryFrom<&'_ Path> for BufStream<BufReader<File>> {
 	/// Try to construct a new [`BufStream`](#) from the given path, raising an error if we're not
 	/// able to access the file for some reason.
 	fn try_from(path: &Path) -> io::Result<Self> {
-		Ok(BufStream::new(BufReader::new(File::open(path)?), Some(path.into())))
+		Ok(Self::new(BufReader::new(File::open(path)?), Some(path.into())))
 	}
 }
 

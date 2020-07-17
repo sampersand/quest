@@ -22,15 +22,16 @@ pub struct Context {
 }
 
 impl Context {
+	#[must_use]
 	/// Create a new context
-	pub fn new(file: Option<PathBuf>) -> Self {
-		Context { file, ..Context::default() }
+	pub const fn new(file: Option<PathBuf>) -> Self {
+		Self { file, lineno: 0, column: 0, line: String::new() }
 	}
 }
 
 impl<T: Into<PathBuf>> From<T> for Context {
-	fn from(file: T) -> Context {
-		Context::new(Some(file.into()))
+	fn from(file: T) -> Self {
+		Self::new(Some(file.into()))
 	}
 }
 

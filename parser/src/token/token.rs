@@ -21,12 +21,12 @@ pub enum Token {
 impl Display for Token {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Token::Primative(p) => Display::fmt(p, f),
-			Token::Operator(o) => Display::fmt(o, f),
-			Token::Left(t) => Display::fmt(&t.left(), f),
-			Token::Right(t) => Display::fmt(&t.right(), f),
-			Token::Endline => Display::fmt(&";", f),
-			Token::Comma => Display::fmt(&",", f),
+			Self::Primative(p) => Display::fmt(p, f),
+			Self::Operator(o) => Display::fmt(o, f),
+			Self::Left(t) => Display::fmt(&t.left(), f),
+			Self::Right(t) => Display::fmt(&t.right(), f),
+			Self::Endline => Display::fmt(&";", f),
+			Self::Comma => Display::fmt(&",", f),
 		}		
 	}
 }
@@ -40,7 +40,7 @@ impl Token {
 				$(
 					match <$ty>::try_tokenize(stream)? {
 						TokenizeResult::Some(val) => return Ok(Some(val.into())),
-						TokenizeResult::RestartParsing => return Token::try_parse(stream),
+						TokenizeResult::RestartParsing => return Self::try_parse(stream),
 						TokenizeResult::StopParsing => return Ok(None),
 						TokenizeResult::None => { /* do nothing, go to the next one */ }
 					}
@@ -51,8 +51,8 @@ impl Token {
 		try_tokenize!(Whitespace, Comment, Primative, Parenthesis, Operator);
 
 		match stream.next().transpose()? {
-			Some(';') => Ok(Some(Token::Endline)),
-			Some(',') => Ok(Some(Token::Comma)),
+			Some(';') => Ok(Some(Self::Endline)),
+			Some(',') => Ok(Some(Self::Comma)),
 			Some(chr) => Err(parse_error!(stream, UnknownTokenStart(chr))),
 			None => Ok(None)
 		}

@@ -120,7 +120,7 @@ mod tests {
 
 		impl_object_type! { for Dummy [(parents Basic)]:
 			"inspect" => function |this: &Object, _: Args| {
-				this.try_downcast_map(|this: &Self| this.0.to_string())
+				this.try_downcast_map(|this: &Self| this.0.to_string().into())
 			}
 		}
 
@@ -160,7 +160,7 @@ mod tests {
 				this.try_downcast_and_then(|this: &Self| {
 					rhs.try_downcast_map(|rhs: &Self| {
 						this == rhs
-					})
+					}.into())
 				})
 			}
 		}
@@ -230,7 +230,7 @@ mod tests {
 		impl_object_type! { for Dummy [(parents Basic)]:
 			"==" => function |this: &Object, args: Args| {
 				this.try_downcast_and_then(|this: &Self|
-					args.arg(0)?.try_downcast_map(|rhs: &Self| this == rhs)
+					args.arg(0)?.try_downcast_map(|rhs: &Self| this == rhs).map(Object::from)
 				)
 			}
 		}

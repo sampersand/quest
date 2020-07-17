@@ -1,4 +1,4 @@
-#![deny(warnings)]
+#![cfg_attr(test, deny(warnings))]
 
 mod run;
 mod error;

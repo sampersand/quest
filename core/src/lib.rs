@@ -1,5 +1,7 @@
-#![deny(warnings)]
+#![allow(clippy::unnested_or_patterns)]
 #![feature(never_type)]
+#![cfg_attr(test, deny(warnings))]
+
 #![allow(
 	// TODO
 	clippy::missing_safety_doc,

@@ -18,14 +18,17 @@ impl Display for ParenType {
 }
 
 impl ParenType {
-	pub fn left(&self) -> char {
+	#[must_use]
+	pub const fn left(self) -> char {
 		match self {
 			ParenType::Round  => '(',
 			ParenType::Square => '[',
 			ParenType::Curly  => '{'
 		}
 	}
-	pub fn right(&self) -> char {
+
+	#[must_use]
+	pub const fn right(self) -> char {
 		match self {
 			ParenType::Round  => ')',
 			ParenType::Square => ']',
@@ -48,9 +51,9 @@ impl TryFrom<Operator> for ParenType {
 	type Error = Operator;
 	fn try_from(op: Operator) -> std::result::Result<Self, Operator> {
 		match op {
-			Operator::Call => Ok(ParenType::Round),
-			Operator::Index => Ok(ParenType::Square),
-			Operator::WithBlock => Ok(ParenType::Curly),
+			Operator::Call => Ok(Self::Round),
+			Operator::Index => Ok(Self::Square),
+			Operator::WithBlock => Ok(Self::Curly),
 			other => Err(other)
 		}
 	}

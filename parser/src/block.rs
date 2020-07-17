@@ -73,9 +73,9 @@ impl Display for Block {
 impl Display for Line {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Line::Single(expr) => Display::fmt(expr, f),
+			Self::Single(expr) => Display::fmt(expr, f),
 			// OPTIMIZE: I'm sure there's a builtin way to make this easier
-			Line::Multiple(exprs) => {
+			Self::Multiple(exprs) => {
 				let mut is_first_expr = true;
 				for expr in exprs.iter() {
 					if is_first_expr {
@@ -99,7 +99,7 @@ pub enum LineResult {
 impl LineResult {
 	fn force_multiple(self) -> Self {
 		match self {
-			LineResult::Single(obj) => LineResult::Multiple(vec![obj]),
+			Self::Single(obj) => Self::Multiple(vec![obj]),
 			multiple => multiple
 		}
 	}
@@ -118,8 +118,8 @@ impl Line {
 	#[inline]
 	fn execute(&self) -> quest_core::Result<LineResult> {
 		match self {
-			Line::Single(expr) => expr.execute().map(LineResult::Single),
-			Line::Multiple(exprs) => exprs
+			Self::Single(expr) => expr.execute().map(LineResult::Single),
+			Self::Multiple(exprs) => exprs
 				.iter()
 				.map(Executable::execute)
 				.collect::<quest_core::Result<_>>()
@@ -129,6 +129,9 @@ impl Line {
 }
 
 impl Block {
+	#[must_use]
+	#[inline]
+	#[allow(clippy::missing_const_for_fn)]
 	pub fn paren_type(&self) -> ParenType {
 		self.paren_type
 	}
@@ -191,7 +194,7 @@ impl Constructable for Block {
 				None => return Ok(None)
 			};
 
-		let mut block = Block {
+		let mut block = Self {
 			lines: vec![],
 			paren_type: paren,
 			context: ctor.context().clone(),
@@ -240,13 +243,13 @@ impl Constructable for Block {
 impl Block {
 	#[inline]
 	pub fn qs_call(this: &Object, args: Args) -> quest_core::Result<Object> {
-		let this_cloned = this.try_downcast_and_then::<Block, _, !, _>(|block| Ok(block.clone()))?;
+		let this_cloned = this.try_downcast_and_then::<Self, _, !, _>(|block| Ok(block.clone()))?;
 		Binding::new_stackframe(Some(this.clone()), args, move |_| {
-			match this_cloned.run_block_to_object() {
+			/*match */this_cloned.run_block_to_object()/* {
 				Ok(v) => Ok(v),
 				Err(err @ quest_core::Error::Return { .. }) => Err(err),
 				Err(err) => Err(err)
-			}
+			}*/
 		})
 	}
 
