@@ -18,6 +18,7 @@ impl Repl {
 		Repl { context: Context::new(Some("<repl>".into())) }
 	}
 }
+
 impl Iterator for Repl {
 	type Item = quest_parser::Result<char>;
 	fn next(&mut self) -> Option<Self::Item> {
@@ -38,10 +39,6 @@ impl Contexted for Repl {
 }
 
 impl Stream for Repl {
-	fn _is_start_of_line(&self) -> bool {
-		unimplemented!()
-	}
-
 	fn starts_with(&mut self, _s: &str) -> quest_parser::Result<bool> {
 		unimplemented!()
 		// self.read_next_line_if_applicable()?;

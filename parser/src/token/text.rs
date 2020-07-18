@@ -1,7 +1,7 @@
 //! Parsing a literal text
 use crate::{Result, Stream};
 use crate::expression::Executable;
-use crate::token::{Operator, Tokenizable, primative::Variable};
+use crate::token::{Operator, Tokenizable, variable::Variable};
 use quest_core::Object;
 use std::fmt::{self, Display, Formatter};
 
