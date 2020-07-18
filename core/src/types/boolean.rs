@@ -439,22 +439,22 @@ mod tests {
 			<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 			{
-				let ref orig = Object::from(true);
-				let ref dup = Boolean::qs_at_bool(orig, args!()).unwrap();
+				let orig = &Object::from(true);
+				let dup = &Boolean::qs_at_bool(orig, args!()).unwrap();
 				assert!(!orig.is_identical(dup));
 				assert_downcast_both_eq!(Boolean; orig, dup);
 			}
 
 			{
-				let ref orig = Object::from(false);
-				let ref dup = Boolean::qs_at_bool(orig, args!()).unwrap();
+				let orig = &Object::from(false);
+				let dup = &Boolean::qs_at_bool(orig, args!()).unwrap();
 				assert!(!orig.is_identical(dup));
 				assert_downcast_both_eq!(Boolean; orig, dup);
 			}
 
 			{
-				let ref orig = Object::from(false);
-				let ref dup = Boolean::qs_at_bool(orig, args!(true)).unwrap();
+				let orig = &Object::from(false);
+				let dup = &Boolean::qs_at_bool(orig, args!(true)).unwrap();
 				assert!(!orig.is_identical(dup));
 				assert_downcast_both_eq!(Boolean; orig, dup);
 			}
@@ -503,7 +503,7 @@ mod tests {
 			<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 			{
-				let ref orig = Object::from(true);
+				let orig = &Object::from(true);
 
 				assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(orig.clone())).unwrap()));
 				assert_downcast_eq!(Boolean; orig, true);
@@ -521,7 +521,7 @@ mod tests {
 			}
 
 			{
-				let ref orig = Object::from(false);
+				let orig = &Object::from(false);
 
 				assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(orig.clone())).unwrap()));
 				assert_downcast_eq!(Boolean; orig, false);
@@ -555,7 +555,7 @@ mod tests {
 			<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 			{
-				let ref orig = Object::from(false);
+				let orig = &Object::from(false);
 
 				assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(orig.clone())).unwrap()));
 				assert_downcast_eq!(Boolean; orig, false);
@@ -573,7 +573,7 @@ mod tests {
 			}
 
 			{
-				let ref orig = Object::from(true);
+				let orig = &Object::from(true);
 
 				assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(orig.clone())).unwrap()));
 				assert_downcast_eq!(Boolean; orig, true);
@@ -607,7 +607,7 @@ mod tests {
 			<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
 			{
-				let ref orig = Object::from(false);
+				let orig = &Object::from(false);
 
 				assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(orig.clone())).unwrap()));
 				assert_downcast_eq!(Boolean; orig, false);
@@ -625,7 +625,7 @@ mod tests {
 			}
 
 			{
-				let ref orig = Object::from(true);
+				let orig = &Object::from(true);
 
 				assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(false)).unwrap()));
 				assert_downcast_eq!(Boolean; orig, true);
