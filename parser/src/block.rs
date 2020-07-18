@@ -2,7 +2,7 @@ use quest_core::impl_object_type;
 use quest_core::{Object, Args, Binding};
 
 use crate::Result;
-use crate::token::{Token, Parenthesis};
+use crate::token::{Token, ParenType};
 use crate::stream::{Context, Contexted};
 use crate::expression::{Constructable, Expression, PutBack, Executable};
 use std::fmt::{self, Debug, Display, Formatter};
@@ -13,14 +13,10 @@ enum Line {
 	Multiple(Vec<Expression>)
 }
 
-/// Represents a block of executable Quest code.
-///
-/// Unlike every other "core" quest type, this doesn't actually live within [`quest_core`]. That's
-/// Because to create it, you need a [`context`], which is only possible whilst parsing.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Block {
 	lines: Vec<Line>,
-	paren: Parenthesis,
+	paren_type: ParenType,
 	context: Context,
 }
 
@@ -29,7 +25,7 @@ impl Debug for Block {
 		if f.alternate() {
 			f.debug_struct("Block")
 				.field("lines", &self.lines)
-				.field("paren", &self.paren)
+				.field("paren_type", &self.paren_type)
 				.field("context", &self.context)
 				.finish()
 		} else {
@@ -42,7 +38,7 @@ impl Debug for Block {
 impl Display for Block {
 	#[allow(clippy::all)]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		write!(f, "{}", self.paren.left())?;
+		write!(f, "{}", self.paren_type.left())?;
 
 		if self.lines.len() == 1 {
 			write!(f, " ")?;
@@ -69,7 +65,7 @@ impl Display for Block {
 		if self.lines.len() == 1 {
 			write!(f, " ")?;
 		}
-		write!(f, "{}", self.paren.right())
+		write!(f, "{}", self.paren_type.right())
 	}
 }
 
@@ -133,17 +129,13 @@ impl Line {
 }
 
 impl Block {
-	/// Fetches the parenthesis type that was used when making this block.
 	#[must_use]
 	#[inline]
-	pub fn paren(&self) -> Parenthesis {
-		self.paren
+	#[allow(clippy::missing_const_for_fn)]
+	pub fn paren_type(&self) -> ParenType {
+		self.paren_type
 	}
 
-	/// Runs a block of code, returning its result.
-	/// 
-	/// if the [`paren`] is [`Square`](Parenthesis::Square), then the result is automatically
-	/// assumed to be an array.
 	pub(super) fn run_block(&self) -> quest_core::Result<Option<LineResult>> {
 		if let Some((last, rest)) = self.lines.split_last() {
 			for line in rest {
@@ -152,19 +144,18 @@ impl Block {
 
 			let mut ret = last.execute()?;
 
-			if self.paren == Parenthesis::Square {
+			if self.paren_type == ParenType::Square {
 				ret = ret.force_multiple();
 			}
 
 			Ok(Some(ret))
-		} else if self.paren == Parenthesis::Square {
+		} else if self.paren_type == ParenType::Square {
 			Ok(Some(LineResult::Multiple(vec![])))
 		} else {
 			Ok(None)
 		}
 	}
 
-	/// Runs a block of code, and then converts it to an [`Object`](quest_core::Object)
 	fn run_block_to_object(&self) -> quest_core::Result<quest_core::Object> {
 		let lines = self.run_block()?;
 		let lines_obj = lines.map(Object::from).unwrap_or_default();
@@ -174,12 +165,13 @@ impl Block {
 	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
 	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
 	// }
+
 }
 
 impl Executable for Block {
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 
-		if self.paren == Parenthesis::Curly {
+		if self.paren_type == ParenType::Curly {
 			let block = Object::from(self.clone());
 			block.add_parent(Binding::instance().as_ref().clone())?;
 			Ok(block)
@@ -190,6 +182,7 @@ impl Executable for Block {
 }
 
 impl Constructable for Block {
+	type Item = Self;
 	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Self>>
 	where
 		C: Iterator<Item=Result<Token>> + PutBack + Contexted
@@ -203,7 +196,7 @@ impl Constructable for Block {
 
 		let mut block = Self {
 			lines: vec![],
-			paren,
+			paren_type: paren,
 			context: ctor.context().clone(),
 		};
 		let mut curr_line: Option<Line> = None;
@@ -218,8 +211,7 @@ impl Constructable for Block {
 					return Ok(Some(block))
 				},
 
-				rparen @ Token::Right(..) => return Err(parse_error!(ctor,
-					CantCreateExpression(super::Error::UnexpectedToken(rparen)))),
+				rparen @ Token::Right(..) => return Err(parse_error!(ctor, UnexpectedToken(rparen))),
 				Token::Endline => 
 					if let Some(curr_line) = curr_line.take() {
 						block.lines.push(curr_line);
@@ -243,14 +235,12 @@ impl Constructable for Block {
 			}
 		}
 
-		Err(parse_error!(ctor, CantCreateExpression(super::Error::MissingClosingParen(paren))))
+		Err(parse_error!(ctor, MissingClosingParen(paren)))
 	}
 }
 
 
 impl Block {
-	/// Calling a block will create a new stackframe, and then execute the contents of the block
-	/// within that stack frame.
 	#[inline]
 	pub fn qs_call(this: &Object, args: Args) -> quest_core::Result<Object> {
 		let this_cloned = this.try_downcast_map(Self::clone)?;
@@ -263,7 +253,6 @@ impl Block {
 		})
 	}
 
-	/// Converting a block to a string simply returns a spaced out representation of its tokens.
 	#[inline]
 	pub fn qs_at_text(&self, _: Args) -> quest_core::Result<Object> {
 		Ok(self.to_string().into())

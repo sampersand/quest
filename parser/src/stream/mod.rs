@@ -17,7 +17,6 @@ pub trait Stream : Seek + Contexted + Iterator<Item=Result<char>> {
 	/// seeking back if it doesn't.
 	fn starts_with(&mut self, s: &str) -> Result<bool>;
 
-	/// Gets the next `char` that's not an underscore.
 	fn next_non_underscore(&mut self) -> Option<Result<char>> {
 		match self.next()? {
 			Ok('_') => self.next_non_underscore(),

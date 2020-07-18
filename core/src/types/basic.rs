@@ -135,8 +135,8 @@ mod tests {
 	fn eql() {
 		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
-		let obj1 = &Object::from(Basic);
-		let obj2 = &Object::from(Basic);
+		let ref obj1 = Object::from(Basic);
+		let ref obj2 = Object::from(Basic);
 
 		assert_downcast_eq!(Boolean; Basic::qs_eql(obj1, args!(obj1.clone())).unwrap(), true);
 		assert_downcast_eq!(Boolean; Basic::qs_eql(obj1, args!(obj2.clone())).unwrap(), false);
@@ -165,9 +165,9 @@ mod tests {
 
 		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
-		let obj1 = &Object::from(Dummy(12));
-		let obj2 = &Object::from(Dummy(12));
-		let obj3 = &Object::from(Dummy(14));
+		let ref obj1 = Object::from(Dummy(12));
+		let ref obj2 = Object::from(Dummy(12));
+		let ref obj3 = Object::from(Dummy(14));
 		assert_downcast_eq!(Boolean; obj1.call_attr_lit(EQL, &[obj1]).unwrap(), true);
 		assert_downcast_eq!(Boolean; obj1.call_attr_lit(EQL, &[obj2]).unwrap(), true);
 		assert_downcast_eq!(Boolean; obj1.call_attr_lit(EQL, &[obj3]).unwrap(), false);
@@ -206,8 +206,8 @@ mod tests {
 	fn hash() {
 		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
-		let obj1 = &Object::from(Basic);
-		let obj2 = &Object::from(Basic);
+		let ref obj1 = Object::from(Basic);
+		let ref obj2 = Object::from(Basic);
 
 		let hash1 = Basic::qs_hash(obj1, args!()).unwrap();
 		// make sure repeated hashes are the same.
@@ -235,7 +235,7 @@ mod tests {
 
 		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
-		let obj = &Object::from(Dummy(12));
+		let ref obj = Object::from(Dummy(12));
 		let clone = Basic::qs_clone(obj, args!()).unwrap();
 
 		assert!(!obj.is_identical(&clone));
@@ -246,7 +246,7 @@ mod tests {
 	fn itself() {
 		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
-		let obj = &Object::from(Basic);
+		let ref obj = Object::from(Basic);
 		assert!(obj.is_identical(&Basic::qs_itself(obj, args!()).unwrap()));
 	}
 }

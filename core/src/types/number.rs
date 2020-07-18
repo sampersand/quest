@@ -25,7 +25,7 @@ pub struct Number(Inner);
 
 // note: to ensure consistancy, there won't ever be a `Float` that has an integer within it;
 // all integer `FloatType`s (eg `2.0`) are converted to `IntegerType` first.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 enum Inner {
 	Integer(IntegerType),
 	Float(FloatType),
@@ -37,12 +37,13 @@ impl Eq for Number {}
 
 impl PartialEq for Number {
 	fn eq(&self, rhs: &Number) -> bool {
+		use Inner::*;
 		match (self.0, rhs.0) {
-			(Inner::Integer(l), Inner::Integer(r)) => l == r,
-			(Inner::Float(l), Inner::Float(r)) if l.is_infinite() || r.is_infinite() 
-				=> l.is_infinite() && r.is_infinite() && l.is_sign_positive() == r.is_sign_positive(),
-			(Inner::Float(l), Inner::Float(r)) => (l - r).abs() < FloatType::EPSILON,
-			_ => false
+			(Integer(l), Integer(r)) => l == r,
+			(Float(l), Float(r)) => (l - r) < FloatType::EPSILON ||
+				l.is_infinite() && r.is_infinite() && l.is_sign_positive() == r.is_sign_positive(),
+			(Integer(n), Float(f))
+				| (Float(f), Integer(n)) => (f - n as FloatType) < FloatType::EPSILON,
 		}
 	}
 }
@@ -50,12 +51,10 @@ impl PartialEq for Number {
 impl Hash for Number {
 	#[inline]
 	fn hash<H: Hasher>(&self, h: &mut H) {
-		0.hash(h);
-		if true { return; }
 		// in the future, we should probably change how floats hash
 		match self.0 {
-			Inner::Integer(i) => { 0u8.hash(h); i.hash(h) },
-			Inner::Float(f) => { 1u8.hash(h); f.to_bits().hash(h) }
+			Inner::Integer(i) => i.hash(h),
+			Inner::Float(f) => f.to_bits().hash(h)
 		}
 	}
 }
@@ -359,20 +358,22 @@ impl_try_from_number!(u8 u16 u32 u64 u128 i8 i16 i32 i64 i128);
 
 impl From<FloatType> for Number {
 	// note that if the given `f` is an integer, we instead construct an `Inner::Integer`.
-	fn from(f: FloatType) -> Self {
+	fn from(f: FloatType) -> Number {
 		#[allow(clippy::float_cmp)]
-		if f.is_normal() && (f.floor() - f).abs() < FloatType::EPSILON {
-			Self(Inner::Integer(f as _))
+		if f.is_normal() && f.floor() == f {
+			assert!(f.is_normal() && (f as IntegerType as FloatType) == f, "bad f: {}", f);
+
+			Number(Inner::Integer(f as _))
 		} else {
-			Self(Inner::Float(f))
+			Number(Inner::Float(f))
 		}
 	}
 }
 
 impl From<IntegerType> for Number {
 	#[inline]
-	fn from(n: IntegerType) -> Self {
-		Self(Inner::Integer(n))
+	fn from(n: IntegerType) -> Number {
+		Number(Inner::Integer(n))
 	}
 }
 
@@ -998,20 +999,20 @@ impl_object_type!{
 	fn new_object(self) -> Object where Self: Sized {
 		use lazy_static::lazy_static;
 		use std::collections::HashMap;
-		use parking_lot::RwLock;
+		use std::sync::RwLock;
 
 		lazy_static! {
 			static ref OBJECTS: RwLock<HashMap<Number, Object>> = RwLock::new(HashMap::new());
 		}
 
-		if let Some(obj) = OBJECTS.read().get(&self) {
+		if let Some(obj) = OBJECTS.read().unwrap().get(&self) {
 			return obj.deep_clone();
 		}
 
-		let mut objs = OBJECTS.write();
+		let mut objs = OBJECTS.write().unwrap();
 
 		objs.entry(self)
-			.or_insert_with(|| Object::new_with_parent(self, vec![Self::mapping()]))
+			.or_insert_with(|| Object::new_with_parent(self, vec![Number::mapping()]))
 			.deep_clone()
 	}
 }

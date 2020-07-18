@@ -7,28 +7,6 @@ use std::fmt::{self, Display, Formatter};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StackPos(isize);
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Error {
-	InvalidLiteral(std::num::ParseIntError),
-}
-
-impl Display for Error {
-	#[inline]
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		match self {
-			Self::InvalidLiteral(ref err) => Display::fmt(err, f)
-		}
-	}
-}
-
-impl std::error::Error for Error {
-	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-		match self {
-			Self::InvalidLiteral(err) => Some(err)
-		}
-	}
-}
-
 impl Display for StackPos {
 	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -87,7 +65,8 @@ impl Tokenizable for StackPos {
 
 		match isize::from_str(&pos) {
 			Ok(pos) => Ok(Some(Self(pos))),
-			Err(err) => Err(parse_error!(stream, CantTokenize(Error::InvalidLiteral(err).into())))
+			Err(err) => Err(parse_error!(stream,
+				MessagedString(format!("invalid stack pos literal: {}", err))))
 		}
 	}
 }

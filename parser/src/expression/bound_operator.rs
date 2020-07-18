@@ -1,11 +1,9 @@
-use crate::token::{Token, Operator, operator::Associativity, Parenthesis};
+use crate::token::{Token, Operator, operator::Associativity, ParenType};
 use crate::expression::{Expression, Constructable, PutBack, Executable};
 use crate::stream::Contexted;
 use crate::Result;
 use std::fmt::{self, Display, Formatter};
 
-/// This is significantly more efficient than storing arguments as a `Vec<Expression>`, as each
-/// value needs to be `execute`d.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum OperArgs {
 	Unary,
@@ -13,18 +11,15 @@ enum OperArgs {
 	Ternary(Expression, Expression)
 }
 
-/// A struct that represents an operator and its operands.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundOperator {
-	/// The operator in question
 	oper: Operator,
-	/// The value the operator will be called on.
-	///
-	/// For example, for binary operators this is the left-hand-side value.
 	this: Box<Expression>,
-
-	/// Any arguments That are passed to the calling expression.
 	args: Box<OperArgs>
+}
+
+impl BoundOperator {
+	
 }
 
 impl Display for BoundOperator {
@@ -50,17 +45,17 @@ impl Display for BoundOperator {
 }
 
 impl Executable for BoundOperator {
-	// This can probably be improved upon, especially since it's a bottleneck in performance.
+
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		let this = self.this.execute()?;
 
 		match self.args.as_ref() {
 			OperArgs::Binary(rhs) if self.oper == Operator::Call => match rhs {
-				Expression::Block(block) if block.paren() == Parenthesis::Round =>
+				Expression::Block(block) if block.paren_type() == ParenType::Round =>
 					return match block.run_block()? {
-						Some(super::block::LineResult::Single(s)) =>
+						Some(crate::block::LineResult::Single(s)) =>
 							this.call_attr_lit(self.oper.into(), &[&s]),
-						Some(super::block::LineResult::Multiple(m)) =>
+						Some(crate::block::LineResult::Multiple(m)) =>
 							this.call_attr_lit(self.oper.into(), m.iter().collect::<Vec<&_>>()),
 						None =>
 							this.call_attr_lit(self.oper.into(), &[])
@@ -83,6 +78,8 @@ impl Executable for BoundOperator {
 }
 
 impl Constructable for BoundOperator {
+	type Item = Self;
+
 	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Self>>
 	where
 		C: Iterator<Item=Result<Token>> + PutBack + Contexted
@@ -113,15 +110,12 @@ impl Constructable for BoundOperator {
 }
 
 
-/// Try to build an operator from the given constructor.
-// TODO: When I get around to formally spelling out the parser, this should be updated
 fn build_op<C>(oper: Operator, ctor: &mut C, mut this: Expression) -> Result<Expression>
 where
 	C: Iterator<Item=Result<Token>> + PutBack + Contexted
 {
 	let rhs = Expression::try_construct_precedence(ctor, Some(oper))?
-		.ok_or_else(|| parse_error!(ctor,
-			CantCreateExpression(super::Error::ExpectedExpression)))?;
+		.ok_or_else(|| parse_error!(ctor, ExpectedExpression))?;
 
 	this = BoundOperator {
 		oper,
@@ -163,12 +157,6 @@ where
 }
 
 impl BoundOperator {
-	/// Try to construct an operator
-	///
-	/// - If a `parent_op` is supplied, the next value is an operator, and `next < parent_op`, we try
-	///   to construct an operator recursively.
-	/// - If the next token's an operator, endline, comma, or right parenthesis, simply return `lhs`.
-	/// - In any other case, we assume that it's a function invocation.
 	pub fn construct_operator<C>(ctor: &mut C, lhs: Expression, parent_op: Option<Operator>)
 		-> Result<Expression>
 	where
@@ -196,4 +184,4 @@ impl BoundOperator {
 			None => Ok(lhs),
 		}
 	}
-}
+	}

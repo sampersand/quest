@@ -1,6 +1,4 @@
-//! The crate that's responsible for parsing quest code.
-#![allow(clippy::module_inception, clippy::missing_const_for_fn)]
-#![warn(missing_docs)]
+#![allow(clippy::module_inception)]
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
 pub fn init() {
@@ -14,9 +12,11 @@ mod error;
 pub mod expression;
 pub mod token;
 pub mod stream;
+pub mod block;
 
 // TODO: change public exports to more minimal.
+pub use block::Block;
 pub use error::{Error, ErrorType, Result};
 pub use token::Token;
-pub use expression::{Expression, Block};
+pub use expression::Expression;
 pub use stream::{Stream, Context, Contexted};

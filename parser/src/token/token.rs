@@ -1,22 +1,15 @@
 use crate::Result;
 use crate::stream::Stream;
-use crate::token::{Parenthesis, Operator, Primative, Tokenizable};
+use crate::token::{ParenType, Operator, Primative, Tokenizable};
 use std::fmt::{self, Display, Formatter};
 
-/// Tokens that are generated whilst parsing a stream.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
-	/// A [`Primative`].
 	Primative(Primative),
-	/// An [`Operator`].
 	Operator(Operator),
-	/// A left [`Parenthesis`].
-	Left(Parenthesis),
-	/// A right [`Parenthesis`].
-	Right(Parenthesis),
-	/// An endline (`;`).
+	Left(ParenType),
+	Right(ParenType),
 	Endline,
-	/// A comma (`,`).
 	Comma
 }
 
@@ -27,8 +20,8 @@ impl Display for Token {
 			Self::Operator(o) => Display::fmt(o, f),
 			Self::Left(t) => Display::fmt(&t.left(), f),
 			Self::Right(t) => Display::fmt(&t.right(), f),
-			Self::Endline => Display::fmt(&';', f),
-			Self::Comma => Display::fmt(&',', f),
+			Self::Endline => Display::fmt(&";", f),
+			Self::Comma => Display::fmt(&",", f),
 		}		
 	}
 }
@@ -80,7 +73,7 @@ fn parse_comment<S: Stream>(stream: &mut S) -> Result<CommentResult> {
 			}
 		}
 
-		Err(parse_error!(context=begin_context, CantTokenize(super::Error::UnterminatedBlockComment)))
+		Err(parse_error!(context=begin_context, UnterminatedBlockComment))
 	}
 
 	if stream.starts_with("##__EOF__##")? {
@@ -95,7 +88,6 @@ fn parse_comment<S: Stream>(stream: &mut S) -> Result<CommentResult> {
 }
 
 impl Token {
-	/// Try to parse a token from the specified stream.
 	pub fn try_parse<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
 		parse_whitespace(stream)?;
 
@@ -111,16 +103,17 @@ impl Token {
 			return Ok(Some(op.into()))
 		}
 
+
 		match stream.next().transpose()? {
 			Some(';') => Ok(Some(Self::Endline)),
 			Some(',') => Ok(Some(Self::Comma)),
-			Some('(') => Ok(Some(Self::Left(Parenthesis::Round))),
-			Some(')') => Ok(Some(Self::Right(Parenthesis::Round))),
-			Some('[') => Ok(Some(Self::Left(Parenthesis::Square))),
-			Some(']') => Ok(Some(Self::Right(Parenthesis::Square))),
-			Some('{') => Ok(Some(Self::Left(Parenthesis::Curly))),
-			Some('}') => Ok(Some(Self::Right(Parenthesis::Curly))),
-			Some(chr) => Err(parse_error!(stream, CantTokenize(super::Error::UnknownTokenStart(chr)))),
+			Some('(') => Ok(Some(Self::Left(ParenType::Round))),
+			Some(')') => Ok(Some(Self::Right(ParenType::Round))),
+			Some('[') => Ok(Some(Self::Left(ParenType::Square))),
+			Some(']') => Ok(Some(Self::Right(ParenType::Square))),
+			Some('{') => Ok(Some(Self::Left(ParenType::Curly))),
+			Some('}') => Ok(Some(Self::Right(ParenType::Curly))),
+			Some(chr) => Err(parse_error!(stream, UnknownTokenStart(chr))),
 			None => Ok(None)
 		}
 	}

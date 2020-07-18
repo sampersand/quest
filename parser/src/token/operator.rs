@@ -1,4 +1,3 @@
-//! All the operators that can be used within Quest.
 #![allow(unused)]
 use crate::Result;
 use crate::expression::{PutBack, Constructable, Expression};
@@ -9,35 +8,22 @@ use std::cmp::Ordering;
 use std::io::BufRead;
 use std::fmt::{self, Display, Formatter};
 
-// TODO: actually implement this.
-/// The associativity of an operator.
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub enum Associativity {
-	/// Indicates the operator is a left-to-right associative binary operator.
-	///
-	/// This means if you have `x OP y OP z`, it'll be parsed as `(x OP y) OP z`. Most operators are
-	/// Left-to-right associative.
 	LeftToRight,
-
-	/// Indicates the operator is a left-to-right associative binary operator.
-	///
-	/// This means if you have `x OP y OP z`, it'll be parsed as `x OP (y OP z)`. Few operators are
-	/// Right-to-left associative: Some noteable exceptions are `=` and `**`.
 	RightToLeft,
-
-	/// Indicates the operator is a unary operator on the left-hand side.
-	///
-	/// This means it's represented as `OP x`
 	UnaryOperOnLeft,
-
 	// UnaryOperOnRight,
 }
 
-macro_rules! docify {
-	($($doc:expr)*; $item:item) => { $(#[doc=$doc])* $item };
-}
-
 macro_rules! operator_enum {
+	(; MAX_PRECEDENCE $ord:literal) => { $ord };
+	(; MAX_PRECEDENCE $lhs:literal $($rest:literal)*) => {{
+		let rhs = operator_enum!(; MAX_PRECEDENCE $($rest)*);
+		// a hack to get the maximum value of integers
+		[$lhs, rhs][($lhs < rhs) as usize]
+	}};
+
 	(; ASSOC ) => { operator_enum!(; ASSOC LeftToRight ); };
 	(; ASSOC $which:ident ) => { Associativity::$which };
 	(; TRY_PARSE $_repr:literal ()) => { None };
@@ -46,13 +32,9 @@ macro_rules! operator_enum {
 	($(
 		$variant:ident($repr:literal $(($($ident:literal)?))? $ord:literal $($assoc:ident)? $($arity:literal)?)
 	)+) => {
-		/// An enum represenitng all possible operators
 		#[derive(Debug, Clone, Copy, Eq)]
 		pub enum Operator {
-			$(#[doc="The `"]
-			#[doc=$repr]
-			#[doc="` operator."]
-			$variant),*
+			$($variant),*
 		}
 
 		impl Tokenizable for Operator {
@@ -70,21 +52,20 @@ macro_rules! operator_enum {
 		}
 
 		impl Operator {
-			/// Gets the string representation of the operator.
+			pub const MAX_PRECEDENCE: usize = operator_enum!(; MAX_PRECEDENCE $($ord)+) as usize;
+
 			pub fn repr(&self) -> &'static str {
 				match self {
 					$(Operator::$variant => $repr),+
 				}
 			}
-
-			/// gets the precedence of the operator.
-			fn precedence(&self) -> usize {
+			pub fn precedence(&self) -> usize {
 				match self {
 					$(Operator::$variant => $ord,)+
 				}
 			}
 
-			/// Gets the associativity of the oeprator.
+
 			pub fn assoc(&self) -> Associativity {
 				match self {
 					$(Operator::$variant => operator_enum!(; ASSOC $($assoc)?),)+

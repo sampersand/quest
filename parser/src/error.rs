@@ -1,37 +1,40 @@
 use crate::stream::Context;
+use crate::token::{Token, ParenType};
 use std::fmt::{self, Display, Formatter};
 
-/// The types of errors that can occur whilst parsing Quest code.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum ErrorType {
-	/// The stream wasn't able to be read from.
 	CantReadStream(std::io::Error),
+	BadNumber(crate::token::primative::number::ParseError),
+	BadRegex(crate::token::primative::regex::RegexError),
+	UnterminatedBlockComment,
+	UnknownTokenStart(char),
+	UnterminatedQuote,
+	BadEscapeChar(char),
+	UnexpectedToken(Token),
+	Message(&'static str),
+	MessagedString(String),
+	ExpectedExpression,
+	MissingClosingParen(ParenType),
 
-	/// An error happend whilst tokenizing
-	CantTokenize(crate::token::Error),
-
-	/// Couldn't create an expression
-	CantCreateExpression(crate::expression::Error),
+	// StreamError(std::io::Error),
+	// Tokenize(TokenizeError),
+	// Constructable(ConstructableError)
 }
 
-
-/// An error that occurs whilst parsing Quest code.
-///
-/// This contains a [`Context`] for better error messages.
 #[derive(Debug)]
 pub struct Error {
 	context: Context,
-	ty: ErrorType
+	r#type: ErrorType
 }
 
-/// A wrapper around [`std::result::Result<T>`]
 #[must_use]
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Error {
-	/// Create a new [`Error`] for the given [context](Context) and [error type](ErrorType).
-	pub fn new(context: Context, ty: ErrorType) -> Self {
-		Error { context, ty }
+	pub fn new(context: Context, r#type: ErrorType) -> Self {
+		Error { context, r#type }
 	}
 }
 
@@ -58,7 +61,7 @@ impl Display for Error {
 			file=file,
 			lineno=lineno,
 			column=column,
-			error=self.ty,
+			error=self.r#type,
 			context=line.trim_end(),
 			padding=" ".repeat(column))
 	}
@@ -66,10 +69,20 @@ impl Display for Error {
 
 impl Display for ErrorType {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		use ErrorType::*;
 		match self {
-			Self::CantReadStream(err) => write!(f, "can't read next character: {}", err),
-			Self::CantTokenize(err) => write!(f, "can't tokenize: {}", err),
-			Self::CantCreateExpression(err) => write!(f, "cant create expression: {}", err),
+			CantReadStream(err) => write!(f, "can't read next character: {}", err),
+			BadNumber(num) => write!(f, "bad number: {}", num),
+			BadRegex(err) => write!(f, "bad regex: {}", err),
+			UnknownTokenStart(chr) => write!(f, "unknown token start `{}`", chr),
+			UnterminatedQuote => write!(f, "unterminated quote"),
+			BadEscapeChar(chr) => write!(f, "bad escape char `{}`", chr),
+			UnterminatedBlockComment => write!(f, "unterminated block comment"),
+			UnexpectedToken(tkn) => write!(f, "unexpected token `{}`", tkn),
+			MissingClosingParen(paren) => write!(f, "missing closing paren `{}`", paren.right()),
+			ExpectedExpression => write!(f, "expected an expression"),
+			Message(msg) => write!(f, "{}", msg),
+			MessagedString(msg) => write!(f, "{}", msg),
 		}
 	}
 }
@@ -77,10 +90,15 @@ impl Display for ErrorType {
 
 impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-		match self.ty {
+		match self.r#type {
 			ErrorType::CantReadStream(ref err) => Some(err),
-			ErrorType::CantTokenize(ref err) => Some(err),
-			ErrorType::CantCreateExpression(ref err) => Some(err)
+			ErrorType::BadNumber(ref err) => Some(err),
+			ErrorType::BadRegex(ref err) => Some(err),
+			_ => None
 		}
 	}
 }
+
+
+
+

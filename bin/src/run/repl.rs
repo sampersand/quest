@@ -18,7 +18,6 @@ impl Repl {
 		Repl { context: Context::new(Some("<repl>".into())) }
 	}
 }
-
 impl Iterator for Repl {
 	type Item = quest_parser::Result<char>;
 	fn next(&mut self) -> Option<Self::Item> {
