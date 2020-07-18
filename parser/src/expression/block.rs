@@ -219,7 +219,7 @@ impl Constructable for Block {
 				},
 
 				rparen @ Token::Right(..) => return Err(parse_error!(ctor,
-					CantCreateExpression(super::Error::UnexpectedToken(rparen).into()))),
+					CantCreateExpression(super::Error::UnexpectedToken(rparen)))),
 				Token::Endline => 
 					if let Some(curr_line) = curr_line.take() {
 						block.lines.push(curr_line);
@@ -243,7 +243,7 @@ impl Constructable for Block {
 			}
 		}
 
-		Err(parse_error!(ctor, CantCreateExpression(super::Error::MissingClosingParen(paren).into())))
+		Err(parse_error!(ctor, CantCreateExpression(super::Error::MissingClosingParen(paren))))
 	}
 }
 

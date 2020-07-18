@@ -86,7 +86,7 @@ impl Expression {
 	{
 		Expression::try_construct_precedence(ctor, None)?
 			.ok_or_else(|| parse_error!(ctor,
-				CantCreateExpression(super::Error::ExpectedExpression.into())))
+				CantCreateExpression(super::Error::ExpectedExpression)))
 	}
 
 	/// Try to construct an expression from the given constructor, gobbling up all operators until

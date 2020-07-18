@@ -121,7 +121,7 @@ where
 {
 	let rhs = Expression::try_construct_precedence(ctor, Some(oper))?
 		.ok_or_else(|| parse_error!(ctor,
-			CantCreateExpression(super::Error::ExpectedExpression.into())))?;
+			CantCreateExpression(super::Error::ExpectedExpression)))?;
 
 	this = BoundOperator {
 		oper,

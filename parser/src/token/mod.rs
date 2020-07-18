@@ -1,4 +1,4 @@
-//! Everything having to do with [`Tokens`] lives here.
+	//! Everything having to do with [`Tokens`] lives here.
 macro_rules! unseek_char {
 	(@COUNT) => { 0 };
 	(@COUNT $_e:expr, $($o:tt)* ) => {{ let _ = $_e; 1 + unseek_char!(@COUNT $($o)*) }};
@@ -22,7 +22,7 @@ mod parenthesis;
 pub mod operator;
 mod token;
 
-/// Represents the ability for a trait to parsed out of a series of tokens.
+/// Represents the ability for a trait to parsed out of a series of [`Token`]s.
 pub trait Tokenizable : Sized {
 	/// try to create a type out of the stream.
 	fn try_tokenize<S: crate::stream::Stream>(stream: &mut S) -> crate::Result<Option<Self>>;
