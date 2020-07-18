@@ -35,12 +35,17 @@ enum Inner {
 
 impl Eq for Number {}
 
+#[inline]
+fn floats_eq(l: FloatType, r: FloatType) -> bool {
+	l == r || (l - r).abs() < FloatType::EPSILON
+}
+
 impl PartialEq for Number {
 	fn eq(&self, rhs: &Number) -> bool {
 		use Inner::*;
 		match (self.0, rhs.0) {
 			(Integer(l), Integer(r)) => l == r,
-			(Float(l), Float(r)) => l == r || (l - r) < FloatType::EPSILON,
+			(Float(l), Float(r)) => floats_eq(l, r),
 			_ => false
 		}
 	}
@@ -357,10 +362,7 @@ impl_try_from_number!(u8 u16 u32 u64 u128 i8 i16 i32 i64 i128);
 impl From<FloatType> for Number {
 	// note that if the given `f` is an integer, we instead construct an `Inner::Integer`.
 	fn from(f: FloatType) -> Number {
-		#[allow(clippy::float_cmp)]
-		if f.is_normal() && f.floor() == f {
-			assert!(f.is_normal() && (f as IntegerType as FloatType) == f, "bad f: {}", f);
-
+		if floats_eq(f.floor(), f) {
 			Number(Inner::Integer(f as _))
 		} else {
 			Number(Inner::Float(f))
