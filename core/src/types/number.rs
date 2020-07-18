@@ -41,11 +41,10 @@ fn floats_eq(l: FloatType, r: FloatType) -> bool {
 }
 
 impl PartialEq for Number {
-	fn eq(&self, rhs: &Number) -> bool {
-		use Inner::*;
+	fn eq(&self, rhs: &Self) -> bool {
 		match (self.0, rhs.0) {
-			(Integer(l), Integer(r)) => l == r,
-			(Float(l), Float(r)) => floats_eq(l, r),
+			(Inner::Integer(l), Inner::Integer(r)) => l == r,
+			(Inner::Float(l), Inner::Float(r)) => floats_eq(l, r),
 			_ => false
 		}
 	}
@@ -54,10 +53,9 @@ impl PartialEq for Number {
 impl Hash for Number {
 	#[inline]
 	fn hash<H: Hasher>(&self, h: &mut H) {
-		// in the future, we should probably change how floats hash
 		match self.0 {
-			Inner::Integer(i) => i.hash(h),
-			Inner::Float(f) => f.to_bits().hash(h)
+			Inner::Integer(i) => { 0i8.hash(h); i.hash(h) },
+			Inner::Float(f) => { 1i8.hash(h); f.to_bits().hash(h) }
 		}
 	}
 }
@@ -999,17 +997,17 @@ impl_object_type!{
 	fn new_object(self) -> Object where Self: Sized {
 		use lazy_static::lazy_static;
 		use std::collections::HashMap;
-		use std::sync::RwLock;
+		use parking_lot::RwLock;
 
 		lazy_static! {
 			static ref OBJECTS: RwLock<HashMap<Number, Object>> = RwLock::new(HashMap::new());
 		}
 
-		if let Some(obj) = OBJECTS.read().unwrap().get(&self) {
+		if let Some(obj) = OBJECTS.read().get(&self) {
 			return obj.deep_clone();
 		}
 
-		let mut objs = OBJECTS.write().unwrap();
+		let mut objs = OBJECTS.write();
 
 		objs.entry(self)
 			.or_insert_with(|| Object::new_with_parent(self, vec![Number::mapping()]))

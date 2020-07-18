@@ -43,7 +43,7 @@ impl From<String> for Error {
 
 impl From<!> for Error {
 	fn from(_: !) -> Self {
-		unreachable_debug_or_unchecked!();
+		unsafe { unreachable_debug_or_unchecked!(); }
 	}
 }
 

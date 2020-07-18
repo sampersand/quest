@@ -1,6 +1,8 @@
-use std::sync::{Arc, RwLock};
-use std::cell::UnsafeCell;
+use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
+use parking_lot::RwLock;
+
+pub struct SharedCow<T>(RwLock<Data<T>>);
 
 #[derive(Debug)]
 enum Data<T> {
@@ -8,19 +10,10 @@ enum Data<T> {
 	Shared(Arc<T>)
 }
 
-// TODO: use parking lot to replace this.
-
-pub struct SharedCow<T> {
-	own_lock: RwLock<()>,
-	data: UnsafeCell<Data<T>>,
-}
-
-unsafe impl<T: Send + Sync> Sync for SharedCow<T> {}
-
 impl<T: Debug> Debug for SharedCow<T> {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		f.debug_tuple("SharedCow")
-			.field(&self.data.get())
+			.field(&*self.0.read())
 			.finish()
 	}
 }
@@ -34,37 +27,28 @@ impl<T: Default> Default for SharedCow<T> {
 
 impl<T> Clone for SharedCow<T> {
 	fn clone(&self) -> Self {
-		let data_ptr = self.data.get();
-		
-		
 		// if we're cloning a shared resource, then that's easy: just copy our arc.
-		if let Data::Shared(shared) = unsafe { &*data_ptr } {
+		if let Data::Shared(ref shared) = *self.0.read() {
 			return Self::new_shared(shared.clone())
 		}
 
 		// otherwise, we need to convert ourselves into an owned version.
-		let lock = self.own_lock.write().expect("cant acquire write lock");
+		let mut ret: Option<Self> = None;
 
-		// if someone already did our job for us before we got the lock, return the arc.
-		if let Data::Shared(shared) = unsafe { &*data_ptr } {
-			drop(lock); // drop the lock before we make a SharedCow
-			return Self::new_shared(shared.clone());
+		take_mut::take(&mut *self.0.write(), |lock| {
+			let shared =
+				match lock {
+					Data::Shared(shared) => shared,
+					Data::Owned(owned) => Arc::new(owned)
+				};
+			ret = Some(Self::new_shared(shared.clone()));
+			Data::Shared(shared)
+		});
+
+		match ret {
+			Some(clone) => clone,
+			None => unsafe { unreachable_debug_or_unchecked!() }
 		}
-
-		// We both have the lock and checked for Shared; we know we _must_ have `Owned` value now.
-		let shared = 
-			match unsafe { std::ptr::read(data_ptr) } {
-				Data::Owned(owned) => Arc::new(owned),
-				Data::Shared(_) => unreachable_debug_or_unchecked!()
-			};
-
-		// since we take ownership of the data, we have to ensure that we don't double-drop it
-		unsafe {
-			std::ptr::write(data_ptr, Data::Shared(shared.clone()));
-		}
-
-		drop(lock); // we no longer need the lock.
-		Self::new_shared(shared)
 	}
 }
 
@@ -81,46 +65,28 @@ impl<T> SharedCow<T> {
 
 	#[inline]
 	fn from_data(data: Data<T>) -> Self {
-		SharedCow {
-			data: UnsafeCell::new(data),
-			own_lock: RwLock::new(())
-		}
+		SharedCow(RwLock::from(data))
 	}
 
-	pub fn downcast_and_then<F: FnOnce(&T) -> R, R>(&self, func: F) -> R {
-		let data_ptr = self.data.get();
-		match unsafe { &*data_ptr } {
-			Data::Shared(arc) => func(arc),
-			Data::Owned(_) => {
-				let _lock = self.own_lock.read().expect("cant read lock");
-				// we have to check again in case something created a shared reference
-				// before we acquired the lock
-				match unsafe { &*data_ptr } {
-					Data::Shared(arc) => func(arc),
-					Data::Owned(owned) => func(owned)
-				}
-			}
+	pub fn with_ref<F: FnOnce(&T) -> R, R>(&self, func: F) -> R {
+		match *self.0.read() {
+			Data::Shared(ref shared) => func(shared),
+			Data::Owned(ref owned) => func(owned)
 		}
 	}
 }
 
 impl<T: Clone> SharedCow<T> {
-	unsafe fn ensure_owned(&self) {
-		if let Data::Shared(shared) = &*self.data.get() {
-			// we use `replace` because we want the arc to drop itself.
-			std::ptr::replace(self.data.get(), Data::Owned(T::clone(&shared)));
-		}
-	}
+	pub fn with_mut<F: FnOnce(&mut T) -> R, R>(&self, func: F) -> R {
+		let mut lock = self.0.write();
 
-	pub fn downcast_mut_and_then<F: FnOnce(&mut T) -> R, R>(&self, func: F) -> R {
-		// we have to lock regardless, because we will be accessing `Owned`.
-		let _lock = self.own_lock.write().expect("can't write lock");
-
-		unsafe {
-			self.ensure_owned();
-			match &mut *self.data.get() {
-				Data::Owned(owned) => func(owned),
-				Data::Shared(_) => unreachable_debug_or_unchecked!()
+		match *lock {
+			Data::Owned(ref mut owned) => func(owned),
+			Data::Shared(ref shared) => {
+				let mut owned = T::clone(&shared);
+				let ret = func(&mut owned);
+				*lock = Data::Owned(owned);
+				ret
 			}
 		}
 	}

@@ -34,7 +34,7 @@ impl Clone for Data {
 
 		match data.as_ref().unwrap() {
 			// we literally just swapped it away from owned
-			Ownership::Owned(_) => unreachable_debug_or_unchecked!(),
+			Ownership::Owned(_) => unsafe { unreachable_debug_or_unchecked!() },
 			Ownership::Shared(ref data) => Data {
 				data: RwLock::new(Some(Ownership::Shared(data.clone()))),
 				details: self.details.clone()
@@ -146,7 +146,7 @@ impl Data {
 
 				match self.0.as_mut().unwrap() {
 					Ownership::Owned(ref mut owned) => owned.downcast_mut().unwrap(),
-					Ownership::Shared(_) => unreachable_debug_or_unchecked!()
+					Ownership::Shared(_) => unsafe { unreachable_debug_or_unchecked!() }
 				}
 			}
 		}

@@ -42,7 +42,7 @@ impl Debug for Object {
 
 impl From<!> for Object {
 	fn from(_: !) -> Self {
-		unreachable_debug_or_unchecked!()
+		unsafe { unreachable_debug_or_unchecked!() }
 	}
 }
 

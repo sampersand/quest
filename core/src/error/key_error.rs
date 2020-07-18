@@ -6,7 +6,6 @@ pub enum KeyError {
 	OutOfBounds { idx: isize, len: usize },
 	BadSlice { slice: String, len: usize },
 	DoesntExist { attr: Object, obj: Object },
-	NoThisSupplied
 }
 
 impl From<KeyError> for super::Error {
@@ -24,7 +23,6 @@ impl Display for KeyError {
 				write!(f, "index '{}' out of bounds (max: {})", idx, len),
 			KeyError::BadSlice { slice, len } => 
 				write!(f, "slice '{}' out of bounds (max: {})", slice, len),
-			KeyError::NoThisSupplied =>  write!(f, "no '__this__' supplied"),
 			KeyError::DoesntExist { attr, obj } => 
 				write!(f, "attr {:?} doesn't exist for {:?}", attr, obj),
 		}
