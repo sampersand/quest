@@ -1,13 +1,29 @@
 //! Parsing a literal text
-
 use crate::{Result, Stream};
 use crate::expression::Executable;
-use crate::token::{Operator, Tokenizable, primative::Variable};
+use crate::token::{Operator, Tokenizable, variable::Variable};
 use quest_core::Object;
+use std::fmt::{self, Display, Formatter};
 
 /// A literal text is actually just a `quest_core::Text`.
 pub use quest_core::types::Text;
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Error {
+	BadEscapeChar(char),
+	UnterminatedQuote,
+}
+
+impl Display for Error {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		match self {
+			Self::BadEscapeChar(chr) => write!(f, "bad escape char '{}'", chr),
+			Self::UnterminatedQuote => write!(f, "unterminated quote"),
+		}
+	}
+}
+
+impl std::error::Error for Error {}
 
 impl Executable for Text {
 	fn execute(&self) -> quest_core::Result<Object> {
@@ -33,15 +49,17 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Option<
 				Some('0') => text.push('\0'),
 				Some('u') | Some('U')
 					| Some('x') | Some('X') => todo!("additional string parsing"),
-				Some(chr) => return Err(parse_error!(stream, BadEscapeChar(chr))),
-				None      => return Err(parse_error!(context=starting_context, UnterminatedQuote)),
+				Some(chr) => return Err(parse_error!(stream,
+						CantTokenize(Error::BadEscapeChar(chr).into()))),
+				None => return Err(parse_error!(context=starting_context,
+						CantTokenize(Error::UnterminatedQuote.into()))),
 			},
 			chr if chr == quote => return Ok(Some(text.into())),
 			chr => text.push(chr)
 		}
 	}
 
-	Err(parse_error!(context=starting_context, UnterminatedQuote))
+	Err(parse_error!(context=starting_context, CantTokenize(Error::UnterminatedQuote.into())))
 }
 
 // valid syntax is `$variable_name` or `$operator`.
@@ -62,7 +80,7 @@ fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<Option<Text>> {
 	if stream.next_if_starts_with("()")? {
 		Ok(Some("()".into()))
 	} else {
-		Err(parse_error!(stream, UnterminatedQuote))
+		Err(parse_error!(stream, CantTokenize(Error::UnterminatedQuote.into())))
 	}
 }
 

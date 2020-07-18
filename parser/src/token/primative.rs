@@ -3,28 +3,7 @@ use crate::stream::Stream;
 use crate::expression::{Constructable, Executable};
 use crate::token::{Token, Tokenizable};
 use std::fmt::{self, Display, Formatter};
-
-pub mod text;
-pub mod number;
-pub mod variable;
-pub mod stackpos;
-pub mod regex;
-
-
-/// A text literal.
-pub use text::Text;
-
-/// A number literal.
-pub use number::Number;
-
-/// A variable literal.
-pub use variable::Variable;
-
-/// A stackpos literal.
-pub use stackpos::StackPos;
-
-/// A regex literal.
-pub use self::regex::Regex;
+use super::{text::Text, number::Number, variable::Variable, stackpos::StackPos, regex::Regex};
 
 
 /// Represents a primative value in Quest.
@@ -35,31 +14,30 @@ pub use self::regex::Regex;
 /// There are also no literal lists or maps: These are both considered [`Block`](#)s.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Primative {
-	/// A literal piece of text.
-	///
-	/// See [`Text`](#) for more information on parsing.
+	/// A [`Text`] literal.
 	Text(Text),
-	/// A literal number.
-	///
-	/// See [`Number`](#) for more information on parsing.
+
+	/// A [`Number`] literal.
 	Number(Number),
-	/// A variable name.
-	///
-	/// See [`Variable`](#) for more information on parsing.
+
+	/// A [`Variable`] literal.
 	Variable(Variable),
 
+	/// A [`Regex`] literal.
 	Regex(Regex),
+
+	/// A [`Stackpos`] literal.
 	StackPos(StackPos)
 }
 
 impl Display for Primative {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Primative::Text(t) => Display::fmt(&t, f),
-			Primative::Number(n) => Display::fmt(&n, f),
-			Primative::Variable(v) => Display::fmt(&v, f),
-			Primative::Regex(r) => Display::fmt(&r, f),
-			Primative::StackPos(s) => Display::fmt(&s, f),
+			Self::Text(t) => Display::fmt(&t, f),
+			Self::Number(n) => Display::fmt(&n, f),
+			Self::Variable(v) => Display::fmt(&v, f),
+			Self::Regex(r) => Display::fmt(&r, f),
+			Self::StackPos(s) => Display::fmt(&s, f),
 		}
 	}
 }
@@ -67,58 +45,51 @@ impl Display for Primative {
 impl Executable for Primative {
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		match self {
-			Primative::Text(t) => t.execute(),
-			Primative::Number(n) => n.execute(),
-			Primative::Variable(v) => v.execute(),
-			Primative::Regex(r) => r.execute(),
-			Primative::StackPos(s) => s.execute(),
+			Self::Text(t) => t.execute(),
+			Self::Number(n) => n.execute(),
+			Self::Variable(v) => v.execute(),
+			Self::Regex(r) => r.execute(),
+			Self::StackPos(s) => s.execute(),
 		}
 	}
 }
 
 impl From<Primative> for Token {
 	fn from(lit: Primative) -> Token {
-		Token::Primative(lit)
+		Self::Primative(lit)
 	}
 }
 
 impl Tokenizable for Primative {
 	fn try_tokenize<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
-		match Variable::try_tokenize(stream)?.map(Primative::Variable) {
-			None => { /* do nothing, parse the next one */ },
-			other => return Ok(other)
-		}
+		// TODO: make this more idiomatic rust
 
-		match Number::try_tokenize(stream)?.map(Primative::Number) {
-			None => { /* do nothing, parse the next one */ },
-			other => return Ok(other)
+		if let token @ Some(_) = Variable::try_tokenize(stream)?.map(Self::Variable) {
+			Ok(token)
+		} else if let token @ Some(_) = Number::try_tokenize(stream)?.map(Self::Number) {
+			Ok(token)
+		} else if let token @ Some(_) = Text::try_tokenize(stream)?.map(Self::Text) {
+			Ok(token)
+		} else if let token @ Some(_) = Regex::try_tokenize(stream)?.map(Self::Regex) {
+			Ok(token)
+		} else {
+			Ok(StackPos::try_tokenize(stream)?.map(Self::StackPos))
 		}
-
-		match Text::try_tokenize(stream)?.map(Primative::Text) {
-			None => { /* do nothing, parse the next one */ },
-			other => return Ok(other)
-		}
-
-		match Regex::try_tokenize(stream)?.map(Primative::Regex) {
-			None => { /* do nothing, parse the next one */ },
-			other => return Ok(other)
-		}
-
-		Ok(StackPos::try_tokenize(stream)?.map(Primative::StackPos))
 	}
 }
 
 impl Constructable for Primative {
-	type Item = Self;
 	fn try_construct_primary<C>(ctor: &mut C) -> Result<Option<Self>>
 	where
 		C: Iterator<Item=Result<Token>> + crate::expression::PutBack + crate::stream::Contexted
 	{
 		match ctor.next().transpose()? {
 			Some(Token::Primative(lit)) => Ok(Some(lit)),
-			Some(tkn) => { ctor.put_back(Ok(tkn)); Ok(None) }
-			None => Ok(None),
+			Some(tkn) => {
+				ctor.put_back(Ok(tkn));
+				Ok(None)
+			},
+			None => Ok(None)
 		}
 	}
 }
-
