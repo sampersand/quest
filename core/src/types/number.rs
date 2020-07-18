@@ -40,10 +40,8 @@ impl PartialEq for Number {
 		use Inner::*;
 		match (self.0, rhs.0) {
 			(Integer(l), Integer(r)) => l == r,
-			(Float(l), Float(r)) => (l - r) < FloatType::EPSILON ||
-				l.is_infinite() && r.is_infinite() && l.is_sign_positive() == r.is_sign_positive(),
-			(Integer(n), Float(f))
-				| (Float(f), Integer(n)) => (f - n as FloatType) < FloatType::EPSILON,
+			(Float(l), Float(r)) => l == r || (l - r) < FloatType::EPSILON,
+			_ => false
 		}
 	}
 }

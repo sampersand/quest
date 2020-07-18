@@ -1,4 +1,4 @@
-#![allow(clippy::unnested_or_patterns)]
+#![allow(clippy::unnested_or_patterns, clippy::pub_enum_variant_names)]
 #![feature(never_type)]
 
 #![allow(
