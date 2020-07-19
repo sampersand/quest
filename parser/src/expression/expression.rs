@@ -2,6 +2,7 @@ use crate::{Result, Block};
 use crate::expression::{Constructable, Constructor, Executable, BoundOperator};
 use crate::stream::{Context, Contexted};
 use crate::token::{Token, Primative, Operator, ParenType};
+use quest_core::{Object, Args};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,22 +24,24 @@ impl Display for Expression {
 	}
 }
 
+fn call_function(this: &Expression, block: &Block) -> quest_core::Result<Object> {
+	use crate::block::LineResult;
+	let this = this.execute()?;
+
+	match block.run_block()? {
+		Some(LineResult::Single(s)) => this.call_attr_lit("()", &[&s]),
+		Some(LineResult::Multiple(m)) => this.call_attr_lit("()", m.iter().collect::<Args>()),
+		None => this.call_attr_lit("()", &[])
+	}
+}
+
 impl Executable for Expression {
-	fn execute(&self) -> quest_core::Result<quest_core::Object> {
+	fn execute(&self) -> quest_core::Result<Object> {
 		match self {
 			Self::Primative(prim) => prim.execute(),
 			Self::Block(block) => block.execute(),
 			Self::Operator(op) => op.execute(),
-			Self::FunctionCall(this, block) => {
-				let this = this.execute()?;
-				match block.run_block()? {
-					Some(crate::block::LineResult::Single(s)) =>
-						this.call_attr_lit("()", &[&s]),
-					Some(crate::block::LineResult::Multiple(m)) =>
-						this.call_attr_lit("()", m.iter().collect::<quest_core::Args>()),
-					None => this.call_attr_lit("()", &[])
-				}
-			}
+			Self::FunctionCall(this, block) => call_function(&this, &block)
 		}
 	}
 }

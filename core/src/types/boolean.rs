@@ -13,15 +13,15 @@ pub struct Boolean(bool);
 
 impl Boolean {
 	/// A constant representing the boolean value "false".
-	pub const FALSE: Boolean = Boolean::new(false);
+	pub const FALSE: Self = Self::new(false);
 
 	/// A constant representing the boolean value "true".
-	pub const TRUE: Boolean = Boolean::new(true);
+	pub const TRUE: Self = Self::new(true);
 
 	/// Simply create a new [`Boolean`].
 	#[inline]
 	pub const fn new(b: bool) -> Self {
-		Boolean(b)
+		Self(b)
 	}
 
 	/// Unwraps the value.
@@ -41,7 +41,7 @@ impl PartialEq<bool> for Boolean {
 impl Debug for Boolean {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		if f.alternate() {
-			write!(f, "Boolean({:?})", self.0)
+			f.debug_tuple("Boolean").field(&self.0).finish()
 		} else {
 			Display::fmt(self, f)
 		}
@@ -66,7 +66,7 @@ impl From<bool> for Object {
 impl From<bool> for Boolean {
 	#[inline]
 	fn from(b: bool) -> Self {
-		Boolean::new(b)
+		Self::new(b)
 	}
 }
 
@@ -97,8 +97,8 @@ impl From<Boolean> for Number {
 	#[inline]
 	fn from(b: Boolean) -> Self {
 		match b.into_inner() {
-			true => Number::ONE,
-			false => Number::ZERO
+			true => Self::ONE,
+			false => Self::ZERO
 		}
 	}
 }
@@ -371,8 +371,8 @@ mod tests {
 	use super::*;
 	#[test]
 	fn constants() {
-		assert_eq!(Boolean::TRUE, Boolean(true));
-		assert_eq!(Boolean::FALSE, Boolean(false));
+		assert_eq!(Boolean::TRUE, Boolean::new(true));
+		assert_eq!(Boolean::FALSE, Boolean::new(false));
 	}
 
 	#[test]
@@ -407,6 +407,20 @@ mod tests {
 		assert_eq!(Number::from(Boolean::FALSE), Number::ZERO);
 	}
 
+	#[test]
+	fn conv() {
+		assert_eq!(bool::from(Boolean::from(true)), true);
+		assert_eq!(bool::from(Boolean::from(false)), false);
+	}
+
+	#[test]
+	fn as_ref_mut() {
+		let mut b = Boolean::new(true);
+		assert_eq!(b.as_ref(), &true);
+		*b.as_mut() = false;
+		assert_eq!(b, false);
+	}
+
 	// todo: do we test the `bitand` and friends?
 
 	mod qs {
@@ -431,6 +445,17 @@ mod tests {
 			assert_downcast_eq!(Text; Boolean::qs_at_text(&false.into(), args!()).unwrap(), Text::new_static("false"));
 
 			assert_downcast_eq!(Text; Boolean::qs_at_text(&true.into(), args!(false)).unwrap(), Text::new_static("true"));
+		}
+
+		#[test]
+		fn inspect() {
+			<Boolean as crate::types::ObjectType>::_wait_for_setup_to_finish();
+			<Text as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+			assert_downcast_eq!(Text; Boolean::qs_inspect(&true.into(), args!()).unwrap(), Text::new_static("true"));
+			assert_downcast_eq!(Text; Boolean::qs_inspect(&false.into(), args!()).unwrap(), Text::new_static("false"));
+
+			assert_downcast_eq!(Text; Boolean::qs_inspect(&true.into(), args!(false)).unwrap(), Text::new_static("true"));
 		}
 
 
@@ -469,8 +494,8 @@ mod tests {
 			assert_downcast_eq!(Boolean; Boolean::qs_eql(&false.into(), args!(true)).unwrap(), false);
 			assert_downcast_eq!(Boolean; Boolean::qs_eql(&false.into(), args!(false)).unwrap(), true);
 
-			assert_missing_parameter!(Boolean::qs_eql(&true.into(), args!()), 0);
-			assert_missing_parameter!(Boolean::qs_eql(&false.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_eql(&true.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_eql(&false.into(), args!()), 0);
 			assert_downcast_eq!(Boolean; Boolean::qs_eql(&false.into(), args!(false, true)).unwrap(), true);
 		}
 
@@ -493,8 +518,8 @@ mod tests {
 			assert_downcast_eq!(Boolean; Boolean::qs_bitand(&false.into(), args!(true)).unwrap(), false);
 			assert_downcast_eq!(Boolean; Boolean::qs_bitand(&false.into(), args!(false)).unwrap(), false);
 
-			assert_missing_parameter!(Boolean::qs_bitand(&true.into(), args!()), 0);
-			assert_missing_parameter!(Boolean::qs_bitand(&false.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_bitand(&true.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_bitand(&false.into(), args!()), 0);
 			assert_downcast_eq!(Boolean; Boolean::qs_bitand(&true.into(), args!(true, false)).unwrap(), true);
 		}
 
@@ -517,7 +542,7 @@ mod tests {
 				assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(false)).unwrap()));
 				assert_downcast_eq!(Boolean; orig, false);
 
-				assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+				assert_missing_parameter_old!(Boolean::qs_bitand(orig, args!()), 0);
 			}
 
 			{
@@ -532,7 +557,7 @@ mod tests {
 				assert!(orig.is_identical(&Boolean::qs_bitand_assign(orig, args!(false)).unwrap()));
 				assert_downcast_eq!(Boolean; orig, false);
 
-				assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+				assert_missing_parameter_old!(Boolean::qs_bitand(orig, args!()), 0);
 			}
 
 		}
@@ -545,8 +570,8 @@ mod tests {
 			assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(true)).unwrap(), true);
 			assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(false)).unwrap(), false);
 
-			assert_missing_parameter!(Boolean::qs_bitor(&true.into(), args!()), 0);
-			assert_missing_parameter!(Boolean::qs_bitor(&false.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_bitor(&true.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_bitor(&false.into(), args!()), 0);
 			assert_downcast_eq!(Boolean; Boolean::qs_bitor(&false.into(), args!(false, true)).unwrap(), false);
 		}
 
@@ -569,7 +594,7 @@ mod tests {
 				assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(true)).unwrap()));
 				assert_downcast_eq!(Boolean; orig, true);
 
-				assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+				assert_missing_parameter_old!(Boolean::qs_bitand(orig, args!()), 0);
 			}
 
 			{
@@ -584,7 +609,7 @@ mod tests {
 				assert!(orig.is_identical(&Boolean::qs_bitor_assign(orig, args!(false)).unwrap()));
 				assert_downcast_eq!(Boolean; orig, true);
 
-				assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+				assert_missing_parameter_old!(Boolean::qs_bitand(orig, args!()), 0);
 			}
 		}
 
@@ -597,8 +622,8 @@ mod tests {
 			assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(true)).unwrap(), true);
 			assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(false)).unwrap(), false);
 
-			assert_missing_parameter!(Boolean::qs_bitxor(&true.into(), args!()), 0);
-			assert_missing_parameter!(Boolean::qs_bitxor(&false.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_bitxor(&true.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_bitxor(&false.into(), args!()), 0);
 			assert_downcast_eq!(Boolean; Boolean::qs_bitxor(&false.into(), args!(false, true)).unwrap(), false);
 		}
 
@@ -621,7 +646,7 @@ mod tests {
 				assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(true)).unwrap()));
 				assert_downcast_eq!(Boolean; orig, true);
 
-				assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+				assert_missing_parameter_old!(Boolean::qs_bitand(orig, args!()), 0);
 			}
 
 			{
@@ -644,7 +669,7 @@ mod tests {
 				assert!(orig.is_identical(&Boolean::qs_bitxor_assign(orig, args!(true)).unwrap()));
 				assert_downcast_eq!(Boolean; orig, false);
 
-				assert_missing_parameter!(Boolean::qs_bitand(orig, args!()), 0);
+				assert_missing_parameter_old!(Boolean::qs_bitand(orig, args!()), 0);
 			}
 		}
 
@@ -677,7 +702,7 @@ mod tests {
 			assert!(Boolean::qs_cmp(&true.into(), args!(Dummy)).unwrap().is_a::<crate::types::Null>());
 
 			// make sure it responds correctly to too few parameters
-			assert_missing_parameter!(Boolean::qs_cmp(&true.into(), args!()), 0);
+			assert_missing_parameter_old!(Boolean::qs_cmp(&true.into(), args!()), 0);
 
 			// make sure it responds correctly to too many parameters
 			assert_downcast_eq!(Number; Boolean::qs_cmp(&false.into(), args!(false, true)).unwrap(), eq);

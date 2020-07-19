@@ -1,4 +1,4 @@
-#![allow(clippy::module_inception)]
+#![allow(clippy::module_inception, clippy::missing_const_for_fn)]
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
 pub fn init() {

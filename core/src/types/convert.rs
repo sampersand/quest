@@ -1,4 +1,5 @@
 use crate::Object;
+use crate::error::TypeError;
 use crate::literals::Literal;
 use std::any::{Any, type_name};
 
@@ -33,7 +34,7 @@ impl Object {
 						obj.downcast_unchecked_and_then(f).map_err(Into::into)
 					}
 				} else {
-					Err(crate::error::TypeError::ConversionReturnedBadType {
+					Err(TypeError::ConversionReturnedBadType {
 						func: T::CONVERT_FUNC,
 						expected: type_name::<T>(),
 						got: obj.typename()
@@ -43,6 +44,52 @@ impl Object {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::Object;
+
+	#[derive(Debug, Clone)]
+	struct Dummy;
+	impl Convertible for Dummy { const CONVERT_FUNC: Literal = "@dummy"; }
+	impl_object_type! { for Dummy [(parents crate::types::Basic)]:
+		"@dummy2" => function |_, _| Ok(Object::from(Dummy2)),
+		"@dummy3" => function |_, _| Ok(Object::from(Dummy))
+	}
+
+	#[derive(Debug, Clone)]
+	struct Dummy2;
+	impl Convertible for Dummy2 { const CONVERT_FUNC: Literal = "@dummy2"; }
+	impl_object_type! { for Dummy2 [(parents crate::types::Basic) (setup IS_SETUP2)]: }
+
+	#[derive(Debug, Clone)]
+	struct Dummy3;
+	impl Convertible for Dummy3 { const CONVERT_FUNC: Literal = "@dummy3"; }
+	impl_object_type! { for Dummy3 [(parents crate::types::Basic) (setup IS_SETUP3)]: }
+
+
+	#[test]
+	fn call_downcast_map() {
+		use crate::{Error, error::KeyError};
+		Object::from(Dummy).call_downcast_map(|_: &Dummy| {}).unwrap();
+		Object::from(Dummy).call_downcast_map(|_: &Dummy2| {}).unwrap();
+
+		assert_matches!(
+			Object::from(Dummy).call_downcast_map(|_: &Dummy3| {}).unwrap_err(),
+			Error::TypeError(TypeError::ConversionReturnedBadType {
+				func: Dummy3::CONVERT_FUNC,
+				expected, got }) if expected == type_name::<Dummy3>() && got == type_name::<Dummy>()
+		);
+
+		assert_matches!(
+			Object::from(Dummy2).call_downcast_map(|_: &Dummy| {}).unwrap_err(),
+			Error::KeyError(KeyError::DoesntExist { ref attr, .. })
+				if attr.eq_obj(&Dummy::CONVERT_FUNC.into()).unwrap_or(false)
+		)
+	}
+}
+
 
 
 

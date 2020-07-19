@@ -1,5 +1,84 @@
 #[cfg(test)]
-macro_rules! assert_missing_parameter {
+macro_rules! assert_call_idempotent {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*)) => {{
+		let old = Object::from($this);
+		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
+		assert!(!old.is_identical(&new));
+		assert_eq!(old.downcast_and_then($ty::clone).unwrap(), $this);
+	}};
+}
+
+#[cfg(test)]
+macro_rules! assert_call_non_idempotent {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*)) => {{
+		let old = Object::from($this);
+		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
+		assert!(old.is_identical(&new));
+	}};
+}
+
+#[cfg(test)]
+macro_rules! call_unwrap {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*) $(-> $ret:ty)?; $block:expr) => {{
+		<$ty as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		#[allow(unused_imports)]
+		use crate::types::*;
+
+		$ty::$fn(&$this.into(), args!($($args),*)).unwrap()
+			.downcast_and_then($block)
+			.unwrap()
+	}};
+}
+
+#[cfg(test)]
+macro_rules! call_unwrap_err {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*)) => {{
+		<$ty as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		#[allow(unused_imports)]
+		use crate::types::*;
+
+		$ty::$fn(&$this.into(), args!($($args),*)).unwrap_err()
+	}};
+}
+
+#[cfg(test)]
+macro_rules! assert_call {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*) $(-> $ret:ty)?; $block:expr) => {
+		assert!(call_unwrap!($ty::$fn($this $(, $args)*) $(-> $ret)?; $block));
+	};
+}
+
+#[cfg(test)]
+macro_rules! assert_call_err {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*), $($tt:tt)*) => {{
+		assert_matches!(call_unwrap_err!($ty::$fn($this $(, $args)*)), $($tt)*)
+	}};
+}
+
+#[cfg(test)]
+macro_rules! assert_call_eq {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*) $(-> $ret:ty)?, $rhs:expr) => {{
+		call_unwrap!($ty::$fn($this $(, $args)*) $(-> $ret)?; |lhs $(: &$ret)?| {
+			assert_eq!(*lhs, $rhs)
+		})
+	}};
+}
+
+#[cfg(test)]
+macro_rules! assert_call_missing_parameter {
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*), $idx:expr $(, len=$len:pat)?) => {{
+		<$ty as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_matches!(
+			$ty::$fn(&$this.into(), args!($($args),*)),
+				Err($crate::Error::KeyError($crate::error::KeyError::OutOfBounds {
+					idx: $idx, $(len: $len,)? .. }))
+		);
+	}};
+}
+
+#[cfg(test)]
+macro_rules! assert_missing_parameter_old {
 	($res:expr, $idx:expr $(, len=$len:pat)?)=> {
 		assert_matches!($res, Err($crate::Error::KeyError($crate::error::KeyError::OutOfBounds {
 			idx: $idx, $(len: $len,)? .. })));
@@ -8,13 +87,13 @@ macro_rules! assert_missing_parameter {
 
 #[cfg(test)]
 macro_rules! assert_matches {
-	($lhs:expr, $pat:pat $(|$other:pat)*) => {{
+	($lhs:expr, $($rest:tt)*) => {{
 		let lhs = $lhs;
 		assert!(
-			matches!(lhs, $pat $($other)|*),
-			"{:?} doesn't match {}",
+			matches!(lhs, $($rest)*),
+			concat!("values don't match\nlhs: {:?}\npat: {}"),
 			lhs,
-			concat!(stringify!($pat) $(, concat!(" | ", stringify!($other))),*)
+			stringify!($($rest)*)
 		);
 	}};
 }
@@ -125,7 +204,7 @@ macro_rules! impl_object_type {
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => function $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr), |this, args| {
-				$val(this, args).map(Object::from).map_err(From::from)
+				$val(this, args).map(Object::from)
 			})
 		);
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
@@ -210,7 +289,8 @@ macro_rules! impl_object_type {
 				});
 
 				let class = unsafe { (*CLASS_OBJECT.as_ptr()).clone() };
-				
+
+
 				if unsafe { HAS_SETUP_HAPPENED.compare_and_swap(0, 1, Ordering::SeqCst) } == 0 {
 					#[allow(unused)]
 					use $crate::{Object, types::*};
@@ -221,11 +301,13 @@ macro_rules! impl_object_type {
 					impl_object_type!(@SET_ATTRS class $obj; $($body)*);
 
 					#[cfg(test)]
- 					unsafe {
+					unsafe {
 						impl_object_type!(@SETUP $($args)*)
- 							.store(true, std::sync::atomic::Ordering::SeqCst);
- 					}
+							.store(true, std::sync::atomic::Ordering::SeqCst);
+					}
+			} else {
 				}
+
 				class
 			}
 

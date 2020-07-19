@@ -67,7 +67,7 @@ impl Pristine {
 	///
 	/// [`Text`]: crate::types::Text
 	#[allow(non_snake_case)]
-	pub fn qs_inspect(this: &Object, _: Args) -> Result<Object, !> {
+	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(format!("<{}:{}>", this.typename(), this.id()).into())
 	}
 

@@ -14,7 +14,7 @@ impl Display for Null {
 }
 
 impl Null {
-	#[inline]
+	#[inline(always)]
 	pub const fn new() -> Self {
 		Null
 	}
@@ -67,37 +67,30 @@ impl From<Null> for Text {
 
 
 impl Null {
-	#[inline]
 	pub fn qs_inspect(_: &Object, _: Args) -> Result<Object> {
 		Ok(Text::from(Null).into())
 	}
 
-	#[inline]
 	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
 		Ok(Boolean::from(Null).into())
 	}
 
-	#[inline]
 	pub fn qs_at_list(_: &Object, _: Args) -> Result<Object> {
 		Ok(List::from(Null).into())
 	}
 
-	#[inline]
 	pub fn qs_at_num(_: &Object, _: Args) -> Result<Object> {
 		Ok(Number::from(Null).into())
 	}
 
-	#[inline]
 	pub fn qs_at_text(_: &Object, _: Args) -> Result<Object> {
 		Ok(Text::from(Null).into())
 	}
 
-	#[inline]
 	pub fn qs_call(_: &Object, _: Args) -> Result<Object> {
 		Ok(Null.into())
 	}
 
-	#[inline]
 	pub fn qs_eql(_: &Object, args: Args) -> Result<Object> {
 		Ok(args.arg(0)?.is_a::<Null>().into())
 	}
@@ -133,42 +126,81 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn at_bool() {
+	fn display() {
+		assert_eq!(Null.to_string(), "null");
+	}
+
+	#[test]
+	fn from_unit() {
 		<Null as crate::types::ObjectType>::_wait_for_setup_to_finish();
-		assert_downcast_eq!(Boolean; Null::qs_at_bool(&Null.into(), args!()).unwrap(), false);
-		assert_downcast_eq!(Boolean; Null::qs_at_bool(&Null.into(), args!(true)).unwrap(), false);
+
+		assert_eq!(Null::from(()), Null);
+		Object::from(()).downcast_and_then(|_: &Null| {}).unwrap();
 	}
 
-	#[test]
-	fn at_num() {
-		assert_downcast_eq!(Number; Null::qs_at_num(&Null.into(), args!()).unwrap(), Number::ZERO);
-		assert_downcast_eq!(Number; Null::qs_at_num(&Null.into(), args!(true)).unwrap(),
-			Number::ZERO);
-	}
+	mod qs {
+		use super::*;
+		#[test]
+		fn at_bool() {
+			assert_call_eq!(Null::qs_at_bool(Null) -> Boolean, false);
 
-	#[test]
-	fn at_text() {
-		assert_downcast_eq!(Text; Null::qs_at_text(&Null.into(), args!()).unwrap(),
-			Text::new_static("null"));
-	}
+			assert_call_idempotent!(Null::qs_at_bool(Null));
+		}
 
-	#[derive(Debug, Clone)]
-	struct Dummy;
-	impl_object_type! { for Dummy [(parents crate::types::Basic)]: }
+		#[test]
+		fn at_num() {
+			assert_call_eq!(Null::qs_at_num(Null) -> Number, 0);
 
-	#[test]
-	fn call() {
-		assert!(Null::qs_call(&Null.into(), args!()).unwrap().is_a::<Null>());
-		assert!(Null::qs_call(&Null.into(), args!(Dummy)).unwrap().is_a::<Null>());
-		assert!(Null::qs_call(&Null.into(), args!(Dummy, Dummy)).unwrap().is_a::<Null>());
-	}
+			assert_call_idempotent!(Null::qs_at_num(Null));
+		}
 
-	#[test]
-	fn eql() {
-		assert_downcast_eq!(Boolean; Null::qs_eql(&Null.into(), args!(Dummy)).unwrap(), false);
-		assert_downcast_eq!(Boolean; Null::qs_eql(&Null.into(), args!(Null)).unwrap(), true);
-		assert_downcast_eq!(Boolean; Null::qs_eql(&Null.into(), args!(Null, Dummy)).unwrap(), true);
+		#[test]
+		fn at_text() {
+			assert_call_eq!(Null::qs_at_text(Null) -> Text, *"null");
 
-		assert_missing_parameter!(Null::qs_eql(&Null.into(), args!()), 0);
+			assert_call_idempotent!(Null::qs_at_text(Null));
+		}
+
+		#[test]
+		fn inspect() {
+			assert_call_eq!(Null::qs_inspect(Null) -> Text, *"null");
+
+			assert_call_idempotent!(Null::qs_inspect(Null));
+		}
+
+		#[test]
+		fn at_list() {
+			assert_call!(Null::qs_at_list(Null); List::is_empty);
+
+			assert_call_idempotent!(Null::qs_at_list(Null));
+		}
+
+		#[derive(Debug, Clone)]
+		struct Dummy;
+		impl_object_type! { for Dummy [(parents crate::types::Basic)]: }
+
+		#[test]
+		fn call() {
+			<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+			assert_call_eq!(Null::qs_call(Null) -> Null, Null);
+			assert_call_eq!(Null::qs_call(Null, Dummy) -> Null, Null);
+			assert_call_eq!(Null::qs_call(Null, Dummy, Dummy) -> Null, Null);
+
+			assert_call_idempotent!(Null::qs_call(Null));
+		}
+
+		#[test]
+		fn eql() {
+			<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+			assert_call_eq!(Null::qs_eql(Null, Dummy) -> Boolean, false);
+			assert_call_eq!(Null::qs_eql(Null, Null) -> Boolean, true);
+			assert_call_eq!(Null::qs_eql(Null, Null, Dummy) -> Boolean, true);
+
+			assert_call_missing_parameter!(Null::qs_eql(Null), 0);
+			assert_call_idempotent!(Null::qs_eql(Null, Null));
+			assert_call_idempotent!(Null::qs_eql(Null, Dummy));
+		}
 	}
 }

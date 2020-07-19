@@ -45,8 +45,7 @@ impl Basic {
 	/// 1. (required) The other object.
 	#[inline]
 	pub fn qs_neq<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
-		this.call_attr_lit(EQL, args)?
-		    .call_attr_lit(NOT, &[])
+		this.call_attr_lit(EQL, args)?.call_attr_lit(NOT, &[])
 	}
 
 	/// Get the logical inverse of `this`.
@@ -54,8 +53,7 @@ impl Basic {
 	/// This simply calls the `@bool` method and then the `!` method on the result.
 	#[inline]
 	pub fn qs_not<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
-		this.call_attr_lit(AT_BOOL, args)?
-		    .call_attr_lit(NOT, &[])
+		this.call_attr_lit(AT_BOOL, args)?.call_attr_lit(NOT, &[])
 	}
 
 	/// Get a hash of `this`.
@@ -142,7 +140,7 @@ mod tests {
 		assert_downcast_eq!(Boolean; Basic::qs_eql(obj1, args!(obj2.clone())).unwrap(), false);
 
 
-		assert_missing_parameter!(Basic::qs_eql(obj1, args!()), 0);
+		assert_missing_parameter_old!(Basic::qs_eql(obj1, args!()), 0);
 		assert_downcast_eq!(Boolean;
 			Basic::qs_eql(obj1, args!(obj2.clone(), obj1.clone())).unwrap(), false);
 	}
@@ -176,7 +174,7 @@ mod tests {
 		assert_downcast_eq!(Boolean; Basic::qs_neq(obj1, args!(obj2.clone())).unwrap(), false);
 		assert_downcast_eq!(Boolean; Basic::qs_neq(obj1, args!(obj3.clone())).unwrap(), true);		
 
-		assert_missing_parameter!(Basic::qs_eql(obj1, args!()), 0);
+		assert_missing_parameter_old!(Basic::qs_eql(obj1, args!()), 0);
 		assert_downcast_eq!(Boolean;
 			Basic::qs_neq(obj1, args!(obj3.clone(), obj1.clone())).unwrap(), true);
 	}
@@ -185,7 +183,7 @@ mod tests {
 	fn not() {
 		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
 
-		#[derive(Debug, Clone, PartialEq)]
+		#[derive(Debug, Clone)]
 		struct Dummy(bool);
 
 		impl_object_type! { for Dummy [(parents Basic)]:

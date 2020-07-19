@@ -79,12 +79,17 @@ impl Kernel {
 		todo!("r#for")
 	}
 
-	pub fn qs_quit(_: &Object, args: Args) -> Result<!> {
+	pub fn qs_quit(_: &Object, args: Args) -> Result<Object> {
+		use std::convert::TryFrom;
+
 		let code = args.arg(0)
 			.ok()
-			.map(|x| x.call_downcast_map(|n: &Number| n.floor()))
+			.map(|x| x.call_downcast_map(Number::floor))
 			.transpose()?
-			.unwrap_or(1);
+			.unwrap_or(Number::ONE);
+
+		let code: i32 = i32::try_from(code)
+			.map_err(|err|crate::error::TypeError::NotAnInteger(Number::from(err.0)))?;
 
 		if let Ok(msg) = args.arg(1) {
 			display(&[msg], true)?;
@@ -114,10 +119,10 @@ impl Kernel {
 		let mut end: FloatType = 1.0;
 
 		if let Ok(start_num) = args.arg(0) {
-			start = start_num.call_downcast_map(|n: &Number| n.floor() as _)?;
+			start = start_num.call_downcast_map(|n: &Number| FloatType::from(*n))?;
 
 			if let Ok(end_num) = args.arg(1) {
-				end = end_num.call_downcast_map(|n: &Number| n.floor() as _)?;
+				end = end_num.call_downcast_map(|n: &Number| FloatType::from(*n))?;
 			} else {
 				end = start;
 				start = 0.0;

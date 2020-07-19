@@ -174,7 +174,7 @@ impl<'a> TryFrom<&'a Text> for Number {
 
 impl Text {
 	#[inline]
-	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object, !> {
+	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
 
@@ -188,17 +188,17 @@ impl Text {
 	}
 
 	#[allow(non_snake_case)]
-	pub fn qs_inspect(&self, _: Args) -> Result<Self, !> {
+	pub fn qs_inspect(&self, _: Args) -> crate::Result<Self> {
 		Ok(format!("{:?}", self).into())
 	}
 
 	#[inline]
-	pub fn qs_at_list(&self, _: Args) -> Result<List, !> {
+	pub fn qs_at_list(&self, _: Args) -> crate::Result<List> {
 		Ok(List::from(self))
 	}
 
 	#[inline]
-	pub fn qs_at_bool(&self, _: Args) -> Result<Boolean, !> {
+	pub fn qs_at_bool(&self, _: Args) -> crate::Result<Boolean> {
 		Ok(Boolean::from(self))
 	}
 
@@ -217,7 +217,7 @@ impl Text {
 	}
 
 	#[inline]
-	pub fn qs_clone(&self, _: Args) -> Result<Self, !> {
+	pub fn qs_clone(&self, _: Args) -> crate::Result<Self> {
 		Ok(self.clone())
 	}
 
@@ -257,7 +257,7 @@ impl Text {
 	}
 
 	#[inline]
-	pub fn qs_len(&self, _: Args) -> Result<usize, !> {
+	pub fn qs_len(&self, _: Args) -> crate::Result<usize> {
 		Ok(self.len())
 	}
 
@@ -279,13 +279,15 @@ impl Text {
 	}
 
 	pub fn qs_get(&self, args: Args) -> crate::Result<Object> {
-		let start = args.arg(0)?.try_downcast_and_then::<Number, _, !, _>(|n| Ok(n.floor() as isize))?;
+		let start = args.arg(0)?
+			.try_downcast_and_then(|n: &Number| isize::try_from(*n))?;
 
 		let end = args.arg(1)
 			.ok()
-			.map(|x| x.call_downcast_map(Number::clone))
+			.map(|n| n.call_downcast_map(Number::clone))
 			.transpose()?
-			.map(|x| x.floor() as isize);
+			.map(isize::try_from)
+			.transpose()?;
 
 		let start =
 			if let Some(start) = self.correct_index(start) {

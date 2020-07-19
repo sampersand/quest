@@ -6,30 +6,27 @@ use std::cmp::Ordering;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Comparable;
 
+#[inline]
 fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
 	let num = lhs.call_attr_lit(CMP, &[rhs])?.call_downcast_map(Number::clone)?;
 	Ok(num.cmp(&Number::ZERO))
 }
 
 impl Comparable {
-	#[inline]
-	pub fn qs_lth(this: &Object, args: Args) -> Result<bool> {
-		compare(this, args.arg(0)?).map(|ord| ord == Ordering::Less)
+	pub fn qs_lth(this: &Object, args: Args) -> Result<Object> {
+		compare(this, args.arg(0)?).map(|ord| (ord == Ordering::Less).into())
 	}
 
-	#[inline]
-	pub fn qs_gth(this: &Object, args: Args) -> Result<bool> {
-		compare(this, args.arg(0)?).map(|ord| ord == Ordering::Greater)
+	pub fn qs_gth(this: &Object, args: Args) -> Result<Object> {
+		compare(this, args.arg(0)?).map(|ord| (ord == Ordering::Greater).into())
 	}
 
-	#[inline]
-	pub fn qs_leq(this: &Object, args: Args) -> Result<bool> {
-		compare(this, args.arg(0)?).map(|ord| ord != Ordering::Greater)
+	pub fn qs_leq(this: &Object, args: Args) -> Result<Object> {
+		compare(this, args.arg(0)?).map(|ord| (ord != Ordering::Greater).into())
 	}
 
-	#[inline]
-	pub fn qs_geq(this: &Object, args: Args) -> Result<bool> {
-		compare(this, args.arg(0)?).map(|ord| ord != Ordering::Less)
+	pub fn qs_geq(this: &Object, args: Args) -> Result<Object> {
+		compare(this, args.arg(0)?).map(|ord| (ord != Ordering::Less).into())
 	}
 }
 
@@ -43,7 +40,6 @@ for Comparable [(parents super::Basic)]:
 }
 
 impl From<Ordering> for crate::Object {
-	#[inline]
 	fn from(ord: Ordering) -> Self {
 		match ord {
 			Ordering::Less => -1,
@@ -56,61 +52,52 @@ impl From<Ordering> for crate::Object {
 
 #[cfg(test)]
 mod tests {
-	// use super::*;
+	use super::*;
 
-	// #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-	// struct DummyCmp(f32);
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+	struct DummyCmp(u8);
 
-	// impl_object_type!(f)
-
-
-	// dummy_object_old!(struct DummyCmp(f32); {
-	// 	"<=>" => function (|this, args| {
-	// 		let this = this.downcast_and_then(DummyCmp::clone)?;
-	// 		let rhs = rhs.downcast_and_then(DummyCmp::clone)?;
-
-	// 		Ok(this.cmp(other))
-	// 		Ok(this.0.partial_cmp(&other.0)
-	// 			.map(Into::into)
-	// 			.unwrap_or_default())
-	// 	})
-	// });
+	impl_object_type! { for DummyCmp [(parents crate::types::Basic)]:
+		"<=>" => function |this: &Object, args: Args| {
+			let this = this.try_downcast_map(DummyCmp::clone)?;
+			let rhs = args.arg(0)?.try_downcast_map(DummyCmp::clone)?;
+			Ok(this.0.cmp(&rhs.0))
+		}
+	}
 
 	#[test]
-	#[ignore]
 	fn lth() {
-		// let _obj = Object::from(DummyCmp(12.0));
-		// assert_eq!(, );
-		// Ok((cmp(args)? == Ordering::Less).into())
-		unimplemented!()
+		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(1)) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(0)) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(2)) -> Boolean, true);
 	}
 
 	#[test]
-	#[ignore]
 	fn gth() {
-		// Ok((cmp(args)? == Ordering::Greater).into())
-		unimplemented!()
+		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(1)) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(0)) -> Boolean, true);
+		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(2)) -> Boolean, false);
 	}
 
 	#[test]
-	#[ignore]
 	fn leq() {
-		// Ok((cmp(args)? != Ordering::Greater).into())
-		unimplemented!()
+		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(1)) -> Boolean, true);
+		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(0)) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(2)) -> Boolean, true);
 	}
 
 	#[test]
-	#[ignore]
 	fn geq() {
-		// Ok((cmp(args)? != Ordering::Less).into())
-		unimplemented!()
+		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
+		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(1)) -> Boolean, true);
+		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(0)) -> Boolean, true);
+		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(2)) -> Boolean, false);
 	}
 }
-
-
-
-
-
-
-
-

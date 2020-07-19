@@ -70,9 +70,9 @@ impl List {
 	///
 	/// Quest supports negative indexing, which allows you to index from the end of the list.
 	pub fn get(&self, idx: isize) -> Object {
-		 correct_index(idx, self.len())
-		 	.map(|idx| self.0[idx].clone())
-		 	.unwrap_or_default()
+		correct_index(idx, self.len())
+			.map(|idx| self.0[idx].clone())
+			.unwrap_or_default()
 	}
 
 	/// Get either a single element or a range of elements.
@@ -353,7 +353,7 @@ impl List {
 	/// assert(clone == list);
 	/// ```
 	#[inline]
-	pub fn qs_at_list(this: &Object, _: Args) -> Result<Object, !> {
+	pub fn qs_at_list(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
 
@@ -397,7 +397,7 @@ impl List {
 	/// assert(![]);
 	/// ```
 	#[inline]
-	pub fn qs_at_bool(&self, _: Args) -> Result<Boolean, !> {
+	pub fn qs_at_bool(&self, _: Args) -> crate::Result<Boolean> {
 		Ok(Boolean::from(self))
 	}
 
@@ -416,7 +416,7 @@ impl List {
 	/// assert(clone != list);
 	/// ```
 	#[inline]
-	pub fn qs_clone(&self, _: Args) -> Result<List, !> {
+	pub fn qs_clone(&self, _: Args) -> crate::Result<List> {
 		Ok(self.clone())
 	}
 
@@ -466,7 +466,7 @@ impl List {
 	/// assert(list.$len() == 3);
 	/// assert([].$len() == 0);
 	#[inline]
-	pub fn qs_len(&self, _: Args) -> Result<usize, !> {
+	pub fn qs_len(&self, _: Args) -> crate::Result<usize> {
 		Ok(self.len())
 	}
 
@@ -495,12 +495,17 @@ impl List {
 	/// assert(list.$get(1, Number::$INF) == [2, 3, false]);
 	/// ```
 	pub fn qs_get(&self, args: Args) -> crate::Result<Object> {
-		let start = args.arg(0)?.call_downcast_map(|n: &Number| n.floor())? as _;
+		let start = args.arg(0)?
+			.call_downcast_and_then(|n: &Number| isize::try_from(*n))?;
 
-		match args.arg(1) {
-			Ok(stop) => Ok(self.get_rng(start, stop.call_downcast_map(|n: &Number| n.floor())? as _)),
-			Err(_) => Ok(self.get(start))
-		}
+		let stop = args.arg(1)
+			.ok()
+			.map(|n| n.call_downcast_and_then(|n: &Number| isize::try_from(*n)))
+			.transpose()?;
+
+		Ok(stop
+			.map(|stop| self.get_rng(start, stop))
+			.unwrap_or_else(|| self.get(start)))
 	}
 
 	/// Sets an element or range of the list to an element or list.
@@ -588,7 +593,7 @@ impl List {
 	/// assert(!list);
 	/// ```
 	#[inline]
-	pub fn qs_pop(&mut self, _: Args) -> Result<Object, !> {
+	pub fn qs_pop(&mut self, _: Args) -> crate::Result<Object> {
 		Ok(self.pop().unwrap_or_default())
 	}
 
@@ -624,7 +629,7 @@ impl List {
 	/// assert(!list);
 	/// ```
 	#[inline]
-	pub fn qs_shift(&mut self, _: Args) -> Result<Object, !> {
+	pub fn qs_shift(&mut self, _: Args) -> crate::Result<Object> {
 		Ok(self.shift().unwrap_or_default())
 	}
 

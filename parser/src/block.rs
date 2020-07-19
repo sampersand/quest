@@ -131,7 +131,6 @@ impl Line {
 impl Block {
 	#[must_use]
 	#[inline]
-	#[allow(clippy::missing_const_for_fn)]
 	pub fn paren_type(&self) -> ParenType {
 		self.paren_type
 	}
@@ -161,11 +160,6 @@ impl Block {
 		let lines_obj = lines.map(Object::from).unwrap_or_default();
 		Ok(lines_obj)
 	}
-
-	// fn call(&self, args: Args) -> quest_core::Result<quest_core::Object> {
-	// 	Binding::new_stackframe(Some(self.clone()), args, |_| self.run_block_to_object())
-	// }
-
 }
 
 impl Executable for Block {

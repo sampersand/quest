@@ -3,6 +3,7 @@
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::cmp::Ordering;
+use std::ops;
 use crate::{Object, Args};
 use crate::types::{Text, Boolean};
 use std::hash::{Hash, Hasher};
@@ -11,7 +12,7 @@ use crate::error::{ValueError};
 /// The type used by [`Number`] to keep track of integers.
 pub type IntegerType = i64;
 
-/// The tpye used by [`Number`] to keep track of floats.
+/// The type used by [`Number`] to keep track of floats.
 pub type FloatType = f64;
 
 /// The Number type in Quest.
@@ -35,23 +36,17 @@ enum Inner {
 
 impl Eq for Number {}
 
-#[inline]
-fn floats_eq(l: FloatType, r: FloatType) -> bool {
-	l == r || (l - r).abs() < FloatType::EPSILON
-}
-
 impl PartialEq for Number {
 	fn eq(&self, rhs: &Self) -> bool {
 		match (self.0, rhs.0) {
 			(Inner::Integer(l), Inner::Integer(r)) => l == r,
-			(Inner::Float(l), Inner::Float(r)) => floats_eq(l, r),
+			(Inner::Float(l), Inner::Float(r)) => l == r,
 			_ => false
 		}
 	}
 }
 
 impl Hash for Number {
-	#[inline]
 	fn hash<H: Hasher>(&self, h: &mut H) {
 		match self.0 {
 			Inner::Integer(i) => { 0i8.hash(h); i.hash(h) },
@@ -72,8 +67,8 @@ impl Debug for Number {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		if f.alternate() {
 			match self.0 {
-				Inner::Integer(n) => write!(f, "Integer({:?})", n),
-				Inner::Float(n) => write!(f, "Float({:?})", n),
+				Inner::Integer(n) => f.debug_tuple("Number").field(&n).finish(),
+				Inner::Float(n) => f.debug_tuple("Number").field(&n).finish(),
 			}
 		} else {
 			Display::fmt(self, f)
@@ -82,7 +77,6 @@ impl Debug for Number {
 }
 
 impl Display for Number {
-	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self.0 {
 			Inner::Integer(n) => Display::fmt(&n, f),
@@ -93,22 +87,22 @@ impl Display for Number {
 
 impl Number {
 	/// The number zero.
-	pub const ZERO: Self = Number(Inner::Integer(0 as IntegerType));
+	pub const ZERO: Self = Self(Inner::Integer(0 as IntegerType));
 
 	/// The number one.
-	pub const ONE: Self = Number(Inner::Integer(1 as IntegerType));
+	pub const ONE: Self = Self(Inner::Integer(1 as IntegerType));
 
 	/// The mathematical constant π.
-	pub const PI: Self = Number(Inner::Float(std::f64::consts::PI));
+	pub const PI: Self = Self(Inner::Float(std::f64::consts::PI));
 
 	/// The mathematical constant e.
-	pub const E: Self = Number(Inner::Float(std::f64::consts::E));
+	pub const E: Self = Self(Inner::Float(std::f64::consts::E));
 
 	/// The concept of "not a number".
-	pub const NAN: Self = Number(Inner::Float(f64::NAN));
+	pub const NAN: Self = Self(Inner::Float(FloatType::NAN));
 
 	/// Infinity!
-	pub const INF: Self = Number(Inner::Float(f64::INFINITY));
+	pub const INF: Self = Self(Inner::Float(FloatType::INFINITY));
 
 	/// Create a new number.
 	#[inline]
@@ -117,30 +111,35 @@ impl Number {
 	}
 
 	/// Rounds `self` to the next highest integer (nothing's done if `self` is an integer).
-	#[inline]
-	pub fn ceil(self) -> IntegerType {
+	pub fn ceil(&self) -> Self {
 		match self.0 {
-			Inner::Integer(i) => i,
-			Inner::Float(f) => f.ceil() as _
+			Inner::Integer(..) => *self,
+			Inner::Float(f) => f.ceil().into()
 		}
 	}
 
 	/// Rounds `self` to the next lowest integer (nothing's done if `self` is an integer).
-	#[inline]
-	pub fn floor(self) -> IntegerType {
+	pub fn floor(&self) -> Self {
 		match self.0 {
-			Inner::Integer(i) => i,
-			Inner::Float(f) => f.floor() as _
+			Inner::Integer(..) => *self,
+			Inner::Float(f) => f.floor().into()
 		}
 	}
 
 
 	/// Rounds `self` to the nearest integer (nothing's done if `self` is an integer).
-	#[inline]
-	pub fn round(self) -> IntegerType {
+	pub fn round(&self) -> Self {
 		match self.0 {
-			Inner::Integer(i) => i,
-			Inner::Float(f) => f.round() as _
+			Inner::Integer(..) => *self,
+			Inner::Float(f) => f.round().into()
+		}
+	}
+
+	/// Returns the absolute value of `self`.
+	pub fn abs(&self) -> Self {
+		match self.0 {
+			Inner::Integer(i) => i.abs().into(),
+			Inner::Float(f) => f.abs().into()
 		}
 	}
 
@@ -157,54 +156,51 @@ impl Number {
 
 	/// Converts a [`Number`] into a string with the given radix.
 	pub fn to_string_radix(&self, radix: u32) -> Result<String, ToStringRadixError> {
+		if radix < 2 || radix > 36 {
+			return Err(ToStringRadixError::InvalidRadix(radix))
+		}
+
 		let this = IntegerType::try_from(*self).map_err(ToStringRadixError::NotAnInteger)?;
 
 		match radix {
-         2 => Ok(format!("{:b}", this)),
-         8 => Ok(format!("{:o}", this)),
-         16 => Ok(format!("{:x}", this)),
-         10 => Ok(format!("{}", this)),
-         radix @ 0 | radix @ 1 => Err(ToStringRadixError::InvalidRadix(radix)),
-         other => todo!("unsupported radix {}", other),
-		}
-	}
-
-	/// Returns the absolute value of `self`.
-	#[inline]
-	pub fn abs(self) -> Self {
-		match self.0 {
-			Inner::Integer(i) => Self::from(i.abs()),
-			Inner::Float(f) => Self::from(f.abs())
+			2 => Ok(format!("{:b}", this)),
+			8 => Ok(format!("{:o}", this)),
+			16 => Ok(format!("{:x}", this)),
+			10 => Ok(format!("{}", this)),
+			other => todo!("unsupported radix {}", other),
 		}
 	}
 
 	/// Returns `self` to the power of the `rhs`.
 	///
 	/// Since Rust doesn't have a "power of" trait, this is is the replacement for it.
-	#[inline]
-	pub fn pow(mut self, rhs: Self) -> Self {
-		self.pow_assign(rhs);
-		self
+	pub fn pow(self, rhs: Self) -> Self {
+		if self == Number::ONE || rhs == Number::ZERO {
+			return Number::ONE;
+		}
+
+		match (self.0, rhs.0) {
+			(Inner::Integer(l), Inner::Integer(r)) if 0 <= r && r <= (u32::MAX as IntegerType)
+				=> l.wrapping_pow(r as u32).into(),
+			(Inner::Integer(l), Inner::Integer(r))
+				=> (l as FloatType).powf(r as FloatType).into(),
+			(Inner::Integer(l), Inner::Float(r)) => (l as FloatType).powf(r).into(),
+			(Inner::Float(l), Inner::Integer(r)) => l.powf(r as FloatType).into(),
+			(Inner::Float(l), Inner::Float(r)) => l.powf(r).into()
+		}
 	}
 
 	/// Sets `self` to `self` to the power of `rhs`.
 	///
-	/// Replaces  Rust doesn't have a "power of assign" trait, this is is the replacement for it.
+	/// Since Rust doesn't have a "power of assign" trait, this is is the replacement for it.
+	#[inline]
 	pub fn pow_assign(&mut self, rhs: Self) {
-		match (self.0, rhs.0) {
-			(Inner::Integer(l), Inner::Integer(r)) if 0 <= r && r <= (u32::MAX as IntegerType)
-				=> *self = l.pow(r as u32).into(),
-			(Inner::Integer(l), Inner::Integer(r))
-				=> *self = (l as FloatType).powf(r as FloatType).into(),
-			(Inner::Integer(l), Inner::Float(r)) => *self = (l as FloatType).powf(r).into(),
-			(Inner::Float(l), Inner::Integer(r)) => *self = l.powf(r as FloatType).into(),
-			(Inner::Float(l), Inner::Float(r)) => *self = l.powf(r).into()
-		}
+		*self = self.pow(rhs);
 	}
 
-	pub fn is_nan(self) -> bool {
+	pub fn is_nan(&self) -> bool {
 		match self.0 {
-			Inner::Integer(_) => false,
+			Inner::Integer(..) => false,
 			Inner::Float(f) => f.is_nan()
 		}
 	}
@@ -319,8 +315,8 @@ impl std::error::Error for ToStringRadixError {
 }
 
 /// The given number wasn't an integer when it should have been.
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub struct NotAnInteger(f64);
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct NotAnInteger(pub(crate) f64);
 
 impl Display for NotAnInteger {
 	#[inline]
@@ -338,10 +334,10 @@ impl From<NotAnInteger> for crate::Error {
 	}
 }
 
-macro_rules! impl_try_from_number {
-	($($ty:ty)*) => {
+macro_rules! impl_try_from_eq {
+	($($int:ty)*; $($float:ty)*) => {
 		$(
-			impl TryFrom<Number> for $ty {
+			impl TryFrom<Number> for $int {
 				type Error = NotAnInteger;
 				fn try_from(num: Number) -> Result<Self, Self::Error> {
 					match num.0 {
@@ -350,17 +346,33 @@ macro_rules! impl_try_from_number {
 					}
 				}
 			}
+
+			impl PartialEq<$int> for Number {
+				fn eq(&self, rhs: &$int) -> bool {
+					*self == Number::from(*rhs)
+				}
+			}
+		)*
+
+		$(
+			impl PartialEq<$float> for Number {
+				fn eq(&self, rhs: &$float) -> bool {
+					*self == Number::from(*rhs)
+				}
+			}
 		)*
 	};
 }
 
-impl_try_from_number!(u8 u16 u32 u64 u128 i8 i16 i32 i64 i128);
+impl_try_from_eq!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize; f32 f64);
 
 
 impl From<FloatType> for Number {
 	// note that if the given `f` is an integer, we instead construct an `Inner::Integer`.
 	fn from(f: FloatType) -> Number {
-		if floats_eq(f.floor(), f) {
+		if f.is_finite() && f.floor() == f &&
+			(IntegerType::MIN..IntegerType::MAX).contains(&(f as _))
+		{
 			Number(Inner::Integer(f as _))
 		} else {
 			Number(Inner::Float(f))
@@ -399,19 +411,34 @@ impl From<Number> for FloatType {
 	}
 }
 
-macro_rules! impl_from_integer {
-	($($ty:ty)*) => {
+macro_rules! impl_from {
+	($($int:ty)*; $($float:ty)*) => {
 		$(
-			impl From<$ty> for Number {
+			impl From<$int> for Number {
 				#[inline]
-				fn from(num: $ty) -> Self {
+				fn from(num: $int) -> Self {
 					Number::from(num as IntegerType)
 				}
 			}
 
-			impl From<$ty> for Object {
+			impl From<$int> for Object {
 				#[inline]
-				fn from(num: $ty) -> Self {
+				fn from(num: $int) -> Self {
+					Number::from(num).into()
+				}
+			}
+		)*
+		$(
+			impl From<$float> for Number {
+				#[inline]
+				fn from(num: $float) -> Self {
+					Number::from(num as FloatType)
+				}
+			}
+
+			impl From<$float> for Object {
+				#[inline]
+				fn from(num: $float) -> Self {
 					Number::from(num).into()
 				}
 			}
@@ -419,21 +446,23 @@ macro_rules! impl_from_integer {
 	};
 }
 
-impl_from_integer!{
+impl_from!{
 	i8 i16 i32     i128 isize
-	u8 u16 u32 u64 u128 usize
+	u8 u16 u32 u64 u128 usize;
+	f32
 }
 
 macro_rules! impl_math_ops {
-	($($trait:ident $trait_assign:ident $fn:ident $fn_assign:ident)*) => {
+	($($trait:ident $trait_assign:ident $fn:ident $wrapping_fn:ident $fn_assign:ident)*) => {
 		$(
-			impl std::ops::$trait for Number {
+			impl ops::$trait for Number {
 				type Output = Self;
 
 				fn $fn(self, rhs: Self) -> Self {
 					use Inner::*;
 					match (self.0, rhs.0) {
-						(Integer(l), Integer(r)) => Self::from(l.$fn(r)),
+						// todo: make use of a big integer crate.
+						(Integer(l), Integer(r)) => Self::from(l.$wrapping_fn(r)),
 						(Integer(l), Float(r)) => Self::from((l as FloatType).$fn(r)),
 						(Float(l), Integer(r)) => Self::from(l.$fn(r as FloatType)),
 						(Float(l), Float(r)) => Self::from(l.$fn(r))
@@ -441,10 +470,10 @@ macro_rules! impl_math_ops {
 				}
 			}
 
-			impl std::ops::$trait_assign for Number {
+			impl ops::$trait_assign for Number {
 				#[inline]
 				fn $fn_assign(&mut self, rhs: Self) {
-					use std::ops::$trait;
+					use ops::$trait;
 					*self = (*self).$fn(rhs);
 				}
 			}
@@ -453,12 +482,12 @@ macro_rules! impl_math_ops {
 }
 
 impl_math_ops! {
-	Add AddAssign add add_assign
-	Sub SubAssign sub sub_assign
-	Mul MulAssign mul mul_assign
+	Add AddAssign add wrapping_add add_assign
+	Sub SubAssign sub wrapping_sub sub_assign
+	Mul MulAssign mul wrapping_mul mul_assign
 }
 
-impl std::ops::Div for Number {
+impl ops::Div for Number {
 	type Output = Self;
 	/// Divide `self` by `divisor`.
 	///
@@ -478,7 +507,7 @@ impl std::ops::Div for Number {
 	}
 }
 
-impl std::ops::DivAssign for Number {
+impl ops::DivAssign for Number {
 	/// Divide `self` by `divisor`, in place.
 	///
 	/// See (Number::div)[#div] for more details on a divisor of [zero](Number::ZERO).
@@ -488,7 +517,7 @@ impl std::ops::DivAssign for Number {
 	}
 }
 
-impl std::ops::Rem for Number {
+impl ops::Rem for Number {
 	type Output = Self;
 
 	/// Returns `this` modulo `divisor`.
@@ -505,7 +534,7 @@ impl std::ops::Rem for Number {
 		} else {
 			use Inner::*;
 			match (self.0, divisor.0) {
-				(Integer(l), Integer(r)) => Self::from(l % r),
+				(Integer(l), Integer(r)) => Self::from(l.wrapping_rem(r)),
 				(Integer(l), Float(r)) => Self::from(l as FloatType % r),
 				(Float(l), Integer(r)) => Self::from(l % r as FloatType),
 				(Float(l), Float(r)) => Self::from(l % r)
@@ -514,7 +543,7 @@ impl std::ops::Rem for Number {
 	}
 }
 
-impl std::ops::RemAssign for Number {
+impl ops::RemAssign for Number {
 	/// Modulo `self` by `divisor`, in place.
 	///
 	/// If `divisor` is [zero](Number::ZERO), then `-INF`, `NAN`, or `INF` are used based on the sign
@@ -528,7 +557,7 @@ impl std::ops::RemAssign for Number {
 macro_rules! impl_bitwise_ops {
 	($($trait:ident $fn:ident $fn_description:literal $fn_assign:ident $fn_num:ident)*) => {
 		$(
-			impl std::ops::$trait for Number {
+			impl ops::$trait for Number {
 				type Output = Result<Self, NotAnInteger>;
 
 				#[doc="If both numbers are integers, simply "]
@@ -553,7 +582,7 @@ macro_rules! impl_bitwise_ops {
 				#[doc="`]'s result. If either isn't an integer, a [`NotAnInteger`] is returned."]
 				#[inline]
 				pub fn $fn_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
-					use std::ops::$trait;
+					use ops::$trait;
 					*self = (*self).$fn(rhs)?;
 					Ok(())
 				}
@@ -566,11 +595,46 @@ impl_bitwise_ops! {
 	BitAnd bitand "bitand" try_bitand_assign bitand_assign
 	BitOr bitor "bitor" try_bitor_assign bitor_assign
 	BitXor bitxor "bitxor" try_bitxor_assign bitxor_assign
-	Shl shl "shl" try_shl_assign shl_assign
-	Shr shr "shr" try_shr_assign shr_assign
 }
 
-impl std::ops::Neg for Number {
+impl ops::Shl for Number {
+	type Output = Result<Self, NotAnInteger>;
+
+	// If both numbers are integers, simply shl them together. If either isn't an integer,
+	/// [`NotAnInteger`] is returned.
+	fn shl(self, rhs: Number) -> Self::Output {
+		Ok(Self::from(IntegerType::try_from(self)?.wrapping_shl(u32::try_from(rhs)?)))
+	}
+}
+
+impl ops::Shr for Number {
+	type Output = Result<Self, NotAnInteger>;
+
+	// If both numbers are integers, simply shr them together. If either isn't an integer,
+	/// [`NotAnInteger`] is returned.
+	fn shr(self, rhs: Number) -> Self::Output {
+		Ok(Self::from(IntegerType::try_from(self)?.wrapping_shr(u32::try_from(rhs)?)))
+	}
+}
+
+impl Number {
+	// If both numbers are integers, perform replace `self` with [`shl`]'s result. If either
+	// isn't an integer, a [`NotAnInteger`] is returned.
+	pub fn try_shl_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
+		*self = (*self << rhs)?;
+		Ok(())
+	}
+
+	// If both numbers are integers, perform replace `self` with [`shr`]'s result. If either
+	// isn't an integer, a [`NotAnInteger`] is returned.
+	#[inline]
+	pub fn try_shr_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
+		*self = (*self >> rhs)?;
+		Ok(())
+	}
+}
+
+impl ops::Neg for Number {
 	type Output = Self;
 	#[inline]
 	fn neg(self) -> Self {
@@ -581,7 +645,7 @@ impl std::ops::Neg for Number {
 	}
 }
 
-impl std::ops::Not for Number {
+impl ops::Not for Number {
 	type Output = Result<Self, NotAnInteger>;
 	#[inline]
 	fn not(self) -> Self::Output {
@@ -617,7 +681,6 @@ impl Number {
 	/// Inspects `this`.
 	///
 	/// This is identical to [`qs_at_text`](#qs_at_text).
-	#[inline]
 	pub fn qs_inspect(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_at_text(this, args)
 	}
@@ -625,8 +688,7 @@ impl Number {
 	/// Convert `this` to a [`Number`].
 	///
 	/// This simply returns the same object.
-	#[inline]
-	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object, !> {
+	pub fn qs_at_num(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
 
@@ -638,7 +700,8 @@ impl Number {
 		this.try_downcast_and_then(|this: &Self| {
 			if let Ok(radix) = args.arg(0) {
 				this.to_string_radix(radix.call_downcast_map(Self::clone)?.try_into()?)
-					.map_err(|err| crate::Error::from(err.to_string()))
+					.map_err(|err| crate::error::TypeError::Messaged(err.to_string()))
+					.map_err(crate::Error::from)
 					.map(Object::from)
 			} else {
 				Ok(Text::from(*this).into())
@@ -649,25 +712,26 @@ impl Number {
 	/// Converts `this` to a [`Boolean`].
 	///
 	/// All values but [zero](Number::ZERO) are considered true.
-	#[inline]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| Boolean::from(*this).into())
 	}
 
 	/// Calling a number is simply an alias for [multiplication](#qs_mul).
-	#[inline]
 	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_mul(this, args)
 	}
 
+	/// Hash a number.
+	pub fn qs_hash(this: &Object, _: Args) -> crate::Result<Object> {
+		this.try_downcast_map(crate::utils::hash::<Self>).map(Object::from)
+	}
+
 	/// Invert `this`'s sign.
-	#[inline]
 	pub fn qs_neg(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| (-*this).into())
 	}
 
 	/// Get the absolute value of `this`.
-	#[inline]
 	pub fn qs_pos(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_abs(this, args)
 	}
@@ -939,7 +1003,6 @@ impl Number {
 	}
 
 	/// Get the absolute value of `this`.
-	#[inline]
 	pub fn qs_abs(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| this.abs().into())
 	}
@@ -967,25 +1030,21 @@ impl Number {
 	}
 
 	/// Returns `this`, rounded down.
-	#[inline]
 	pub fn qs_floor(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| this.floor().into())
 	}
 
 	/// Returns `this`, rounded up.
-	#[inline]
 	pub fn qs_ceil(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| this.ceil().into())
 	}
 
 	/// Returns `this`, rounded towards the nearest integer. (`##.5` rounds away from zero.)
-	#[inline]
 	pub fn qs_round(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| this.round().into())
 	}
 
 	/// Gets the square root of `this`
-	#[inline]
 	pub fn qs_sqrt(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| Self::from(FloatType::from(*this).sqrt()).into())
 	}
@@ -1025,6 +1084,7 @@ impl_object_type!{
 	"inspect" => function Number::qs_inspect,
 	"@num" => function Number::qs_at_num,
 	"@bool" => function Number::qs_at_bool,
+	"hash" => function Number::qs_hash,
 
 	"+"  => function Number::qs_add,    "+="  => function Number::qs_add_assign,
 	"-"  => function Number::qs_sub,    "-="  => function Number::qs_sub_assign,
@@ -1055,6 +1115,15 @@ impl_object_type!{
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use rand::random;
+
+	#[test]
+	fn clone_and_copy() {
+		let x = Number::new(12);
+		assert_eq!(x, x.clone());
+		assert_eq!(x, x);
+	}
+
 	mod qs {
 		use super::*;
 
@@ -1069,8 +1138,6 @@ mod tests {
 				}
 			}
 
-			<Number as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
 			assert_exists_eq!("PI", Number::PI);
 			assert_exists_eq!("E", Number::E);
 			assert_exists_eq!("INF", Number::INF);
@@ -1079,33 +1146,793 @@ mod tests {
 		}
 
 		#[test]
+		fn at_text() {
+			assert_call_eq!(Number::qs_at_text(0) -> Text, *"0");
+			assert_call_eq!(Number::qs_at_text(0.0) -> Text, *"0");
+			assert_call_eq!(Number::qs_at_text(-0.0) -> Text, *"0");
+			assert_call_eq!(Number::qs_at_text(1) -> Text, *"1");
+			assert_call_eq!(Number::qs_at_text(12.3) -> Text, *"12.3");
+			assert_call_eq!(Number::qs_at_text(-1223.129) -> Text, *"-1223.129");
+			assert_call_eq!(Number::qs_at_text(Number::INF) -> Text, *"inf");
+			assert_call_eq!(Number::qs_at_text(-Number::INF) -> Text, *"-inf");
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_at_text(n) -> Text, *n.to_string());
+				assert_call_eq!(Number::qs_at_text(f) -> Text, *f.to_string());
+			}
+
+			assert_call_err!(Number::qs_at_text(0, 0), crate::Error::TypeError(..));
+			assert_call_err!(Number::qs_at_text(0, 1), crate::Error::TypeError(..));
+			assert_call_err!(Number::qs_at_text(0, 37), crate::Error::TypeError(..));
+			assert_call_err!(Number::qs_at_text(0, 38), crate::Error::TypeError(..));
+			assert_call_err!(Number::qs_at_text(12.3, 10), crate::Error::TypeError(..));
+			assert_call_err!(Number::qs_at_text(Number::INF, 10), crate::Error::TypeError(..));
+
+			assert_call_eq!(Number::qs_at_text(0b10110110, 2) -> Text, *"10110110");
+			assert_call_eq!(Number::qs_at_text(120, 10) -> Text, *"120");
+			assert_call_eq!(Number::qs_at_text(0o17214, 8) -> Text, *"17214");
+			assert_call_eq!(Number::qs_at_text(0xff1e24, 16) -> Text, *"ff1e24");
+				
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				assert_call_eq!(Number::qs_at_text(n, 2) -> Text, *format!("{:b}", n));
+				assert_call_eq!(Number::qs_at_text(n, 8) -> Text, *format!("{:o}", n));
+				assert_call_eq!(Number::qs_at_text(n, 10) -> Text, *format!("{}", n));
+				assert_call_eq!(Number::qs_at_text(n, 16) -> Text, *format!("{:x}", n));
+			}
+
+			assert_call_idempotent!(Number::qs_at_text(12));
+			assert_call_idempotent!(Number::qs_at_text(12, 8));
+		}
+
+		#[test]
+		fn inspect() {
+			assert_call_eq!(Number::qs_inspect(0) -> Text, *"0");
+			assert_call_eq!(Number::qs_inspect(0.0) -> Text, *"0");
+			assert_call_eq!(Number::qs_inspect(-0.0) -> Text, *"0");
+			assert_call_eq!(Number::qs_inspect(1) -> Text, *"1");
+			assert_call_eq!(Number::qs_inspect(12.3) -> Text, *"12.3");
+			assert_call_eq!(Number::qs_inspect(-1223.129) -> Text, *"-1223.129");
+			assert_call_eq!(Number::qs_inspect(Number::INF) -> Text, *"inf");
+			assert_call_eq!(Number::qs_inspect(-Number::INF) -> Text, *"-inf");
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_inspect(n) -> Text, *n.to_string());
+				assert_call_eq!(Number::qs_inspect(f) -> Text, *f.to_string());
+			}
+
+			assert_call_idempotent!(Number::qs_inspect(12));
+		}
+
+		#[test]
+		fn at_bool() {
+			assert_call_eq!(Number::qs_at_bool(0) -> Boolean, false);
+			assert_call_eq!(Number::qs_at_bool(1) -> Boolean, true);
+			assert_call_eq!(Number::qs_at_bool(123) -> Boolean, true);
+			assert_call_eq!(Number::qs_at_bool(Number::INF) -> Boolean, true);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_at_bool(n) -> Boolean, n != 0);
+				assert_call_eq!(Number::qs_at_bool(f) -> Boolean, f != 0.0);
+			}
+
+			assert_call_idempotent!(Number::qs_at_bool(12));
+		}
+
+		#[test]
+		fn at_num() {
+			assert_call_eq!(Number::qs_at_num(0) -> Number, 0);
+			assert_call_eq!(Number::qs_at_num(1) -> Number, 1);
+			assert_call_eq!(Number::qs_at_num(123) -> Number, 123);
+			assert_call_eq!(Number::qs_at_num(Number::INF) -> Number, Number::INF);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_at_num(n) -> Number, n);
+				assert_call_eq!(Number::qs_at_num(f) -> Number, f);
+			}
+
+			// ensure that calling `at_num` doesn't modify the underlying type
+			let obj = Object::from(194);
+			let dup = Number::qs_at_num(&obj, args!()).unwrap();
+			obj.downcast_mut_and_then(|n: &mut Number| *n = Number::from(123)).unwrap();
+			dup.downcast_and_then(|n: &Number| assert_eq!(*n, 123));
+
+			assert_call_non_idempotent!(Number::qs_at_num(12));
+		}
+
+		#[test]
+		fn eql() {
+			assert_call_eq!(Number::qs_eql(0, 0) -> Boolean, true);
+			assert_call_eq!(Number::qs_eql(0.0, 0) -> Boolean, true);
+			assert_call_eq!(Number::qs_eql(0, 0.0) -> Boolean, true);
+			assert_call_eq!(Number::qs_eql(0.0, 0.0) -> Boolean, true);
+			assert_call_eq!(Number::qs_eql(-0.0, 0.0) -> Boolean, true);
+
+			assert_call_eq!(Number::qs_eql(Number::INF, 0.0) -> Boolean, false);
+			assert_call_eq!(Number::qs_eql(Number::INF, -1.0) -> Boolean, false);
+			assert_call_eq!(Number::qs_eql(Number::INF, 1.0) -> Boolean, false);
+			assert_call_eq!(Number::qs_eql(1.0, Number::INF) -> Boolean, false);
+			assert_call_eq!(Number::qs_eql(Number::INF, -Number::INF) -> Boolean, false);
+			assert_call_eq!(Number::qs_eql(Number::INF, Number::INF) -> Boolean, true);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+
+				assert_call_eq!(Number::qs_eql(n, n) -> Boolean, true);
+				assert_call_eq!(Number::qs_eql(f, f) -> Boolean, true);
+				assert_call_eq!(Number::qs_eql(n, f) -> Boolean, n as FloatType == f);
+				assert_call_eq!(Number::qs_eql(f, n) -> Boolean, n as FloatType == f);
+			}
+
+			assert_call_missing_parameter!(Number::qs_eql(0), 0);
+			assert_call_idempotent!(Number::qs_eql(12, 45));
+		}
+
+		#[test]
 		fn hash() {
-			<Number as crate::types::ObjectType>::_wait_for_setup_to_finish();
+			macro_rules! hash {
+				($n:expr) => { crate::utils::hash(&Number::from($n)) };
+			}
+
+			assert_call_eq!(Number::qs_hash(0.0) -> Number, hash!(0.0));
+			assert_call_eq!(Number::qs_hash(0.0) -> Number, hash!(-0.0));
+
+			for _ in 0..1000 {
+				let n1 = random::<FloatType>();
+				let n2 = random::<FloatType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				assert_call_eq!(Number::qs_hash(n1) -> Number, hash!(n1));
+				assert_eq!(
+					call_unwrap!(Number::qs_hash(n1); Number::clone) == 
+						call_unwrap!(Number::qs_hash(n2); Number::clone),
+					Number::from(n1) == Number::from(n2)
+				);
+
+				assert_call_eq!(Number::qs_hash(f1) -> Number, hash!(f1));
+				assert_eq!(
+					call_unwrap!(Number::qs_hash(f1); Number::clone) == 
+						call_unwrap!(Number::qs_hash(f2); Number::clone),
+					Number::from(f1) == Number::from(f2)
+				);
+			}
+
+			assert_call_idempotent!(Number::qs_hash(12));
+		}
+
+		#[test]
+		fn sqrt() {
+			assert_call_eq!(Number::qs_sqrt(16) -> Number, 4);
+			assert_call_eq!(Number::qs_sqrt(-0.0) -> Number, 0.0);
+			assert_call_eq!(Number::qs_sqrt(12.3) -> Number, (12.3 as FloatType).sqrt());
+			assert_call_eq!(Number::qs_sqrt(12.7) -> Number, (12.7 as FloatType).sqrt());
+			assert_call_eq!(Number::qs_sqrt(Number::INF) -> Number, Number::INF);
+			assert_call!(Number::qs_sqrt(-Number::INF) -> Number; Number::is_nan);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>().abs();
+				let f = random::<FloatType>().abs();
+
+				assert_call_eq!(Number::qs_sqrt(f) -> Number, f.sqrt());
+				assert_call_eq!(Number::qs_sqrt(n) -> Number, (n as FloatType).sqrt());
+			}
+
+			assert_call_idempotent!(Number::qs_sqrt(12));
+			assert_call_idempotent!(Number::qs_sqrt(12.3));
+
+			// TODO: negative numbers
+			assert_call!(Number::qs_sqrt(-12); Number::is_nan);
+		}
+
+		#[test]
+		fn ceil() {
+			assert_call_eq!(Number::qs_ceil(12) -> Number, 12);
+			assert_call_eq!(Number::qs_ceil(-0.0) -> Number, -0.0);
+			assert_call_eq!(Number::qs_ceil(12.3) -> Number, 13);
+			assert_call_eq!(Number::qs_ceil(12.7) -> Number, 13);
+			assert_call_eq!(Number::qs_ceil(-12.3) -> Number, -12);
+			assert_call_eq!(Number::qs_ceil(-12.7) -> Number, -12);
+			assert_call_eq!(Number::qs_ceil(Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_ceil(-Number::INF) -> Number, -Number::INF);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_ceil(f) -> Number, f.ceil());
+				assert_call_eq!(Number::qs_ceil(n) -> Number, n);
+			}
+
+			assert_call_idempotent!(Number::qs_ceil(12));
+			assert_call_idempotent!(Number::qs_ceil(12.3));
+		}
+
+		#[test]
+		fn floor() {
+			assert_call_eq!(Number::qs_floor(12) -> Number, 12);
+			assert_call_eq!(Number::qs_floor(-0.0) -> Number, -0.0);
+			assert_call_eq!(Number::qs_floor(12.3) -> Number, 12);
+			assert_call_eq!(Number::qs_floor(12.7) -> Number, 12);
+			assert_call_eq!(Number::qs_floor(-12.3) -> Number, -13);
+			assert_call_eq!(Number::qs_floor(-12.7) -> Number, -13);
+			assert_call_eq!(Number::qs_floor(Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_floor(-Number::INF) -> Number, -Number::INF);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_floor(f) -> Number, f.floor());
+				assert_call_eq!(Number::qs_floor(n) -> Number, n);
+			}
+
+			assert_call_idempotent!(Number::qs_floor(12));
+			assert_call_idempotent!(Number::qs_floor(12.3));
+		}
+
+		#[test]
+		fn round() {
+			assert_call_eq!(Number::qs_round(12) -> Number, 12);
+			assert_call_eq!(Number::qs_round(-0.0) -> Number, -0.0);
+			assert_call_eq!(Number::qs_round(12.3) -> Number, 12);
+			assert_call_eq!(Number::qs_round(12.7) -> Number, 13);
+			assert_call_eq!(Number::qs_round(-12.3) -> Number, -12);
+			assert_call_eq!(Number::qs_round(-12.7) -> Number, -13);
+			assert_call_eq!(Number::qs_round(Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_round(-Number::INF) -> Number, -Number::INF);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_round(f) -> Number, f.round());
+				assert_call_eq!(Number::qs_round(n) -> Number, n);
+			}
+
+			assert_call_idempotent!(Number::qs_round(12));
+			assert_call_idempotent!(Number::qs_round(12.3));
+		}
+
+		#[test]
+		fn abs() {
+			assert_call_eq!(Number::qs_abs(12) -> Number, 12);
+			assert_call_eq!(Number::qs_abs(-0.0) -> Number, 0.0);
+			assert_call_eq!(Number::qs_abs(12.3) -> Number, 12.3);
+			assert_call_eq!(Number::qs_abs(12.7) -> Number, 12.7);
+			assert_call_eq!(Number::qs_abs(-12.3) -> Number, 12.3);
+			assert_call_eq!(Number::qs_abs(-12.7) -> Number, 12.7);
+			assert_call_eq!(Number::qs_abs(Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_abs(-Number::INF) -> Number, Number::INF);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_abs(f) -> Number, f.abs());
+				assert_call_eq!(Number::qs_abs(n) -> Number, n.abs());
+			}
+
+			assert_call_idempotent!(Number::qs_abs(-12));
+			assert_call_idempotent!(Number::qs_abs(12.3));
+		}
+
+		#[test]
+		fn pos() {
+			assert_call_eq!(Number::qs_pos(12) -> Number, 12);
+			assert_call_eq!(Number::qs_pos(-0.0) -> Number, 0.0);
+			assert_call_eq!(Number::qs_pos(12.3) -> Number, 12.3);
+			assert_call_eq!(Number::qs_pos(12.7) -> Number, 12.7);
+			assert_call_eq!(Number::qs_pos(-12.3) -> Number, 12.3);
+			assert_call_eq!(Number::qs_pos(-12.7) -> Number, 12.7);
+			assert_call_eq!(Number::qs_pos(Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_pos(-Number::INF) -> Number, Number::INF);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_pos(f) -> Number, f.abs());
+				assert_call_eq!(Number::qs_pos(n) -> Number, n.abs());
+			}
+
+			assert_call_idempotent!(Number::qs_pos(-12));
+			assert_call_idempotent!(Number::qs_pos(12.3));
+		}
+
+		#[test]
+		fn neg() {
+			assert_call_eq!(Number::qs_neg(12) -> Number, -12);
+			assert_call_eq!(Number::qs_neg(-0.0) -> Number, 0.0);
+			assert_call_eq!(Number::qs_neg(12.3) -> Number, -12.3);
+			assert_call_eq!(Number::qs_neg(12.7) -> Number, -12.7);
+			assert_call_eq!(Number::qs_neg(-12.3) -> Number, 12.3);
+			assert_call_eq!(Number::qs_neg(-12.7) -> Number, 12.7);
+			assert_call_eq!(Number::qs_neg(Number::INF) -> Number, -Number::INF);
+			assert_call_eq!(Number::qs_neg(-Number::INF) -> Number, Number::INF);
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+				let f = random::<FloatType>();
+				assert_call_eq!(Number::qs_neg(f) -> Number, -f);
+				assert_call_eq!(Number::qs_neg(n) -> Number, -n);
+			}
+
+			assert_call_idempotent!(Number::qs_neg(-12));
+			assert_call_idempotent!(Number::qs_pos(12.3));
+		}
+
+		#[test]
+		fn add() {
+			assert_call_eq!(Number::qs_add(12, 19) -> Number, 12 + 19);
+			assert_call_eq!(Number::qs_add(12, -123) -> Number, 12 + -123);
+			assert_call_eq!(Number::qs_add(0, -123) -> Number, 0 + -123);
+			assert_call_eq!(Number::qs_add(Number::INF, 123) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_add(-123, Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_add(Number::INF, Number::INF) -> Number, Number::INF);
+			assert_call!(Number::qs_add(Number::INF, -Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_add(-Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call_eq!(Number::qs_add(-Number::INF, -Number::INF) -> Number, -Number::INF);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				assert_call_eq!(Number::qs_add(n1, n1) -> Number, n1.wrapping_add(n1));
+				assert_call_eq!(Number::qs_add(n1, n2) -> Number, n1.wrapping_add(n2));
+				assert_call_eq!(Number::qs_add(n1, f1) -> Number, n1 as FloatType + f1);
+				assert_call_eq!(Number::qs_add(n1, f2) -> Number, n1 as FloatType + f2);
+
+				assert_call_eq!(Number::qs_add(n2, n1) -> Number, n2.wrapping_add(n1));
+				assert_call_eq!(Number::qs_add(n2, n2) -> Number, n2.wrapping_add(n2));
+				assert_call_eq!(Number::qs_add(n2, f1) -> Number, n2 as FloatType + f1);
+				assert_call_eq!(Number::qs_add(n2, f2) -> Number, n2 as FloatType + f2);
+
+				assert_call_eq!(Number::qs_add(f1, n1) -> Number, f1 + n1 as FloatType);
+				assert_call_eq!(Number::qs_add(f1, n2) -> Number, f1 + n2 as FloatType);
+				assert_call_eq!(Number::qs_add(f1, f1) -> Number, f1 + f1);
+				assert_call_eq!(Number::qs_add(f1, f2) -> Number, f1 + f2);
+
+				assert_call_eq!(Number::qs_add(f2, n1) -> Number, f2 + n1 as FloatType);
+				assert_call_eq!(Number::qs_add(f2, n2) -> Number, f2 + n2 as FloatType);
+				assert_call_eq!(Number::qs_add(f2, f1) -> Number, f2 + f1);
+				assert_call_eq!(Number::qs_add(f2, f2) -> Number, f2 + f2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_add(0), 0);
+			assert_call_idempotent!(Number::qs_add(0, 1));
+		}
+
+		#[test]
+		fn sub() {
+			assert_call_eq!(Number::qs_sub(12, 19) -> Number, 12 - 19);
+			assert_call_eq!(Number::qs_sub(12, -123) -> Number, 12 - -123);
+			assert_call_eq!(Number::qs_sub(0, -123) -> Number, 0 - -123);
+			assert_call_eq!(Number::qs_sub(Number::INF, 123) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_sub(-123, Number::INF) -> Number, -Number::INF);
+			assert_call!(Number::qs_sub(Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call_eq!(Number::qs_sub(Number::INF, -Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_sub(-Number::INF, Number::INF) -> Number, -Number::INF);
+			assert_call!(Number::qs_sub(-Number::INF, -Number::INF) -> Number; Number::is_nan);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				assert_call_eq!(Number::qs_sub(n1, n1) -> Number, n1.wrapping_sub(n1));
+				assert_call_eq!(Number::qs_sub(n1, n2) -> Number, n1.wrapping_sub(n2));
+				assert_call_eq!(Number::qs_sub(n1, f1) -> Number, n1 as FloatType - f1);
+				assert_call_eq!(Number::qs_sub(n1, f2) -> Number, n1 as FloatType - f2);
+
+				assert_call_eq!(Number::qs_sub(n2, n1) -> Number, n2.wrapping_sub(n1));
+				assert_call_eq!(Number::qs_sub(n2, n2) -> Number, n2.wrapping_sub(n2));
+				assert_call_eq!(Number::qs_sub(n2, f1) -> Number, n2 as FloatType - f1);
+				assert_call_eq!(Number::qs_sub(n2, f2) -> Number, n2 as FloatType - f2);
+
+				assert_call_eq!(Number::qs_sub(f1, n1) -> Number, f1 - n1 as FloatType);
+				assert_call_eq!(Number::qs_sub(f1, n2) -> Number, f1 - n2 as FloatType);
+				assert_call_eq!(Number::qs_sub(f1, f1) -> Number, f1 - f1);
+				assert_call_eq!(Number::qs_sub(f1, f2) -> Number, f1 - f2);
+
+				assert_call_eq!(Number::qs_sub(f2, n1) -> Number, f2 - n1 as FloatType);
+				assert_call_eq!(Number::qs_sub(f2, n2) -> Number, f2 - n2 as FloatType);
+				assert_call_eq!(Number::qs_sub(f2, f1) -> Number, f2 - f1);
+				assert_call_eq!(Number::qs_sub(f2, f2) -> Number, f2 - f2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_sub(0), 0);
+			assert_call_idempotent!(Number::qs_sub(0, 1));
+		}
+
+		#[test]
+		fn mul() {
+			assert_call_eq!(Number::qs_mul(12, 19) -> Number, 12 * 19);
+			assert_call_eq!(Number::qs_mul(12, -123) -> Number, 12 * -123);
+			assert_call_eq!(Number::qs_mul(0, -123) -> Number, 0 * -123);
+			assert_call_eq!(Number::qs_mul(Number::INF, 123) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_mul(-123, Number::INF) -> Number, -Number::INF);
+			assert_call_eq!(Number::qs_mul(Number::INF, Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_mul(Number::INF, -Number::INF) -> Number, -Number::INF);
+			assert_call_eq!(Number::qs_mul(-Number::INF, Number::INF) -> Number, -Number::INF);
+			assert_call_eq!(Number::qs_mul(-Number::INF, -Number::INF) -> Number, Number::INF);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				assert_call_eq!(Number::qs_mul(n1, n1) -> Number, n1.wrapping_mul(n1));
+				assert_call_eq!(Number::qs_mul(n1, n2) -> Number, n1.wrapping_mul(n2));
+				assert_call_eq!(Number::qs_mul(n1, f1) -> Number, n1 as FloatType * f1);
+				assert_call_eq!(Number::qs_mul(n1, f2) -> Number, n1 as FloatType * f2);
+
+				assert_call_eq!(Number::qs_mul(n2, n1) -> Number, n2.wrapping_mul(n1));
+				assert_call_eq!(Number::qs_mul(n2, n2) -> Number, n2.wrapping_mul(n2));
+				assert_call_eq!(Number::qs_mul(n2, f1) -> Number, n2 as FloatType * f1);
+				assert_call_eq!(Number::qs_mul(n2, f2) -> Number, n2 as FloatType * f2);
+
+				assert_call_eq!(Number::qs_mul(f1, n1) -> Number, f1 * n1 as FloatType);
+				assert_call_eq!(Number::qs_mul(f1, n2) -> Number, f1 * n2 as FloatType);
+				assert_call_eq!(Number::qs_mul(f1, f1) -> Number, f1 * f1);
+				assert_call_eq!(Number::qs_mul(f1, f2) -> Number, f1 * f2);
+
+				assert_call_eq!(Number::qs_mul(f2, n1) -> Number, f2 * n1 as FloatType);
+				assert_call_eq!(Number::qs_mul(f2, n2) -> Number, f2 * n2 as FloatType);
+				assert_call_eq!(Number::qs_mul(f2, f1) -> Number, f2 * f1);
+				assert_call_eq!(Number::qs_mul(f2, f2) -> Number, f2 * f2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_mul(0), 0);
+			assert_call_idempotent!(Number::qs_mul(0, 1));
+		}
+
+		#[test]
+		fn call() {
+			assert_call_eq!(Number::qs_call(12, 19) -> Number, 12 * 19);
+			assert_call_eq!(Number::qs_call(12, -123) -> Number, 12 * -123);
+			assert_call_eq!(Number::qs_call(0, -123) -> Number, 0 * -123);
+			assert_call_eq!(Number::qs_call(Number::INF, 123) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_call(-123, Number::INF) -> Number, -Number::INF);
+			assert_call_eq!(Number::qs_call(Number::INF, Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_call(Number::INF, -Number::INF) -> Number, -Number::INF);
+			assert_call_eq!(Number::qs_call(-Number::INF, Number::INF) -> Number, -Number::INF);
+			assert_call_eq!(Number::qs_call(-Number::INF, -Number::INF) -> Number, Number::INF);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				assert_call_eq!(Number::qs_call(n1, n1) -> Number, n1.wrapping_mul(n1));
+				assert_call_eq!(Number::qs_call(n1, n2) -> Number, n1.wrapping_mul(n2));
+				assert_call_eq!(Number::qs_call(n1, f1) -> Number, n1 as FloatType * f1);
+				assert_call_eq!(Number::qs_call(n1, f2) -> Number, n1 as FloatType * f2);
+
+				assert_call_eq!(Number::qs_call(n2, n1) -> Number, n2.wrapping_mul(n1));
+				assert_call_eq!(Number::qs_call(n2, n2) -> Number, n2.wrapping_mul(n2));
+				assert_call_eq!(Number::qs_call(n2, f1) -> Number, n2 as FloatType * f1);
+				assert_call_eq!(Number::qs_call(n2, f2) -> Number, n2 as FloatType * f2);
+
+				assert_call_eq!(Number::qs_call(f1, n1) -> Number, f1 * n1 as FloatType);
+				assert_call_eq!(Number::qs_call(f1, n2) -> Number, f1 * n2 as FloatType);
+				assert_call_eq!(Number::qs_call(f1, f1) -> Number, f1 * f1);
+				assert_call_eq!(Number::qs_call(f1, f2) -> Number, f1 * f2);
+
+				assert_call_eq!(Number::qs_call(f2, n1) -> Number, f2 * n1 as FloatType);
+				assert_call_eq!(Number::qs_call(f2, n2) -> Number, f2 * n2 as FloatType);
+				assert_call_eq!(Number::qs_call(f2, f1) -> Number, f2 * f1);
+				assert_call_eq!(Number::qs_call(f2, f2) -> Number, f2 * f2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_call(0), 0);
+			assert_call_idempotent!(Number::qs_call(0, 1));
+		}
+
+		#[test]
+		fn div() {
+			assert_call_eq!(Number::qs_div(149, 19) -> Number, 149.0 / 19.0);
+			assert_call_eq!(Number::qs_div(12, -123) -> Number, 12.0 / -123.0);
+			assert_call_eq!(Number::qs_div(0, -123) -> Number, 0.0 / -123.0);
+			assert_call_eq!(Number::qs_div(Number::INF, 123) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_div(-123, Number::INF) -> Number, 0);
+
+			assert_call!(Number::qs_div(0, 0) -> Number; Number::is_nan);
+			assert_call_eq!(Number::qs_div(1, 0) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_div(-1, 0) -> Number, -Number::INF);
+
+			assert_call!(Number::qs_div(Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_div(Number::INF, -Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_div(-Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_div(-Number::INF, -Number::INF) -> Number; Number::is_nan);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				// we already check these cases above.
+				if n1 == 0 || n2 == 0 || f1 == 0.0 || f2 == 0.0 {
+					continue;
+				}
+
+				assert_call_eq!(Number::qs_div(n1, n1) -> Number, n1 as FloatType / n1 as FloatType);
+				assert_call_eq!(Number::qs_div(n1, n2) -> Number, n1 as FloatType / n2 as FloatType);
+				assert_call_eq!(Number::qs_div(n1, f1) -> Number, n1 as FloatType / f1);
+				assert_call_eq!(Number::qs_div(n1, f2) -> Number, n1 as FloatType / f2);
+
+				assert_call_eq!(Number::qs_div(n2, n1) -> Number, n2 as FloatType / n1 as FloatType);
+				assert_call_eq!(Number::qs_div(n2, n2) -> Number, n2 as FloatType / n2 as FloatType);
+				assert_call_eq!(Number::qs_div(n2, f1) -> Number, n2 as FloatType / f1);
+				assert_call_eq!(Number::qs_div(n2, f2) -> Number, n2 as FloatType / f2);
+
+				assert_call_eq!(Number::qs_div(f1, n1) -> Number, f1 / n1 as FloatType);
+				assert_call_eq!(Number::qs_div(f1, n2) -> Number, f1 / n2 as FloatType);
+				assert_call_eq!(Number::qs_div(f1, f1) -> Number, f1 / f1);
+				assert_call_eq!(Number::qs_div(f1, f2) -> Number, f1 / f2);
+
+				assert_call_eq!(Number::qs_div(f2, n1) -> Number, f2 / n1 as FloatType);
+				assert_call_eq!(Number::qs_div(f2, n2) -> Number, f2 / n2 as FloatType);
+				assert_call_eq!(Number::qs_div(f2, f1) -> Number, f2 / f1);
+				assert_call_eq!(Number::qs_div(f2, f2) -> Number, f2 / f2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_div(0), 0);
+			assert_call_idempotent!(Number::qs_div(0, 1));
+		}
+
+		#[test]
+		fn r#mod() {
+			assert_call_eq!(Number::qs_mod(149, 19) -> Number, 149.0 % 19.0);
+			assert_call_eq!(Number::qs_mod(12, -123) -> Number, 12.0 % 123.0);
+			assert_call_eq!(Number::qs_mod(0, -123) -> Number, 0.0 % -123.0);
+			assert_call!(Number::qs_mod(Number::INF, 123) -> Number; Number::is_nan);
+			assert_call_eq!(Number::qs_mod(-123, Number::INF) -> Number, -123);
+
+			assert_call!(Number::qs_mod(0, 0) -> Number; Number::is_nan);
+			assert_call_eq!(Number::qs_mod(1, 0) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_mod(-1, 0) -> Number, -Number::INF);
+
+			assert_call!(Number::qs_mod(Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_mod(Number::INF, -Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_mod(-Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_mod(-Number::INF, -Number::INF) -> Number; Number::is_nan);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				// we already check these cases above.
+				if n1 == 0 || n2 == 0 || f1 == 0.0 || f2 == 0.0 {
+					continue;
+				}
+
+				assert_call_eq!(Number::qs_mod(n1, n1) -> Number, n1.wrapping_rem(n1));
+				assert_call_eq!(Number::qs_mod(n1, n2) -> Number, n1.wrapping_rem(n2));
+				assert_call_eq!(Number::qs_mod(n1, f1) -> Number, n1 as FloatType % f1);
+				assert_call_eq!(Number::qs_mod(n1, f2) -> Number, n1 as FloatType % f2);
+
+				assert_call_eq!(Number::qs_mod(n2, n1) -> Number, n2.wrapping_rem(n1));
+				assert_call_eq!(Number::qs_mod(n2, n2) -> Number, n2.wrapping_rem(n2));
+				assert_call_eq!(Number::qs_mod(n2, f1) -> Number, n2 as FloatType % f1);
+				assert_call_eq!(Number::qs_mod(n2, f2) -> Number, n2 as FloatType % f2);
+
+				assert_call_eq!(Number::qs_mod(f1, n1) -> Number, f1 % n1 as FloatType);
+				assert_call_eq!(Number::qs_mod(f1, n2) -> Number, f1 % n2 as FloatType);
+				assert_call_eq!(Number::qs_mod(f1, f1) -> Number, f1 % f1);
+				assert_call_eq!(Number::qs_mod(f1, f2) -> Number, f1 % f2);
+
+				assert_call_eq!(Number::qs_mod(f2, n1) -> Number, f2 % n1 as FloatType);
+				assert_call_eq!(Number::qs_mod(f2, n2) -> Number, f2 % n2 as FloatType);
+				assert_call_eq!(Number::qs_mod(f2, f1) -> Number, f2 % f1);
+				assert_call_eq!(Number::qs_mod(f2, f2) -> Number, f2 % f2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_mod(0), 0);
+			assert_call_idempotent!(Number::qs_mod(0xff, 0xee));
+		}
+
+		#[test]
+		fn pow() {
+			assert_call_eq!(Number::qs_pow(149, 19) -> Number, (149 as IntegerType).wrapping_pow(19));
+			assert_call_eq!(Number::qs_pow(12, -123) -> Number, (12 as FloatType).powf(-123.0));
+			assert_call_eq!(Number::qs_pow(0, -123) -> Number, (0 as FloatType).powf(-123.0));
+			assert_call_eq!(Number::qs_pow(Number::INF, 123) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_pow(0.1, Number::INF) -> Number, 0);
+			assert_call_eq!(Number::qs_pow(1.1, Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_pow(1, Number::INF) -> Number, 1);
+
+			assert_call_eq!(Number::qs_pow(0, 0) -> Number, 1);
+			assert_call_eq!(Number::qs_pow(1, 0) -> Number, 1);
+			assert_call_eq!(Number::qs_pow(-1, 0) -> Number, 1);
+			assert_call_eq!(Number::qs_pow(Number::INF, 0) -> Number, 1);
+			assert_call_eq!(Number::qs_pow(12, Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_pow(0, Number::INF) -> Number, 0);
+
+			assert_call_eq!(Number::qs_pow(Number::INF, Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_pow(Number::INF, -Number::INF) -> Number, 0);
+			assert_call_eq!(Number::qs_pow(-Number::INF, Number::INF) -> Number, Number::INF);
+			assert_call_eq!(Number::qs_pow(-Number::INF, -Number::INF) -> Number, 0);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>().abs();
+				let n2 = random::<u32>();
+				let f1 = random::<FloatType>().abs();
+				let f2 = random::<FloatType>();
+
+				// we already check these cases above.
+				if n1 == 0 || n2 == 0 || f1 == 0.0 || f2 == 0.0 {
+					continue;
+				}
+
+				assert_call_eq!(Number::qs_pow(n1, n2) -> Number, n1.wrapping_pow(n2));
+				assert_call_eq!(Number::qs_pow(n1, f1) -> Number, (n1 as FloatType).powf(f1));
+				assert_call_eq!(Number::qs_pow(n1, f2) -> Number, (n1 as FloatType).powf(f2));
+
+				assert_call_eq!(Number::qs_pow(f1, n1) -> Number, f1.powf(n1 as FloatType));
+				assert_call_eq!(Number::qs_pow(f1, n2) -> Number, f1.powf(n2 as FloatType));
+				assert_call_eq!(Number::qs_pow(f1, f1) -> Number, f1.powf(f1));
+				assert_call_eq!(Number::qs_pow(f1, f2) -> Number, f1.powf(f2));
+			}
+
+			// TODO: check for imaginary numbers
+			assert_call!(Number::qs_pow(-1, 0.5) -> Number; Number::is_nan);
+
+			assert_call_missing_parameter!(Number::qs_pow(0), 0);
+			assert_call_idempotent!(Number::qs_pow(12, 4));
+		}
+
+		#[test]
+		fn bitnot() {
+			assert_call_eq!(Number::qs_bitnot(12) -> Number, !12);
+			assert_call_eq!(Number::qs_bitnot(-14) -> Number, !-14);
+
+			assert_call_err!(Number::qs_bitnot(12.3), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitnot(-12.9), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitnot(Number::INF), crate::Error::ValueError(..));
+
+			for _ in 0..1000 {
+				let n = random::<IntegerType>();
+
+				assert_call_eq!(Number::qs_bitnot(n) -> Number, !n);
+			}
+
+			assert_call_idempotent!(Number::qs_bitnot(12));
+		}
+
+		#[test]
+		fn bitand() {
+			assert_call_eq!(Number::qs_bitand(12, 912) -> Number, (12 as IntegerType) & 912);
+			assert_call_eq!(Number::qs_bitand(-512, 14) -> Number, (-512 as IntegerType) & 14);
+			assert_call_eq!(Number::qs_bitand(0xff1e24, 0x129fa) -> Number,
+				(0xff1e24 as IntegerType) & 0x129fa);
+
+			assert_call_err!(Number::qs_bitand(12.3, 0x12), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitand(0x93, -12.9), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitand(Number::INF, 0x44), crate::Error::ValueError(..));
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+
+				assert_call_eq!(Number::qs_bitand(n1, n2) -> Number, n1 & n2);
+				assert_call_eq!(Number::qs_bitand(n2, n1) -> Number, n1 & n2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_bitand(0), 0);
+			assert_call_idempotent!(Number::qs_bitand(12, 14));
+		}
+
+		#[test]
+		fn bitor() {
+			assert_call_eq!(Number::qs_bitor(12, 912) -> Number, (12 as IntegerType) | 912);
+			assert_call_eq!(Number::qs_bitor(-512, 14) -> Number, (-512 as IntegerType) | 14);
+			assert_call_eq!(Number::qs_bitor(0xff1e24, 0x129fa) -> Number,
+				(0xff1e24 as IntegerType) | 0x129fa);
+
+			assert_call_err!(Number::qs_bitor(12.3, 0x54), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitor(0x89, -12.9), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitor(Number::INF, 0xe2), crate::Error::ValueError(..));
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+
+				assert_call_eq!(Number::qs_bitor(n1, n2) -> Number, n1 | n2);
+				assert_call_eq!(Number::qs_bitor(n2, n1) -> Number, n1 | n2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_bitor(0), 0);
+			assert_call_idempotent!(Number::qs_bitor(12, 14));
+		}
+
+		#[test]
+		fn bitxor() {
+			assert_call_eq!(Number::qs_bitxor(12, 912) -> Number, (12 as IntegerType) ^ 912);
+			assert_call_eq!(Number::qs_bitxor(-512, 14) -> Number, (-512 as IntegerType) ^ 14);
+			assert_call_eq!(Number::qs_bitxor(0xff1e24, 0x129fa) -> Number,
+				(0xff1e24 as IntegerType) ^ 0x129fa);
+
+			assert_call_err!(Number::qs_bitxor(12.3, 0xfe), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitxor(0xed, -12.9), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_bitxor(Number::INF, 0x17), crate::Error::ValueError(..));
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+
+				assert_call_eq!(Number::qs_bitxor(n1, n2) -> Number, n1 ^ n2);
+				assert_call_eq!(Number::qs_bitxor(n2, n1) -> Number, n1 ^ n2);
+			}
+
+			assert_call_missing_parameter!(Number::qs_bitxor(0), 0);
+			assert_call_idempotent!(Number::qs_bitxor(12, 14));
+		}
+
+		#[test]
+		fn shl() {
+			assert_call_eq!(Number::qs_shl(912, 12) -> Number, (912 as IntegerType).wrapping_shl(12));
+			assert_call_eq!(Number::qs_shl(-512, 4) -> Number, (-512 as IntegerType).wrapping_shl(4));
+			assert_call_eq!(Number::qs_shl(0xff1e24, 10) -> Number,
+				(0xff1e24 as IntegerType).wrapping_shl(10));
+
+			assert_call_err!(Number::qs_shl(12.3, 0xfe), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_shl(0xed, -12.9), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_shl(Number::INF, 0x17), crate::Error::ValueError(..));
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<u32>() % 100; // to make it more a realistic shift amnt.
+				let n3 = random::<u32>();
+
+				assert_call_eq!(Number::qs_shl(n1, n2) -> Number, n1.wrapping_shl(n2));
+				assert_call_eq!(Number::qs_shl(n1, n3) -> Number, n1.wrapping_shl(n3));
+			}
+
+			assert_call_missing_parameter!(Number::qs_shl(0), 0);
+			assert_call_idempotent!(Number::qs_shl(12, 14));
+		}
+
+		#[test]
+		fn shr() {
+			assert_call_eq!(Number::qs_shr(912, 12) -> Number, (912 as IntegerType).wrapping_shr(12));
+			assert_call_eq!(Number::qs_shr(-512, 4) -> Number, (-512 as IntegerType).wrapping_shr(4));
+			assert_call_eq!(Number::qs_shr(0xff1e24, 10) -> Number,
+				(0xff1e24 as IntegerType).wrapping_shr(10));
+
+			assert_call_err!(Number::qs_shr(12.3, 0xfe), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_shr(0xed, -12.9), crate::Error::ValueError(..));
+			assert_call_err!(Number::qs_shr(Number::INF, 0x17), crate::Error::ValueError(..));
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<u32>() % 100; // to make it more a realistic shift amnt.
+				let n3 = random::<u32>();
+
+				assert_call_eq!(Number::qs_shr(n1, n2) -> Number, n1.wrapping_shr(n2));
+				assert_call_eq!(Number::qs_shr(n1, n3) -> Number, n1.wrapping_shr(n3));
+			}
+
+			assert_call_missing_parameter!(Number::qs_shr(0), 0);
+			assert_call_idempotent!(Number::qs_shr(12, 14));
 		}
 	}
 
 	#[test]
-	fn constants() {
-		assert_eq!(Number::ZERO, Number(Inner::Integer(0 as IntegerType)));
-		assert_eq!(Number::ONE, Number(Inner::Integer(1 as IntegerType)));
-		assert_eq!(Number::PI, Number(Inner::Float(std::f64::consts::PI)));
-		assert_eq!(Number::E, Number(Inner::Float(std::f64::consts::E)));
-		assert!(Number(Inner::Float(f64::NAN)).is_nan());
-		assert_eq!(Number::INF, Number(Inner::Float(f64::INFINITY)));
-	}
-
-
-	#[test]
 	fn default() {
 		assert_eq!(Number::default(), Number::ZERO);
-	}
-
-	#[test]
-	fn to_string() {
-		assert_eq!(Number::ONE.to_string(), "1".to_string());
-		assert_eq!(Number::ZERO.to_string(), "0".to_string());
-		assert_eq!(Number::from(12.3).to_string(), "12.3".to_string());
-		assert_eq!(Number::from(-1223.129).to_string(), "-1223.129".to_string());
 	}
 
 	#[test]
@@ -1157,6 +1984,4 @@ mod tests {
 		assert!(matches!(Number::try_from("").unwrap_err(), FromStrError::BadFloat(..)));
 		assert!(matches!(Number::try_from(" ").unwrap_err(), FromStrError::BadFloat(..)));
 	}
-
 }
-
