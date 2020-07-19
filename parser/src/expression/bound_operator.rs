@@ -44,6 +44,8 @@ impl Display for BoundOperator {
 	}
 }
 
+impl BoundOperator {
+}
 impl Executable for BoundOperator {
 
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
@@ -65,15 +67,24 @@ impl Executable for BoundOperator {
 			_ => {}
 		};
 
-		let args_vec: Vec<quest_core::Object> = match self.args.as_ref() {
-			OperArgs::Unary => vec![],
-			OperArgs::Binary(rhs) => vec![rhs.execute()?],
-			OperArgs::Ternary(mid, rhs) => vec![mid.execute()?, rhs.execute()?],
-		};
+		let oper = self.oper.repr();
 
-		let args_vec: Vec<&quest_core::Object> = args_vec.iter().collect();
+		match self.args.as_ref() {
+			OperArgs::Unary => this.call_attr_lit(oper, &[]),
+			OperArgs::Binary(rhs) => this.call_attr_lit(oper, &[&rhs.execute()?]),
+			OperArgs::Ternary(mid, rhs) =>
+				this.call_attr_lit(oper, &[&mid.execute()?, &rhs.execute()?])
+		}
 
-		this.call_attr_lit(self.oper.into(), args_vec)
+		// let args_vec: Vec<quest_core::Object> =  {
+		// 	OperArgs::Unary => vec![],
+		// 	OperArgs::Binary(rhs) => vec![rhs.execute()?],
+		// 	OperArgs::Ternary(mid, rhs) => vec![mid.execute()?, rhs.execute()?],
+		// };
+
+		// let args_vec: Vec<&quest_core::Object> = args_vec.iter().collect();
+
+		// this.call_attr_lit(self.oper.into(), args_vec)
 	}
 }
 
@@ -150,6 +161,22 @@ where
 				_ => unreachable!("bad args1: {:?}", args)
 			},
 			_ => unreachable!("bad this: {:?}", this)
+		};
+	} else if oper == Operator::Call {
+		// a hack to convert to function call.
+		this = match this {
+			Expression::Operator(BoundOperator { args, this, oper }) =>
+				match *args {
+					OperArgs::Binary(rhs) =>
+						match rhs {
+							Expression::Block(block) => Expression::FunctionCall(this, block),
+							_ =>
+								Expression::Operator(BoundOperator { this, oper,
+									args: Box::new(OperArgs::Binary(rhs)) })
+						},
+					args => Expression::Operator(BoundOperator { this, oper, args: Box::new(args) })
+				},
+			other => other
 		};
 	}
 

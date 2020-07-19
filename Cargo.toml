@@ -1,7 +1,10 @@
 [workspace]
-
 members = [
 	"core",
 	"parser",
 	"bin"
 ]
+
+
+# [profile.release]
+# lto = true

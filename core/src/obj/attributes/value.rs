@@ -8,14 +8,26 @@ pub enum Value {
 }
 
 impl Value {
-	pub fn call(&self, owner: &Object, args: Args) -> Result<Object> {
+	pub fn call<'o>(&self, owner: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
+		use std::borrow::Cow;
 		match self {
 			Value::RustFn(rustfn) => rustfn.call(owner, args),
 			Value::Object(object) => {
-				let bound_attr = Object::new(crate::types::BoundFunction);
-				bound_attr.set_attr_lit("__bound_object_owner__", owner.clone());
-				bound_attr.set_attr_lit("__bound_object__", object.clone());
-				bound_attr.call_attr_lit("()", args)
+				let args = 
+					match args.into_inner() {
+						Cow::Borrowed(slice) => {
+							let mut args = Vec::with_capacity(slice.len() + 1);
+							args.push(owner);
+							args.extend(slice);
+							args
+						}
+						Cow::Owned(mut args) => {
+							args.insert(0, owner);
+							args
+						}
+					};
+
+				object.call_attr_lit("()", args)
 			}
 		}
 	}
@@ -45,4 +57,3 @@ impl From<Object> for Value {
 		Value::Object(obj)
 	}
 }
-

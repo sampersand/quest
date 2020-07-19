@@ -89,7 +89,7 @@ impl Pristine {
 	/// ```
 	#[inline]
 	#[allow(non_snake_case)]
-	pub fn qs___call_attr__(this: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs___call_attr__<'a>(this: &'a Object, args: Args<'_, 'a>) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
 		let rest = args.args(1..).unwrap_or_default();
 		this.call_attr(attr, rest)

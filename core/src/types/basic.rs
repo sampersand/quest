@@ -22,7 +22,7 @@ impl Basic {
 	///
 	/// This is simply a redirect to the `inspect` method.
 	#[inline]
-	pub fn qs_at_text(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_at_text<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(INSPECT, args)
 	}
 
@@ -44,7 +44,7 @@ impl Basic {
 	/// # Arguments
 	/// 1. (required) The other object.
 	#[inline]
-	pub fn qs_neq(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_neq<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(EQL, args)?
 		    .call_attr_lit(NOT, &[])
 	}
@@ -53,7 +53,7 @@ impl Basic {
 	///
 	/// This simply calls the `@bool` method and then the `!` method on the result.
 	#[inline]
-	pub fn qs_not(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_not<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(AT_BOOL, args)?
 		    .call_attr_lit(NOT, &[])
 	}

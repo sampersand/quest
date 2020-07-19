@@ -10,8 +10,10 @@ use std::fmt::{self, Debug, Formatter};
 use std::hash::{Hash, Hasher};
 // use std::any::Any;
 
+type Inner = for<'s, 'o> fn(&'o Object, Args<'s, 'o>) -> crate::Result<Object>;
+
 #[derive(Clone, Copy)]
-pub struct RustFn(&'static str, fn(&Object, Args) -> crate::Result<Object>);
+pub struct RustFn(&'static str, Inner);
 
 impl Debug for RustFn {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -38,12 +40,12 @@ impl Hash for RustFn {
 
 impl RustFn {
 	#[inline]
-	pub fn new(name: &'static str, func: fn(&Object, Args) -> crate::Result<Object>) -> Self {
+	pub fn new(name: &'static str, func: Inner) -> Self {
 		RustFn(name, func)
 	}
 
 	#[inline]
-	pub fn call(&self, obj: &Object, args: Args) -> crate::Result<Object> {
+	pub fn call<'o>(&self, obj: &'o Object, args: Args<'_, 'o>) -> crate::Result<Object> {
 		(self.1)(obj, args)
 	}
 }

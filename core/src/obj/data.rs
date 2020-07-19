@@ -3,188 +3,149 @@ use std::any::{Any, type_name};
 use std::sync::{Arc, RwLock};
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Deref, DerefMut};
+use std::borrow::{Borrow, BorrowMut};
 
-#[derive(Debug)]
-enum Ownership {
-	Owned(Box<dyn Any + Send + Sync>),
-	Shared(Arc<dyn Any + Send + Sync>)
-}
+use crate::shared_cow::{SharedCow, Sharable};
 
-struct Details {
+type AnyObj = dyn Any + Send + Sync;
+
+pub(crate) struct OwnedAny<T: AsRef<AnyObj>> {
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result,
-	clone: fn(&dyn Any) -> Box<dyn Any + Send + Sync>,
-	typename: &'static str
+	clone: fn(&dyn Any) -> Box<AnyObj>,
+	data: T
 }
 
-pub struct Data {
-	data: RwLock<Option<Ownership>>,
-	details: Arc<Details>
-}
-
-impl Clone for Data {
-	fn clone(&self) -> Self {
-		let mut data = self.data.write().unwrap();
-
-		*data = 
-			Some(match data.take() {
-				Some(Ownership::Owned(owned)) => Ownership::Shared(Arc::from(owned)),
-				Some(Ownership::Shared(shared)) => Ownership::Shared(shared),
-				None => unreachable!()
-			});
-
-		match data.as_ref().unwrap() {
-			// we literally just swapped it away from owned
-			Ownership::Owned(_) => unsafe { unreachable_debug_or_unchecked!() },
-			Ownership::Shared(ref data) => Data {
-				data: RwLock::new(Some(Ownership::Shared(data.clone()))),
-				details: self.details.clone()
-			}
-		}
+impl Borrow<AnyObj> for OwnedAny<Box<AnyObj>> {
+	#[inline]
+	fn borrow(&self) -> &AnyObj {
+		self.data.borrow()
 	}
+}
+
+impl BorrowMut<AnyObj> for OwnedAny<Box<AnyObj>> {
+	#[inline]
+	fn borrow_mut(&mut self) -> &mut AnyObj {
+		self.data.borrow_mut()
+	}
+}
+
+impl Borrow<AnyObj> for OwnedAny<Arc<AnyObj>> {
+	#[inline]
+	fn borrow(&self) -> &AnyObj {
+		self.data.borrow()
+	}
+}
+
+impl Clone for OwnedAny<Arc<AnyObj>> {
+	#[inline]
+	fn clone(&self) -> Self {
+		Self { dbg: self.dbg, clone: self.clone, data: self.data.clone() }
+	}
+}
+
+impl<T: AsRef<AnyObj>> Debug for OwnedAny<T> {
+	#[inline]
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		(self.dbg)(self.data.as_ref(), f)
+	}
+}
+
+impl Sharable for AnyObj {
+	type Owned = OwnedAny<Box<Self>>;
+	type Shared = OwnedAny<Arc<Self>>;
+	
+	#[inline]
+	fn to_shared(OwnedAny { dbg, clone, data }: Self::Owned) -> Self::Shared {
+		OwnedAny { data: data.into(), dbg, clone }
+	}
+
+	#[inline]
+	fn to_owned(OwnedAny { dbg, clone, data }: &Self::Shared) -> Self::Owned {
+		OwnedAny { data: (*clone)(data.as_ref()), dbg: *dbg, clone: *clone }
+	}
+}
+
+#[derive(Clone)]
+pub struct Data {
+	data: SharedCow<AnyObj>,
+	typename: &'static str
 }
 
 impl Data {
 	pub fn new<T: Any + Debug + Send + Sync + Clone>(data: T) -> Self {
-		// println!("{:?} {:?}", std::any::type_name::<T>(), data);
-		Data {
-			data: RwLock::new(Some(Ownership::Owned(Box::new(data)))),
-			details: Arc::new(Details {
-				dbg: |x, f| T::fmt(x.downcast_ref::<T>().expect("bad val given to debug"), f),
-				clone: |x| Box::new(T::clone(x.downcast_ref::<T>().expect("bad val given to clone"))),
-				typename: type_name::<T>(),
-			})
+		Self {
+			data: SharedCow::new(
+				OwnedAny {
+					dbg: |x, f| match x.downcast_ref::<T>() {
+						Some(val) => T::fmt(val, f),
+						None => unreachable!("bad x given to debug"),
+					},
+					clone: |x| match x.downcast_ref::<T>() {
+						Some(val) => Box::new(T::clone(val)),
+						None => unreachable!("bad x given to clone"),
+					},
+					data: Box::new(data) as _
+				}
+			),
+			typename: type_name::<T>()
 		}
 	}
 
 	#[inline]
 	pub fn typename(&self) -> &'static str {
-		self.details.typename
+		self.typename
 	}
 
 	#[inline]
 	pub fn is_a<T: Any>(&self) -> bool {
-		match self.data.read().unwrap().as_ref().unwrap() {
-			Ownership::Owned(ref data) => data.is::<T>(),
-			Ownership::Shared(ref data) => data.is::<T>()
-		}
+		self.data.with_ref(|data| data.is::<T>())
 	}
 
-	#[inline]
 	pub fn downcast_and_then<T: Any, R, F: FnOnce(Option<&T>) -> R>(&self, f: F) -> R {
 		if self.is_a::<T>() {
-			unsafe { self.downcast_unchecked_and_then(|x| f(Some(x))) }
+			unsafe {
+				self.downcast_unchecked_and_then(|x| f(Some(x)))
+			}
 		} else { 
 			f(None)
 		}
 	}
 
-	#[inline]
 	pub unsafe fn downcast_unchecked_and_then<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
-		#[allow(deprecated)]
-		f(&*self.downcast_ref_unchecked::<T>())
+		self.data.with_ref(|any| match any.downcast_ref() {
+			Some(val) => f(val),
+			None => unreachable!("invalid downcast encountered")
+		})
 	}
 
-	#[inline]
 	pub fn downcast_mut_and_then<T: Any, R, F: FnOnce(Option<&mut T>) -> R>(&self, f: F) -> R {
 		if self.is_a::<T>() {
-			unsafe { self.downcast_mut_unchecked_and_then(|x| f(Some(x))) }
+			unsafe {
+				self.downcast_mut_unchecked_and_then(|x| f(Some(x)))
+			}
 		} else { 
 			f(None)
 		}
 	}
 
-	#[inline]
 	pub unsafe fn downcast_mut_unchecked_and_then<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> R {
-		#[allow(deprecated)]
-		f(&mut *self.downcast_mut_unchecked::<T>())
-	}
-
-	#[inline]
-	#[deprecated]
-	unsafe fn downcast_ref_unchecked<'a, T: Any>(&'a self) -> impl Deref<Target=T> + 'a {
-		use std::sync::RwLockReadGuard;
-		use std::marker::PhantomData;
-
-		struct Caster<'a, T>(RwLockReadGuard<'a, Option<Ownership>>, PhantomData<T>);
-		impl<'a, T: 'static> Deref for Caster<'a, T> {
-			type Target = T;
-			fn deref(&self) -> &T {
-				match self.0.as_ref().unwrap() {
-					Ownership::Owned(ref data) => data.downcast_ref().unwrap(),
-					Ownership::Shared(ref data) => data.downcast_ref().unwrap(),
-				}
-			}
-		}
-
-		debug_assert!(self.is_a::<T>(), "internal error: cannot downcast from {} to {}",
-			self.typename(), type_name::<T>());
-
-		Caster::<'a, T>(self.data.read().expect("poison error"), PhantomData)
-	}
-
-	#[inline]
-	#[deprecated]
-	unsafe fn downcast_mut_unchecked<'a, T: Any>(&'a self) -> impl DerefMut<Target=T> + 'a {
-		use std::{sync::RwLockWriteGuard, marker::PhantomData};
-
-		struct Caster<'a, T>(RwLockWriteGuard<'a, Option<Ownership>>, PhantomData<T>, &'a Details);
-		impl<'a, T: 'static> Deref for Caster<'a, T> {
-			type Target = T;
-			fn deref(&self) -> &T {
-				match self.0.as_ref().unwrap() {
-					Ownership::Owned(ref data) => data.downcast_ref().unwrap(),
-					Ownership::Shared(ref data) => data.downcast_ref().unwrap(),
-				}
-			}
-		}
-
-		impl<'a, T: 'static> DerefMut for Caster<'a, T> {
-			fn deref_mut(&mut self) -> &mut T {
-				if let Ownership::Shared(ref shared) = self.0.as_ref().unwrap() {
-					*self.0 = Some(Ownership::Owned((self.2.clone)(&**shared)))
-				}
-
-				match self.0.as_mut().unwrap() {
-					Ownership::Owned(ref mut owned) => owned.downcast_mut().unwrap(),
-					Ownership::Shared(_) => unsafe { unreachable_debug_or_unchecked!() }
-				}
-			}
-		}
-
-		debug_assert!(self.is_a::<T>(), "internal error: cannot downcast from {} to {}",
-			self.typename(), type_name::<T>());
-
-		Caster::<'a, T>(self.data.write().expect("poison error"), PhantomData, &self.details)
+		self.data.with_mut(|any| match any.downcast_mut() {
+			Some(val) => f(val),
+			None => unreachable!("invalid downcast encountered")
+		})
 	}
 }
 
 
 impl Debug for Data {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		struct DataDebug<'a>(&'a (dyn Any + Send + Sync), fn(&dyn Any, &mut Formatter) -> fmt::Result);
-
-		impl Debug for DataDebug<'_> {
-			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-				(self.1)(self.0, f)
-			}
-		}
-
-		let lock = self.data.read().unwrap();
-		let any_ref = match lock.as_ref().unwrap() {
-			Ownership::Owned(ref data) => data.as_ref(),
-			Ownership::Shared(ref data) => data.as_ref()
-		};
-
-
-		let data_dbg = DataDebug(any_ref, self.details.dbg);
-
 		if f.alternate() {
 			f.debug_struct("Data")
-				.field("data", &data_dbg)
-				.field("typename", &self.details.typename)
+				.field("data", &self.data)
+				.field("typename", &self.typename)
 				.finish()
 		} else {
-			Debug::fmt(&data_dbg, f)
+			Debug::fmt(&self.data, f)
 		}
 	}
 }

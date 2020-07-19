@@ -257,7 +257,7 @@ impl Object {
 		self.0.attrs.del_lit(attr)
 	}
 
-	pub fn call_attr_lit<'s, 'o: 's, A, K: ?Sized>(&self, attr: &K, args: A) -> crate::Result<Object>
+	pub fn call_attr_lit<'s, 'o: 's, A, K: ?Sized>(&'o self, attr: &K, args: A) -> crate::Result<Object>
 	where
 		for <'a> &'a str: Borrow<K>,
 		K: Hash + Eq + ToObject,
@@ -292,7 +292,7 @@ impl Object {
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.to_object(), obj: self.clone() }.into())
 	}
 
-	pub fn call_attr<'s, 'o: 's, A>(&self, attr: &Object, args: A) -> crate::Result<Object>
+	pub fn call_attr<'s, 'o: 's, A>(&'o self, attr: &Object, args: A) -> crate::Result<Object>
 	where
 		A: Into<Args<'s, 'o>>
 	{
