@@ -39,8 +39,8 @@ where
 {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match *self.0.read() {
-			Data::Owned(ref owned) => f.debug_tuple("SharedCow::Owned").field(owned).finish(),
-			Data::Shared(ref shared) => f.debug_tuple("SharedCow::Shared").field(shared).finish(),
+			Data::Owned(ref owned) => Debug::fmt(owned, f),
+			Data::Shared(ref shared) => Debug::fmt(shared, f),
 		}
 	}
 }
