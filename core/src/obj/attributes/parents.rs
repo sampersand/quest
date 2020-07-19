@@ -4,7 +4,7 @@ use super::Value;
 use std::hash::Hash;
 use std::borrow::Borrow;
 use std::iter::FromIterator;
-use std::sync::RwLock;
+use parking_lot::RwLock;
 
 #[derive(Debug)]
 pub struct Parents(RwLock<Inner>);
@@ -19,7 +19,7 @@ enum Inner {
 impl Clone for Parents {
 	#[inline]
 	fn clone(&self) -> Self {
-		Self::from_inner(self.0.read().unwrap().clone())
+		Self::from_inner(self.0.read().clone())
 	}
 }
 
@@ -53,7 +53,7 @@ impl From<Parents> for Value {
 
 impl From<Parents> for Object {
 	fn from(parents: Parents) -> Self {
-		match parents.0.into_inner().unwrap() {
+		match parents.0.into_inner(){
 			Inner::None => Object::default(),
 			Inner::Builtin(vec) => vec.into(),
 			Inner::Object(obj) => obj
@@ -90,7 +90,7 @@ impl FromIterator<Object> for Parents {
 
 impl Parents {
 	pub fn add_parent(&mut self, parent: Object) -> Result<()> {
-		let mut inner = self.0.write().unwrap();
+		let mut inner = self.0.write();
 		match *inner {
 			Inner::None => *inner = Inner::Builtin(vec![parent]),
 			Inner::Builtin(ref mut vec) => vec.push(parent),
@@ -100,7 +100,7 @@ impl Parents {
 		Ok(())
 	}
 	pub fn to_object(&self) -> Object {
-		let mut inner = self.0.write().unwrap();
+		let mut inner = self.0.write();
 		match *inner {
 			Inner::None => {
 				let obj = Object::default();
@@ -117,7 +117,7 @@ impl Parents {
 	}
 
 	fn with_iter<F: FnOnce(std::slice::Iter<'_, Object>) -> Result<R>, R>(&self, f: F) -> Result<R> {
-		match *self.0.read().unwrap() {
+		match *self.0.read() {
 			Inner::None => f([].iter()),
 			Inner::Builtin(ref parents) => f(parents.iter()),
 			Inner::Object(ref object) => object.call_downcast_and_then(|l: &List| f(l.iter()))
@@ -186,21 +186,3 @@ impl Parents {
 // 		Vec::from(self).into()
 // 	}
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

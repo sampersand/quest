@@ -363,7 +363,7 @@ for Text
 	fn new_object(self) -> Object where Self: Sized {
 		use lazy_static::lazy_static;
 		use std::collections::HashMap;
-		use std::sync::RwLock;
+		use parking_lot::RwLock;
 
 		lazy_static! {
 			static ref OBJECTS: RwLock<HashMap<Text, Object>> = RwLock::new(HashMap::new());
@@ -374,11 +374,11 @@ for Text
 			return Object::new_with_parent(self, vec![Text::mapping()]);
 		}
 
-		if let Some(obj) = OBJECTS.read().unwrap().get(&self) {
+		if let Some(obj) = OBJECTS.read().get(&self) {
 			return obj.deep_clone();
 		}
 
-		let mut objs = OBJECTS.write().unwrap();
+		let mut objs = OBJECTS.write();
 
 		objs.entry(self.clone())
 			.or_insert_with(|| Object::new_with_parent(self, vec![Text::mapping()]))

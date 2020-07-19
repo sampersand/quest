@@ -1,7 +1,4 @@
-#![allow(unused)]
-use std::sync::{Arc, Weak, RwLock};
-use super::Internal;
-use crate::literals::{__PARENTS__, __ID__, __ATTR_MISSING__};
+use crate::literals::{__PARENTS__, __ID__};
 use crate::{Object, Result};
 use crate::types::Text;
 use std::hash::Hash;

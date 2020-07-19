@@ -1,10 +1,7 @@
-#![allow(unused)]
 use std::any::{Any, type_name};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
-use std::ops::{Deref, DerefMut};
 use std::borrow::{Borrow, BorrowMut};
-
 use crate::shared_cow::{SharedCow, Sharable};
 
 type AnyObj = dyn Any + Send + Sync;

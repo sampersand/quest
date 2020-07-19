@@ -1,7 +1,7 @@
 use crate::{Object, Args};
 use crate::types::{Scope, List};
-use std::sync::RwLock;
 use std::ops::Deref;
+use parking_lot::RwLock;
 
 type Stack = Vec<Binding>;
 
@@ -16,22 +16,18 @@ impl Default for Binding {
 }
 
 impl Binding {
-	#[inline]
-	pub fn try_instance() -> Option<Binding> {
-		Binding::with_stack(|stack| {
-			stack.read().expect("stack poisoned").last().cloned()
-		})
-	}
-
-	#[inline]
 	pub fn instance() -> Binding {
-		Binding::try_instance().expect("we should always have a stackframe")
+		Binding::with_stack(|stack| {
+			stack.read().last()
+				.expect("we should always have a stackframe")
+				.clone()
+		})
 	}
 
 	pub fn set_binding(new: Object) -> Binding {
 		let new = Binding(new);
 		Binding::with_stack(|stack| {
-			let mut stack = stack.write().expect("stack poisoned");
+			let mut stack = stack.write();
 			assert!(stack.pop().is_some());
 			stack.push(new.clone());
 			new
@@ -40,7 +36,7 @@ impl Binding {
 
 	pub fn stack() -> Vec<Binding> {
 		Self::with_stack(|s| {
-			let mut stack = s.read().expect("couldn't read stack").clone();
+			let mut stack = s.read().clone();
 			stack.reverse();
 			stack
 		})
@@ -53,8 +49,9 @@ impl Binding {
 	{
 		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
 		impl Drop for StackGuard<'_> {
+			#[inline]
 			fn drop(&mut self) {
-				self.0.write().expect("stack poisoned").pop();
+				self.0.write().pop();
 			}
 		}
 
@@ -72,7 +69,7 @@ impl Binding {
 
 				binding.set_attr_lit("__args__", Object::from(List::from(args)));
 
-				if let Some(callee) = stack.read().expect("bad stack").last() {
+				if let Some(callee) = stack.read().last() {
 					binding.set_attr_lit("__callee__", callee.as_ref().clone());
 					binding.add_parent(callee.as_ref().clone())?;
 				}
@@ -81,7 +78,7 @@ impl Binding {
 			};
 
 			{
-				let mut stack = stack.write().expect("stack poisoned");
+				let mut stack = stack.write();
 				stack.push(binding.clone());
 			};
 
