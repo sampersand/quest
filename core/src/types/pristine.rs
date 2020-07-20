@@ -169,8 +169,10 @@ impl Pristine {
 
 	#[allow(non_snake_case)]
 	pub fn qs___keys__(this: &Object, args: Args) -> crate::Result<Object> {
-		let include_parents = args.arg(0)?.call_downcast_map(Boolean::clone)
-			.map(bool::from)
+		let include_parents = args.arg(0)
+			.ok()
+			.map(|x| x.call_downcast_map(Boolean::clone).map(bool::from))
+			.transpose()?
 			.unwrap_or(false);
 
 		Ok(this.mapping_keys(include_parents)

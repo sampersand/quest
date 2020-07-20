@@ -7,7 +7,7 @@ use std::ops;
 use crate::{Object, Args};
 use crate::types::{Text, Boolean};
 use std::hash::{Hash, Hasher};
-use crate::error::{ValueError};
+use crate::error::{TypeError, ValueError};
 
 /// The type used by [`Number`] to keep track of integers.
 pub type IntegerType = i64;
@@ -701,7 +701,7 @@ impl Number {
 		this.try_downcast_and_then(|this: &Self| {
 			if let Ok(radix) = args.arg(0) {
 				this.to_string_radix(radix.call_downcast_map(Self::clone)?.try_into()?)
-					.map_err(|err| crate::error::TypeError::Messaged(err.to_string()))
+					.map_err(|err| TypeError::Messaged(err.to_string()))
 					.map_err(crate::Error::from)
 					.map(Object::from)
 			} else {

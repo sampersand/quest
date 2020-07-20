@@ -67,10 +67,10 @@ impl Binding {
 					binding.set_attr(Object::from(format!("_{}", i)), (*arg).clone())?;
 				}
 
-				binding.set_attr_lit("__args__", Object::from(List::from(args)));
+				binding.set_attr_lit("__args__", Object::from(List::from(args)))?;
 
 				if let Some(callee) = stack.read().last() {
-					binding.set_attr_lit("__callee__", callee.as_ref().clone());
+					binding.set_attr_lit("__callee__", callee.as_ref().clone())?;
 					binding.add_parent(callee.as_ref().clone())?;
 				}
 

@@ -58,16 +58,16 @@ impl Basic {
 
 	/// Get a hash of `this`.
 	///
-	/// This generates a unique hash per object, by taking the object's `ptr`'s hash.
+	/// This generates a unique hash per object by hashing the object's [`id`](Object::id).
 	#[inline]
 	pub fn qs_hash(this: &Object, _: Args) -> Result<Object> {
-		Ok(this._ptr_hash().into())
+		Ok(crate::utils::hash(&this.id()).into())
 	}
 
 	/// Creates a clone of `this`.
 	///
-	/// This doesn't actually clone the underlying data—it marks it as "shared", and if it's modified
-	/// it will be cloned.
+	/// This doesn't actually clone the underlying data---it marks it as "shared", and if it's
+	/// modified it will be cloned.
 	#[inline]
 	pub fn qs_clone(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.deep_clone())

@@ -1,6 +1,4 @@
 use crate::{Object, Result};
-use std::hash::Hash;
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 
@@ -32,18 +30,12 @@ impl AttrMap {
 	}
 
 	#[inline]
-	pub fn has_lit<K: Hash + Eq + ?Sized>(&self, key: &K) -> bool
-	where
-		for <'a> &'a str: Borrow<K>
-	{
+	pub fn has_lit(&self, key: &str) -> bool {
 		self.literals.contains_key(key)
 	}
 
 	#[inline]
-	pub fn get_lit<K: Hash + Eq + ?Sized>(&self, key: &K) -> Option<&Value>
-	where
-		for <'a> &'a str: Borrow<K>
-	{
+	pub fn get_lit(&self, key: &str) -> Option<&Value> {
 		self.literals.get(key)
 	}
 
@@ -53,10 +45,7 @@ impl AttrMap {
 	}
 
 	#[inline]
-	pub fn del_lit<K: Hash + Eq + ?Sized>(&mut self, key: &K) -> Option<Value>
-	where
-		for <'a> &'a str: Borrow<K>
-	{
+	pub fn del_lit(&mut self, key: &str) -> Option<Value> {
 		self.literals.remove(key)
 	}
 

@@ -1,9 +1,6 @@
 use crate::literals::{__PARENTS__, __ID__};
-use crate::{Object, Result};
+use crate::{Object, Result, SharedCow};
 use crate::types::Text;
-use std::hash::Hash;
-use crate::SharedCow;
-use std::borrow::Borrow;
 
 mod parents;
 mod attrmap;
@@ -76,27 +73,21 @@ impl Attributes {
 }
 
 impl Attributes {
-	pub fn has_lit<K: Hash + Eq + ?Sized>(&self, key: &K) -> Result<bool>
-	where
-		for <'a> &'a str: Borrow<K>
-	{
-		if (&__ID__).borrow() == key || (&__PARENTS__).borrow() == key {
+	pub fn has_lit(&self, key: &str) -> Result<bool> {
+		if key == __ID__ || key == __PARENTS__ {
 			Ok(true)
 		} else {
 			self.data.with_ref(|inner| Ok(inner.map.has_lit(key) || inner.parents.has_lit(key)?))
 		}
 	}
 
-	pub fn get_lit<K: Hash + Eq + ?Sized>(&self, key: &K) -> Result<Option<Value>>
-	where
-		for <'a> &'a str: Borrow<K>
-	{
-		if (&__ID__).borrow() == key {
+	pub fn get_lit(&self, key: &str) -> Result<Option<Value>> {
+		if key == __ID__ {
 			return Ok(Some(Object::from(self.id()).into()))
 		}
 
 		self.data.with_ref(|inner| {
-			if (&__PARENTS__).borrow() == key {
+			if key == __PARENTS__ {
 				Ok(Some(inner.parents.to_object().into()))
 			} else if let Some(lit) = inner.map.get_lit(key).cloned() {
 				Ok(Some(lit))
@@ -116,12 +107,9 @@ impl Attributes {
 		})
 	}
 
-	pub fn del_lit<K: Hash + Eq + ?Sized>(&self, key: &K) -> Option<Value>
-	where
-		for <'a> &'a str: Borrow<K>
-	{
+	pub fn del_lit(&self, key: &str) -> Option<Value> {
 		self.data.with_mut(|inner| {
-			if (&__PARENTS__).borrow() == key {
+			if __PARENTS__ == key {
 				Some(std::mem::take(&mut inner.parents).into())
 			} else {
 				inner.map.del_lit(key)

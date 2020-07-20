@@ -1,3 +1,5 @@
+//! Errors that can occur within Quest.
+
 use crate::{Object, Binding};
 use std::fmt::{self, Display, Formatter};
 
@@ -11,10 +13,8 @@ pub use value_error::ValueError;
 
 #[derive(Debug)]
 #[non_exhaustive]
+/// The generic type for all errors that can occur within quest.
 pub enum Error {
-	/// Something internal that shouldn't have occured
-	Internal(&'static str),
-
 	/// Something that we don't have an error type for yet
 	Messaged(String),
 
@@ -33,7 +33,10 @@ pub enum Error {
 	/// Boxed error
 	Boxed(Box<dyn std::error::Error + 'static>),
 
-	/// Returning a value
+	/// Returning a value.
+	///
+	/// While this isn't technically an "error" in the strict sense of an error, it's much easier
+	/// to propegate errors with this mechanism than any other one.
 	Return { to: Binding, obj: Object }
 }
 
@@ -42,15 +45,14 @@ impl From<String> for Error {
 }
 
 impl From<!> for Error {
-	fn from(_: !) -> Self {
-		unsafe { unreachable_debug_or_unchecked!(); }
+	fn from(x: !) -> Self {
+		x
 	}
 }
 
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Error::Internal(err) => write!(f, "internal error: {}", err),
 			Error::Messaged(err) => Display::fmt(&err, f),
 			Error::KeyError(err) => Display::fmt(&err, f),
 			Error::TypeError(err) => Display::fmt(&err, f),
@@ -73,4 +75,5 @@ impl std::error::Error for Error {
 }
 
 #[must_use]
+/// An alias for results within quest.
 pub type Result<T> = ::std::result::Result<T, Error>;

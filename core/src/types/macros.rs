@@ -140,6 +140,9 @@ macro_rules! args {
 }
 
 #[macro_export]
+/// Create a new object type.
+///
+/// This is soft-deprecated.
 macro_rules! impl_object_type {
 	(@CONVERTIBLE $_obj:ty;) => {};
 	(@CONVERTIBLE $obj:ty; (convert $convert_func:expr) $($_rest:tt)*) => {
@@ -189,7 +192,7 @@ macro_rules! impl_object_type {
 			Object::from(vec![
 				$(<$init_parent as $crate::types::ObjectType>::mapping()),+
 			])
-		);
+		).expect("couldn't set '__parents__'");
 	};
 	(@SET_PARENT $class:ident (parents $parent:path) $($_rest:tt)*) => {
 		impl_object_type!(@SET_PARENT $class (init_parent $parent));
@@ -201,53 +204,40 @@ macro_rules! impl_object_type {
 
 	(@SET_ATTRS $class:ident $obj:ty;) => {};
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => const $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, Object::from($val));
+		$class.set_attr_lit($attr, Object::from($val))
+			.expect(concat!("couldn't set '", stringify!($attr), "'"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => function $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::new(
+		$class.set_value_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr), |this, args| {
 				$val(this, args).map(Object::from)
 			})
-		);
-		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
-	}};
-
-	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::new(
-			concat!(stringify!($obj), "::", $attr),
-			|this, args| {
-				this.try_downcast_and_then::<$obj, _, _, _>(|this_data|
-					$val(this_data, args, this)
-						.map(Object::from)
-						.map_err(From::from)
-				)
-			}
-		));
+		).expect(concat!("couldn't set '", stringify!($attr), "'"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method_old $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::new(
+		$class.set_value_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|this, args| {
 				this.try_downcast_and_then(|this| $val(this, args)
 					.map(Object::from)
 					.map_err($crate::Error::from))
 			}
-		));
+		)).expect(concat!("couldn't set '", stringify!($attr), "'"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method_old_mut $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_attr_lit($attr, $crate::types::RustFn::new(
+		$class.set_value_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr),
 			|this, args| {
 				this.try_downcast_mut_and_then(|data| $val(data, args).map(Object::from).map_err($crate::Error::from))
 			}
-		));
+		)).expect(concat!("couldn't set '", stringify!($attr), "'"));
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
@@ -256,7 +246,7 @@ macro_rules! impl_object_type {
 	};
 
 
-	(for $obj:ty $({$new_object:item})? [ $($args:tt)* ]: $($body:tt)*/*$($attr:expr => ($($attr_val:tt)*)),* $(,)?*/) => {
+	(for $obj:ty $({$new_object:item})? [ $($args:tt)* ]: $($body:tt)*) => {
 		impl_object_type!(@CONVERTIBLE $obj; $($args)* );
 
 		#[cfg(test)]
@@ -294,13 +284,13 @@ macro_rules! impl_object_type {
 
 				let class = unsafe { (*CLASS_OBJECT.as_ptr()).clone() };
 
-
 				if unsafe { HAS_SETUP_HAPPENED.compare_and_swap(0, 1, Ordering::SeqCst) } == 0 {
 					#[allow(unused)]
 					use $crate::{Object, types::*};
 					impl_object_type!(@SET_PARENT class $($args)*);
 
-					class.set_attr_lit("name", Object::from(stringify!($obj)));
+					class.set_attr_lit("name", Object::from(stringify!($obj)))
+						.expect("couldn't set 'name'");
 
 					impl_object_type!(@SET_ATTRS class $obj; $($body)*);
 
@@ -309,7 +299,6 @@ macro_rules! impl_object_type {
 						impl_object_type!(@SETUP $($args)*)
 							.store(true, std::sync::atomic::Ordering::SeqCst);
 					}
-			} else {
 				}
 
 				class

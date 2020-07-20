@@ -144,10 +144,3 @@ impl Ord for Operator {
 		self.precedence().cmp(&rhs.precedence())
 	}
 }
-
-impl quest_core::ToObject for Operator {
-	#[inline]
-	fn to_object(&self) -> Object {
-		Object::from(self.to_string())
-	}
-}
