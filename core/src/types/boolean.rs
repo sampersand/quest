@@ -336,11 +336,8 @@ for Boolean {
 		use crate::types::ObjectType;
 
 		lazy_static! {
-			static ref TRUE: Object = Object::new_with_parent(Boolean::TRUE,
-				vec![Boolean::mapping()]);
-
-			static ref FALSE: Object = Object::new_with_parent(Boolean::FALSE,
-				vec![Boolean::mapping()]);
+			static ref TRUE: Object = Object::new_with_parent(Boolean::TRUE, Boolean::mapping());
+			static ref FALSE: Object = Object::new_with_parent(Boolean::FALSE, Boolean::mapping());
 		}
 
 		match self.into_inner() { 

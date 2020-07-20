@@ -1,5 +1,4 @@
 //! Errors that can occur within Quest.
-
 use crate::{Object, Binding};
 use std::fmt::{self, Display, Formatter};
 
@@ -37,7 +36,12 @@ pub enum Error {
 	///
 	/// While this isn't technically an "error" in the strict sense of an error, it's much easier
 	/// to propegate errors with this mechanism than any other one.
-	Return { to: Binding, obj: Object }
+	Return {
+		/// The place to return to.
+		to: Binding,
+		/// The value to return.
+		obj: Object
+	}
 }
 
 impl From<String> for Error {

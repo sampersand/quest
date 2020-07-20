@@ -26,6 +26,7 @@ pub use obj::Object;
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
 
+/// Start up Quest by initializing all the types.
 pub fn init() {
 	/* todo: move all mapping initialization stuff here. */
 }

@@ -1,14 +1,26 @@
+//! The core list of types within Quest.
+#![warn(missing_docs)]
+// #![allow(missing_docs)]
+
 use std::{fmt::Debug, any::Any};
 use crate::Object;
 
 #[macro_use]
-pub mod macros;
+mod macros;
 
 mod convert;
 
+/// A trait representing the ability to have default associated attribuets.
 pub trait ObjectType : Debug + Any + Send + Sync + Clone {
+	/// The list of attributes that objects of this type will have.
 	fn mapping() -> Object;
 
+
+	/// Convert `self` into an [`Object`].
+	///
+	/// The default implementation simply calls [`Object::new_with_parent`] with the `parents` arg
+	/// arg as [`Self::mapping()`](ObjectType::mapping), but it can be overwritten to perform
+	/// cacheing of intermediate results.
 	#[inline]
 	fn new_object(self) -> Object where Self: Sized {
 		Object::new_with_parent(self, vec![Self::mapping()])
@@ -16,6 +28,7 @@ pub trait ObjectType : Debug + Any + Send + Sync + Clone {
 
 	// #[cfg(test)]
 	// todo: remove this
+	#[doc(hidden)]
 	fn _wait_for_setup_to_finish() {}
 }
 

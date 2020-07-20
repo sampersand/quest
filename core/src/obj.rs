@@ -248,7 +248,7 @@ impl Object {
 	}
 
 	/// Sets the attribute `attr` to `value`.
-	pub(crate) fn set_value_lit<V>(&self, attr: Literal, value: V) -> crate::Result<()>
+	pub fn set_value_lit<V>(&self, attr: Literal, value: V) -> crate::Result<()>
 	where
 		V: Into<Value>
 	{

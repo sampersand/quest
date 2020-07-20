@@ -50,7 +50,7 @@ pub fn init() {
 	use quest_core::types::{ObjectType, RustFn, Text, rustfn::Binding};
 	use quest_parser::{Stream, expression::Executable};
 
-	Text::mapping().set_attr_lit("eval", RustFn::new("Text::eval", |this, args| {
+	Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
 		fn execute_text(text: String) -> quest_core::Result<Object> {
 			quest_parser::Expression::parse_stream(BufStream::from(text).tokens())
 				.map_err(|err| err.to_string())?
@@ -65,7 +65,7 @@ pub fn init() {
 				execute_text(this.to_string())
 			}
 		})
-	}));
+	})).expect("couldn't assign 'eval'");
 }
 
 fn main() {
