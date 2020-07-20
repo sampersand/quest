@@ -369,6 +369,7 @@ impl_try_from_eq!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize; f32 f64);
 
 impl From<FloatType> for Number {
 	// note that if the given `f` is an integer, we instead construct an `Inner::Integer`.
+	#[allow(clippy::float_cmp)]
 	fn from(f: FloatType) -> Number {
 		if f.is_finite() && f.floor() == f &&
 			(IntegerType::MIN..IntegerType::MAX).contains(&(f as _))
