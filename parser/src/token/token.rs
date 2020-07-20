@@ -20,8 +20,8 @@ impl Display for Token {
 			Self::Operator(o) => Display::fmt(o, f),
 			Self::Left(t) => Display::fmt(&t.left(), f),
 			Self::Right(t) => Display::fmt(&t.right(), f),
-			Self::Endline => Display::fmt(&";", f),
-			Self::Comma => Display::fmt(&",", f),
+			Self::Endline => Display::fmt(&';', f),
+			Self::Comma => Display::fmt(&',', f),
 		}		
 	}
 }

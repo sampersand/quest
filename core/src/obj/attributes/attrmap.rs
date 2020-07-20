@@ -1,7 +1,6 @@
-use std::borrow::Borrow;
 use crate::{Object, Result};
-use crate::types::{RustFn, Text, Boolean};
-use std::hash::{self, Hash, Hasher};
+use std::hash::Hash;
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 
@@ -24,18 +23,7 @@ impl Debug for AttrMap {
 	}
 }
 
-fn eq_literal(obj: &Object, lit: Literal) -> Result<bool> {
-	obj.call_attr_lit("==", &[&lit.into()])?
-		.call_downcast_map(|x: &Boolean| x.into_inner())
-}
-
-
 impl AttrMap {
-	#[inline]
-	pub fn new() -> Self {
-		AttrMap::default()
-	}
-
 	// in the future, this can be an exact size iterator
 	pub fn keys<'a>(&'a self) -> impl Iterator<Item=Object> + 'a {
 		self.literals.keys()
@@ -109,7 +97,7 @@ impl AttrMap {
 		for (i, (ref k, _)) in self.objects.iter().enumerate() {
 			if key.eq_obj(k)? {
 				stop_index = Some(i);
-				break;;
+				break;
 			}
 		}
 

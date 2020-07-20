@@ -41,11 +41,17 @@ for Comparable [(parents super::Basic)]:
 
 impl From<Ordering> for crate::Object {
 	fn from(ord: Ordering) -> Self {
+		crate::types::Number::from(ord).into()
+	}
+}
+
+impl From<Ordering> for crate::types::Number {
+	fn from(ord: Ordering) -> Self {
 		match ord {
-			Ordering::Less => -1,
-			Ordering::Equal => 0,
-			Ordering::Greater => 1,
-		}.into()
+			Ordering::Less => -Self::ONE,
+			Ordering::Equal => Self::ZERO,
+			Ordering::Greater => Self::ONE,
+		}
 	}
 }
 

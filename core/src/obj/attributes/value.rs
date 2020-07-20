@@ -34,9 +34,8 @@ impl Value {
 }
 
 impl From<Value> for Object {
-	#[inline]
 	fn from(val: Value) -> Self {
-		/// we should have a COW here in case the rustfn is modified by the user.
+		// we should have a COW here in case the rustfn is modified by the user.
 		match val {
 			Value::RustFn(rustfn) => rustfn.into(),
 			Value::Object(obj) => obj

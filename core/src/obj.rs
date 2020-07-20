@@ -24,7 +24,7 @@ pub struct Object(pub(super) Arc<Internal>);
 
 impl Default for Object {
 	fn default() -> Self {
-		Object::new(types::Null::new())
+		Object::new(types::Null)
 	}
 }
 

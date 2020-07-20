@@ -154,7 +154,7 @@ impl Pristine {
 	#[allow(non_snake_case)]
 	pub fn qs_root_get_attr(this: &Object, _: Args) -> crate::Result<Object> {
 		crate::Binding::with_stack(|stack| {
-			stack.read().unwrap()
+			stack.read()
 				.first().expect("no stack?")
 				.as_ref()
 				.get_attr(this)

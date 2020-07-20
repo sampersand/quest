@@ -1,6 +1,8 @@
 #[cfg(test)]
 macro_rules! assert_call_idempotent {
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*)) => {{
+		<$ty as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
 		let old = Object::from($this);
 		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
 		assert!(!old.is_identical(&new));
@@ -11,6 +13,8 @@ macro_rules! assert_call_idempotent {
 #[cfg(test)]
 macro_rules! assert_call_non_idempotent {
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*)) => {{
+		<$ty as crate::types::ObjectType>::_wait_for_setup_to_finish();
+
 		let old = Object::from($this);
 		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
 		assert!(old.is_identical(&new));

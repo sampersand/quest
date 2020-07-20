@@ -9,7 +9,7 @@ pub struct Null;
 impl Display for Null {
 	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		write!(f, "null")
+		Display::fmt("null", f)
 	}
 }
 

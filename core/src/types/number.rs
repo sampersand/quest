@@ -1024,9 +1024,10 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The value to compare against.
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
-
-		this.try_downcast_map(|this: &Self| this.cmp(&other).into())
+		match args.arg(0)?.call_downcast_map(Self::clone) {
+			Ok(other) => this.try_downcast_map(|this: &Self| this.cmp(&other).into()),
+			Err(_) => Ok(Object::default())
+		}
 	}
 
 	/// Returns `this`, rounded down.
@@ -1246,6 +1247,45 @@ mod tests {
 			dup.downcast_and_then(|n: &Number| assert_eq!(*n, 123));
 
 			assert_call_non_idempotent!(Number::qs_at_num(12));
+		}
+
+		#[test]
+		fn cmp() {
+			#[derive(Debug, Clone)]
+			struct Dummy;
+			impl_object_type! { for Dummy [(parents crate::types::Basic)]: }
+
+			assert_call_eq!(Number::qs_cmp(1, 1) -> Number,  0);
+			assert_call_eq!(Number::qs_cmp(1, 0) -> Number,  1);
+			assert_call_eq!(Number::qs_cmp(1, 2) -> Number, -1);
+			assert_call_eq!(Number::qs_cmp(1, Dummy) -> Null, crate::types::Null);
+
+			assert_call_eq!(Number::qs_cmp(12, Number::INF) -> Number, -1);
+			assert_call_eq!(Number::qs_cmp(-5, Number::INF) -> Number, -1);
+			assert_call_eq!(Number::qs_cmp(Number::INF, Number::INF) -> Number, 0);
+			assert_call_eq!(Number::qs_cmp(-Number::INF, -Number::INF) -> Number, 0);
+			assert_call_eq!(Number::qs_cmp(-Number::INF, 12) -> Number, -1);
+
+			for _ in 0..1000 {
+				let n1 = random::<IntegerType>();
+				let n2 = random::<IntegerType>();
+				let f1 = random::<FloatType>();
+				let f2 = random::<FloatType>();
+
+				if f1.is_nan() || f2.is_nan() { continue; }
+
+				assert_call_eq!(Number::qs_cmp(n1, n2) -> Number, Number::from(n1.cmp(&n2)));
+				assert_call_eq!(Number::qs_cmp(n1, f1) -> Number,
+					Number::from((n1 as FloatType).partial_cmp(&f1).unwrap()));
+
+				assert_call_eq!(Number::qs_cmp(f1, n1) -> Number,
+					Number::from(f1.partial_cmp(&(n1 as FloatType)).unwrap()));
+				assert_call_eq!(Number::qs_cmp(f1, f2) -> Number,
+					Number::from(f1.partial_cmp(&f2).unwrap()));
+			}
+
+			assert_call_missing_parameter!(Number::qs_cmp(0), 0);
+			assert_call_idempotent!(Number::qs_cmp(12, 45));
 		}
 
 		#[test]
@@ -1510,6 +1550,12 @@ mod tests {
 		}
 
 		#[test]
+		fn add_assign() {
+			assert_call_non_idempotent!(Number::qs_add_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_add_assign(0), 0);
+		}
+
+		#[test]
 		fn sub() {
 			assert_call_eq!(Number::qs_sub(12, 19) -> Number, 12 - 19);
 			assert_call_eq!(Number::qs_sub(12, -123) -> Number, 12 - -123);
@@ -1553,6 +1599,12 @@ mod tests {
 		}
 
 		#[test]
+		fn sub_assign() {
+			assert_call_non_idempotent!(Number::qs_sub_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_sub_assign(0), 0);
+		}
+
+		#[test]
 		fn mul() {
 			assert_call_eq!(Number::qs_mul(12, 19) -> Number, 12 * 19);
 			assert_call_eq!(Number::qs_mul(12, -123) -> Number, 12 * -123);
@@ -1593,6 +1645,12 @@ mod tests {
 
 			assert_call_missing_parameter!(Number::qs_mul(0), 0);
 			assert_call_idempotent!(Number::qs_mul(0, 1));
+		}
+
+		#[test]
+		fn mul_assign() {
+			assert_call_non_idempotent!(Number::qs_mul_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_mul_assign(0), 0);
 		}
 
 		#[test]
@@ -1692,6 +1750,12 @@ mod tests {
 		}
 
 		#[test]
+		fn div_assign() {
+			assert_call_non_idempotent!(Number::qs_div_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_div_assign(0), 0);
+		}
+
+		#[test]
 		fn r#mod() {
 			assert_call_eq!(Number::qs_mod(149, 19) -> Number, 149.0 % 19.0);
 			assert_call_eq!(Number::qs_mod(12, -123) -> Number, 12.0 % 123.0);
@@ -1745,6 +1809,12 @@ mod tests {
 		}
 
 		#[test]
+		fn mod_assign() {
+			assert_call_non_idempotent!(Number::qs_mod_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_mod_assign(0), 0);
+		}
+
+		#[test]
 		fn pow() {
 			assert_call_eq!(Number::qs_pow(149, 19) -> Number, (149 as IntegerType).wrapping_pow(19));
 			assert_call_eq!(Number::qs_pow(12, -123) -> Number, (12 as FloatType).powf(-123.0));
@@ -1795,6 +1865,12 @@ mod tests {
 		}
 
 		#[test]
+		fn pow_assign() {
+			assert_call_non_idempotent!(Number::qs_pow_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_pow_assign(0), 0);
+		}
+
+		#[test]
 		fn bitnot() {
 			assert_call_eq!(Number::qs_bitnot(12) -> Number, !12);
 			assert_call_eq!(Number::qs_bitnot(-14) -> Number, !-14);
@@ -1836,6 +1912,12 @@ mod tests {
 		}
 
 		#[test]
+		fn bitand_assign() {
+			assert_call_non_idempotent!(Number::qs_bitand_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_bitand_assign(0), 0);
+		}
+
+		#[test]
 		fn bitor() {
 			assert_call_eq!(Number::qs_bitor(12, 912) -> Number, (12 as IntegerType) | 912);
 			assert_call_eq!(Number::qs_bitor(-512, 14) -> Number, (-512 as IntegerType) | 14);
@@ -1859,6 +1941,12 @@ mod tests {
 		}
 
 		#[test]
+		fn bitor_assign() {
+			assert_call_non_idempotent!(Number::qs_bitor_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_bitor_assign(0), 0);
+		}
+
+		#[test]
 		fn bitxor() {
 			assert_call_eq!(Number::qs_bitxor(12, 912) -> Number, (12 as IntegerType) ^ 912);
 			assert_call_eq!(Number::qs_bitxor(-512, 14) -> Number, (-512 as IntegerType) ^ 14);
@@ -1879,6 +1967,12 @@ mod tests {
 
 			assert_call_missing_parameter!(Number::qs_bitxor(0), 0);
 			assert_call_idempotent!(Number::qs_bitxor(12, 14));
+		}
+
+		#[test]
+		fn bitxor_assign() {
+			assert_call_non_idempotent!(Number::qs_bitxor_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_bitxor_assign(0), 0);
 		}
 
 		#[test]
@@ -1906,6 +2000,12 @@ mod tests {
 		}
 
 		#[test]
+		fn shl_assign() {
+			assert_call_non_idempotent!(Number::qs_shl_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_shl_assign(0), 0);
+		}
+
+		#[test]
 		fn shr() {
 			assert_call_eq!(Number::qs_shr(912, 12) -> Number, (912 as IntegerType).wrapping_shr(12));
 			assert_call_eq!(Number::qs_shr(-512, 4) -> Number, (-512 as IntegerType).wrapping_shr(4));
@@ -1927,6 +2027,12 @@ mod tests {
 
 			assert_call_missing_parameter!(Number::qs_shr(0), 0);
 			assert_call_idempotent!(Number::qs_shr(12, 14));
+		}
+
+		#[test]
+		fn shr_assign() {
+			assert_call_non_idempotent!(Number::qs_shr_assign(0, 1));
+			assert_call_missing_parameter!(Number::qs_shr_assign(0), 0);
 		}
 	}
 
