@@ -132,7 +132,7 @@ mod tests {
 
 	#[test]
 	fn from_unit() {
-		<Null as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<Null as crate::types::ObjectType>::initialize().unwrap();
 
 		assert_eq!(Null::from(()), Null);
 		Object::from(()).downcast_and_then(|_: &Null| {}).unwrap();
@@ -181,7 +181,7 @@ mod tests {
 
 		#[test]
 		fn call() {
-			<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+			<Dummy as crate::types::ObjectType>::initialize().unwrap();
 
 			assert_call_eq!(Null::qs_call(Null) -> Null, Null);
 			assert_call_eq!(Null::qs_call(Null, Dummy) -> Null, Null);
@@ -192,7 +192,7 @@ mod tests {
 
 		#[test]
 		fn eql() {
-			<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+			<Dummy as crate::types::ObjectType>::initialize().unwrap();
 
 			assert_call_eq!(Null::qs_eql(Null, Dummy) -> Boolean, false);
 			assert_call_eq!(Null::qs_eql(Null, Null) -> Boolean, true);

@@ -248,14 +248,14 @@ impl Block {
 	}
 
 	#[inline]
-	pub fn qs_at_text(&self, _: Args) -> quest_core::Result<Object> {
-		Ok(self.to_string().into())
+	pub fn qs_at_text(this: &Object, _: Args) -> quest_core::Result<Object> {
+		this.try_downcast_map(Self::to_string).map(Object::from)
 	}
 }
 
 impl_object_type!{
 for Block [(parents quest_core::types::Function)]:
-	"@text" => method_old Block::qs_at_text,
+	"@text" => function Block::qs_at_text,
 	"()" => function Block::qs_call
 }
 

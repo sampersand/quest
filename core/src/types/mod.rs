@@ -1,5 +1,5 @@
 //! The core list of types within Quest.
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 // #![allow(missing_docs)]
 
 use std::{fmt::Debug, any::Any};
@@ -15,6 +15,8 @@ pub trait ObjectType : Debug + Any + Send + Sync + Clone {
 	/// The list of attributes that objects of this type will have.
 	fn mapping() -> Object;
 
+	/// initialize an object type's mapping.
+	fn initialize() -> crate::Result<()>;
 
 	/// Convert `self` into an [`Object`].
 	///
@@ -25,11 +27,6 @@ pub trait ObjectType : Debug + Any + Send + Sync + Clone {
 	fn new_object(self) -> Object where Self: Sized {
 		Object::new_with_parent(self, vec![Self::mapping()])
 	}
-
-	// #[cfg(test)]
-	// todo: remove this
-	#[doc(hidden)]
-	fn _wait_for_setup_to_finish() {}
 }
 
 mod pristine;

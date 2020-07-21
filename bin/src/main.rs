@@ -2,7 +2,6 @@ mod run;
 mod error;
 
 use error::Result;
-use run::BufStream;
 use quest_core::Object;
 use clap::Clap;
 
@@ -46,36 +45,13 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 	}
 }
 
-pub fn init() {
-	use quest_core::types::{ObjectType, RustFn, Text, rustfn::Binding};
-	use quest_parser::{Stream, expression::Executable};
-
-	Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
-		fn execute_text(text: String) -> quest_core::Result<Object> {
-			quest_parser::Expression::parse_stream(BufStream::from(text).tokens())
-				.map_err(|err| err.to_string())?
-				.execute()
-				.map_err(Into::into)
-		}
-
-		this.try_downcast_and_then::<Text, _, _, _>(|this| {
-			if let Ok(binding) = args.arg(0) {
-				Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
-			} else {
-				execute_text(this.to_string())
-			}
-		})
-	})).expect("couldn't assign 'eval'");
-}
-
 fn main() {
+	quest_core::initialize();
+	quest_parser::initialize();
+
 	// run::run_file("code.ignore/fib.qs", vec![&"--".into(), &"50_000".into()].into()).unwrap();
 	// return;
 	// run::run_file("code.ignore/ib.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();
-
-	quest_core::init();
-	quest_parser::init();
-	init();
 
 	match run_options(Opts::parse()) {
 		Ok(_) => {},

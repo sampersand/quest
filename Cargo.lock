@@ -247,6 +247,7 @@ dependencies = [
 name = "quest-parser"
 version = "0.2.0"
 dependencies = [
+ "lazy_static",
  "quest-core",
  "regex",
  "tempfile",

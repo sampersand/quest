@@ -1,7 +1,6 @@
 use crate::Result;
 use crate::stream::Stream;
 use crate::token::{Token, Tokenizable};
-use quest_core::Object;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]

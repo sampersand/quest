@@ -67,13 +67,13 @@ mod tests {
 		"<=>" => function |this: &Object, args: Args| {
 			let this = this.try_downcast_map(DummyCmp::clone)?;
 			let rhs = args.arg(0)?.try_downcast_map(DummyCmp::clone)?;
-			Ok(this.0.cmp(&rhs.0))
+			Ok(this.0.cmp(&rhs.0).into())
 		}
 	}
 
 	#[test]
 	fn lth() {
-		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
 		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(1)) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(0)) -> Boolean, false);
@@ -82,7 +82,7 @@ mod tests {
 
 	#[test]
 	fn gth() {
-		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
 		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(1)) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(0)) -> Boolean, true);
@@ -91,7 +91,7 @@ mod tests {
 
 	#[test]
 	fn leq() {
-		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
 		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(1)) -> Boolean, true);
 		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(0)) -> Boolean, false);
@@ -100,7 +100,7 @@ mod tests {
 
 	#[test]
 	fn geq() {
-		<DummyCmp as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
 		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(1)) -> Boolean, true);
 		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(0)) -> Boolean, true);

@@ -26,7 +26,26 @@ pub use obj::Object;
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
 
+
 /// Start up Quest by initializing all the types.
-pub fn init() {
-	/* todo: move all mapping initialization stuff here. */
+pub fn initialize() {
+	use types::*;
+	use std::sync::Once;
+
+	macro_rules! initialize {
+		($($ty:ty),*) => {{
+			$(
+				<$ty>::initialize().expect(concat!("couldn't initialize ", stringify!($ty)));
+			)*
+		}};
+	}
+
+	static INITIALIZE: Once = Once::new();
+
+	INITIALIZE.call_once(||
+		initialize!(
+			Pristine, Basic, Boolean, BoundFunction, Comparable, Function, Kernel,
+			List, Null, Number, Regex, RustFn, Scope, Text
+		)
+	)
 }

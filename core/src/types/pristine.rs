@@ -138,9 +138,9 @@ impl Pristine {
 
 	#[inline]
 	#[allow(non_snake_case)]
-	pub fn qs___has_attr__(this: &Object, args: Args) -> crate::Result<bool> {
+	pub fn qs___has_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
-		this.has_attr(attr)
+		this.has_attr(attr).map(Object::from)
 	}
 
 	#[inline]

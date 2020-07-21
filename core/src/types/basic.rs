@@ -83,7 +83,7 @@ impl Basic {
 }
 
 impl_object_type!{
-for Basic [(parents super::Kernel)]:
+for Basic [(parents super::Pristine)]:
 	"@bool" => function Basic::qs_at_bool,
 	"@text" => function Basic::qs_at_text,
 	"==" => function Basic::qs_eql,
@@ -100,155 +100,168 @@ for Basic [(parents super::Kernel)]:
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::types::{Text, Boolean, Number};
 
-	#[test]
-	fn at_bool() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-		assert_downcast_eq!(Boolean; Basic::qs_at_bool(&Basic.into(), args!()).unwrap(), true);
-		assert_downcast_eq!(Boolean; Basic::qs_at_bool(&Basic.into(), args!(false)).unwrap(), true);
-	}
+	mod qs {
+		use super::*;
+		use crate::types::*;
 
-	#[test]
-	fn at_text() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
-		#[derive(Debug, Clone)]
-		struct Dummy(i64);
-
-		impl_object_type! { for Dummy [(parents Basic)]:
-			"inspect" => function |this: &Object, _: Args| {
-				this.try_downcast_map(|this: &Self| Object::from(this.0.to_string()))
-			}
+		#[test]
+		fn at_bool() {
+			assert_call_eq!(Basic::qs_at_bool(Basic) -> Boolean, true);
+			assert_call_eq!(Basic::qs_at_bool(Basic, false) -> Boolean, true);
 		}
 
-		let dummy = Object::from(Dummy(12));
+		#[test]
+		fn at_text() {
+			#[derive(Debug, Clone, PartialEq)]
+			struct Dummy;
 
-		assert_downcast_eq!(Text; dummy.call_attr_lit("inspect", &[]).unwrap(), *"12");
-		assert_downcast_eq!(Text; Basic::qs_at_text(&dummy, args!()).unwrap(), *"12");
-		assert_downcast_eq!(Text; Basic::qs_at_text(&dummy, args!(13)).unwrap(), *"12");
-	}
-
-	#[test]
-	fn eql() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
-		let obj1 = &Object::from(Basic);
-		let obj2 = &Object::from(Basic);
-
-		assert_downcast_eq!(Boolean; Basic::qs_eql(obj1, args!(obj1.clone())).unwrap(), true);
-		assert_downcast_eq!(Boolean; Basic::qs_eql(obj1, args!(obj2.clone())).unwrap(), false);
-
-
-		assert_missing_parameter_old!(Basic::qs_eql(obj1, args!()), 0);
-		assert_downcast_eq!(Boolean;
-			Basic::qs_eql(obj1, args!(obj2.clone(), obj1.clone())).unwrap(), false);
-	}
-
-	#[test]
-	fn neq() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
-		#[derive(Debug, Clone, PartialEq)]
-		struct Dummy(i64);
-
-		impl_object_type! { for Dummy [(parents Basic)]:
-			"==" => function |this: &Object, args: Args| {
-				let rhs = args.arg(0)?;
-				this.try_downcast_and_then(|this: &Self| {
-					rhs.try_downcast_map(|rhs: &Self| Object::from(this == rhs))
-				})
+			impl_object_type! { for Dummy [(parents Basic)]:
+				"inspect" => function |_, _| Ok("foo".into())
 			}
+
+			<Dummy as crate::types::ObjectType>::initialize().unwrap();
+
+			assert_eq!(
+				Object::from(Dummy)
+					.call_attr_lit(INSPECT, &[]).unwrap()
+					.call_downcast_map(Text::clone).unwrap(),
+				*"foo"
+			);
+
+			assert_call_eq!(Basic::qs_at_text(Dummy) -> Text, *"foo");
+			assert_call_eq!(Basic::qs_at_text(Dummy, 13) -> Text, *"foo");
+
+			assert_call_idempotent!(Basic::qs_at_text(Dummy) -> Dummy, Dummy);
 		}
 
-		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		#[test]
+		fn eql() {
+			let obj1 = Object::from(Basic);
+			let obj2 = Object::from(Basic);
 
-		let obj1 = &Object::from(Dummy(12));
-		let obj2 = &Object::from(Dummy(12));
-		let obj3 = &Object::from(Dummy(14));
-		assert_downcast_eq!(Boolean; obj1.call_attr_lit(EQL, &[obj1]).unwrap(), true);
-		assert_downcast_eq!(Boolean; obj1.call_attr_lit(EQL, &[obj2]).unwrap(), true);
-		assert_downcast_eq!(Boolean; obj1.call_attr_lit(EQL, &[obj3]).unwrap(), false);
+			assert_call_eq!(Basic::qs_eql(obj1.clone(), obj1.clone()) -> Boolean, true);
+			assert_call_eq!(Basic::qs_eql(obj1.clone(), obj2.clone()) -> Boolean, false);
+			assert_call_eq!(Basic::qs_eql(obj1.clone(), obj1.clone(), obj2.clone()) -> Boolean, true);
 
-		assert_downcast_eq!(Boolean; Basic::qs_neq(obj1, args!(obj1.clone())).unwrap(), false);
-		assert_downcast_eq!(Boolean; Basic::qs_neq(obj1, args!(obj2.clone())).unwrap(), false);
-		assert_downcast_eq!(Boolean; Basic::qs_neq(obj1, args!(obj3.clone())).unwrap(), true);		
-
-		assert_missing_parameter_old!(Basic::qs_eql(obj1, args!()), 0);
-		assert_downcast_eq!(Boolean;
-			Basic::qs_neq(obj1, args!(obj3.clone(), obj1.clone())).unwrap(), true);
-	}
-
-	#[test]
-	fn not() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
-		#[derive(Debug, Clone)]
-		struct Dummy(bool);
-
-		impl_object_type! { for Dummy [(parents Basic)]:
-			"@bool" => function |this: &Object, _: Args| {
-				this.try_downcast_map(|this: &Self| Object::from(this.0))
-			}
+			assert_call_missing_parameter!(Basic::qs_eql(obj1.clone()), 0);
+			assert_call_idempotent!(Basic::qs_eql(obj1, obj2) -> Basic, Basic);
 		}
 
-		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		#[test]
+		fn neq() {
+			#[derive(Debug, Clone, PartialEq)]
+			struct Dummy(i64);
 
-		assert_downcast_eq!(Boolean; Basic::qs_not(&Dummy(true).into(), args!()).unwrap(), false);
-		assert_downcast_eq!(Boolean; Basic::qs_not(&Dummy(false).into(), args!()).unwrap(), true);
-
-		assert_downcast_eq!(Boolean; Basic::qs_not(&Dummy(false).into(), args!(true)).unwrap(), true);
-	}
-
-	#[test]
-	fn hash() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
-		let obj1 = &Object::from(Basic);
-		let obj2 = &Object::from(Basic);
-
-		let hash1 = Basic::qs_hash(obj1, args!()).unwrap();
-		// make sure repeated hashes are the same.
-		assert_downcast_both_eq!(Number; hash1, Basic::qs_hash(obj1, args!()).unwrap());
-		// make sure two hashes aren't identical
-		assert_downcast_both_ne!(Number; hash1, Basic::qs_hash(obj2, args!()).unwrap());
-
-		assert_downcast_both_eq!(Number; hash1, Basic::qs_hash(obj1, args!(obj2.clone())).unwrap());
-	}
-
-	#[test]
-	fn clone() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
-
-		#[derive(Debug, Clone, PartialEq)]
-		struct Dummy(i32);
-
-		impl_object_type! { for Dummy [(parents Basic)]:
-			"==" => function |this: &Object, args: Args| {
-				this.try_downcast_and_then(|this: &Self|
-					args.arg(0)?.try_downcast_map(|rhs: &Self| this == rhs).map(Object::from)
-				)
+			impl_object_type! { for Dummy [(parents Basic)]:
+				"==" => function |this: &Object, args: Args| {
+					let rhs = args.arg(0)?;
+					this.try_downcast_and_then(|this: &Dummy| {
+						rhs.try_downcast_map(|rhs: &Dummy| Object::from(this == rhs))
+					})
+				}
 			}
+
+			<Dummy as crate::types::ObjectType>::initialize().unwrap();
+
+			let obj1 = Object::from(Dummy(12));
+			let obj2 = Object::from(Dummy(12));
+			let obj3 = Object::from(Dummy(14));
+
+			assert_eq!(
+				obj1.call_attr_lit(EQL, &[&obj1]).unwrap()
+					.call_downcast_map(Boolean::clone).unwrap()
+					.into_inner(),
+				true
+			);
+
+			assert_eq!(
+				obj1.call_attr_lit(EQL, &[&obj2]).unwrap()
+					.call_downcast_map(Boolean::clone).unwrap()
+					.into_inner(),
+				true
+			);
+
+			assert_eq!(
+				obj1.call_attr_lit(EQL, &[&obj3]).unwrap()
+					.call_downcast_map(Boolean::clone).unwrap()
+					.into_inner(),
+				false
+			);
+
+			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj1.clone()) -> Boolean, false);
+			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj2.clone()) -> Boolean, false);
+			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj3.clone()) -> Boolean, true);		
+			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj2.clone(), obj3.clone()) -> Boolean, false);
+
+			assert_call_missing_parameter!(Basic::qs_eql(obj1.clone()), 0);
+			assert_call_idempotent!(Basic::qs_eql(obj1, obj2) -> Dummy, Dummy(12));
 		}
 
-		<Dummy as crate::types::ObjectType>::_wait_for_setup_to_finish();
+		#[test]
+		fn not() {
+			#[derive(Debug, Clone, PartialEq)]
+			struct Dummy(bool);
 
-		let obj = &Object::from(Dummy(12));
-		let clone = Basic::qs_clone(obj, args!()).unwrap();
+			impl_object_type! { for Dummy [(parents Basic)]:
+				"@bool" => function |this: &Object, _: Args| {
+					this.try_downcast_map(|this: &Dummy| Object::from(this.0))
+				}
+			}
 
-		assert!(!obj.is_identical(&clone));
-		assert!(obj.eq_obj(&clone).unwrap());
+			<Dummy as crate::types::ObjectType>::initialize().unwrap();
 
-	}
-	#[test]
-	fn itself() {
-		<Basic as crate::types::ObjectType>::_wait_for_setup_to_finish();
+			assert_call_eq!(Basic::qs_not(Dummy(true)) -> Boolean, false);
+			assert_call_eq!(Basic::qs_not(Dummy(false)) -> Boolean, true);
+			assert_call_eq!(Basic::qs_not(Dummy(false), Dummy(true)) -> Boolean, true);
 
-		let obj = &Object::from(Basic);
-		assert!(obj.is_identical(&Basic::qs_itself(obj, args!()).unwrap()));
+			assert_call_idempotent!(Basic::qs_not(Dummy(true)) -> Dummy, Dummy(true));
+		}
+
+
+		#[test]
+		fn hash() {
+			let obj1 = Object::from(Basic);
+			let obj2 = Object::from(Basic);
+
+			let hash = Basic::qs_hash(&obj1, args!()).unwrap()
+				.call_downcast_map(Number::clone).unwrap();
+			// make sure repeated hashes are the same.
+			assert_eq!(hash, call_unwrap!(Basic::qs_hash(obj1) -> Number; Number::clone));
+			// make sure two hashes aren't identical for the same object.
+			assert_ne!(hash, call_unwrap!(Basic::qs_hash(obj2) -> Number; Number::clone));
+
+			assert_call_idempotent!(Basic::qs_hash(Basic));
+		}
+
+		#[test]
+		fn clone() {
+			#[derive(Debug, Clone, PartialEq)]
+			struct Dummy(i32);
+
+			impl_object_type! { for Dummy [(parents Basic)]:
+				"==" => function |this: &Object, args: Args| {
+					this.try_downcast_and_then(|this: &Dummy|
+						args.arg(0)?.try_downcast_map(|rhs: &Dummy| this == rhs).map(Object::from)
+					)
+				}
+			}
+
+			<Dummy as crate::types::ObjectType>::initialize().unwrap();
+
+			let obj = &Object::from(Dummy(12));
+			let clone = Basic::qs_clone(obj, args!()).unwrap();
+
+			assert!(!obj.is_identical(&clone));
+			assert!(obj.eq_obj(&clone).unwrap());
+
+		}
+
+		#[test]
+		fn itself() {
+			let obj = Object::from(Basic);
+			assert!(obj.is_identical(&Basic::qs_itself(&obj, args!()).unwrap()));
+			assert!(!obj.is_identical(&Basic::qs_itself(&Basic.into(), args!()).unwrap()));
+		}
 	}
 }
-
-
-
-
