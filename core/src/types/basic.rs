@@ -83,7 +83,7 @@ impl Basic {
 }
 
 impl_object_type!{
-for Basic [(parents super::Pristine)]:
+for Basic [(parents super::Kernel)]:
 	"@bool" => function Basic::qs_at_bool,
 	"@text" => function Basic::qs_at_text,
 	"==" => function Basic::qs_eql,
