@@ -77,7 +77,7 @@ impl<T: Sharable + ?Sized> Clone for SharedCow<T> {
 
 		match ret {
 			Some(clone) => clone,
-			None => unsafe { unreachable_debug_or_unchecked!() }
+			None => unreachable!("we set it to `Some` either way?")
 		}
 	}
 }

@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::error::{ValueError};
+use crate::error::ValueError;
 use crate::literals::{Literal, __THIS__, __STACK__};
 use crate::types::{Number, List, Boolean, Regex};
 use crate::Binding;
@@ -109,12 +109,6 @@ impl From<Literal> for Object {
 	#[inline]
 	fn from(txt: Literal) -> Self {
 		Text::from(txt).into()
-	}
-}
-
-impl crate::ToObject for str {
-	fn to_object(&self) -> Object {
-		Object::from(Text::from(self.to_string()))
 	}
 }
 

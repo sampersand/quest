@@ -7,7 +7,7 @@ use std::ops;
 use crate::{Object, Args};
 use crate::types::{Text, Boolean};
 use std::hash::{Hash, Hasher};
-use crate::error::{ValueError};
+use crate::error::{TypeError, ValueError};
 
 /// The type used by [`Number`] to keep track of integers.
 pub type IntegerType = i64;
@@ -22,7 +22,6 @@ pub type FloatType = f64;
 /// numbers, but the bitwise operations will raise [`NotAnInteger`] if performed with non-integers.
 #[derive(Clone, Copy)]
 pub struct Number(Inner);
-
 
 // note: to ensure consistancy, there won't ever be a `Float` that has an integer within it;
 // all integer `FloatType`s (eg `2.0`) are converted to `IntegerType` first.
@@ -701,7 +700,7 @@ impl Number {
 		this.try_downcast_and_then(|this: &Self| {
 			if let Ok(radix) = args.arg(0) {
 				this.to_string_radix(radix.call_downcast_map(Self::clone)?.try_into()?)
-					.map_err(|err| crate::error::TypeError::Messaged(err.to_string()))
+					.map_err(|err| TypeError::Messaged(err.to_string()))
 					.map_err(crate::Error::from)
 					.map(Object::from)
 			} else {
@@ -1126,6 +1125,7 @@ mod tests {
 		assert_eq!(x, x);
 	}
 
+	#[allow(clippy::float_cmp)]
 	mod qs {
 		use super::*;
 
@@ -1511,7 +1511,7 @@ mod tests {
 		fn add() {
 			assert_call_eq!(Number::qs_add(12, 19) -> Number, 12 + 19);
 			assert_call_eq!(Number::qs_add(12, -123) -> Number, 12 + -123);
-			assert_call_eq!(Number::qs_add(0, -123) -> Number, 0 + -123);
+			assert_call_eq!(Number::qs_add(0, -123) -> Number, -123);
 			assert_call_eq!(Number::qs_add(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_add(-123, Number::INF) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_add(Number::INF, Number::INF) -> Number, Number::INF);
@@ -1560,7 +1560,7 @@ mod tests {
 		fn sub() {
 			assert_call_eq!(Number::qs_sub(12, 19) -> Number, 12 - 19);
 			assert_call_eq!(Number::qs_sub(12, -123) -> Number, 12 - -123);
-			assert_call_eq!(Number::qs_sub(0, -123) -> Number, 0 - -123);
+			assert_call_eq!(Number::qs_sub(0, -123) -> Number, 123);
 			assert_call_eq!(Number::qs_sub(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_sub(-123, Number::INF) -> Number, -Number::INF);
 			assert_call!(Number::qs_sub(Number::INF, Number::INF) -> Number; Number::is_nan);
@@ -1574,25 +1574,25 @@ mod tests {
 				let f1 = random::<FloatType>();
 				let f2 = random::<FloatType>();
 
-				assert_call_eq!(Number::qs_sub(n1, n1) -> Number, n1.wrapping_sub(n1));
+				assert_call_eq!(Number::qs_sub(n1, n1) -> Number, 0);
 				assert_call_eq!(Number::qs_sub(n1, n2) -> Number, n1.wrapping_sub(n2));
 				assert_call_eq!(Number::qs_sub(n1, f1) -> Number, n1 as FloatType - f1);
 				assert_call_eq!(Number::qs_sub(n1, f2) -> Number, n1 as FloatType - f2);
 
 				assert_call_eq!(Number::qs_sub(n2, n1) -> Number, n2.wrapping_sub(n1));
-				assert_call_eq!(Number::qs_sub(n2, n2) -> Number, n2.wrapping_sub(n2));
+				assert_call_eq!(Number::qs_sub(n2, n2) -> Number, 0);
 				assert_call_eq!(Number::qs_sub(n2, f1) -> Number, n2 as FloatType - f1);
 				assert_call_eq!(Number::qs_sub(n2, f2) -> Number, n2 as FloatType - f2);
 
 				assert_call_eq!(Number::qs_sub(f1, n1) -> Number, f1 - n1 as FloatType);
 				assert_call_eq!(Number::qs_sub(f1, n2) -> Number, f1 - n2 as FloatType);
-				assert_call_eq!(Number::qs_sub(f1, f1) -> Number, f1 - f1);
+				assert_call_eq!(Number::qs_sub(f1, f1) -> Number, 0);
 				assert_call_eq!(Number::qs_sub(f1, f2) -> Number, f1 - f2);
 
 				assert_call_eq!(Number::qs_sub(f2, n1) -> Number, f2 - n1 as FloatType);
 				assert_call_eq!(Number::qs_sub(f2, n2) -> Number, f2 - n2 as FloatType);
 				assert_call_eq!(Number::qs_sub(f2, f1) -> Number, f2 - f1);
-				assert_call_eq!(Number::qs_sub(f2, f2) -> Number, f2 - f2);
+				assert_call_eq!(Number::qs_sub(f2, f2) -> Number, 0);
 			}
 
 			assert_call_missing_parameter!(Number::qs_sub(0), 0);
@@ -1609,7 +1609,7 @@ mod tests {
 		fn mul() {
 			assert_call_eq!(Number::qs_mul(12, 19) -> Number, 12 * 19);
 			assert_call_eq!(Number::qs_mul(12, -123) -> Number, 12 * -123);
-			assert_call_eq!(Number::qs_mul(0, -123) -> Number, 0 * -123);
+			assert_call_eq!(Number::qs_mul(0, -123) -> Number, 0);
 			assert_call_eq!(Number::qs_mul(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_mul(-123, Number::INF) -> Number, -Number::INF);
 			assert_call_eq!(Number::qs_mul(Number::INF, Number::INF) -> Number, Number::INF);
@@ -1658,7 +1658,7 @@ mod tests {
 		fn call() {
 			assert_call_eq!(Number::qs_call(12, 19) -> Number, 12 * 19);
 			assert_call_eq!(Number::qs_call(12, -123) -> Number, 12 * -123);
-			assert_call_eq!(Number::qs_call(0, -123) -> Number, 0 * -123);
+			assert_call_eq!(Number::qs_call(0, -123) -> Number, 0);
 			assert_call_eq!(Number::qs_call(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_call(-123, Number::INF) -> Number, -Number::INF);
 			assert_call_eq!(Number::qs_call(Number::INF, Number::INF) -> Number, Number::INF);
@@ -1725,25 +1725,25 @@ mod tests {
 					continue;
 				}
 
-				assert_call_eq!(Number::qs_div(n1, n1) -> Number, n1 as FloatType / n1 as FloatType);
+				assert_call_eq!(Number::qs_div(n1, n1) -> Number, 1);
 				assert_call_eq!(Number::qs_div(n1, n2) -> Number, n1 as FloatType / n2 as FloatType);
 				assert_call_eq!(Number::qs_div(n1, f1) -> Number, n1 as FloatType / f1);
 				assert_call_eq!(Number::qs_div(n1, f2) -> Number, n1 as FloatType / f2);
 
 				assert_call_eq!(Number::qs_div(n2, n1) -> Number, n2 as FloatType / n1 as FloatType);
-				assert_call_eq!(Number::qs_div(n2, n2) -> Number, n2 as FloatType / n2 as FloatType);
+				assert_call_eq!(Number::qs_div(n2, n2) -> Number, 1);
 				assert_call_eq!(Number::qs_div(n2, f1) -> Number, n2 as FloatType / f1);
 				assert_call_eq!(Number::qs_div(n2, f2) -> Number, n2 as FloatType / f2);
 
 				assert_call_eq!(Number::qs_div(f1, n1) -> Number, f1 / n1 as FloatType);
 				assert_call_eq!(Number::qs_div(f1, n2) -> Number, f1 / n2 as FloatType);
-				assert_call_eq!(Number::qs_div(f1, f1) -> Number, f1 / f1);
+				assert_call_eq!(Number::qs_div(f1, f1) -> Number, 1);
 				assert_call_eq!(Number::qs_div(f1, f2) -> Number, f1 / f2);
 
 				assert_call_eq!(Number::qs_div(f2, n1) -> Number, f2 / n1 as FloatType);
 				assert_call_eq!(Number::qs_div(f2, n2) -> Number, f2 / n2 as FloatType);
 				assert_call_eq!(Number::qs_div(f2, f1) -> Number, f2 / f1);
-				assert_call_eq!(Number::qs_div(f2, f2) -> Number, f2 / f2);
+				assert_call_eq!(Number::qs_div(f2, f2) -> Number, 1);
 			}
 
 			assert_call_missing_parameter!(Number::qs_div(0), 0);
@@ -1818,8 +1818,8 @@ mod tests {
 		#[test]
 		fn pow() {
 			assert_call_eq!(Number::qs_pow(149, 19) -> Number, (149 as IntegerType).wrapping_pow(19));
-			assert_call_eq!(Number::qs_pow(12, -123) -> Number, (12 as FloatType).powf(-123.0));
-			assert_call_eq!(Number::qs_pow(0, -123) -> Number, (0 as FloatType).powf(-123.0));
+			assert_call_eq!(Number::qs_pow(12, -123) -> Number, (12.0 as FloatType).powf(-123.0));
+			assert_call_eq!(Number::qs_pow(0, -123) -> Number, (0.0 as FloatType).powf(-123.0));
 			assert_call_eq!(Number::qs_pow(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_pow(0.1, Number::INF) -> Number, 0);
 			assert_call_eq!(Number::qs_pow(1.1, Number::INF) -> Number, Number::INF);

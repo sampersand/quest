@@ -1,17 +1,31 @@
 use crate::literals::Literal;
 use std::fmt::{self, Display, Formatter};
 
+/// The type was wrong for a given operation.
 #[derive(Debug, Clone)]
 pub enum TypeError {
-	WrongType { expected: &'static str, got: &'static str },
-	ConversionReturnedBadType { func: Literal, expected: &'static str, got: &'static str },
+	/// An invalid type was used.
+	// todo: remove this entirely.
+	WrongType { /** */ expected: &'static str, /** */ got: &'static str },
+	/// A conversion returned a bad type.
+	ConversionReturnedBadType {
+		/// The conversion function.
+		func: Literal,
+		/// The type that was expected after the function was called.
+		expected: &'static str,
+		/// The type that was actually received after the function was called.
+		got: &'static str
+	},
+	/// A number was used and wasn't actually an integer.
 	NotAnInteger(crate::types::Number),
+	/// Some other message.
 	Messaged(String)
 }
 
 impl From<TypeError> for super::Error {
-	fn from(key_error: TypeError) -> Self {
-		Self::TypeError(key_error)
+	#[inline]
+	fn from(err: TypeError) -> Self {
+		Self::TypeError(err)
 	}
 }
 

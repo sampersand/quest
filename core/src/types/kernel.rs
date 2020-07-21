@@ -1,5 +1,5 @@
 use crate::{Args, Object, Error, Result};
-use crate::types::{Boolean, Text, Number};
+use crate::types::{Boolean, Text, Null, Number};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Kernel;
@@ -65,7 +65,7 @@ impl Kernel {
 		// })
 	}
 
-	pub fn qs_loop(_: &Object, args: Args) -> Result<!> {
+	pub fn qs_loop(_: &Object, args: Args) -> Result<Object> {
 		let body = args.arg(0)?;
 		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
 			// b.set_attr_old("name", Object::from("loop"))?;
@@ -247,7 +247,7 @@ mod tests {
 			}
 		}
 
-		Kernel::_wait_for_setup_to_finish();
+		crate::initialize();
 
 		assert_exists_eq!(
 			"true" Boolean, Boolean::new(true),
@@ -259,7 +259,7 @@ mod tests {
 	#[test]
 	fn classes_exist() {
 		use crate::types::*;
-		Kernel::_wait_for_setup_to_finish();
+		crate::initialize();
 
 		macro_rules! assert_mapping_eq {
 			($($key:literal $class:ty),*) => {

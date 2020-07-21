@@ -72,6 +72,10 @@ mod tests {
 	#[test]
 	fn call_downcast_map() {
 		use crate::{Error, error::KeyError};
+		<Dummy as crate::types::ObjectType>::initialize().unwrap();
+		<Dummy2 as crate::types::ObjectType>::initialize().unwrap();
+		<Dummy3 as crate::types::ObjectType>::initialize().unwrap();
+
 		Object::from(Dummy).call_downcast_map(|_: &Dummy| {}).unwrap();
 		Object::from(Dummy).call_downcast_map(|_: &Dummy2| {}).unwrap();
 

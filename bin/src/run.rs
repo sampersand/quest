@@ -30,7 +30,7 @@ pub fn run_repl(args: Args) -> Result<Object> {
 
 pub fn run<R: Runner>(runner: R, args: Args) -> quest_core::Result<Object> {
 	let main = Object::new(quest_core::types::Scope);
-	main.set_attr_lit("name", Object::from("main"));
+	main.set_attr_lit("name", Object::from("main"))?;
 
 	Binding::new_stackframe(Some(main), args, move |_| {
 		runner.run().map_err(|err| quest_core::Error::Boxed(Box::new(err)))

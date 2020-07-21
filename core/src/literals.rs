@@ -1,8 +1,14 @@
+//! The list of literal attributes used within quest.
+
+/// A literal attribute, used internally to speed up field access.
 pub type Literal = &'static str;
 
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
 		$(
+			#[doc = "The attribute `"]
+			#[doc = $key]
+			#[doc = "`."]
 			pub const $name: Literal = $key;
 		)*
 	};

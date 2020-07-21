@@ -1,7 +1,6 @@
 use crate::Result;
 use crate::stream::Stream;
 use crate::token::{Token, Tokenizable};
-use quest_core::Object;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
@@ -142,12 +141,5 @@ impl Ord for Operator {
 	#[inline]
 	fn cmp(&self, rhs: &Operator) -> std::cmp::Ordering {
 		self.precedence().cmp(&rhs.precedence())
-	}
-}
-
-impl quest_core::ToObject for Operator {
-	#[inline]
-	fn to_object(&self) -> Object {
-		Object::from(self.to_string())
 	}
 }

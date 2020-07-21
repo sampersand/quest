@@ -128,7 +128,7 @@ impl<'o> Args<'_, 'o> {
 		if let Some(rng) = self.0.get(idx.clone()) {
 			Ok(rng.into())
 		} else {
-			Err(KeyError::BadSlice { slice: format!("{:?}", idx), len: self.0.len() })
+			Err(KeyError::BadSlice { range: format!("{:?}", idx), len: self.0.len() })
 		}
 	}
 }
