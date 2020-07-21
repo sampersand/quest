@@ -253,7 +253,8 @@ impl Object {
 		V: Into<Value>
 	{
 		// TODO: this will just set a literal value even if the corresponding nonliteral works.
-		Ok(self.0.attrs.set_lit(attr, value.into()))
+		self.0.attrs.set_lit(attr, value.into());
+		Ok(())
 	}
 
 	/// Assigns the attribute `attr` to `value`.
