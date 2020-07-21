@@ -23,7 +23,6 @@ pub type FloatType = f64;
 #[derive(Clone, Copy)]
 pub struct Number(Inner);
 
-
 // note: to ensure consistancy, there won't ever be a `Float` that has an integer within it;
 // all integer `FloatType`s (eg `2.0`) are converted to `IntegerType` first.
 #[derive(Clone, Copy)]
