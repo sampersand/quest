@@ -1126,6 +1126,7 @@ mod tests {
 		assert_eq!(x, x);
 	}
 
+	#[allow(clippy::float_cmp)]
 	mod qs {
 		use super::*;
 

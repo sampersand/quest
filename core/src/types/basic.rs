@@ -192,7 +192,7 @@ mod tests {
 			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj1.clone()) -> Boolean, false);
 			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj2.clone()) -> Boolean, false);
 			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj3.clone()) -> Boolean, true);		
-			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj2.clone(), obj3.clone()) -> Boolean, false);
+			assert_call_eq!(Basic::qs_neq(obj1.clone(), obj2.clone(), obj3) -> Boolean, false);
 
 			assert_call_missing_parameter!(Basic::qs_eql(obj1.clone()), 0);
 			assert_call_idempotent!(Basic::qs_eql(obj1, obj2) -> Dummy, Dummy(12));
