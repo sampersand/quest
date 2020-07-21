@@ -5,25 +5,32 @@ pub fn initialize() {
 	use quest_core::{Object, types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding}};
 	use crate::expression::Executable;
 
-	Kernel::mapping().set_attr_lit("Block", Block::mapping())
-		.expect("couldn't defined Block");
+	use std::sync::Once;
 
-	Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
-		fn execute_text(text: String) -> quest_core::Result<Object> {
-			Expression::parse_stream(stream::BufStream::from(text).tokens())
-				.map_err(|err| err.to_string())?
-				.execute()
-				.map_err(Into::into)
-		}
+	static INITIALIZE: Once = Once::new();
 
-		this.try_downcast_and_then(|this: &Text| {
-			if let Ok(binding) = args.arg(0) {
-				Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
-			} else {
-				execute_text(this.to_string())
+	INITIALIZE.call_once(|| {
+		Block::initialize().expect("couldn't initialize block");
+
+		Kernel::mapping().set_attr_lit("Block", Block::mapping()).expect("couldn't defined Block");
+
+		Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
+			fn execute_text(text: String) -> quest_core::Result<Object> {
+				Expression::parse_stream(stream::BufStream::from(text).tokens())
+					.map_err(|err| err.to_string())?
+					.execute()
+					.map_err(Into::into)
 			}
-		})
-	})).expect("couldn't define `eval`");
+
+			this.try_downcast_and_then(|this: &Text| {
+				if let Ok(binding) = args.arg(0) {
+					Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
+				} else {
+					execute_text(this.to_string())
+				}
+			})
+		})).expect("couldn't define `eval`");
+	});
 }
 
 #[macro_use]
