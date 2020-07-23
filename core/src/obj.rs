@@ -12,6 +12,7 @@ mod data;
 mod attributes;
 use attributes::{Attributes, Value};
 use data::Data;
+pub use data::{ConvertToDataType, DataType};
 
 /// The struct that represents any type within Quest.
 #[derive(Clone)]
@@ -47,11 +48,6 @@ impl Debug for Object {
 	}
 }
 
-
-impl From<!> for Object {
-	fn from(x: !) -> Self { x }
-}
-
 impl<T: Any + ObjectType> From<Option<T>> for Object {
 	#[inline]
 	fn from(data: Option<T>) -> Self {
@@ -75,7 +71,7 @@ impl Object {
 	#[inline]
 	pub fn new_with_parent<T, P>(data: T, parents: P) -> Self
 	where
-		T: Any + Debug + Send + Sync + Clone,
+		T: data::ConvertToDataType,
 		P: Into<attributes::Parents>
 	{
 		// println!("creating new object: {:?} ({:?})", data, type_name<T>());
@@ -145,7 +141,7 @@ impl Object {
 		T: Any,
 		F: FnOnce(&T) -> O,
 	{
-		self.try_downcast_and_then::<T, O, !, _>(|x| Ok(f(x)))
+		self.try_downcast_and_then(|x| Ok(f(x)))
 	}
 
 	/// Tries to downcast this object as a mutable `T`, and if it is, calls `f`.
@@ -157,19 +153,18 @@ impl Object {
 		T: Any,
 		F: FnOnce(&mut T) -> O
 	{
-		self.try_downcast_mut_and_then::<T, O, !, _>(|x| Ok(f(x)))
+		self.try_downcast_mut_and_then(|x| Ok(f(x)))
 	}
 
 	/// Tries to downcast this object as a `T`, and if it is, calls `f`.
 	///
 	/// If the object isn't a `T`, a [`TypeError`] is returned.
-	pub fn try_downcast_and_then<T, O, E, F>(&self, f: F) -> crate::Result<O>
+	pub fn try_downcast_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Any,
-		E: Into<crate::Error>,
-		F: FnOnce(&T) -> Result<O, E>,
+		F: FnOnce(&T) -> crate::Result<O>,
 	{
-		self.downcast_and_then(|opt| f(opt).map_err(Into::into))
+		self.downcast_and_then(f)
 			.unwrap_or_else(|| Err(TypeError::WrongType {
 				expected: type_name::<T>(),
 				got: self.typename()
@@ -179,13 +174,12 @@ impl Object {
 	/// Tries to downcast this object as a mutable `T`, and if it is, calls `f`.
 	///
 	/// If the object isn't a `T`, a [`TypeError`] is returned.
-	pub fn try_downcast_mut_and_then<T, O, E, F>(&self, f: F) -> crate::Result<O>
+	pub fn try_downcast_mut_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Any,
-		E: Into<crate::Error>,
-		F: FnOnce(&mut T) -> Result<O, E>
+		F: FnOnce(&mut T) -> crate::Result<O>
 	{
-		self.downcast_mut_and_then(|opt| f(opt).map_err(Into::into))
+		self.downcast_mut_and_then(f)
 			.unwrap_or_else(|| Err(TypeError::WrongType {
 				expected: type_name::<T>(),
 				got: self.typename()
@@ -201,7 +195,7 @@ impl Object {
 		T: Any,
 		F: FnOnce(&T) -> R
 	{
-		self.0.data.downcast_and_then(|x| x.map(f))
+		self.0.data.downcast_and_then(f)
 	}
 
 	/// Tries to downcast this object as a mutable `T`, and if it is, calls `f`.
@@ -213,17 +207,7 @@ impl Object {
 		T: Any,
 		F: FnOnce(&mut T) -> R
 	{
-		self.0.data.downcast_mut_and_then(|x| x.map(f))
-	}
-
-	// this is soft deprecated
-	#[inline]
-	pub(crate) unsafe fn downcast_unchecked_and_then<T, R, F>(&self, f: F) -> R
-	where
-		T: Any, 
-		F: FnOnce(&T) -> R
-	{
-		self.0.data.downcast_unchecked_and_then(f)
+		self.0.data.downcast_mut_and_then(f)
 	}
 }
 

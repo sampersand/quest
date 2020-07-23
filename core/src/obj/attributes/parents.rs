@@ -97,6 +97,7 @@ impl Parents {
 
 		Ok(())
 	}
+
 	pub fn to_object(&self) -> Object {
 		let mut inner = self.0.write();
 		match *inner {

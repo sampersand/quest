@@ -6,7 +6,7 @@
 //! - [`quest-parser`](#TODO) for parsing quest
 //! - [`quest-bin`](#TODO) the quest executable
 #![allow(clippy::unnested_or_patterns, clippy::pub_enum_variant_names)]
-#![feature(never_type)]
+
 
 #![allow(
 	// TODO
@@ -19,8 +19,8 @@ use mimalloc::MiMalloc;
 static GLOBAL: MiMalloc = MiMalloc;
 
 mod shared_cow;
-mod obj;
 #[doc(hidden)]
+pub mod obj;
 pub mod utils;
 pub mod error;
 pub mod types;
@@ -30,7 +30,6 @@ use shared_cow::SharedCow;
 pub use obj::Object;
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
-
 
 /// Start up Quest by initializing all the types.
 pub fn initialize() {

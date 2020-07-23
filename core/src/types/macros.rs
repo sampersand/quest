@@ -119,11 +119,21 @@ macro_rules! args {
 ///
 /// This is soft-deprecated.
 macro_rules! impl_object_type {
-	(@CONVERTIBLE $_obj:ty;) => {};
-	(@CONVERTIBLE $obj:ty; (convert $convert_func:expr) $($_rest:tt)*) => {
+	(@CONVERTIBLE $obj:ty;) => {
+		impl $crate::obj::ConvertToDataType for $obj {
+			fn into_datatype(self) -> $crate::obj::DataType {
+				// $crate::obj::DataType::any(self)
+				unimplemented!()
+			}
+		}
+	};
+
+	// (@CONVERTIBLE $_obj:ty; (no_convert) $($_ret:tt)*) => {};
+	(@CONVERTIBLE $obj:ty; (convert $convert_func:expr) $($rest:tt)*) => {
 		impl $crate::types::Convertible for $obj {
 			const CONVERT_FUNC: &'static str = $convert_func;
 		}
+		impl_object_type!(@CONVERTIBLE $obj; $($rest)*);
 	};
 	(@CONVERTIBLE $obj:ty; $_b:tt $($rest:tt)*) => {
 		impl_object_type!(@CONVERTIBLE $obj; $($rest)*);
@@ -194,7 +204,7 @@ macro_rules! impl_object_type {
 			fn mapping() -> $crate::Object {
 				lazy_static::lazy_static! {
 					static ref CLASS: $crate::Object = $crate::Object::new_with_parent(
-						$crate::types::Class(stringify!($obj)),
+						$crate::types::Class::new(stringify!($obj)),
 						impl_object_type!(@SET_PARENT class $($args)*)
 					);
 				}

@@ -14,7 +14,7 @@ impl Display for ParenType {
 
 impl ParenType {
 	#[must_use]
-	pub const fn left(self) -> char {
+	pub fn left(self) -> char {
 		match self {
 			Self::Round  => '(',
 			Self::Square => '[',
@@ -23,7 +23,7 @@ impl ParenType {
 	}
 
 	#[must_use]
-	pub const fn right(self) -> char {
+	pub fn right(self) -> char {
 		match self {
 			Self::Round  => ')',
 			Self::Square => ']',

@@ -314,9 +314,9 @@ impl Text {
 	}
 
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
-		this.try_downcast_and_then::<_, _, crate::Error, _>(|this: &Self| {
+		this.try_downcast_and_then(|this: &Self| {
 			let start = args.arg(0)?
-				.try_downcast_and_then(|n: &Number| isize::try_from(*n))?;
+				.try_downcast_and_then(|n: &Number| Ok(isize::try_from(*n)?))?;
 
 			let end = args.arg(1)
 				.ok()
@@ -370,7 +370,7 @@ impl Text {
 	pub fn qs_pop(this: &Object, _args: Args) -> crate::Result<Object> {
 		this.try_downcast_mut_map(|this: &mut Self| {
 			this.pop()
-				.map(String::from)
+				.map(|c| c.to_string())
 				.map(Object::from)
 				.unwrap_or_default()
 		})

@@ -862,7 +862,7 @@ impl Number {
 	///
 	/// If `this` isn't a whole number, a [`ValueError`] is raised.
 	pub fn qs_bitnot(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_and_then(|this: &Self| (!*this).map(Object::from))
+		this.try_downcast_and_then(|this: &Self| Ok((!*this)?.into()))
 	}
 
 	/// Bitwise AND of `this` and `other`.
@@ -874,7 +874,7 @@ impl Number {
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_and_then(|this: &Self| (*this & other).map(Object::from))
+		this.try_downcast_and_then(|this: &Self| Ok((*this & other)?.into()))
 	}
 
 	/// Bitwise AND of `this` and `other`, in place.
@@ -886,7 +886,7 @@ impl Number {
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitand_assign(other))
+		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_bitand_assign(other)?))
 			.map(|_| this.clone())
 	}
 
@@ -899,7 +899,7 @@ impl Number {
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_and_then(|this: &Self| (*this | other).map(Object::from))
+		this.try_downcast_and_then(|this: &Self| Ok((*this | other)?.into()))
 	}
 
 	/// Bitwise OR of `this` and `other`, in place.
@@ -911,7 +911,7 @@ impl Number {
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitor_assign(other))
+		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_bitor_assign(other)?))
 			.map(|_| this.clone())
 	}
 
@@ -924,7 +924,7 @@ impl Number {
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_and_then(|this: &Self| (*this ^ other).map(Object::from))
+		this.try_downcast_and_then(|this: &Self| Ok((*this ^ other)?.into()))
 	}
 
 	/// Bitwise XOR of `this` and `other`, in place.
@@ -936,7 +936,7 @@ impl Number {
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| this.try_bitxor_assign(other))
+		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_bitxor_assign(other)?))
 			.map(|_| this.clone())
 	}
 
@@ -949,7 +949,7 @@ impl Number {
 	pub fn qs_shl(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_and_then(|this: &Self| (*this << amnt).map(Object::from))
+		this.try_downcast_and_then(|this: &Self| Ok((*this << amnt)?.into()))
 	}
 
 	/// Shift `this` left by `amnt`, in place.
@@ -961,7 +961,7 @@ impl Number {
 	pub fn qs_shl_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| this.try_shl_assign(amnt))
+		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_shl_assign(amnt)?))
 			.map(|_| this.clone())
 	}
 
@@ -974,7 +974,7 @@ impl Number {
 	pub fn qs_shr(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_and_then(|this: &Self| (*this >> amnt).map(Object::from))
+		this.try_downcast_and_then(|this: &Self| Ok((*this >> amnt)?.into()))
 	}
 
 	/// Shift `this` right by `amnt`, in place.
@@ -986,7 +986,7 @@ impl Number {
 	pub fn qs_shr_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| this.try_shr_assign(amnt))
+		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_shr_assign(amnt)?))
 			.map(|_| this.clone())
 	}
 
@@ -1043,6 +1043,13 @@ impl Convertible for Number {
 	const CONVERT_FUNC: crate::literal::Literal = crate::literal::AT_NUM;
 }
 
+/*impl crate::obj::ConvertToDataType for Number {
+	#[inline]
+	fn into_datatype(self) -> crate::obj::DataType {
+		crate::obj::DataType::Number(self)
+	}
+}*/
+
 impl_object_type!{
 	for Number 
 {
@@ -1067,7 +1074,7 @@ impl_object_type!{
 	}
 }
 
-[(init_parent super::Basic super::Comparable) (parents super::Basic)]:
+[(init_parent super::Basic super::Comparable) (parents super::Basic) (no_convert)]:
 	"PI" => const Self::PI,
 	"E" => const Self::E,
 	"NAN" => const Self::NAN,

@@ -48,12 +48,6 @@ impl From<String> for Error {
 	fn from(err: String) -> Self { Error::Messaged(err) }
 }
 
-impl From<!> for Error {
-	fn from(x: !) -> Self {
-		x
-	}
-}
-
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {

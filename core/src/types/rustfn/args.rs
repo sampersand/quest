@@ -28,6 +28,16 @@ impl<'s, 'o: 's> Args<'s, 'o> {
 		self.0
 	}
 
+	#[inline]
+	pub fn len(&self) -> usize {
+		self.0.len()
+	}
+
+	#[inline]
+	pub fn is_empty(&self) -> bool {
+		self.0.is_empty()
+	}
+
 	pub fn iter<'a: 's>(&'a self) -> impl Iterator<Item=&'o Object> + 'a {
 		struct Iter<'s, 'o: 's>(std::slice::Iter<'s, &'o Object>);
 

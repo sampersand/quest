@@ -34,12 +34,11 @@ for BoundRustFn [(parents super::Basic)]:
 
 fn foreach<F>(this: &Object, block: Object, f: F) -> crate::Result<()>
 where
-	F: Fn(Object) + Send + Sync + 'static
+	F: Fn(Object) -> crate::Result<()> + Send + Sync + 'static
 {
 	let bound =
 		BoundRustFn(Arc::new(Box::new(move |obj| {
-			f(block.call_attr_lit("()", &[&obj])?);
-			Ok(())
+			f(block.call_attr_lit("()", &[&obj])?)
 		})));
 
 	let each = this.get_attr_lit("each")?;
@@ -54,7 +53,33 @@ impl Iterable {
 
 		let ret = Arc::new(Mutex::new(vec![]));
 		let ret2 = ret.clone();
-		foreach(this, block.clone(), move |obj| ret2.lock().push(obj))?;
+		foreach(this, block.clone(), move |obj| {
+			ret2.lock().push(obj);
+			Ok(())
+		})?;
+
+		match Arc::try_unwrap(ret) {
+			// no one else has a refrence, so we're all good.
+			Ok(mutex) => Ok(mutex.into_inner().into()),
+			// we have to clone it now. darn!
+			Err(arc) => {
+				println!("having to clone");
+				Ok(arc.lock().clone().into())
+			}
+		}
+	}
+
+	pub fn qs_select(this: &Object, args: Args) -> crate::Result<Object> {
+		let block = args.arg(0)?;
+
+		let ret = Arc::new(Mutex::new(vec![]));
+		let ret2 = ret.clone();
+		foreach(this, block.clone(), move |obj| {
+			if obj.call_downcast_map(crate::types::Boolean::clone)?.into_inner() {
+				ret2.lock().push(obj);
+			}
+			Ok(())
+		})?;
 
 		match Arc::try_unwrap(ret) {
 			// no one else has a refrence, so we're all good.
@@ -68,8 +93,8 @@ impl Iterable {
 	}
 }
 
-
 impl_object_type!{
 for Iterable [(parents super::Basic)]:
 	"map" => function Self::qs_map,
+	"select" => function Self::qs_select,
 }

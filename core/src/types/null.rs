@@ -93,6 +93,14 @@ impl Null {
 	}
 }
 
+
+/*impl crate::obj::ConvertToDataType for Null {
+	#[inline]
+	fn into_datatype(self) -> crate::obj::DataType {
+		crate::obj::DataType::Null(self)
+	}
+}*/
+
 impl_object_type!{
 for Null {
 	#[inline]
@@ -107,7 +115,7 @@ for Null {
 		NULL.deep_clone()
 	}
 }
-[(parents super::Basic)]:
+[(parents super::Basic) (no_convert)]:
 	"@text" => function Self::qs_at_text,
 	"inspect" => function Self::qs_inspect,
 	"@bool" => function Self::qs_at_bool,

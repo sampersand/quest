@@ -2,18 +2,14 @@
 // #![warn(missing_docs)]
 // #![allow(missing_docs)]
 
-use std::{fmt::Debug, any::Any};
-use crate::Object;
-
 #[macro_use]
 mod macros;
-
 mod convert;
 
 /// A trait representing the ability to have default associated attribuets.
-pub trait ObjectType : Debug + Any + Send + Sync + Clone {
+pub trait ObjectType : crate::obj::ConvertToDataType {
 	/// The list of attributes that objects of this type will have.
-	fn mapping() -> Object;
+	fn mapping() -> crate::Object;
 
 	/// initialize an object type's mapping.
 	fn initialize() -> crate::Result<()>;
@@ -24,8 +20,8 @@ pub trait ObjectType : Debug + Any + Send + Sync + Clone {
 	/// arg as [`Self::mapping()`](ObjectType::mapping), but it can be overwritten to perform
 	/// cacheing of intermediate results.
 	#[inline]
-	fn new_object(self) -> Object where Self: Sized {
-		Object::new_with_parent(self, vec![Self::mapping()])
+	fn new_object(self) -> crate::Object {
+		crate::Object::new_with_parent(self, vec![Self::mapping()])
 	}
 }
 
@@ -42,15 +38,13 @@ pub mod rustfn;
 
 mod null;
 mod boolean;
+mod class;
 pub mod number;
 mod text;
 pub mod regex;
 mod list;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct Class(pub &'static str);
-
-
+pub use class::Class;
 pub use convert::Convertible;
 pub use comparable::Comparable;
 pub use pristine::Pristine;

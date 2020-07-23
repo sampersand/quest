@@ -6,6 +6,11 @@ use crate::shared_cow::{SharedCow, Sharable};
 
 type AnyObj = dyn Any + Send + Sync;
 
+pub trait ConvertToDataType : Send + Sync + Clone + Debug + 'static {
+	fn into_datatype(self) -> DataType;
+}
+pub enum DataType {}
+
 pub(crate) struct OwnedAny<T: AsRef<AnyObj>> {
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result,
 	clone: fn(&dyn Any) -> Box<AnyObj>,
@@ -98,13 +103,13 @@ impl Data {
 		self.data.with_ref(|data| data.is::<T>())
 	}
 
-	pub fn downcast_and_then<T: Any, R, F: FnOnce(Option<&T>) -> R>(&self, f: F) -> R {
+	pub fn downcast_and_then<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> Option<R> {
 		if self.is_a::<T>() {
 			unsafe {
-				self.downcast_unchecked_and_then(|x| f(Some(x)))
+				Some(self.downcast_unchecked_and_then(f))
 			}
 		} else { 
-			f(None)
+			None
 		}
 	}
 
@@ -115,13 +120,13 @@ impl Data {
 		})
 	}
 
-	pub fn downcast_mut_and_then<T: Any, R, F: FnOnce(Option<&mut T>) -> R>(&self, f: F) -> R {
+	pub fn downcast_mut_and_then<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> Option<R> {
 		if self.is_a::<T>() {
 			unsafe {
-				self.downcast_mut_unchecked_and_then(|x| f(Some(x)))
+				Some(self.downcast_mut_unchecked_and_then(f))
 			}
 		} else { 
-			f(None)
+			None
 		}
 	}
 

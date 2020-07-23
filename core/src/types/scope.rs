@@ -49,7 +49,7 @@ for Scope {
 		// lazy_static! {
 			// static ref SCOPE: Object = Object::new_with_parent(Scope, vec![Scope::mapping()]);
 		// }
-		Object::new_with_parent(crate::types::Class("Scope"), vec![
+		Object::new_with_parent(crate::types::Class::new("Scope"), vec![
 			Scope::mapping(),
 			crate::types::Kernel::mapping()
 		])

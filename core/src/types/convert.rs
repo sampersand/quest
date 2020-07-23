@@ -14,25 +14,20 @@ impl Object {
 		T: Convertible + Any,
 		F: FnOnce(&T) -> O
 	{
-		self.call_downcast_and_then::<T, O, !, _>(|x| Ok(f(x)))
+		self.call_downcast_and_then(|x| Ok(f(x)))
 	}
 
-	pub fn call_downcast_and_then<T, O, E, F>(&self, f: F) -> crate::Result<O>
+	pub fn call_downcast_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Convertible + Any,
-		E: Into<crate::Error>,
-		F: FnOnce(&T) -> Result<O, E>,
+		F: FnOnce(&T) -> crate::Result<O>,
 	{
 		if self.is_a::<T>() {
-			unsafe {
-				self.downcast_unchecked_and_then(f).map_err(Into::into)
-			}
+			self.downcast_and_then(f).unwrap().map_err(Into::into)
 		} else {
 			self.call_attr_lit(T::CONVERT_FUNC, &[]).and_then(|obj| {
 				if obj.is_a::<T>() {
-					unsafe {
-						obj.downcast_unchecked_and_then(f).map_err(Into::into)
-					}
+					obj.downcast_and_then(f).unwrap()
 				} else {
 					Err(TypeError::ConversionReturnedBadType {
 						func: T::CONVERT_FUNC,

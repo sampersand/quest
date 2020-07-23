@@ -331,6 +331,13 @@ impl Convertible for Boolean {
 	const CONVERT_FUNC: &'static str = crate::literal::AT_BOOL;
 }
 
+/*impl crate::obj::ConvertToDataType for Boolean {
+	#[inline]
+	fn into_datatype(self) -> crate::obj::DataType {
+		crate::obj::DataType::Boolean(self)
+	}
+}*/
+
 impl_object_type!{
 for Boolean {
 	#[inline]
@@ -350,7 +357,7 @@ for Boolean {
 		}
 	}
 }
-[(parents super::Basic)]:
+[(parents super::Basic) (no_convert)]:
 	"@text"   => function Self::qs_at_text,
 	"inspect" => function Self::qs_inspect,
 	"@num"    => function Self::qs_at_num,

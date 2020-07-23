@@ -18,10 +18,6 @@ pub struct BoundOperator {
 	args: Box<OperArgs>
 }
 
-impl BoundOperator {
-	
-}
-
 impl Display for BoundOperator {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match &*self.args {

@@ -49,9 +49,8 @@ fn main() {
 	quest_core::initialize();
 	quest_parser::initialize();
 
-	// run::run_file("code.ignore/fib.qs", Default::default()).unwrap();
+	// if true {run::run_file("code.ignore/fib.qs", Default::default()).unwrap(); return}
 	// run::run_file("code.ignore/fib.qs", vec![&"--".into(), &"50_000".into()].into()).unwrap();
-	// return;
 	// run::run_file("code.ignore/ib.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();
 
 	match run_options(Opts::parse()) {
@@ -60,36 +59,3 @@ fn main() {
 		Err(err) => eprintln!("uncaught error encountered:\n{}", err)
 	}
 }
-
-// #![deny(warnings)]
-
-// use quest_core::{Object, Binding};
-// use quest_parser::{Result as ParseResult, BufStream, Expression};
-// use std::convert::TryFrom;
-
-// // TODO: repl
-// mod repl;
-
-// use std::env;
-
-// fn main() {
-// 	let filename = env::args().nth(1).unwrap_or_else(|| "code/test.qs".to_string());
-// 	let mut stream = BufStream::try_from(<_ as AsRef<std::path::Path>>::as_ref(&filename))
-// 		.expect("couldn't open file")
-// 		.collect::<ParseResult<Vec<_>>>()
-// 		.unwrap()
-// 		.into_iter();
-
-// 	let expression = Expression::try_from_iter(&mut stream).unwrap();
-// 	let mut args: Vec<Object> = std::env::args()
-// 		.skip(1)
-// 		.map(Object::from)
-// 		.collect::<Vec<Object>>();
-// 	args.insert(0, Object::default());
-// 	let result = Binding::new_stackframe_old_old(args.into(), |_| expression.execute());
-// 	if cfg!(debug) {
-// 		println!("{:?}", result);
-// 	} else {
-// 		result.unwrap();
-// 	}
-// }

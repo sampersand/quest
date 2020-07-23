@@ -110,8 +110,11 @@ impl List {
 	}
 
 	/// Sets a single element in a list
-	pub fn set(&self, _idx: isize, _ele: Object)  {
-		unimplemented!()
+	pub fn set(&mut self, index: usize, ele: Object)  {
+		if self.len() <= index {
+			self.0.resize_with(index + 1, Object::default);
+		}
+		self.0.as_mut_slice()[index] = ele;
 	}
 
 	/// Sets a range of elements within the list.
@@ -146,6 +149,7 @@ impl List {
 
 		Ok(true)
 	}
+
 	/// Add a new element to the end of the list.
 	#[inline]
 	pub fn push(&mut self, what: Object) {
@@ -234,7 +238,6 @@ impl std::ops::Add<List> for &'_ List {
 	type Output = List;
 
 	/// Create a new list with the other added to the end of the current one
-	#[inline]
 	fn add(self, other: List) -> Self::Output {
 		let mut dup = self.clone();
 		dup += other;
@@ -247,6 +250,20 @@ impl std::ops::AddAssign for List {
 	#[inline]
 	fn add_assign(&mut self, mut other: Self)  {
 		self.0.append(&mut other.0);
+	}
+}
+
+impl std::ops::Mul<usize> for &'_ List {
+	type Output = List;
+
+	fn mul(self, len: usize) -> List {
+		let mut v = Vec::with_capacity(len * self.len());
+
+		for _ in 0..len {
+			v.extend(self.clone())
+		}
+
+		v.into()
 	}
 }
 
@@ -512,11 +529,11 @@ impl List {
 	/// ```
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
 		let start = args.arg(0)?
-			.call_downcast_and_then(|n: &Number| isize::try_from(*n))?;
+			.call_downcast_and_then(|n: &Number| Ok(isize::try_from(*n)?))?;
 
 		let stop = args.arg(1)
 			.ok()
-			.map(|n| n.call_downcast_and_then(|n: &Number| isize::try_from(*n)))
+			.map(|n| n.call_downcast_and_then(|n: &Number| Ok(isize::try_from(*n)?)))
 			.transpose()?;
 
 		this.try_downcast_map(|this: &Self| {
@@ -539,8 +556,18 @@ impl List {
 	/// ```quest
 	/// <TODO>
 	/// ```
-	pub fn qs_set(_: &Object, _: Args) -> crate::Result<Object> {
-		todo!("set")
+	pub fn qs_set(this: &Object, args: Args) -> crate::Result<Object> {
+		if args.len() != 2 {
+			todo!("non-single-index assigning");
+		}
+
+		// also TODO: negative indicies
+		let pos = args.arg(0)?
+			.call_downcast_and_then(|n: &Number| Ok(usize::try_from(*n)?))?;
+
+		let ele = args.arg(1)?.clone();
+		this.try_downcast_mut_map(|this: &mut Self| this.set(pos, ele))
+			.map(|_| this.clone())
 	}
 
 	/// Combine all elements into a [`Text`], optionally separated by a deliminator.
@@ -563,6 +590,18 @@ impl List {
 				this.join(None)
 			}
 		}).map(Object::from)
+	}
+
+	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
+		this.try_downcast_and_then(|this: &Self| {
+			args.arg(0)?.call_downcast_and_then(|n: &Number| {
+				Ok((this * usize::try_from(*n)?).into())
+			})
+		})
+	}
+
+	pub fn qs_mul_assign(_this: &Object, _args: Args) -> crate::Result<Object> {
+		todo!()
 	}
 
 	/// Compares two [`List`]s
@@ -904,6 +943,8 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"get"  => function Self::qs_get,
 	"set"  => function Self::qs_set,
 	"join" => function Self::qs_join,
+	"*"    => function Self::qs_mul,
+	"*="   => function Self::qs_mul_assign,
 
 	"<<"      => function Self::qs_push,
 	"push"    => function Self::qs_push,
