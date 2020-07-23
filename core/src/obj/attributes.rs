@@ -1,6 +1,7 @@
-use crate::literals::{__PARENTS__, __ID__};
+use crate::literal::{__PARENTS__, __ID__};
 use crate::{Object, Result, SharedCow};
 use crate::types::Text;
+use std::fmt::{self, Debug, Formatter};
 
 mod parents;
 mod attrmap;
@@ -15,10 +16,18 @@ struct Inner {
 	parents: Parents
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Attributes {
 	data: SharedCow<Inner>,
 	id: usize
+}
+
+impl Debug for Attributes {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		f.debug_struct("Attributes")
+			.field("id", &self.id)
+			.finish()
+	}
 }
 
 impl Clone for Attributes {

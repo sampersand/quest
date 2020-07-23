@@ -1,6 +1,6 @@
 use crate::Object;
 use crate::error::TypeError;
-use crate::literals::Literal;
+use crate::literal::Literal;
 use std::any::{Any, type_name};
 
 pub trait Convertible : Any + Sized + Clone {

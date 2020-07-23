@@ -1,5 +1,5 @@
 use crate::{Object, Result, Args};
-use crate::literals::{EQL, AT_BOOL, NOT, INSPECT};
+use crate::literal::{EQL, AT_BOOL, NOT, INSPECT};
 
 /// A class that holds all the basic functions objects can have.
 ///
@@ -83,17 +83,17 @@ impl Basic {
 }
 
 impl_object_type!{
-for Basic [(parents super::Kernel)]:
-	"@bool" => function Basic::qs_at_bool,
-	"@text" => function Basic::qs_at_text,
-	"==" => function Basic::qs_eql,
-	"!=" => function Basic::qs_neq,
-	"!" => function Basic::qs_not,
-	"clone" => function Basic::qs_clone,
-	"hash" => function Basic::qs_hash,
-	"itself" => function Basic::qs_itself,
-	// "||"    => impls::or,
-	// "&&"    => impls::and,
+for Basic [(parents super::Pristine)]:
+	"@bool" => function Self::qs_at_bool,
+	"@text" => function Self::qs_at_text,
+	"==" => function Self::qs_eql,
+	"!=" => function Self::qs_neq,
+	"!" => function Self::qs_not,
+	"clone" => function Self::qs_clone,
+	"hash" => function Self::qs_hash,
+	"itself" => function Self::qs_itself,
+	// "||"    => Self::or,
+	// "&&"    => Self::and,
 }
 
 

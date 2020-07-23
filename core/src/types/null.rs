@@ -16,44 +16,41 @@ impl Display for Null {
 impl Null {
 	#[inline(always)]
 	pub const fn new() -> Self {
-		Null
+		Self
 	}
-
-	pub const NULL: Null = Null::new();
 }
 
 impl From<()> for Object {
 	#[inline]
 	fn from(_: ()) -> Self {
-		Null::new().into()
+		Null.into()
 	}
 }
 
 impl From<()> for Null {
-	#[inline]
 	fn from(_: ()) -> Self {
-		Null::new()
+		Null
 	}
 }
 
 impl From<Null> for Boolean {
 	#[inline]
 	fn from(_: Null) -> Self {
-		Boolean::FALSE
+		Self::FALSE
 	}
 }
 
 impl From<Null> for List {
 	#[inline]
 	fn from(_: Null) -> Self {
-		List::new(vec![])
+		Self::new(vec![])
 	}
 }
 
 impl From<Null> for Number {
 	#[inline]
 	fn from(_: Null) -> Self {
-		Number::ZERO
+		Self::ZERO
 	}
 }
 
@@ -68,57 +65,56 @@ impl From<Null> for Text {
 
 impl Null {
 	pub fn qs_inspect(_: &Object, _: Args) -> Result<Object> {
-		Ok(Text::from(Null).into())
+		Ok(Text::from(Self).into())
 	}
 
 	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
-		Ok(Boolean::from(Null).into())
+		Ok(Boolean::from(Self).into())
 	}
 
 	pub fn qs_at_list(_: &Object, _: Args) -> Result<Object> {
-		Ok(List::from(Null).into())
+		Ok(List::from(Self).into())
 	}
 
 	pub fn qs_at_num(_: &Object, _: Args) -> Result<Object> {
-		Ok(Number::from(Null).into())
+		Ok(Number::from(Self).into())
 	}
 
 	pub fn qs_at_text(_: &Object, _: Args) -> Result<Object> {
-		Ok(Text::from(Null).into())
+		Ok(Text::from(Self).into())
 	}
 
 	pub fn qs_call(_: &Object, _: Args) -> Result<Object> {
-		Ok(Null.into())
+		Ok(Self.into())
 	}
 
 	pub fn qs_eql(_: &Object, args: Args) -> Result<Object> {
-		Ok(args.arg(0)?.is_a::<Null>().into())
+		Ok(args.arg(0)?.is_a::<Self>().into())
 	}
 }
-
 
 impl_object_type!{
 for Null {
 	#[inline]
-	fn new_object(self) -> Object where Self: Sized {
+	fn new_object(self) -> Object {
 		use lazy_static::lazy_static;
 		use crate::types::ObjectType;
 
 		lazy_static! {
-			static ref NULL: Object = Object::new_with_parent(Null::NULL, vec![Null::mapping()]);
+			static ref NULL: Object = Object::new_with_parent(Null, vec![Null::mapping()]);
 		}
 
 		NULL.deep_clone()
 	}
 }
 [(parents super::Basic)]:
-	"@text" => function Null::qs_at_text,
-	"inspect" => function Null::qs_inspect,
-	"@bool" => function Null::qs_at_bool,
-	"@list" => function Null::qs_at_list,
-	"@num" => function Null::qs_at_num,
-	"()" => function Null::qs_call,
-	"==" => function Null::qs_eql,
+	"@text" => function Self::qs_at_text,
+	"inspect" => function Self::qs_inspect,
+	"@bool" => function Self::qs_at_bool,
+	"@list" => function Self::qs_at_list,
+	"@num" => function Self::qs_at_num,
+	"()" => function Self::qs_call,
+	"==" => function Self::qs_eql,
 }
 
 #[cfg(test)]

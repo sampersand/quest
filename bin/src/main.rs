@@ -49,6 +49,7 @@ fn main() {
 	quest_core::initialize();
 	quest_parser::initialize();
 
+	// run::run_file("code.ignore/fib.qs", Default::default()).unwrap();
 	// run::run_file("code.ignore/fib.qs", vec![&"--".into(), &"50_000".into()].into()).unwrap();
 	// return;
 	// run::run_file("code.ignore/ib.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();

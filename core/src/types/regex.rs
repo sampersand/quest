@@ -29,7 +29,7 @@ impl Display for Regex {
 impl Eq for Regex {}
 impl PartialEq for Regex {
 	#[inline]
-	fn eq(&self, rhs: &Regex) -> bool {
+	fn eq(&self, rhs: &Self) -> bool {
 		self.0.as_str() == rhs.0.as_str() && self.1 == rhs.1
 	}
 }
@@ -133,9 +133,8 @@ impl Regex {
 
 impl_object_type!{
 for Regex [(parents super::Basic) (convert "@regex")]:
-	"@text"   => function Regex::qs_at_text,
-	"inspect" => function Regex::qs_inspect,
-	"=="      => function Regex::qs_eql,
-	"does_match" => function Regex::qs_does_match,
-	"match" => function Regex::qs_match,
+	"inspect" => function Self::qs_inspect,
+	"=="      => function Self::qs_eql,
+	"does_match" => function Self::qs_does_match,
+	"match" => function Self::qs_match,
 }

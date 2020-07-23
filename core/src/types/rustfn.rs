@@ -24,7 +24,7 @@ impl Debug for RustFn {
 impl Eq for RustFn {}
 impl PartialEq for RustFn {
 	#[inline]
-	fn eq(&self, rhs: &RustFn) -> bool {
+	fn eq(&self, rhs: &Self) -> bool {
 		let eql = (self.1 as usize) == (rhs.1 as usize);
 		debug_assert_eq!(eql, self.0 == rhs.0);
 		eql
@@ -41,7 +41,7 @@ impl Hash for RustFn {
 impl RustFn {
 	#[inline]
 	pub fn new(name: &'static str, func: Inner) -> Self {
-		RustFn(name, func)
+		Self(name, func)
 	}
 
 	#[inline]
@@ -54,34 +54,34 @@ impl RustFn {
 impl From<RustFn> for Text {
 	#[inline]
 	fn from(rustfn: RustFn) -> Self {
-		Text::new_static(rustfn.0)
+		Self::new_static(rustfn.0)
 	}
 }
 
 impl RustFn {
-	#[allow(non_snake_case)]
-	#[inline]
-	pub fn qs_inspect(&self, _: Args) -> Result<Text, !> {
-		Ok(format!("{:?}", self).into())
+	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
+		this.try_downcast_map(|this: &Self| format!("{:?}", this))
+			.map(Object::from)
 	}
 
-	#[inline]
-	pub fn qs_at_text(&self, _: Args) -> Result<Text, !> {
-		Ok(Text::from(*self))
+	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
+		this.try_downcast_map(Self::clone)
+			.map(Text::from)
+			.map(Object::from)
 	}
 
-	#[inline]
-	pub fn qs_call(&self, args: Args) -> crate::Result<Object> {
+	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
+		let this = this.try_downcast_map(Self::clone)?;
 		let caller = args.arg(0)?;
 		let args = args.args(1..).unwrap_or_default();
 
-		self.call(caller, args)
+		this.call(caller, args)
 	}
 }
 
 impl_object_type!{
 for RustFn [(parents super::Function)]:
-	"inspect" => method_old RustFn::qs_inspect,
-	"@text" => method_old RustFn::qs_at_text,
-	"()" => method_old RustFn::qs_call,
+	"inspect" => function Self::qs_inspect,
+	"@text" => function Self::qs_at_text,
+	"()" => function Self::qs_call,
 }

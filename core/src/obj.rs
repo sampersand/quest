@@ -2,7 +2,7 @@ use crate::Args;
 use crate::error::{TypeError, KeyError};
 use crate::types::{self, ObjectType};
 use crate::types::{Boolean};
-use crate::literals::{EQL, Literal};
+use crate::literal::{EQL, Literal};
 
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
@@ -52,10 +52,18 @@ impl From<!> for Object {
 	fn from(x: !) -> Self { x }
 }
 
+impl<T: Any + ObjectType> From<Option<T>> for Object {
+	#[inline]
+	fn from(data: Option<T>) -> Self {
+		data.map(Self::new).unwrap_or_default()
+	}
+}
+
+
 impl<T: Any + ObjectType> From<T> for Object {
 	#[inline]
-	fn from(data: T) -> Object {
-		Object::new(data)
+	fn from(data: T) -> Self {
+		Self::new(data)
 	}
 }
 

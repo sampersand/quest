@@ -1,4 +1,4 @@
-use crate::literals::Literal;
+use crate::literal::Literal;
 use std::fmt::{self, Display, Formatter};
 
 /// The type was wrong for a given operation.

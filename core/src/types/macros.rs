@@ -152,6 +152,7 @@ macro_rules! impl_object_type {
 	(@SET_ATTRS $class:ident $obj:ty;) => {};
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => const $val:expr $(, $($args:tt)*)?) => {{
 		$class.set_attr_lit($attr, Object::from($val))?;
+
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
@@ -159,29 +160,6 @@ macro_rules! impl_object_type {
 		$class.set_value_lit($attr, $crate::types::RustFn::new(
 			concat!(stringify!($obj), "::", $attr), $val)
 		)?;
-		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
-	}};
-
-	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method_old $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_value_lit($attr, $crate::types::RustFn::new(
-			concat!(stringify!($obj), "::", $attr),
-			|this, args| {
-				this.try_downcast_and_then(|this| $val(this, args)
-					.map(Object::from)
-					.map_err($crate::Error::from))
-			}
-		))?;
-		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
-	}};
-
-
-	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method_old_mut $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_value_lit($attr, $crate::types::RustFn::new(
-			concat!(stringify!($obj), "::", $attr),
-			|this, args| {
-				this.try_downcast_mut_and_then(|data| $val(data, args).map(Object::from).map_err($crate::Error::from))
-			}
-		))?;
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
 	}};
 
@@ -216,7 +194,7 @@ macro_rules! impl_object_type {
 			fn mapping() -> $crate::Object {
 				lazy_static::lazy_static! {
 					static ref CLASS: $crate::Object = $crate::Object::new_with_parent(
-						impl_object_type!(@PARENT_DEFAULT $($args)*),
+						$crate::types::Class(stringify!($obj)),
 						impl_object_type!(@SET_PARENT class $($args)*)
 					);
 				}

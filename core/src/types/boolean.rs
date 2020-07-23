@@ -94,7 +94,6 @@ impl AsMut<bool> for Boolean {
 impl From<Boolean> for Number {
 	/// Convert to a [`Number`] by mapping `true` to [`Number::ONE`] and `false` to
 	/// [`Number::ZERO`]
-	#[inline]
 	fn from(b: Boolean) -> Self {
 		match b.into_inner() {
 			true => Self::ONE,
@@ -211,10 +210,10 @@ impl Boolean {
 
 	/// Converts `this` into a [`Boolean`]
 	///
-	/// This simply calls [`Object::deep_clone`](crate::Object::deep_clone)
+	/// This simply calls [`Object::clone`](crate::Object::clone)
 	#[inline]
 	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
-		Ok(this.deep_clone())
+		Ok(this.clone())
 	}
 
 	/// See if a `this` is equal to the first argument.
@@ -329,13 +328,13 @@ impl Boolean {
 }
 
 impl Convertible for Boolean {
-	const CONVERT_FUNC: &'static str = crate::literals::AT_BOOL;
+	const CONVERT_FUNC: &'static str = crate::literal::AT_BOOL;
 }
 
 impl_object_type!{
 for Boolean {
 	#[inline]
-	fn new_object(self) -> Object where Self: Sized {
+	fn new_object(self) -> Object {
 		use lazy_static::lazy_static;
 		use crate::types::ObjectType;
 
@@ -352,20 +351,20 @@ for Boolean {
 	}
 }
 [(parents super::Basic)]:
-	"@text"   => function Boolean::qs_at_text,
-	"inspect" => function Boolean::qs_inspect,
-	"@num"    => function Boolean::qs_at_num,
-	"@bool"   => function Boolean::qs_at_bool,
-	"=="      => function Boolean::qs_eql,
-	"!"       => function Boolean::qs_not,
-	"&"       => function Boolean::qs_bitand,
-	"&="      => function Boolean::qs_bitand_assign,
-	"|"       => function Boolean::qs_bitor,
-	"|="      => function Boolean::qs_bitor_assign,
-	"^"       => function Boolean::qs_bitxor,
-	"^="      => function Boolean::qs_bitxor_assign,
-	"<=>"     => function Boolean::qs_cmp,
-	"hash"    => function Boolean::qs_hash,
+	"@text"   => function Self::qs_at_text,
+	"inspect" => function Self::qs_inspect,
+	"@num"    => function Self::qs_at_num,
+	"@bool"   => function Self::qs_at_bool,
+	"=="      => function Self::qs_eql,
+	"!"       => function Self::qs_not,
+	"&"       => function Self::qs_bitand,
+	"&="      => function Self::qs_bitand_assign,
+	"|"       => function Self::qs_bitor,
+	"|="      => function Self::qs_bitor_assign,
+	"^"       => function Self::qs_bitxor,
+	"^="      => function Self::qs_bitxor_assign,
+	"<=>"     => function Self::qs_cmp,
+	"hash"    => function Self::qs_hash,
 }
 
 #[cfg(test)]
@@ -390,7 +389,7 @@ mod tests {
 	}
 
 	#[test]
-	fn eq() {
+	fn eql() {
 		assert_eq!(Boolean::TRUE, Boolean::TRUE);
 		assert_eq!(Boolean::FALSE, Boolean::FALSE);
 		assert_ne!(Boolean::TRUE, Boolean::FALSE);
@@ -446,33 +445,14 @@ mod tests {
 			assert_call_eq!(Boolean::qs_inspect(true) -> Text, *"true");
 			assert_call_eq!(Boolean::qs_inspect(false) -> Text, *"false");
 			assert_call_idempotent!(Boolean::qs_inspect(true));
-
 		}
 
 
 		#[test]
 		fn at_bool() {
-			crate::initialize();
-
-			{
-				let orig = &Object::from(true);
-				let dup = &Boolean::qs_at_bool(orig, args!()).unwrap();
-				assert!(!orig.is_identical(dup));
-				assert_eq!(
-					orig.downcast_and_then(Boolean::clone).unwrap(),
-					dup.downcast_and_then(Boolean::clone).unwrap());
-			}
-
-			{
-				let orig = &Object::from(false);
-				let dup = &Boolean::qs_at_bool(orig, args!()).unwrap();
-				assert!(!orig.is_identical(dup));
-				assert_eq!(
-					orig.downcast_and_then(Boolean::clone).unwrap(),
-					dup.downcast_and_then(Boolean::clone).unwrap());
-			}
-
-			assert_call_idempotent!(Boolean::qs_at_bool(true));
+			assert_call_eq!(Boolean::qs_at_bool(true) -> Boolean, true);
+			assert_call_eq!(Boolean::qs_at_bool(false) -> Boolean, false);
+			assert_call_non_idempotent!(Boolean::qs_at_bool(true));
 		}
 
 		#[test]
@@ -566,7 +546,7 @@ mod tests {
 			struct Dummy;
 			impl_object_type! { for Dummy [(parents crate::types::Pristine)]: }
 
-			assert!(!Object::from(Dummy).has_attr_lit(crate::literals::AT_BOOL).unwrap());
+			assert!(!Object::from(Dummy).has_attr_lit(crate::literal::AT_BOOL).unwrap());
 			assert_call_eq!(Boolean::qs_cmp(true, Dummy) -> Null, Null);
 
 			assert_call_missing_parameter!(Boolean::qs_cmp(true), 0);

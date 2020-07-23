@@ -5,7 +5,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::convert::{TryFrom, TryInto};
 
-/// A [`Stream`](trait.Stream.html) based around a [`BufRead`](#)-able typpe
+/// A [`Stream`] based around a [`BufRead`](#)-able typpe
 #[derive(Debug, PartialEq, Eq, Clone, Default, Hash)]
 pub struct BufStream<B: BufRead> {
 	/// The data to read from.
@@ -210,7 +210,7 @@ mod tests {
 		let tmpfile = tempfile::NamedTempFile::new().expect("couldn't make tempfile");
 		let _: BufStream<_> = BufStream::try_from(tmpfile.path()).expect("couldn't make bufstream");
 
-		BufStream::try_from(Path::new("/plato/teh_republic.txt"))
+		BufStream::try_from(Path::new("/plato/the_republic.txt"))
 			.expect_err("invalid file still passed");
 	}
 

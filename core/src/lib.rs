@@ -13,13 +13,18 @@
 	clippy::missing_safety_doc,
 )]
 
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 mod shared_cow;
 mod obj;
 #[doc(hidden)]
 pub mod utils;
 pub mod error;
 pub mod types;
-pub mod literals;
+pub mod literal;
 
 use shared_cow::SharedCow;
 pub use obj::Object;
@@ -30,7 +35,7 @@ pub use types::rustfn::{Args, Binding};
 /// Start up Quest by initializing all the types.
 pub fn initialize() {
 	use types::*;
-	use std::sync::Once;
+	use parking_lot::Once;
 
 	macro_rules! initialize {
 		($($ty:ty),*) => {{
@@ -45,7 +50,7 @@ pub fn initialize() {
 	INITIALIZE.call_once(||
 		initialize!(
 			Pristine, Basic, Boolean, BoundFunction, Comparable, Function, Kernel,
-			List, Null, Number, Regex, RustFn, Scope, Text
+			List, Null, Number, Regex, RustFn, Scope, Text, Iterable, iterable::BoundRustFn
 		)
 	)
 }

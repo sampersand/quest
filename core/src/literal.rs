@@ -18,7 +18,7 @@ literals! {
 	// stuff for mappings
 	__PARENTS__ "__parents__" __ID__ "__id__" __ATTR_MISSING__ "__attr_missing__"
 
-	__THIS__ "__this__" __KEYS__ "__keys__" __STACK__ "__stack__"
+	__THIS__ "__this__" __KEYS__ "__keys__" __ARGS__ "__args__" __STACK__ "__stack__"
 
 	// conversions
 	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list"

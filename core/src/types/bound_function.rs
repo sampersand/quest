@@ -1,5 +1,5 @@
 use crate::{Object, Result, Args};
-use crate::literals::CALL;
+use crate::literal::CALL;
 
 /// A type representing a bound function.
 ///
@@ -19,7 +19,7 @@ impl BoundFunction {
 
 impl_object_type!{
 for BoundFunction [(parents super::Basic)]:
-	"()" => function BoundFunction::qs_call,
+	"()" => function Self::qs_call,
 }
 
 

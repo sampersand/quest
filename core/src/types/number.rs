@@ -5,7 +5,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 use std::cmp::Ordering;
 use std::ops;
 use crate::{Object, Args};
-use crate::types::{Text, Boolean};
+use crate::types::{Text, Boolean, Convertible};
 use std::hash::{Hash, Hasher};
 use crate::error::{TypeError, ValueError};
 
@@ -57,8 +57,8 @@ impl Hash for Number {
 impl Default for Number {
 	/// The default number is [zero](Number::ZERO).
 	#[inline]
-	fn default() -> Number {
-		Number::ZERO
+	fn default() -> Self {
+		Self::ZERO
 	}
 }
 
@@ -174,8 +174,8 @@ impl Number {
 	///
 	/// Since Rust doesn't have a "power of" trait, this is is the replacement for it.
 	pub fn pow(self, rhs: Self) -> Self {
-		if self == Number::ONE || rhs == Number::ZERO {
-			return Number::ONE;
+		if self == Self::ONE || rhs == Self::ZERO {
+			return Self::ONE;
 		}
 
 		match (self.0, rhs.0) {
@@ -208,13 +208,13 @@ impl Number {
 
 impl PartialOrd for Number {
 	#[inline]
-	fn partial_cmp(&self, rhs: &Number) -> Option<Ordering> {
+	fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
 		Some(self.cmp(rhs))
 	}
 }
 
 impl Ord for Number {
-	fn cmp(&self, rhs: &Number) -> Ordering {
+	fn cmp(&self, rhs: &Self) -> Ordering {
 		use Inner::*;
 		// TODO: somehow make an ordering and account for NaN
 		match (self.0, rhs.0) {
@@ -318,7 +318,6 @@ impl std::error::Error for ToStringRadixError {
 pub struct NotAnInteger(pub(crate) f64);
 
 impl Display for NotAnInteger {
-	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		write!(f, "{} is not a whole number", self.0)
 	}
@@ -348,7 +347,7 @@ macro_rules! impl_try_from_eq {
 
 			impl PartialEq<$int> for Number {
 				fn eq(&self, rhs: &$int) -> bool {
-					*self == Number::from(*rhs)
+					*self == Self::from(*rhs)
 				}
 			}
 		)*
@@ -356,7 +355,7 @@ macro_rules! impl_try_from_eq {
 		$(
 			impl PartialEq<$float> for Number {
 				fn eq(&self, rhs: &$float) -> bool {
-					*self == Number::from(*rhs)
+					*self == Self::from(*rhs)
 				}
 			}
 		)*
@@ -365,44 +364,40 @@ macro_rules! impl_try_from_eq {
 
 impl_try_from_eq!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize; f32 f64);
 
-
 impl From<FloatType> for Number {
 	// note that if the given `f` is an integer, we instead construct an `Inner::Integer`.
 	#[allow(clippy::float_cmp)]
-	fn from(f: FloatType) -> Number {
+	fn from(f: FloatType) -> Self {
 		if f.is_finite() && f.floor() == f &&
 			(IntegerType::MIN..IntegerType::MAX).contains(&(f as _))
 		{
-			Number(Inner::Integer(f as _))
+			Self(Inner::Integer(f as _))
 		} else {
-			Number(Inner::Float(f))
+			Self(Inner::Float(f))
 		}
 	}
 }
 
 impl From<IntegerType> for Number {
 	#[inline]
-	fn from(n: IntegerType) -> Number {
-		Number(Inner::Integer(n))
+	fn from(n: IntegerType) -> Self {
+		Self(Inner::Integer(n))
 	}
 }
 
 impl From<FloatType> for Object {
-	#[inline]
 	fn from(f: FloatType) -> Self {
 		Number::from(f).into()
 	}
 }
 
 impl From<IntegerType> for Object {
-	#[inline]
 	fn from(n: IntegerType) -> Self {
 		Number::from(n).into()
 	}
 }
 
 impl From<Number> for FloatType {
-	#[inline]
 	fn from(n: Number) -> Self {
 		match n.0 {
 			Inner::Integer(n) => n as _,
@@ -417,12 +412,11 @@ macro_rules! impl_from {
 			impl From<$int> for Number {
 				#[inline]
 				fn from(num: $int) -> Self {
-					Number::from(num as IntegerType)
+					Self::from(num as IntegerType)
 				}
 			}
 
 			impl From<$int> for Object {
-				#[inline]
 				fn from(num: $int) -> Self {
 					Number::from(num).into()
 				}
@@ -432,12 +426,11 @@ macro_rules! impl_from {
 			impl From<$float> for Number {
 				#[inline]
 				fn from(num: $float) -> Self {
-					Number::from(num as FloatType)
+					Self::from(num as FloatType)
 				}
 			}
 
 			impl From<$float> for Object {
-				#[inline]
 				fn from(num: $float) -> Self {
 					Number::from(num).into()
 				}
@@ -494,11 +487,11 @@ impl ops::Div for Number {
 	/// If `divisor` is [zero](Number::ZERO), then `-INF`, `NAN`, or `INF` are returned based on the
 	/// sign of `self`.
 	fn div(self, divisor: Self) -> Self {
-		if divisor == Number::ZERO {
-			match self.cmp(&Number::ZERO) {
-				Ordering::Less => -Number::INF,
-				Ordering::Equal => Number::NAN,
-				Ordering::Greater => Number::INF,
+		if divisor == Self::ZERO {
+			match self.cmp(&Self::ZERO) {
+				Ordering::Less => -Self::INF,
+				Ordering::Equal => Self::NAN,
+				Ordering::Greater => Self::INF,
 			}
 		} else {
 			// convert to a float because we want to allow for `1/2 = 0.5`
@@ -525,11 +518,11 @@ impl ops::Rem for Number {
 	/// If `divisor` is [zero](Number::ZERO), then `-INF`, `NAN`, or `INF` are returned based on the
 	/// sign of `self`.
 	fn rem(self, divisor: Self) -> Self {
-		if divisor == Number::ZERO {
-			match self.cmp(&Number::ZERO) {
-				Ordering::Less => -Number::INF,
-				Ordering::Equal => Number::NAN,
-				Ordering::Greater => Number::INF,
+		if divisor == Self::ZERO {
+			match self.cmp(&Self::ZERO) {
+				Ordering::Less => -Self::INF,
+				Ordering::Equal => Self::NAN,
+				Ordering::Greater => Self::INF,
 			}
 		} else {
 			use Inner::*;
@@ -563,8 +556,7 @@ macro_rules! impl_bitwise_ops {
 				#[doc="If both numbers are integers, simply "]
 				#[doc=$fn_description]
 				#[doc=" them together. If either isn't an integer, [`NotAnInteger`] is returned."]
-				#[inline]
-				fn $fn(self, rhs: Number) -> Self::Output {
+				fn $fn(self, rhs: Self) -> Self::Output {
 					Ok(Self::from(IntegerType::try_from(self)?.$fn(IntegerType::try_from(rhs)?)))
 				}
 			}
@@ -580,7 +572,6 @@ macro_rules! impl_bitwise_ops {
 				#[doc="If both numbers are integers, perform replace `self` with [`"]
 				#[doc=$fn_description]
 				#[doc="`]'s result. If either isn't an integer, a [`NotAnInteger`] is returned."]
-				#[inline]
 				pub fn $fn_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
 					use ops::$trait;
 					*self = (*self).$fn(rhs)?;
@@ -602,7 +593,7 @@ impl ops::Shl for Number {
 
 	// If both numbers are integers, simply shl them together. If either isn't an integer,
 	/// [`NotAnInteger`] is returned.
-	fn shl(self, rhs: Number) -> Self::Output {
+	fn shl(self, rhs: Self) -> Self::Output {
 		Ok(Self::from(IntegerType::try_from(self)?.wrapping_shl(u32::try_from(rhs)?)))
 	}
 }
@@ -612,7 +603,7 @@ impl ops::Shr for Number {
 
 	// If both numbers are integers, simply shr them together. If either isn't an integer,
 	/// [`NotAnInteger`] is returned.
-	fn shr(self, rhs: Number) -> Self::Output {
+	fn shr(self, rhs: Self) -> Self::Output {
 		Ok(Self::from(IntegerType::try_from(self)?.wrapping_shr(u32::try_from(rhs)?)))
 	}
 }
@@ -627,7 +618,6 @@ impl Number {
 
 	// If both numbers are integers, perform replace `self` with [`shr`]'s result. If either
 	// isn't an integer, a [`NotAnInteger`] is returned.
-	#[inline]
 	pub fn try_shr_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
 		*self = (*self >> rhs)?;
 		Ok(())
@@ -636,28 +626,27 @@ impl Number {
 
 impl ops::Neg for Number {
 	type Output = Self;
-	#[inline]
+
 	fn neg(self) -> Self {
 		match self.0 {
-			Inner::Integer(i) => Number::from(-i),
-			Inner::Float(f) => Number::from(-f)
+			Inner::Integer(i) => Self::from(-i),
+			Inner::Float(f) => Self::from(-f)
 		}
 	}
 }
 
 impl ops::Not for Number {
 	type Output = Result<Self, NotAnInteger>;
-	#[inline]
+
 	fn not(self) -> Self::Output {
-		Ok(Number::from(!IntegerType::try_from(self)?))
+		Ok(Self::from(!IntegerType::try_from(self)?))
 	}
 
 }
 
 impl From<Number> for Text {
-	#[inline]
 	fn from(n: Number) -> Self {
-		Text::new(n.to_string())
+		Self::from(n.to_string())
 	}
 }
 
@@ -666,12 +655,11 @@ impl From<Number> for Boolean {
 	///
 	/// [zero](Number::ZERO) is considered [`false`](Boolean::FALSE) while everything else is
 	/// [`true`](Boolean::TRUE)
-	#[inline]
 	fn from(n: Number) -> Self {
 		if n == Number::ZERO {
-			Boolean::FALSE
+			Self::FALSE
 		} else {
-			Boolean::TRUE
+			Self::TRUE
 		}
 	}
 }
@@ -1014,7 +1002,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = args.arg(0)?.downcast_and_then(Number::clone);
+		let other = args.arg(0)?.downcast_and_then(Self::clone);
 
 		this.try_downcast_map(|this: &Self| other.map(|other| *this == other).unwrap_or(false).into())
 	}
@@ -1051,10 +1039,14 @@ impl Number {
 	}
 }
 
+impl Convertible for Number {
+	const CONVERT_FUNC: crate::literal::Literal = crate::literal::AT_NUM;
+}
+
 impl_object_type!{
 	for Number 
 {
-	fn new_object(self) -> Object where Self: Sized {
+	fn new_object(self) -> Object {
 		use lazy_static::lazy_static;
 		use std::collections::HashMap;
 		use parking_lot::RwLock;
@@ -1075,42 +1067,42 @@ impl_object_type!{
 	}
 }
 
-[(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@num")]:
-	"PI" => const Number::PI,
-	"E" => const Number::E,
-	"NAN" => const Number::NAN,
-	"INF" => const Number::INF,
+[(init_parent super::Basic super::Comparable) (parents super::Basic)]:
+	"PI" => const Self::PI,
+	"E" => const Self::E,
+	"NAN" => const Self::NAN,
+	"INF" => const Self::INF,
 
-	"@text" => function Number::qs_at_text,
-	"inspect" => function Number::qs_inspect,
-	"@num" => function Number::qs_at_num,
-	"@bool" => function Number::qs_at_bool,
-	"hash" => function Number::qs_hash,
+	"@text" => function Self::qs_at_text,
+	"inspect" => function Self::qs_inspect,
+	"@num" => function Self::qs_at_num,
+	"@bool" => function Self::qs_at_bool,
+	"hash" => function Self::qs_hash,
 
-	"+"  => function Number::qs_add,    "+="  => function Number::qs_add_assign,
-	"-"  => function Number::qs_sub,    "-="  => function Number::qs_sub_assign,
-	"*"  => function Number::qs_mul,    "*="  => function Number::qs_mul_assign,
-	"/"  => function Number::qs_div,    "/="  => function Number::qs_div_assign,
-	"%"  => function Number::qs_mod,    "%="  => function Number::qs_mod_assign,
-	"**" => function Number::qs_pow,    "**=" => function Number::qs_pow_assign,
-	"&"  => function Number::qs_bitand, "&="  => function Number::qs_bitand_assign,
-	"|"  => function Number::qs_bitor,  "|="  => function Number::qs_bitor_assign,
-	"^"  => function Number::qs_bitxor, "^="  => function Number::qs_bitxor_assign,
-	"<<" => function Number::qs_shl,    "<<=" => function Number::qs_shl_assign,
-	">>" => function Number::qs_shr,    ">>=" => function Number::qs_shr_assign,
+	"+"  => function Self::qs_add,    "+="  => function Self::qs_add_assign,
+	"-"  => function Self::qs_sub,    "-="  => function Self::qs_sub_assign,
+	"*"  => function Self::qs_mul,    "*="  => function Self::qs_mul_assign,
+	"/"  => function Self::qs_div,    "/="  => function Self::qs_div_assign,
+	"%"  => function Self::qs_mod,    "%="  => function Self::qs_mod_assign,
+	"**" => function Self::qs_pow,    "**=" => function Self::qs_pow_assign,
+	"&"  => function Self::qs_bitand, "&="  => function Self::qs_bitand_assign,
+	"|"  => function Self::qs_bitor,  "|="  => function Self::qs_bitor_assign,
+	"^"  => function Self::qs_bitxor, "^="  => function Self::qs_bitxor_assign,
+	"<<" => function Self::qs_shl,    "<<=" => function Self::qs_shl_assign,
+	">>" => function Self::qs_shr,    ">>=" => function Self::qs_shr_assign,
 
-	"-@"  => function Number::qs_neg,
-	"+@"  => function Number::qs_pos,
-	"~"   => function Number::qs_bitnot,
-	"abs" => function Number::qs_abs,
-	"<=>" => function Number::qs_cmp,
-	"()"  => function Number::qs_call,
-	"=="  => function Number::qs_eql,
+	"-@"  => function Self::qs_neg,
+	"+@"  => function Self::qs_pos,
+	"~"   => function Self::qs_bitnot,
+	"abs" => function Self::qs_abs,
+	"<=>" => function Self::qs_cmp,
+	"()"  => function Self::qs_call,
+	"=="  => function Self::qs_eql,
 
-	"round" => function Number::qs_round,
-	"ceil"  => function Number::qs_ceil,
-	"floor" => function Number::qs_floor,
-	"sqrt"  => function Number::qs_sqrt,
+	"round" => function Self::qs_round,
+	"ceil"  => function Self::qs_ceil,
+	"floor" => function Self::qs_floor,
+	"sqrt"  => function Self::qs_sqrt,
 }
 
 #[cfg(test)]

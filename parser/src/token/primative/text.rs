@@ -57,6 +57,12 @@ fn try_tokenize_dollar_sign<S: Stream>(stream: &mut S) -> Result<Option<Text>> {
 		};
 	}
 
+	if stream.next_if_starts_with("-@")? {
+		return Ok(Some("-@".into()));
+	} else if stream.next_if_starts_with("+@")? {
+		return Ok(Some("+@".into()));
+	}
+
 	from_other!(Variable, Operator);
 
 	if stream.next_if_starts_with("()")? {

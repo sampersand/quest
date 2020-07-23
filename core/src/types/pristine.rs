@@ -68,7 +68,8 @@ impl Pristine {
 	/// [`Text`]: crate::types::Text
 	#[allow(non_snake_case)]
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
-		Ok(format!("<{}:{}>", this.typename(), this.id()).into())
+		// Ok(format!("<{}:{}>", this.typename(), this.id()).into())
+		Ok(format!("{:?}", this).into())
 	}
 
 	/// Calls a given attribtue for this object
@@ -185,17 +186,17 @@ impl Pristine {
 
 impl_object_type!{
 for Pristine [(init_parent) (parents Pristine)]:
-	"inspect" => function Pristine::qs_inspect,
-	"__keys__" => function Pristine::qs___keys__,
-	"__call_attr__" => function Pristine::qs___call_attr__,
-	"__get_attr__" => function Pristine::qs___get_attr__,
-	"__set_attr__" => function Pristine::qs___set_attr__,
-	"__has_attr__" => function Pristine::qs___has_attr__,
-	"__del_attr__" => function Pristine::qs___del_attr__,
-	"::" => function Pristine::qs___get_attr__,
-	".=" => function Pristine::qs___set_attr__,
-	"::@" => function Pristine::qs_root_get_attr,
-	"." => function Pristine::qs_dot_get_attr,
+	"inspect" => function Self::qs_inspect,
+	"__keys__" => function Self::qs___keys__,
+	"__call_attr__" => function Self::qs___call_attr__,
+	"__get_attr__" => function Self::qs___get_attr__,
+	"__set_attr__" => function Self::qs___set_attr__,
+	"__has_attr__" => function Self::qs___has_attr__,
+	"__del_attr__" => function Self::qs___del_attr__,
+	"::" => function Self::qs___get_attr__,
+	".=" => function Self::qs___set_attr__,
+	"::@" => function Self::qs_root_get_attr,
+	"." => function Self::qs_dot_get_attr,
 }
 
 

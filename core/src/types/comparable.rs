@@ -1,5 +1,5 @@
-use crate::{Object, Args, Result};
-use crate::literals::CMP;
+use crate::{Object, Args};
+use crate::literal::CMP;
 use crate::types::Number;
 use std::cmp::Ordering;
 
@@ -7,25 +7,25 @@ use std::cmp::Ordering;
 pub struct Comparable;
 
 #[inline]
-fn compare(lhs: &Object, rhs: &Object) -> Result<Ordering> {
+fn compare(lhs: &Object, rhs: &Object) -> crate::Result<Ordering> {
 	let num = lhs.call_attr_lit(CMP, &[rhs])?.call_downcast_map(Number::clone)?;
 	Ok(num.cmp(&Number::ZERO))
 }
 
 impl Comparable {
-	pub fn qs_lth(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_lth(this: &Object, args: Args) -> crate::Result<Object> {
 		compare(this, args.arg(0)?).map(|ord| (ord == Ordering::Less).into())
 	}
 
-	pub fn qs_gth(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_gth(this: &Object, args: Args) -> crate::Result<Object> {
 		compare(this, args.arg(0)?).map(|ord| (ord == Ordering::Greater).into())
 	}
 
-	pub fn qs_leq(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_leq(this: &Object, args: Args) -> crate::Result<Object> {
 		compare(this, args.arg(0)?).map(|ord| (ord != Ordering::Greater).into())
 	}
 
-	pub fn qs_geq(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_geq(this: &Object, args: Args) -> crate::Result<Object> {
 		compare(this, args.arg(0)?).map(|ord| (ord != Ordering::Less).into())
 	}
 }
@@ -33,10 +33,10 @@ impl Comparable {
 
 impl_object_type!{
 for Comparable [(parents super::Basic)]:
-	"<" => function Comparable::qs_lth,
-	">" => function Comparable::qs_gth,
-	"<=" => function Comparable::qs_leq,
-	">=" => function Comparable::qs_geq,
+	"<" => function Self::qs_lth,
+	">" => function Self::qs_gth,
+	"<=" => function Self::qs_leq,
+	">=" => function Self::qs_geq,
 }
 
 impl From<Ordering> for crate::Object {

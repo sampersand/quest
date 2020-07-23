@@ -30,7 +30,7 @@ pub enum Error {
 	AssertionFailed(Option<String>),
 
 	/// Boxed error
-	Boxed(Box<dyn std::error::Error + 'static>),
+	Boxed(Box<dyn std::error::Error + Send + Sync + 'static>),
 
 	/// Returning a value.
 	///

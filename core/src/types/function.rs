@@ -19,9 +19,9 @@ impl Function {
 
 impl_object_type!{
 for Function [(parents super::Basic)]:
-	"<<" => function Function::qs_lsh,
-	">>" => function Function::qs_rsh,
-	"curry" => function Function::qs_curry
+	"<<" => function Self::qs_lsh,
+	">>" => function Self::qs_rsh,
+	"curry" => function Self::qs_curry
 }
 
 mod tests {

@@ -34,6 +34,7 @@ mod kernel;
 mod basic;
 
 mod function;
+pub mod iterable;
 mod comparable;
 mod bound_function;
 mod scope;
@@ -46,6 +47,10 @@ mod text;
 pub mod regex;
 mod list;
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct Class(pub &'static str);
+
+
 pub use convert::Convertible;
 pub use comparable::Comparable;
 pub use pristine::Pristine;
@@ -53,6 +58,7 @@ pub use kernel::Kernel;
 pub use basic::Basic;
 pub use bound_function::BoundFunction;
 pub use function::Function;
+pub use iterable::Iterable;
 pub use rustfn::RustFn;
 pub use scope::Scope;
 pub use null::Null;
