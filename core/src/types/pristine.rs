@@ -176,7 +176,7 @@ impl Pristine {
 			.transpose()?
 			.unwrap_or(false);
 
-		Ok(this.mapping_keys(include_parents)
+		Ok(this.mapping_keys(include_parents)?
 			.into_iter()
 			.map(Object::from)
 			.collect::<Vec<_>>()

@@ -5,7 +5,7 @@ use crate::types::Text;
 
 mod flag;
 
-pub use flag::{Flag, Flags};
+pub use flag::Flags;
 
 /// An error that is caused by a bad regex being parsed.
 pub use ::regex::Error as RegexError;
@@ -43,9 +43,7 @@ impl Regex {
 	#[inline]
 	pub fn new_with_options(rxp: &str, flags: Flags) -> Result<Self, RegexError> {
 		let mut builder = ::regex::RegexBuilder::new(rxp);
-		for flag in flags {
-			flag.set_option(&mut builder);
-		}
+		flags.set_options(&mut builder);
 		Ok(Self(builder.build()?, flags))
 	}
 }

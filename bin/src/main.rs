@@ -49,9 +49,8 @@ fn main() {
 	quest_core::initialize();
 	quest_parser::initialize();
 
+	// The following line is used by me internally for benchmarking.
 	// if true {run::run_file("code.ignore/fib.qs", Default::default()).unwrap(); return}
-	// run::run_file("code.ignore/fib.qs", vec![&"--".into(), &"50_000".into()].into()).unwrap();
-	// run::run_file("code.ignore/ib.qs", vec![&"--".into(), &"guess.kn".into()].into()).unwrap();
 
 	match run_options(Opts::parse()) {
 		Ok(_) => {},

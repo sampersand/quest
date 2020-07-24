@@ -2,7 +2,7 @@ use crate::{Result, Stream};
 use crate::token::Tokenizable;
 use crate::expression::Executable;
 
-use quest_core::types::regex::{Flag, Flags};
+use quest_core::types::regex::Flags;
 pub use quest_core::types::{Regex, regex::RegexError};
 
 
@@ -58,15 +58,15 @@ impl Tokenizable for Regex {
 			}
 		}
 
-		let mut flags = Flags::new();
+		let mut flags = Flags::empty();
 
 		while let Some(chr) = stream.next().transpose()? {
 			match chr {
-				'i' => flags.set(Flag::CaseInsensitive),
-				'm' => flags.set(Flag::MultiLine),
-				's' => flags.set(Flag::DotMatchNewLine),
-				'U' => flags.set(Flag::SwapGreedy),
-				'x' => flags.set(Flag::IgnoreWhitespace),
+				'i' => flags.insert(Flags::CASE_INSENSITIVE),
+				'm' => flags.insert(Flags::MULTI_LINE),
+				's' => flags.insert(Flags::DOT_MATCH_NEWLINE),
+				'U' => flags.insert(Flags::SWAP_GREEDY),
+				'x' => flags.insert(Flags::IGNORE_WHITESPACE),
 				chr => {
 					unseek_char!(stream; chr);
 					break

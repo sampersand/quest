@@ -193,6 +193,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"false" => const Boolean::new(false),
 	"null" => const Null::new(),
 
+	"Tcp" => const super::Tcp::mapping(),
 	"Basic" => const super::Basic::mapping(),
 	"Boolean" => const super::Boolean::mapping(),
 	"BoundFunction" => const super::BoundFunction::mapping(),
@@ -249,6 +250,8 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 
 #[cfg(test)]
 mod tests {
+	use super::*;
+
 	#[test]
 	fn constants_exist() {
 		use crate::types::*;

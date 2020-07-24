@@ -44,6 +44,9 @@ mod text;
 pub mod regex;
 mod list;
 
+mod tcp;
+pub use tcp::Tcp;
+
 pub use class::Class;
 pub use convert::Convertible;
 pub use comparable::Comparable;

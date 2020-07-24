@@ -179,7 +179,7 @@ impl List {
 	}
 
 	/// Find an element in the list
-	pub fn find(&self, needle: &Object) -> crate::Result<Option<usize>> {
+	pub fn index(&self, needle: &Object) -> crate::Result<Option<usize>> {
 		for (idx, val) in self.iter().enumerate() {
 			if val.eq_obj(needle)? {
 				return Ok(Some(idx));
@@ -279,7 +279,7 @@ impl List {
 		let mut i = 0;
 
 		while i < self.len() {
-			if other.find(&self.0[i])?.is_some() {
+			if other.index(&self.0[i])?.is_some() {
 				self.0.remove(i);
 			} else {
 				i += 1;
@@ -300,7 +300,7 @@ impl List {
 		let mut other = other.clone();
 
 		while i < self.len() {
-			if let Some(j) = other.find(&self.0[i])? {
+			if let Some(j) = other.index(&self.0[i])? {
 				other.0.remove(j);
 				i += 1;
 			} else {
@@ -321,7 +321,7 @@ impl List {
 		let mut i = 0;
 
 		while i < other.len() {
-			if self.find(&other.0[i])?.is_none() {
+			if self.index(&other.0[i])?.is_none() {
 				self.0.push(other.0[i].clone());
 			}
 
@@ -342,7 +342,7 @@ impl List {
 		let mut other = other.clone();
 
 		while i < other.len() {
-			if let Some(j) = self.find(&other.0[i])? {
+			if let Some(j) = self.index(&other.0[i])? {
 				other.0.remove(i);
 				self.0.remove(j);
 			} else {
@@ -461,19 +461,19 @@ impl List {
 	///
 	/// # Arguments
 	/// 
-	/// 1. (required) The element to find.
+	/// 1. (required) The element to index.
 	///
 	/// # Quest Examples
 	/// ```quest
 	/// $list = [1, true, 3.5, "a"];
 	///
-	/// assert(list.$find(3.5) == 2);
-	/// assert(list.$find("dog") == null);
+	/// assert(list.$index(3.5) == 2);
+	/// assert(list.$index("dog") == null);
 	/// ```
-	pub fn qs_find(this: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs_index(this: &Object, args: Args) -> crate::Result<Object> {
 		let needle = args.arg(0)?;
 
-		this.try_downcast_and_then(|this: &Self| this.find(needle))
+		this.try_downcast_and_then(|this: &Self| this.index(needle))
 			.map(|x| x.map(Object::from).unwrap_or_default())
 	}
 
@@ -937,7 +937,7 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"each" => function Self::qs_each,
 
 	"clear" => function Self::qs_clear,
-	"find"  => function Self::qs_find,
+	"index"  => function Self::qs_index,
 	"len"   => function Self::qs_len,
 
 	"get"  => function Self::qs_get,

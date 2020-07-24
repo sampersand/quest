@@ -1,4 +1,4 @@
-use crate::token::{Token, Operator, operator::Associativity, ParenType};
+use crate::token::{Token, Operator, operator::Associativity};
 use crate::expression::{Expression, Constructable, PutBack, Executable};
 use crate::stream::Contexted;
 use crate::Result;
@@ -23,7 +23,8 @@ impl Display for BoundOperator {
 		match &*self.args {
 			OperArgs::Unary if self.oper.assoc() == Associativity::UnaryOperOnLeft =>
 				write!(f, "{}{}", self.oper, self.this),
-			OperArgs::Unary => write!(f, "{}{}", self.this, self.oper),
+			OperArgs::Unary =>
+				write!(f, "{}{}", self.this, self.oper),
 			OperArgs::Binary(rhs) if self.oper <= Operator::Dot => 
 				write!(f, "{}{}{}", self.this, self.oper, rhs),
 			OperArgs::Binary(rhs) if self.oper == Operator::Call => 
@@ -40,47 +41,16 @@ impl Display for BoundOperator {
 	}
 }
 
-impl BoundOperator {
-}
 impl Executable for BoundOperator {
-
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		let this = self.this.execute()?;
-
-		match self.args.as_ref() {
-			OperArgs::Binary(rhs) if self.oper == Operator::Call => match rhs {
-				Expression::Block(block) if block.paren_type() == ParenType::Round =>
-					return match block.run_block()? {
-						Some(crate::block::LineResult::Single(s)) =>
-							this.call_attr_lit(self.oper.into(), &[&s]),
-						Some(crate::block::LineResult::Multiple(m)) =>
-							this.call_attr_lit(self.oper.into(), m.iter().collect::<Vec<&_>>()),
-						None =>
-							this.call_attr_lit(self.oper.into(), &[])
-					},
-				_ => {}
-			},
-			_ => {}
-		};
-
 		let oper = self.oper.repr();
 
 		match self.args.as_ref() {
 			OperArgs::Unary => this.call_attr_lit(oper, &[]),
-			OperArgs::Binary(rhs) => this.call_attr_lit(oper, &[&rhs.execute()?]),
-			OperArgs::Ternary(mid, rhs) =>
-				this.call_attr_lit(oper, &[&mid.execute()?, &rhs.execute()?])
+			OperArgs::Binary(r) => this.call_attr_lit(oper, &[&r.execute()?]),
+			OperArgs::Ternary(m, r) => this.call_attr_lit(oper, &[&m.execute()?, &r.execute()?])
 		}
-
-		// let args_vec: Vec<quest_core::Object> =  {
-		// 	OperArgs::Unary => vec![],
-		// 	OperArgs::Binary(rhs) => vec![rhs.execute()?],
-		// 	OperArgs::Ternary(mid, rhs) => vec![mid.execute()?, rhs.execute()?],
-		// };
-
-		// let args_vec: Vec<&quest_core::Object> = args_vec.iter().collect();
-
-		// this.call_attr_lit(self.oper.into(), args_vec)
 	}
 }
 

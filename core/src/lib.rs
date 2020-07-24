@@ -49,7 +49,8 @@ pub fn initialize() {
 	INITIALIZE.call_once(||
 		initialize!(
 			Pristine, Basic, Boolean, BoundFunction, Comparable, Function, Kernel,
-			List, Null, Number, Regex, RustFn, Scope, Text, Iterable, iterable::BoundRustFn
+			List, Null, Number, Regex, RustFn, Scope, Text, Iterable, Tcp,
+			iterable::BoundRustFn
 		)
 	)
 }

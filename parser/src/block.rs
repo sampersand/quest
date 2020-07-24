@@ -184,7 +184,9 @@ impl Constructable for Block {
 		let paren = 
 			match ctor.next().transpose()? {
 				Some(Token::Left(paren)) => paren,
-				Some(tkn) => { ctor.put_back(Ok(tkn)); return Ok(None) },
+				Some(rparen @ Token::Right(..)) =>
+					return Err(parse_error!(ctor, UnexpectedToken(rparen))),
+				Some(tkn) => { ctor.put_back(Ok(dbg!(tkn))); return Ok(None) },
 				None => return Ok(None)
 			};
 
@@ -205,7 +207,9 @@ impl Constructable for Block {
 					return Ok(Some(block))
 				},
 
-				rparen @ Token::Right(..) => return Err(parse_error!(ctor, UnexpectedToken(rparen))),
+				rparen @ Token::Right(..) =>
+					return Err(parse_error!(ctor, UnexpectedToken(rparen))),
+
 				Token::Endline => 
 					if let Some(curr_line) = curr_line.take() {
 						block.lines.push(curr_line);

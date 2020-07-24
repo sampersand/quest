@@ -34,11 +34,12 @@ for BoundRustFn [(parents super::Basic)]:
 
 fn foreach<F>(this: &Object, block: Object, f: F) -> crate::Result<()>
 where
-	F: Fn(Object) -> crate::Result<()> + Send + Sync + 'static
+	F: Fn(Object, Object) -> crate::Result<()> + Send + Sync + 'static
 {
 	let bound =
 		BoundRustFn(Arc::new(Box::new(move |obj| {
-			f(block.call_attr_lit("()", &[&obj])?)
+			let called = block.call_attr_lit("()", &[&obj])?;
+			f(obj, called)
 		})));
 
 	let each = this.get_attr_lit("each")?;
@@ -53,7 +54,7 @@ impl Iterable {
 
 		let ret = Arc::new(Mutex::new(vec![]));
 		let ret2 = ret.clone();
-		foreach(this, block.clone(), move |obj| {
+		foreach(this, block.clone(), move |_, obj| {
 			ret2.lock().push(obj);
 			Ok(())
 		})?;
@@ -74,9 +75,10 @@ impl Iterable {
 
 		let ret = Arc::new(Mutex::new(vec![]));
 		let ret2 = ret.clone();
-		foreach(this, block.clone(), move |obj| {
-			if obj.call_downcast_map(crate::types::Boolean::clone)?.into_inner() {
-				ret2.lock().push(obj);
+
+		foreach(this, block.clone(), move |orig, select| {
+			if select.call_downcast_map(crate::types::Boolean::clone)?.into_inner() {
+				ret2.lock().push(orig);
 			}
 			Ok(())
 		})?;

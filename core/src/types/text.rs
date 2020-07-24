@@ -182,6 +182,10 @@ impl Text {
 		}
 	}
 
+	fn inspect(&self) -> Self {
+		format!("{:?}", self.0).into()
+	}
+
 	// fn unshift(&mut self, val: Object) {
 	// 	self.0.to_mut().insert(0, val);
 	// }
@@ -213,7 +217,7 @@ impl Text {
 	}
 
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(Self::clone).map(Object::from)
+		this.try_downcast_map(Self::inspect).map(Object::from)
 	}
 
 	pub fn qs_at_list(this: &Object, _: Args) -> crate::Result<Object> {
