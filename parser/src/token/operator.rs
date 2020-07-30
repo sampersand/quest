@@ -91,8 +91,6 @@ operator_enum!{
 	RootScope("::@" () 0 UnaryOperOnLeft 1) 
 	DotAssign(".=" () 16)
 	Call("()" () 0)
-	Index("[]" () 1)
-	WithBlock("{}" () 1)
 }
 
 impl Display for Operator {

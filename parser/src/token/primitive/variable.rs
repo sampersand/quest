@@ -1,10 +1,16 @@
 use crate::{Result, Stream};
 use crate::token::Tokenizable;
 use crate::expression::Executable;
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct Variable(quest_core::types::Text);
+
+impl Debug for Variable {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		f.debug_tuple("Variable").field(&self.to_string()).finish()
+	}
+}
 
 impl Display for Variable {
 	#[inline]

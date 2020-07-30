@@ -21,22 +21,36 @@ pub struct BoundOperator {
 impl Display for BoundOperator {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match &*self.args {
-			OperArgs::Unary if self.oper.assoc() == Associativity::UnaryOperOnLeft =>
-				write!(f, "{}{}", self.oper, self.this),
-			OperArgs::Unary =>
-				write!(f, "{}{}", self.this, self.oper),
-			OperArgs::Binary(rhs) if self.oper <= Operator::Dot => 
-				write!(f, "{}{}{}", self.this, self.oper, rhs),
-			OperArgs::Binary(rhs) if self.oper == Operator::Call => 
-				write!(f, "{} {}", self.this, rhs),
-			OperArgs::Binary(rhs) if self.oper < Operator::Assign => 
-				write!(f, "({}) {} ({})", self.this, self.oper, rhs),
-			OperArgs::Binary(rhs) =>
-				write!(f, "{} {} {}", self.this, self.oper, rhs),
-			OperArgs::Ternary(mid, rhs) if self.oper == Operator::DotAssign =>
-				write!(f, "{}.{} = {}", self.this, mid, rhs),
-			OperArgs::Ternary(mid, rhs) =>
-				write!(f, "{}{}({}, {})", self.this, self.oper, mid, rhs)
+			OperArgs::Unary if self.oper.assoc() != Associativity::UnaryOperOnLeft
+				=> todo!("non-UnaryOperOnLeft unary operators"),
+
+			OperArgs::Unary => {
+				Display::fmt(&self.oper, f)?;
+				Display::fmt(&self.this, f)
+			},
+
+			OperArgs::Binary(rhs) if self.oper == Operator::Call => {
+				Display::fmt(&self.this, f)?;
+				Display::fmt(rhs, f)
+			},
+			OperArgs::Binary(rhs) => {
+				Display::fmt(&self.this, f)?;
+				if self.oper > Operator::Pow { Display::fmt(&' ', f)?; }
+				Display::fmt(&self.oper, f)?;
+				if self.oper > Operator::Pow { Display::fmt(&' ', f)?; }
+				Display::fmt(rhs, f)
+			},
+
+			OperArgs::Ternary(mid, rhs) if self.oper == Operator::DotAssign => {
+				Display::fmt(&self.this, f)?;
+				Display::fmt(&Operator::Dot, f)?;
+				Display::fmt(mid, f)?;
+				Display::fmt(&' ', f)?;
+				Display::fmt(&Operator::Assign, f)?;
+				Display::fmt(&' ', f)?;
+				Display::fmt(rhs, f)
+			},
+			OperArgs::Ternary(_mid, _rhs) => todo!("non-DotAssign ternary operators")
 		}
 	}
 }
@@ -144,6 +158,8 @@ where
 				},
 			other => other
 		};
+
+		debug_assert!(matches!(this, Expression::FunctionCall(..)), "{:#?}", this);
 	}
 
 	Ok(this)
@@ -169,6 +185,18 @@ impl BoundOperator {
 				// any other token indicates that we're being called
 				if parent_op.map(|parent_op| Operator::Call < parent_op).unwrap_or(true) {
 					build_op(Operator::Call, ctor, lhs)
+					// match build_op(Operator::Call, ctor, lhs)? {
+					// 	Expression::Operator(BoundOperator { args, this, .. }) =>
+					// 		match *args {
+					// 			OperArgs::Binary(rhs) =>
+					// 				match rhs {
+					// 					Expression::Block(block) => Ok(Expression::FunctionCall(this, block)),
+					// 					_ => unreachable!()
+					// 				},
+					// 			_ => unreachable!()
+					// 		},
+					// 	_ => unreachable!()
+					// }
 				} else {
 					ctor.put_back(Ok(Token::Operator(Operator::Call)));
 					Ok(lhs)
@@ -177,4 +205,4 @@ impl BoundOperator {
 			None => Ok(lhs),
 		}
 	}
-	}
+}

@@ -558,7 +558,7 @@ impl List {
 	/// ```
 	pub fn qs_set(this: &Object, args: Args) -> crate::Result<Object> {
 		if args.len() != 2 {
-			todo!("non-single-index assigning");
+			todo!("non-single-index assigning: {:?} ({:?})", args.len(), args);
 		}
 
 		// also TODO: negative indicies

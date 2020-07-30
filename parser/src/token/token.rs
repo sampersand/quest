@@ -1,11 +1,11 @@
 use crate::Result;
 use crate::stream::Stream;
-use crate::token::{ParenType, Operator, Primative, Tokenizable};
+use crate::token::{ParenType, Operator, Primitive, Tokenizable};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
-	Primative(Primative),
+	Primitive(Primitive),
 	Operator(Operator),
 	Left(ParenType),
 	Right(ParenType),
@@ -16,7 +16,7 @@ pub enum Token {
 impl Display for Token {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Self::Primative(p) => Display::fmt(p, f),
+			Self::Primitive(p) => Display::fmt(p, f),
 			Self::Operator(o) => Display::fmt(o, f),
 			Self::Left(t) => Display::fmt(&t.left(), f),
 			Self::Right(t) => Display::fmt(&t.right(), f),
@@ -97,7 +97,7 @@ impl Token {
 			CommentResult::NoCommentFound => {}
 		}
 
-		if let Some(prim) = Primative::try_tokenize(stream)? {
+		if let Some(prim) = Primitive::try_tokenize(stream)? {
 			return Ok(Some(prim.into()))
 		} else if let Some(op) = Operator::try_tokenize(stream)? {
 			return Ok(Some(op.into()))

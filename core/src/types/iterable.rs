@@ -3,11 +3,13 @@ use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use parking_lot::Mutex;
 
+/// A mixin that provides all the iteratable methods, as long as `each` is defined.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Iterable;
 
+/// This probably can be improved, but *shrug*
 #[derive(Clone)]
-pub struct BoundRustFn(Arc<dyn Fn(Object) -> crate::Result<()> + Send + Sync>);
+pub(crate) struct BoundRustFn(Arc<dyn Fn(Object) -> crate::Result<()> + Send + Sync>);
 
 impl Debug for BoundRustFn {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -32,6 +34,7 @@ for BoundRustFn [(parents super::Basic)]:
 	}
 }
 
+/// Iterate through a block, calling the given function for each value.
 fn foreach<F>(this: &Object, block: Object, f: F) -> crate::Result<()>
 where
 	F: Fn(Object, Object) -> crate::Result<()> + Send + Sync + 'static

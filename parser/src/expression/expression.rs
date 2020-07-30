@@ -1,25 +1,38 @@
 use crate::{Result, Block};
 use crate::expression::{Constructable, Constructor, Executable, BoundOperator};
 use crate::stream::{Context, Contexted};
-use crate::token::{Token, Primative, Operator, ParenType};
+use crate::token::{Token, Primitive, Operator, ParenType};
 use quest_core::{Object, Args};
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Expression {
-	Primative(Primative),
+	Primitive(Primitive),
 	Block(Block),
 	Operator(BoundOperator),
 	FunctionCall(Box<Self>, Block)
 }
 
+impl Debug for Expression {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		match self {
+			Self::Primitive(prim) => Debug::fmt(prim, f),
+			Self::Block(block) => Debug::fmt(block, f),
+			Self::Operator(oper) => Debug::fmt(oper, f),
+			Self::FunctionCall(call, args) 
+				=> f.debug_tuple("FunctionCall").field(call).field(args).finish()
+		}
+	}
+}
+
 impl Display for Expression {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Self::Primative(prim) => Display::fmt(prim, f),
+			Self::Primitive(prim) => Display::fmt(prim, f),
 			Self::Block(block) => Display::fmt(block, f),
 			Self::Operator(op) => Display::fmt(op, f),
-			Self::FunctionCall(this, block) => write!(f, "{}{}", this, block)
+			Self::FunctionCall(this, block) =>
+				Display::fmt(this, f).and_then(|_| Display::fmt(block, f))
 		}
 	}
 }
@@ -38,7 +51,7 @@ fn call_function(this: &Expression, block: &Block) -> quest_core::Result<Object>
 impl Executable for Expression {
 	fn execute(&self) -> quest_core::Result<Object> {
 		match self {
-			Self::Primative(prim) => prim.execute(),
+			Self::Primitive(prim) => prim.execute(),
 			Self::Block(block) => block.execute(),
 			Self::Operator(op) => op.execute(),
 			Self::FunctionCall(this, block) => call_function(&this, &block)
@@ -46,10 +59,10 @@ impl Executable for Expression {
 	}
 }
 
-impl From<Primative> for Expression {
+impl From<Primitive> for Expression {
 	#[inline]
-	fn from(prim: Primative) -> Self {
-		Self::Primative(prim)
+	fn from(prim: Primitive) -> Self {
+		Self::Primitive(prim)
 	}
 }
 
@@ -75,7 +88,7 @@ impl Constructable for Expression {
 	where
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
-		if let Some(prim) = Primative::try_construct_primary(ctor)? {
+		if let Some(prim) = Primitive::try_construct_primary(ctor)? {
 			Ok(Some(prim.into()))
 		} else if let Some(oper) = BoundOperator::try_construct_primary(ctor)? {
 			Ok(Some(oper.into()))
@@ -156,7 +169,10 @@ impl Expression {
 			}
 		}
 
-		Self::try_construct(&mut WrappedBlock(Where::Start, Constructor::new(iter)))
+		let x = Self::try_construct(&mut WrappedBlock(Where::Start, Constructor::new(iter)))?;
+		println!("{:#}", x);
+		// println!("{:#?}", x);
+		Ok(x)
 	}
 }
 

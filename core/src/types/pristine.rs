@@ -66,9 +66,7 @@ impl Pristine {
 	/// ```
 	///
 	/// [`Text`]: crate::types::Text
-	#[allow(non_snake_case)]
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
-		// Ok(format!("<{}:{}>", this.typename(), this.id()).into())
 		Ok(format!("{:?}", this).into())
 	}
 
@@ -88,7 +86,6 @@ impl Pristine {
 	/// assert( 12.$__call_attr__($+, 4) == 16 )
 	/// assert( "foobar".$__call_attr__($get, 0, 2) == "foobar")
 	/// ```
-	#[inline]
 	#[allow(non_snake_case)]
 	pub fn qs___call_attr__<'a>(this: &'a Object, args: Args<'_, 'a>) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
@@ -120,7 +117,6 @@ impl Pristine {
 	/// # => I love to eat oranges
 	/// # => I love to eat melons
 	/// ```
-	#[inline]
 	#[allow(non_snake_case)]
 	pub fn qs___get_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
@@ -128,7 +124,10 @@ impl Pristine {
 	}
 
 	/// Set an attribute on the object
-	#[inline]
+	///
+	/// # Arguments
+	/// 1. (required) The attribute to set.
+	/// 2. (required) The value that will be used.
 	#[allow(non_snake_case)]
 	pub fn qs___set_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
@@ -137,22 +136,27 @@ impl Pristine {
 		Ok(val.clone())
 	}
 
-	#[inline]
+	/// Checks to see if an object has an attribute
+	///
+	/// # Arguments
+	/// 1. (required) The attribute to check for.
 	#[allow(non_snake_case)]
 	pub fn qs___has_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
 		this.has_attr(attr).map(Object::from)
 	}
 
-	#[inline]
+	/// Removes an attribute from an object
+	///
+	/// # Arguments
+	/// 1. (required) The attribute to remove.
 	#[allow(non_snake_case)]
 	pub fn qs___del_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
 		this.del_attr(attr)
 	}
 
-	#[inline]
-	#[allow(non_snake_case)]
+	/// The `::@` operator, which might be removed in the future.
 	pub fn qs_root_get_attr(this: &Object, _: Args) -> crate::Result<Object> {
 		crate::Binding::with_stack(|stack| {
 			stack.read()
@@ -162,12 +166,24 @@ impl Pristine {
 		})
 	}
 
-	#[inline]
+	/// The `.` operator, used for creating [`BoundFunction`]s.
+	///
+	/// This will probably be removed in the future, if I ever get [`BoundFunction`]s solved.
+	///
+	/// [`BoundFunction`]: crate::types::BoundFunction
+	///
+	/// # Arguments
+	/// 1. (required) The attribute to retrieve.
 	pub fn qs_dot_get_attr(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.arg(0)?;
 		this.dot_get_attr(attr)
 	}
 
+	/// Gets the list of keys for the object. 
+	///
+	/// # Arguments
+	/// 1. (optional, `@bool`) Whether or not to include parents' keys as well.
+	/// 2. (required) The value that will be used.
 	#[allow(non_snake_case)]
 	pub fn qs___keys__(this: &Object, args: Args) -> crate::Result<Object> {
 		let include_parents = args.arg(0)
@@ -199,5 +215,7 @@ for Pristine [(init_parent) (parents Pristine)]:
 	"." => function Self::qs_dot_get_attr,
 }
 
-
-
+#[cfg(test)]
+mod tests {
+	/* todo: tests */
+}

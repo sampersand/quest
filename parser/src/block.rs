@@ -36,38 +36,86 @@ impl Debug for Block {
 
 
 impl Display for Block {
-	#[allow(clippy::all)]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		write!(f, "{}", self.paren_type.left())?;
+		if self.lines.is_empty() {
+			return Display::fmt(&self.paren_type, f);
+		}
 
-		if self.lines.len() == 1 {
-			write!(f, " ")?;
-		} else if self.lines.len() > 1 {
+		let (last, body) = self.lines.split_last().unwrap();
+		Display::fmt(&self.paren_type.left(), f)?;
+
+		if body.is_empty() || !f.alternate() {
+			if self.paren_type == ParenType::Curly {
+				write!(f, " ")?;
+			}
+
+			for line in body { // in case `!f.alternate()`
+				Display::fmt(line, f)?;
+				write!(f, ";")?;
+			}
+			Display::fmt(last, f)?;
+
+			if self.paren_type == ParenType::Curly {
+				write!(f, " ")?;
+			}
+		} else {
+			fn write_tabbed(mut s: &str, f: &mut Formatter) -> fmt::Result {
+				while !s.is_empty() {
+					write!(f, "\t")?;
+					let split = s.find('\n').map(|x| x + 1).unwrap_or_else(|| s.len());
+					f.write_str(&s[..split])?;
+					s = &s[split..];
+				}
+				writeln!(f, ";")
+			}
+
 			writeln!(f)?;
-		}
-
-		for (i, line) in self.lines.iter().enumerate() {
-			if self.lines.len() > 1 {
-				write!(f, "\t")?;
+			for line in body {
+				write_tabbed(&format!("{:#}", line), f)?;
 			}
 
-			Display::fmt(line, f)?;
-
-			if i < self.lines.len() && i != self.lines.len() - 1 {
-				write!(f, ";")?
-			}
-
-			if self.lines.len() > 1 {
-				writeln!(f)?;
-			}
+			write_tabbed(&format!("{:#}", last), f)?;
 		}
 
-		if self.lines.len() == 1 {
-			write!(f, " ")?;
-		}
-		write!(f, "{}", self.paren_type.right())
+
+		Display::fmt(&self.paren_type.right(), f)
 	}
 }
+
+// impl Display for Block {
+// 	#[allow(clippy::all)]
+// 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+// 		write!(f, "{}", self.paren_type.left())?;
+
+
+// 		if self.lines.len() == 1 {
+// 			write!(f, " ")?;
+// 		} else if self.lines.len() > 1 {
+// 			writeln!(f)?;
+// 		}
+
+// 		for (i, line) in self.lines.iter().enumerate() {
+// 			if self.lines.len() > 1 {
+// 				write!(f, "\t")?;
+// 			}
+
+// 			Display::fmt(line, f)?;
+
+// 			if i < self.lines.len() && i != self.lines.len() - 1 {
+// 				write!(f, ";")?
+// 			}
+
+// 			if self.lines.len() > 1 {
+// 				writeln!(f)?;
+// 			}
+// 		}
+
+// 		if self.lines.len() == 1 {
+// 			write!(f, " ")?;
+// 		}
+// 		write!(f, "{}", self.paren_type.right())
+// 	}
+// }
 
 
 impl Display for Line {
@@ -186,7 +234,7 @@ impl Constructable for Block {
 				Some(Token::Left(paren)) => paren,
 				Some(rparen @ Token::Right(..)) =>
 					return Err(parse_error!(ctor, UnexpectedToken(rparen))),
-				Some(tkn) => { ctor.put_back(Ok(dbg!(tkn))); return Ok(None) },
+				Some(tkn) => { ctor.put_back(Ok(tkn)); return Ok(None) },
 				None => return Ok(None)
 			};
 

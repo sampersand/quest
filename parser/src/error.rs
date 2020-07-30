@@ -6,8 +6,8 @@ use std::fmt::{self, Display, Formatter};
 #[non_exhaustive]
 pub enum ErrorType {
 	CantReadStream(std::io::Error),
-	BadNumber(crate::token::primative::number::ParseError),
-	BadRegex(crate::token::primative::regex::RegexError),
+	BadNumber(crate::token::primitive::number::ParseError),
+	BadRegex(crate::token::primitive::regex::RegexError),
 	UnterminatedBlockComment,
 	UnknownTokenStart(char),
 	UnterminatedQuote,

@@ -1,6 +1,11 @@
 use crate::{Args, Object, Error};
 use crate::types::{Boolean, Text, Null, Number};
+use crate::literal::CALL;
 
+/// The kernel is a collection of core methods that are used constantly within Quest code.
+///
+/// Unlike most other languages, there is no concept of "keywords" within Quest: Instead, we have
+/// methods like [`if`](#qs_if), [`while`](#qs_while) and [`return`](#qs_return) for control flow.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Kernel;
 
@@ -35,22 +40,75 @@ fn object_to_string(object: &Object) -> crate::Result<String> {
 }
 
 impl Kernel {
+	/// Executes code based on the condition.
+	///
+	/// If the first argument is true (via [`@bool`]), then the second argument will be be called.
+	/// If it's not, then the third argument will be [called] (or return [`null`] if no third
+	/// argument is given)
+	///
+	/// # Terninary Operator
+	/// Because this is a function, it can also be used in place of the traditional terninary
+	/// operator from other languages:
+	/// ```quest
+	/// $name = "Sam";
+	/// disp("Hi, there",
+	/// 	if(name == "Sam", {
+	/// 		name + ", the friend"
+	///	}, {
+	/// 		"mysterious perosn: " + name
+	/// 	}))
+	/// ```
+	///
+	/// # Arguments
+	/// 1. (required, [`@bool`]) The condition.
+	/// 2. (required, [`()`]) The value to be called when true.
+	/// 3. (optional, [`()`]) The value to be called when false, defaults to [`null`] 
+	///
+	/// [`null`]: Null
+	/// [`()`]: CALL
+	/// [`@bool`]: crate::literal::AT_BOOL
 	pub fn qs_if(_: &Object, args: Args) -> crate::Result<Object> {
 		if is_object_truthy(args.arg(0)?)? {
 			args.arg(1)?.clone()
 		} else {
 			args.arg(2).map(Clone::clone).unwrap_or_default()
-		}.call_attr_lit("()", &[])
+		}.call_attr_lit(CALL, &[])
 	}
 
+	/// Displays values with a trailing newline
+	///
+	/// Each argument is converted to text and separated by a space, with a trailing newline added.
+	/// For a version without the newline, see [`qs_dispn`](#qs_dispn).
+	///
+	/// # Arguments
+	/// 1+ (optional, [`@text`](crate::literal::AT_TEXT)) The values to print.
 	pub fn qs_disp(_: &Object, args: Args) -> crate::Result<Object> {
 		display(args.as_ref(), true).map(|_| Object::default())
 	}
 
+	/// Displays values without a trailing newline
+	///
+	/// Each argument is converted to text and separated by a space, without a trailing newline
+	/// added. For a version with the newline, see [`qs_disp`](#qs_disp).
+	///
+	/// # Arguments
+	/// 1+ (optional, [`@text`](crate::literal::AT_TEXT)) The values to print.
 	pub fn qs_dispn(_: &Object, args: Args) -> crate::Result<Object> {
 		display(args.as_ref(), false).map(|_| Object::default())
 	}
 
+	/// Continues to code whilst a codition is true.
+	///
+	/// As long as the result of calling the first argument is true, the second argument will be
+	/// executed. The last value returned from the body of the while loop is the return value of the
+	/// while function.
+	///
+	/// # Arguments
+	/// 1. (required, [`()`]) The condition; its return value must respond to [`@bool`]
+	/// 2. (required, [`()`]) The body to execute.
+	///
+	/// [`()`]: CALL
+	/// [`@bool`]: crate::literal::AT_BOOL
 	pub fn qs_while(_: &Object, args: Args) -> crate::Result<Object> {
 		let cond = args.arg(0)?;
 		let body = args.arg(1)?;
@@ -58,27 +116,43 @@ impl Kernel {
 		// 	b.set_attr_old("name", Object::from("while"))?;
 
 			let mut result = Object::default();
-			while is_object_truthy(&cond.call_attr_lit("()", &[])?)? {
-				result = body.call_attr_lit("()", &[])?;
+			while is_object_truthy(&cond.call_attr_lit(CALL, &[])?)? {
+				result = body.call_attr_lit(CALL, &[])?;
 			};
 			Ok(result)
 		// })
 	}
 
+	/// Execute code forever (or until it's [`return`](#qs_return)ed from).
+	///
+	/// This is functionally identical to calling `while({ true }, ...)`, but is a bit more
+	/// efficient.
+	///
+	/// # Arguments
+	/// 1. (required, [`()`](CALL)) The body to execute.
 	pub fn qs_loop(_: &Object, args: Args) -> crate::Result<Object> {
 		let body = args.arg(0)?;
 		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
 			// b.set_attr_old("name", Object::from("loop"))?;
 			loop {
-				body.call_attr_lit("()", &[])?;
+				body.call_attr_lit(CALL, &[])?;
 			}
 		// })
 	}
 
+	#[doc(hidden)]
 	pub fn qs_for(_: &Object, _args: Args) -> crate::Result<Object> {
 		todo!("r#for")
 	}
 
+	/// Stops the execution of the program
+	///
+	/// # Arguments
+	/// 1. (optional, [`@num`]) The status code; defaults to `1`.
+	/// 2. (optional, [`@text`]) The message to print before quitting.
+	///
+	/// [`@num`]: crate::literal::AT_NUM
+	/// [`@text`]: crate::literal::AT_TEXT
 	pub fn qs_quit(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::convert::TryFrom;
 
@@ -98,6 +172,16 @@ impl Kernel {
 		std::process::exit(code as i32)
 	}
 
+	/// Executes a command in a subshell, returning its stdout.
+	///
+	/// Note that this may be updated in the future to allow for more options, such as specifying 
+	/// what happens to stderr, etc.
+	///
+	/// # Arguments
+	/// 1. (required, [`@text`]) The command to execute.
+	/// 2+ (optional, [`@text`]) The arguments to pass to the command
+	///
+	/// [`@text`]: crate::literal::AT_TEXT
 	pub fn qs_system(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::process::Command;
 		let cmd = object_to_string(args.arg(0)?)?;
@@ -112,6 +196,18 @@ impl Kernel {
 			.map(|output| String::from_utf8_lossy(&output.stdout).to_string().into())
 	}
 
+	/// Gets a random number based on the given bounds.
+	///
+	/// Depending on the arguments given, the bounds are:
+	/// - [`0`, `1`)
+	/// - [`0`, `arg0`)
+	/// - [`arg0`, `arg1`)
+	///
+	/// # Arguments
+	/// 1. (optional, [`@num`]) The starting position if two args given. Otherwise the start.
+	/// 2. (optional, [`@num`]) The ending position.
+	///
+	/// [`@num`]: crate::literal::AT_NUM
 	pub fn qs_rand(_: &Object, args: Args) -> crate::Result<Object> {
 		use crate::types::number::FloatType;
 
@@ -132,6 +228,15 @@ impl Kernel {
 		Ok((rand::random::<FloatType>() * (end - start) + start).into())
 	}
 
+	/// Prompt the user for input
+	///
+	/// The optional message is printed without a newline, and the result of the prompt has its
+	/// endings stripped.
+	///
+	/// In the future, more options may be given, but that's not a priority currently.
+	///
+	/// # Arguments
+	/// 1. (optional, [`@text`](crate::literal::AT_TEXT)) The message to be printed.
 	pub fn qs_prompt(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::io;
 
@@ -153,6 +258,14 @@ impl Kernel {
 		}
 	}
 
+	/// Returns a value from the specified scope.
+	///
+	/// Because of how Quest works, there is no concept of "returning from a function"---as such,
+	/// You need to specify _which_ function you want to return from.
+	///
+	/// # Arguments
+	/// 1. (required) The stackframe to return from (e.g. `:1`)
+	/// 2. (optional) The return value; if omited, [`null`](Null)
 	pub fn qs_return(_: &Object, args: Args) -> crate::Result<Object> {
 		let to = crate::Binding::from(args.arg(0)?.clone());
 		let obj = args.arg(1).map(Clone::clone).unwrap_or_default();
@@ -160,6 +273,11 @@ impl Kernel {
 		Err(Error::Return { to, obj })
 	}
 
+	/// Assert that a statement is true, raising an [`Error::AssertionFailed`] if it's not.
+	///
+	/// # Arguments
+	/// 1. (required, [`@bool`](crate::literal::AT_BOOL)) The value to check against.
+	/// 2. (optional, [`@text`](crate::literal::AT_TEXT)) The optional message to return.
 	pub fn qs_assert(_: &Object, args: Args) -> crate::Result<Object> {
 		let arg = args.arg(0)?;
 		if is_object_truthy(arg)? {
@@ -175,12 +293,17 @@ impl Kernel {
 		}
 	}
 
+	/// Sleeps for the specified duration, in seconds.
+	///
+	/// # Arguments
+	/// 1. (required, [`@num`](Crate::types::AT_NUM)) The time to sleep for, in seconds
 	pub fn qs_sleep(_: &Object, args: Args) -> crate::Result<Object> {
 		let dur = args.arg(0)?.call_downcast_map(Number::clone)?;
 		std::thread::sleep(std::time::Duration::from_secs_f64(dur.into()));
 		Ok(Object::default())
 	}
 
+	#[doc(hidden)]
 	pub fn qs_open(_: &Object, _args: Args) -> crate::Result<Object> {
 		// let filename = args.arg(0)?.downcast_call::<types::Text>();
 		todo!("open")

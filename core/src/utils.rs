@@ -1,3 +1,6 @@
+#![doc(hidden)]
+// This is soft-deprecated as a public api.
+
 pub fn hash<T: std::hash::Hash + 'static>(data: &T) -> u64 {
 	use std::collections::hash_map::DefaultHasher;
 	use std::hash::{Hash, Hasher};

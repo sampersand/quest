@@ -1,5 +1,5 @@
 use crate::{Object, Result, Args};
-use crate::literal::{EQL, AT_BOOL, NOT, INSPECT};
+use crate::literal::{CALL, EQL, AT_BOOL, NOT, INSPECT};
 
 /// A class that holds all the basic functions objects can have.
 ///
@@ -13,7 +13,6 @@ impl Basic {
 	/// Convert `this` into a [`Boolean`](crate::types::Boolean).
 	///
 	/// All objects are [`true`](crate::types::Boolean::TRUE) by default.
-	#[inline]
 	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
 		Ok(true.into())
 	}
@@ -21,7 +20,6 @@ impl Basic {
 	/// Converts `this` into a [`Text`](crate::types::Text).
 	///
 	/// This is simply a redirect to the `inspect` method.
-	#[inline]
 	pub fn qs_at_text<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(INSPECT, args)
 	}
@@ -32,7 +30,6 @@ impl Basic {
 	///
 	/// # Arguments
 	/// 1. (required) The other object.
-	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
 		Ok(this.is_identical(args.arg(0)?).into())
 	}
@@ -43,7 +40,6 @@ impl Basic {
 	///
 	/// # Arguments
 	/// 1. (required) The other object.
-	#[inline]
 	pub fn qs_neq<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(EQL, args)?.call_attr_lit(NOT, &[])
 	}
@@ -51,7 +47,6 @@ impl Basic {
 	/// Get the logical inverse of `this`.
 	///
 	/// This simply calls the `@bool` method and then the `!` method on the result.
-	#[inline]
 	pub fn qs_not<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(AT_BOOL, args)?.call_attr_lit(NOT, &[])
 	}
@@ -59,7 +54,6 @@ impl Basic {
 	/// Get a hash of `this`.
 	///
 	/// This generates a unique hash per object by hashing the object's [`id`](Object::id).
-	#[inline]
 	pub fn qs_hash(this: &Object, _: Args) -> Result<Object> {
 		Ok(crate::utils::hash(&this.id()).into())
 	}
@@ -68,7 +62,6 @@ impl Basic {
 	///
 	/// This doesn't actually clone the underlying data---it marks it as "shared", and if it's
 	/// modified it will be cloned.
-	#[inline]
 	pub fn qs_clone(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.deep_clone())
 	}
@@ -76,9 +69,13 @@ impl Basic {
 	/// Simply returns `this`.
 	///
 	/// This is useful for passing methods around to functions.
-	#[inline]
 	pub fn qs_itself(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.clone())
+	}
+
+	pub fn qs_tap(this: &Object, args: Args) -> Result<Object> {
+		args.arg(0)?.call_attr_lit(CALL, &[this])
+			.map(|_| this.clone())
 	}
 }
 
@@ -92,6 +89,7 @@ for Basic [(parents super::Pristine)]:
 	"clone" => function Self::qs_clone,
 	"hash" => function Self::qs_hash,
 	"itself" => function Self::qs_itself,
+	"tap" => function Self::qs_tap,
 	// "||"    => Self::or,
 	// "&&"    => Self::and,
 }
@@ -263,5 +261,9 @@ mod tests {
 			assert!(obj.is_identical(&Basic::qs_itself(&obj, args!()).unwrap()));
 			assert!(!obj.is_identical(&Basic::qs_itself(&Basic.into(), args!()).unwrap()));
 		}
+
+		#[test]
+		#[ignore]
+		fn tap() { unimplemented!() }
 	}
 }

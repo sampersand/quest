@@ -6,7 +6,7 @@
 //! - [`quest-parser`](#TODO) for parsing quest
 //! - [`quest-bin`](#TODO) the quest executable
 #![allow(clippy::unnested_or_patterns, clippy::pub_enum_variant_names)]
-
+// #![warn(missing_docs)]
 
 #![allow(
 	// TODO
@@ -50,7 +50,7 @@ pub fn initialize() {
 		initialize!(
 			Pristine, Basic, Boolean, BoundFunction, Comparable, Function, Kernel,
 			List, Null, Number, Regex, RustFn, Scope, Text, Iterable, Tcp,
-			iterable::BoundRustFn
+		iterable::BoundRustFn
 		)
 	)
 }

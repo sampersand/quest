@@ -3,23 +3,29 @@ use crate::error::TypeError;
 use crate::literal::Literal;
 use std::any::{Any, type_name};
 
+/// A trait representing the ability for a type to be converted into.
 pub trait Convertible : Any + Sized + Clone {
+	/// The fucntion name to be called on objects to convert.
 	const CONVERT_FUNC: Literal;
 }
 
 impl Object {
+	/// Tries to downcast this object as a `T`, calling [`T::CONVERT_FUNC`](
+	/// Covnertible::CONVERT_FUNC) if the object isn't a `T`.
 	#[inline]
 	pub fn call_downcast_map<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
-		T: Convertible + Any,
+		T: Convertible,
 		F: FnOnce(&T) -> O
 	{
 		self.call_downcast_and_then(|x| Ok(f(x)))
 	}
 
+	/// Tries to downcast this object as a `T`, calling [`T::CONVERT_FUNC`](
+	/// Covnertible::CONVERT_FUNC) if the object isn't a `T`.
 	pub fn call_downcast_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
-		T: Convertible + Any,
+		T: Convertible,
 		F: FnOnce(&T) -> crate::Result<O>,
 	{
 		if self.is_a::<T>() {
