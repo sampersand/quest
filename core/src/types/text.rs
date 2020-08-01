@@ -220,10 +220,12 @@ impl Text {
 		this.try_downcast_map(Self::inspect).map(Object::from)
 	}
 
+	#[allow(clippy::redundant_closure)]
 	pub fn qs_at_list(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| List::from(this)).map(Object::from)
 	}
 
+	#[allow(clippy::redundant_closure)]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| Boolean::from(this)).map(Object::from)
 	}

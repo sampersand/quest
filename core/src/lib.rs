@@ -5,7 +5,7 @@
 //! # See Also
 //! - [`quest-parser`](#TODO) for parsing quest
 //! - [`quest-bin`](#TODO) the quest executable
-#![allow(clippy::unnested_or_patterns, clippy::pub_enum_variant_names)]
+#![allow(clippy::pub_enum_variant_names)]
 
 
 #![allow(

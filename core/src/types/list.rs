@@ -402,6 +402,7 @@ impl List {
 	///
 	/// assert(list.$@text() == '[1, "a", true]')
 	/// ```
+	#[allow(clippy::redundant_closure)]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_and_then(|this: &Self| Text::try_from(this))
 			.map(Object::from)
@@ -428,6 +429,7 @@ impl List {
 	/// assert([1, "a", true]);
 	/// assert(![]);
 	/// ```
+	#[allow(clippy::redundant_closure)]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_map(|this: &Self| Boolean::from(this))
 			.map(Object::from)

@@ -15,13 +15,6 @@ impl Debug for BoundRustFn {
 	}
 }
 
-impl Eq for BoundRustFn {}
-impl PartialEq for BoundRustFn {
-	fn eq(&self, rhs: &Self) -> bool {
-		Arc::ptr_eq(&self.0, &rhs.0)
-	}
-}
-
 impl_object_type!{
 for BoundRustFn [(parents super::Basic)]:
 	"()" => function |this: &Object, args: Args| {

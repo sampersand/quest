@@ -95,9 +95,10 @@ impl From<Boolean> for Number {
 	/// Convert to a [`Number`] by mapping `true` to [`Number::ONE`] and `false` to
 	/// [`Number::ZERO`]
 	fn from(b: Boolean) -> Self {
-		match b.into_inner() {
-			true => Self::ONE,
-			false => Self::ZERO
+		if b.into_inner() {
+			Self::ONE
+		} else {
+			Self::ZERO
 		}
 	}
 }
@@ -106,11 +107,12 @@ impl From<Boolean> for Text {
 	/// Convert to a [`Text`] by mapping `true` to `"true"` and `false` to `"false"`
 	#[inline]
 	fn from(b: Boolean) -> Self {
-		const TRUE_TEXT: Text = Text::new_static("true");
-		const FALSE_TEXT: Text = Text::new_static("false");
-		match b.into_inner() {
-			true => TRUE_TEXT,
-			false => FALSE_TEXT
+		const TRUE: Text = Text::new_static("true");
+		const FALSE: Text = Text::new_static("false");
+		if b.into_inner() {
+			TRUE
+		} else {
+			FALSE
 		}
 	}
 }
@@ -351,9 +353,10 @@ for Boolean {
 				vec![Boolean::mapping()]);
 		}
 
-		match self.into_inner() { 
-			true => TRUE.deep_clone(),
-			false => FALSE.deep_clone()
+		if self.into_inner() { 
+			TRUE.deep_clone()
+		} else {
+			FALSE.deep_clone()
 		}
 	}
 }
