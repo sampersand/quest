@@ -1,3 +1,5 @@
+
+
 # This is how you would represent classical "classes" within Quest by having
 # the "class" be its own object too.
 

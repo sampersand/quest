@@ -98,6 +98,23 @@ impl Regex {
 	/// Returns an Array of matched values.
 	///
 	/// The first argument is converted to a [`Text`] before matching.
+	pub fn qs_scan(this: &Object, args: Args) -> crate::Result<Object> {
+		let rhs = args.arg(0)?;
+
+		this.try_downcast_and_then(|this: &Self| {
+			rhs.call_downcast_map(|rhs: &Text| {
+				this.0
+					.find_iter(rhs.as_ref())
+					.map(|m| Object::from(m.as_str().to_string()))
+					.collect::<crate::types::List>()
+					.into()
+			})
+		})
+	}
+
+	/// Returns an Array of matched groups.
+	///
+	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_match(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
 
@@ -114,6 +131,7 @@ impl Regex {
 			})
 		})
 	}
+
 
 	/// Checks to see if the first argument matches.
 	///
@@ -132,7 +150,8 @@ impl Regex {
 impl_object_type!{
 for Regex [(parents super::Basic) (convert "@regex")]:
 	"inspect" => function Self::qs_inspect,
-	"=="      => function Self::qs_eql,
+	"==" => function Self::qs_eql,
 	"does_match" => function Self::qs_does_match,
 	"match" => function Self::qs_match,
+	"scan" => function Self::qs_scan,
 }

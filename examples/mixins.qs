@@ -3,7 +3,7 @@
 
 $Person = {
 	__parents__.$push(Comparable);
-
+	
 	$() = {
 		$__parents__ = [Person];
 
