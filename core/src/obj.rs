@@ -7,6 +7,7 @@ use crate::literal::{EQL, Literal};
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, type_name};
+use std::ops::{Deref, DerefMut};
 
 mod data;
 mod attributes;
@@ -112,7 +113,7 @@ impl Object {
 	/// Compares two objects using [`==`](EQL) to see if they are equal
 	pub fn eq_obj(&self, rhs: &Object) -> crate::Result<bool> {
 		self.call_attr_lit(EQL, &[rhs])
-			.map(|obj| obj.downcast_and_then::<Boolean, _, _>(|b| b.into_inner()).unwrap_or(false))
+			.map(|obj| obj.downcast::<Boolean>().map(|b| (*b).into_inner()).unwrap_or(false))
 	}
 
 	/// Copies the actual data of the object.
@@ -153,7 +154,14 @@ impl Object {
 		T: Any,
 		F: FnOnce(&mut T) -> O
 	{
-		self.try_downcast_mut_and_then(|x| Ok(f(x)))
+		self.downcast_mut()
+			.map(|mut d| Ok(f(&mut d)))
+			.unwrap_or_else(|| Err(TypeError::WrongType {
+				expected: type_name::<T>(),
+				got: self.typename()
+			}.into()))
+
+		// self.try_downcast_mut_and_then(|x| Ok(f(x)))
 	}
 
 	/// Tries to downcast this object as a `T`, and if it is, calls `f`.
@@ -164,50 +172,39 @@ impl Object {
 		T: Any,
 		F: FnOnce(&T) -> crate::Result<O>,
 	{
-		self.downcast_and_then(f)
+		self.downcast().map(|d| f(&d))
 			.unwrap_or_else(|| Err(TypeError::WrongType {
 				expected: type_name::<T>(),
 				got: self.typename()
 			}.into()))
 	}
+ 
 
-	/// Tries to downcast this object as a mutable `T`, and if it is, calls `f`.
-	///
-	/// If the object isn't a `T`, a [`TypeError`] is returned.
-	pub fn try_downcast_mut_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
-	where
-		T: Any,
-		F: FnOnce(&mut T) -> crate::Result<O>
-	{
-		self.downcast_mut_and_then(f)
-			.unwrap_or_else(|| Err(TypeError::WrongType {
+	#[inline]
+	pub fn downcast<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
+		self.0.data.downcast()
+	}
+
+
+	#[inline]
+	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
+		self.0.data.downcast_mut()
+	}
+
+	pub fn try_downcast<'a, T: Any>(&'a self) -> crate::Result<impl Deref<Target=T> + 'a> {
+		self.downcast()
+			.ok_or_else(|| TypeError::WrongType {
 				expected: type_name::<T>(),
 				got: self.typename()
-			}.into()))
+			}.into())
 	}
 
-	/// Tries to downcast this object as a `T`, and if it is, calls `f`.
-	///
-	/// If the object isn't a `T`, `None` is returned.
-	#[inline]
-	pub fn downcast_and_then<T, R, F>(&self, f: F) -> Option<R>
-	where
-		T: Any,
-		F: FnOnce(&T) -> R
-	{
-		self.0.data.downcast_and_then(f)
-	}
-
-	/// Tries to downcast this object as a mutable `T`, and if it is, calls `f`.
-	///
-	/// If the object isn't a `T`, `None` is returned.
-	#[inline]
-	pub fn downcast_mut_and_then<T, R, F>(&self, f: F) -> Option<R>
-	where
-		T: Any,
-		F: FnOnce(&mut T) -> R
-	{
-		self.0.data.downcast_mut_and_then(f)
+	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> crate::Result<impl DerefMut<Target=T> + 'a> {
+		self.downcast_mut()
+			.ok_or_else(|| TypeError::WrongType {
+				expected: type_name::<T>(),
+				got: self.typename()
+			}.into())
 	}
 }
 

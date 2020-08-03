@@ -777,9 +777,11 @@ impl List {
 			return Self::qs_clear(rhs, Args::default());
 		}
 
-		this.try_downcast_mut_and_then(|this: &mut Self| {
-			rhs.call_downcast_and_then(|rhs: &Self| this.try_sub_assign(rhs))
-		}).map(|_| this.clone())
+
+		this.try_downcast_mut::<Self>()?
+			.try_sub_assign(&rhs.call_downcast_map(Self::clone)?)?;
+
+		Ok(this.clone())
 	}
 
 	/// Get the intersection of two lists, i.e. the common elements
@@ -825,9 +827,10 @@ impl List {
 			return Ok(this.clone());
 		}
 
-		this.try_downcast_mut_and_then(|this: &mut Self| {
-			rhs.call_downcast_and_then(|rhs: &Self| this.try_bitand_assign(rhs))
-		}).map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?
+			.try_bitand_assign(&rhs.call_downcast_map(Self::clone)?)?;
+
+		Ok(this.clone())
 	}
 
 	/// Get the union of two lists, i.e. the combination of all elements
@@ -872,9 +875,10 @@ impl List {
 			return Ok(this.clone());
 		}
 
-		this.try_downcast_mut_and_then(|this: &mut Self| {
-			rhs.call_downcast_and_then(|rhs: &Self| this.try_bitand_assign(rhs))
-		}).map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?
+			.try_bitor_assign(&rhs.call_downcast_map(Self::clone)?)?;
+
+		Ok(this.clone())
 	}
 
 	/// Get the list of elements in only one list.
@@ -920,9 +924,10 @@ impl List {
 			return Self::qs_clear(this, Args::default());
 		}
 
-		this.try_downcast_mut_and_then(|this: &mut Self| {
-			rhs.call_downcast_and_then(|rhs: &Self| this.try_bitxor_assign(rhs))
-		}).map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?
+			.try_bitxor_assign(&rhs.call_downcast_map(Self::clone)?)?;
+
+		Ok(this.clone())
 	}
 }
 
@@ -939,7 +944,7 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"each" => function Self::qs_each,
 
 	"clear" => function Self::qs_clear,
-	"index"  => function Self::qs_index,
+	"index" => function Self::qs_index,
 	"len"   => function Self::qs_len,
 
 	"get"  => function Self::qs_get,

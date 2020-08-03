@@ -10,9 +10,9 @@ macro_rules! assert_call_idempotent {
 		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
 		assert!(!old.is_identical(&new));
 		$(
-			old.downcast_and_then(|x: &assert_call_idempotent!(@INTO $ty $($into)?)|
-				assert_eq!(*x, $expected)
-			).unwrap();
+			assert_eq!(
+				*old.downcast::<assert_call_idempotent!(@INTO $ty $($into)?)>().unwrap(),
+				$expected)
 		)?
 	};
 }
@@ -26,9 +26,10 @@ macro_rules! assert_call_non_idempotent {
 		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
 		assert!(old.is_identical(&new));
 		$(
-			old.downcast_and_then(|x: &assert_call_idempotent!(@INTO $ty $($into)?)|
-				assert_eq!(*x, $expected)
-			).unwrap();
+			assert_eq!(
+				*old.downcast::<assert_call_idempotent!(@INTO $ty $($into)?)>().unwrap(),
+				$expected
+			);
 		)?
 	}};
 }
@@ -41,7 +42,7 @@ macro_rules! call_unwrap {
 		use crate::types::*;
 
 		$ty::$fn(&$this.into(), args!($($args),*)).unwrap()
-			.downcast_and_then($block)
+			.downcast::<$($ret)?>().map($block)
 			.unwrap()
 	}};
 }
@@ -74,7 +75,7 @@ macro_rules! assert_call_err {
 #[cfg(test)]
 macro_rules! assert_call_eq {
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*) $(-> $ret:ty)?, $rhs:expr) => {{
-		call_unwrap!($ty::$fn($this $(, $args)*) $(-> $ret)?; |lhs $(: &$ret)?| {
+		call_unwrap!($ty::$fn($this $(, $args)*) $(-> $ret)?; |lhs| {
 			assert_eq!(*lhs, $rhs)
 		})
 	}};

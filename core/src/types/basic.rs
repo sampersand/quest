@@ -227,9 +227,9 @@ mod tests {
 			let hash = Basic::qs_hash(&obj1, args!()).unwrap()
 				.call_downcast_map(Number::clone).unwrap();
 			// make sure repeated hashes are the same.
-			assert_eq!(hash, call_unwrap!(Basic::qs_hash(obj1) -> Number; Number::clone));
+			assert_eq!(hash, call_unwrap!(Basic::qs_hash(obj1) -> Number; |n| *n));
 			// make sure two hashes aren't identical for the same object.
-			assert_ne!(hash, call_unwrap!(Basic::qs_hash(obj2) -> Number; Number::clone));
+			assert_ne!(hash, call_unwrap!(Basic::qs_hash(obj2) -> Number; |n| *n));
 
 			assert_call_idempotent!(Basic::qs_hash(Basic));
 		}

@@ -1,7 +1,8 @@
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
 use std::borrow::{Borrow, BorrowMut};
-use parking_lot::RwLock;
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::ops::{Deref, DerefMut};
 
 pub(crate) trait Sharable {
 	type Owned: Sized + BorrowMut<Self>;
@@ -93,26 +94,48 @@ impl<T: Sharable + ?Sized> SharedCow<T> {
 		Self(RwLock::new(Data::Owned(data)))
 	}
 
-	pub fn with_ref<F: FnOnce(&T) -> R, R>(&self, func: F) -> R {
-		match *self.0.read() {
-			Data::Shared(ref shared) => func(shared.borrow()),
-			Data::Owned(ref owned) => func(owned.borrow())
-		}
-	}
-}
+	pub fn read<'a>(&'a self) -> impl Deref<Target=T> + 'a {
+		struct Reader<'a, T: Sharable + ?Sized>(RwLockReadGuard<'a, Data<T>>);
 
-impl<T: Sharable + ?Sized> SharedCow<T> {
-	pub fn with_mut<F: FnOnce(&mut T) -> R, R>(&self, func: F) -> R {
-		let mut lock = self.0.write();
-
-		match *lock {
-			Data::Owned(ref mut owned) => func(owned.borrow_mut()),
-			Data::Shared(ref shared) => {
-				let mut owned = T::to_owned(shared);
-				let ret = func(owned.borrow_mut());
-				*lock = Data::Owned(owned);
-				ret
+		impl<'a, T: Sharable + ?Sized> Deref for Reader<'a, T> {
+			type Target = T;
+			fn deref(&self) -> &Self::Target {
+				match *self.0 {
+					Data::Shared(ref shared) => shared.borrow(),
+					Data::Owned(ref owned) => owned.borrow(),
+				}
 			}
 		}
+
+		Reader(self.0.read())
+	}
+
+	pub fn write<'a>(&'a self) -> impl DerefMut<Target=T> + 'a {
+		struct Writer<'a, T: Sharable + ?Sized>(RwLockWriteGuard<'a, Data<T>>);
+
+		impl<'a, T: Sharable + ?Sized> Deref for Writer<'a, T> {
+			type Target = T;
+			fn deref(&self) -> &Self::Target {
+				match *self.0 {
+					Data::Shared(ref shared) => shared.borrow(),
+					Data::Owned(ref owned) => owned.borrow(),
+				}
+			}
+		}
+
+		impl<'a, T: Sharable + ?Sized> DerefMut for Writer<'a, T> {
+			fn deref_mut(&mut self) -> &mut Self::Target {
+				if let Data::Shared(ref shared) = *self.0 {
+					*self.0 = Data::Owned(T::to_owned(shared));
+				}
+
+				match *self.0 {
+					Data::Owned(ref mut owned) => owned.borrow_mut(),
+					Data::Shared(_) => unreachable!("we already converted shared to owned?")
+				}
+			}
+		}
+
+		Writer(self.0.write())
 	}
 }

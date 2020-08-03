@@ -38,14 +38,14 @@ for Tcp [(parents super::Basic)]:
 	"write" => function |this, args| {
 		let arg = args.arg(0)?.call_downcast_map(Text::clone)?;
 
-		this.try_downcast_mut_and_then(|tcp: &mut Self| {
+		this.try_downcast_mut::<Self>().and_then(|tcp| {
 			tcp.0.lock().unwrap().write(&arg.as_ref().as_ref())
 				.map(Object::from)
 				.map_err(|err| crate::Error::Messaged(err.to_string()))
 		})
 	},
 	"read" => function |this, _| -> Result<Object> {
-		this.try_downcast_mut_and_then(|tcp: &mut Self| {
+		this.try_downcast_mut::<Self>().and_then(|tcp| {
 			use std::io::{BufReader, BufRead};
 			let mut res = Vec::<u8>::with_capacity(5);
 			let tcp = tcp.0.lock().unwrap();

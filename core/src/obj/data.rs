@@ -2,6 +2,8 @@ use std::any::{Any, type_name};
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
 use std::borrow::{Borrow, BorrowMut};
+use std::ops::{Deref, DerefMut};
+use std::marker::PhantomData;
 use crate::shared_cow::{SharedCow, Sharable};
 
 type AnyObj = dyn Any + Send + Sync;
@@ -73,6 +75,23 @@ pub struct Data {
 	typename: &'static str
 }
 
+struct DowncastWrapper<T, D>(D, PhantomData<T>);
+
+impl<T: 'static, D: Deref<Target=AnyObj>> Deref for DowncastWrapper<T, D> {
+	type Target = T;
+
+	fn deref(&self) -> &Self::Target {
+		self.0.downcast_ref().expect("bad downcast")
+	}
+}
+
+impl<T: 'static, D: DerefMut<Target=AnyObj>> DerefMut for DowncastWrapper<T, D> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		self.0.downcast_mut().expect("bad downcast")
+	}
+}
+
+
 impl Data {
 	pub fn new<T: Any + Debug + Send + Sync + Clone>(data: T) -> Self {
 		Self {
@@ -100,41 +119,27 @@ impl Data {
 
 	#[inline]
 	pub fn is_a<T: Any>(&self) -> bool {
-		self.data.with_ref(|data| data.is::<T>())
+		self.data.read().is::<T>()
 	}
 
-	pub fn downcast_and_then<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> Option<R> {
-		if self.is_a::<T>() {
-			unsafe {
-				Some(self.downcast_unchecked_and_then(f))
-			}
-		} else { 
+	pub fn downcast<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
+		let data = self.data.read();
+
+		if data.is::<T>() {
+			Some(DowncastWrapper(data, PhantomData))
+		} else {
 			None
 		}
 	}
 
-	pub unsafe fn downcast_unchecked_and_then<T: Any, R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
-		self.data.with_ref(|any| match any.downcast_ref() {
-			Some(val) => f(val),
-			None => unreachable!("invalid downcast encountered")
-		})
-	}
+	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
+		let data = self.data.write();
 
-	pub fn downcast_mut_and_then<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> Option<R> {
-		if self.is_a::<T>() {
-			unsafe {
-				Some(self.downcast_mut_unchecked_and_then(f))
-			}
-		} else { 
+		if data.is::<T>() {
+			Some(DowncastWrapper(data, PhantomData))
+		} else {
 			None
 		}
-	}
-
-	pub unsafe fn downcast_mut_unchecked_and_then<T: Any, R, F: FnOnce(&mut T) -> R>(&self, f: F) -> R {
-		self.data.with_mut(|any| match any.downcast_mut() {
-			Some(val) => f(val),
-			None => unreachable!("invalid downcast encountered")
-		})
 	}
 }
 
@@ -151,4 +156,3 @@ impl Debug for Data {
 		}
 	}
 }
-

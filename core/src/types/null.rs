@@ -139,7 +139,7 @@ mod tests {
 		<Null as crate::types::ObjectType>::initialize().unwrap();
 
 		assert_eq!(Null::from(()), Null);
-		Object::from(()).downcast_and_then(|_: &Null| {}).unwrap();
+		Object::from(()).downcast::<Null>().unwrap();
 	}
 
 	mod qs {
@@ -174,7 +174,7 @@ mod tests {
 
 		#[test]
 		fn at_list() {
-			assert_call!(Null::qs_at_list(Null); List::is_empty);
+			assert_call!(Null::qs_at_list(Null); |l| List::is_empty(&l));
 
 			assert_call_idempotent!(Null::qs_at_list(Null));
 		}

@@ -250,14 +250,17 @@ impl Text {
 	}
 
 	pub fn qs_call(this: &Object, _: Args) -> crate::Result<Object> {
-		this.downcast_and_then(Self::evaluate)
-			.unwrap_or_else(|| Binding::instance().as_ref().dot_get_attr(this))
+		if let Some(this) = this.downcast::<Self>() {
+			this.evaluate()
+		} else {
+			Binding::instance().as_ref().dot_get_attr(this)
+		}
 	}
 
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.clone();
 
-		if this.downcast_and_then(|this: &Self| this == __THIS__).unwrap_or(false) {
+		if this.downcast::<Self>().map(|this| &*this == __THIS__).unwrap_or(false) {
 			return Ok(Binding::set_binding(rhs).into())
 		}
 
@@ -265,10 +268,10 @@ impl Text {
 	}
 
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
-		this.try_downcast_map(|this: &Self| {
-			rhs.downcast_and_then(|rhs: &Self| this == rhs).unwrap_or(false).into()
-		})
+		let rhs = args.arg(0)?.downcast::<Self>();
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
 	}
 
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
@@ -286,9 +289,10 @@ impl Text {
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
 
-		this.try_downcast_mut_and_then(|this_text: &mut Self| {
+		this.try_downcast_mut::<Self>().and_then(|mut this_text| {
 			if this.is_identical(rhs) {
-				*this_text += &this_text.clone();
+				let dup = this_text.clone();
+				*this_text += &dup;
 				Ok(())
 			} else {
 				rhs.call_downcast_map(|rhs: &Self| {
@@ -363,9 +367,10 @@ impl Text {
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
 
-		this.try_downcast_mut_and_then(|this_text: &mut Self| {
+		this.try_downcast_mut::<Self>().map(|mut this_text| {
 			if this.is_identical(rhs) {
-				this_text.push_str(this_text.clone().as_ref());
+				let dup = this_text.clone();
+				this_text.push_str(dup.as_ref());
 				Ok(())
 			} else {
 				rhs.call_downcast_map(|rhs: &Self| this_text.push_str(rhs.as_ref()))
@@ -396,7 +401,9 @@ impl Text {
 			.map(|_| this.clone())
 	}
 
-	pub fn qs_split(_this: &Object, _: Args) -> crate::Result<Object> { todo!("split") }
+	pub fn qs_split(_this: &Object, _args: Args) -> crate::Result<Object> {
+		todo!("split")
+	}
 	pub fn qs_reverse(_this: &Object, _: Args) -> crate::Result<Object> { todo!("reverse") }
 }
 

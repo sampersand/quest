@@ -17,17 +17,82 @@ impl Object {
 		self.call_downcast_and_then(|x| Ok(f(x)))
 	}
 
+/*
+	pub fn call_downcast<'a, T>(&'a self) -> crate::Result<impl AsRef<T> + 'a>
+	where
+		T: Convertible + Any
+	{
+		use std::marker::PhantomData;
+
+		struct Convert<'a, T>(Object, PhantomData<&'a T>);
+		
+		impl<'a, T: 'static> AsRef<T> for Convert<'a, T> {
+			fn as_ref<'b>(&'b self) -> &'b T {
+				Object::downcast::<'b, T>(self).unwrap()
+			}
+		}
+		// impl<'a, T: 'a> std::ops::Deref for Convert<'a, T> {
+		// 	type Target = &'a T;
+		// 	fn deref(&self) -> &'a Self::Target {
+		// 		self.0.downcast().unwrap()
+		// 	}
+		// }
+
+		Ok(Convert(self.call_attr_lit(T::CONVERT_FUNC, &[])?, PhantomData))
+	}*/
+
+
+/*
+	pub fn call_downcast<'a, T>(&'a self) -> crate::Result<impl std::ops::Deref<Target=T> + 'a>
+	where
+		T: Convertible + Any
+	{
+		use std::marker::PhantomData;
+
+		enum CalledReader<T, D> {
+			Original(D, std::marker::PhantomData<T>),
+			Converted(Object)
+		}
+
+		use std::ops::Deref;
+
+		impl<T: 'static, D: std::ops::Deref<Target=T>> std::ops::Deref for CalledReader<T, D> {
+			type Target = T;
+			fn deref(&self) -> &Self::Target {
+				match self {
+					Self::Original(orig, _) => &orig,
+					Self::Converted(obj) => obj.downcast::<T>().expect("bad downcast").deref()
+				}
+			}
+		}
+
+		if let Some(this) = self.downcast::<T>() {
+			return Ok(CalledReader::Original(this, PhantomData));
+		}
+
+		let converted = self.call_attr_lit(T::CONVERT_FUNC, &[])?;
+		if converted.is_a::<T>() {
+			Ok(CalledReader::Converted(converted))
+		} else {
+			Err(TypeError::ConversionReturnedBadType {
+				func: T::CONVERT_FUNC,
+				expected: type_name::<T>(),
+				got: converted.typename()
+			}.into())
+		}
+	}*/
+
 	pub fn call_downcast_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Convertible + Any,
 		F: FnOnce(&T) -> crate::Result<O>,
 	{
 		if self.is_a::<T>() {
-			self.downcast_and_then(f).unwrap().map_err(Into::into)
+			self.downcast().map(|d| f(&d)).unwrap().map_err(Into::into)
 		} else {
 			self.call_attr_lit(T::CONVERT_FUNC, &[]).and_then(|obj| {
 				if obj.is_a::<T>() {
-					obj.downcast_and_then(f).unwrap()
+					obj.downcast().map(|d| f(&d)).unwrap()
 				} else {
 					Err(TypeError::ConversionReturnedBadType {
 						func: T::CONVERT_FUNC,

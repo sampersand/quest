@@ -226,11 +226,10 @@ impl Boolean {
 	/// 1. (required) The other object to compare against.
 	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.arg(0)?.downcast::<Self>();
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|lhs: &Self| {
-			rhs.downcast_and_then(|rhs: &Self| lhs == rhs).unwrap_or(false).into()
-		})
+		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
 	}
 
 	/// Compares `this` to the first argument.
@@ -566,13 +565,13 @@ mod tests {
 		#[test]
 		fn hash() {
 			assert_eq!(
-				call_unwrap!(Boolean::qs_hash(true); Number::clone),
-				call_unwrap!(Boolean::qs_hash(true); Number::clone)
+				call_unwrap!(Boolean::qs_hash(true) -> Number; |n| *n),
+				call_unwrap!(Boolean::qs_hash(true) -> Number; |n| *n)
 			);
 
 			assert_eq!(
-				call_unwrap!(Boolean::qs_hash(false); Number::clone),
-				call_unwrap!(Boolean::qs_hash(false); Number::clone)
+				call_unwrap!(Boolean::qs_hash(false) -> Number; |n| *n),
+				call_unwrap!(Boolean::qs_hash(false) -> Number; |n| *n)
 			);
 		}
 	}

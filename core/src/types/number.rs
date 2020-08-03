@@ -886,8 +886,9 @@ impl Number {
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_bitand_assign(other)?))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.try_bitand_assign(other)?;
+
+		Ok(this.clone())
 	}
 
 	/// Bitwise OR of `this` and `other`.
@@ -911,8 +912,9 @@ impl Number {
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_bitor_assign(other)?))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.try_bitor_assign(other)?;
+
+		Ok(this.clone())
 	}
 
 	/// Bitwise XOR of `this` and `other`.
@@ -936,8 +938,9 @@ impl Number {
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_bitxor_assign(other)?))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.try_bitxor_assign(other)?;
+
+		Ok(this.clone())
 	}
 
 	/// Shift `this` left by `amnt`.
@@ -961,8 +964,9 @@ impl Number {
 	pub fn qs_shl_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_shl_assign(amnt)?))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.try_shl_assign(amnt)?;
+
+		Ok(this.clone())
 	}
 
 	/// Shift `this` right by `amnt`.
@@ -986,8 +990,9 @@ impl Number {
 	pub fn qs_shr_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_and_then(|this: &mut Self| Ok(this.try_shr_assign(amnt)?))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.try_shr_assign(amnt)?;
+
+		Ok(this.clone())
 	}
 
 	/// Get the absolute value of `this`.
@@ -1002,9 +1007,10 @@ impl Number {
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = args.arg(0)?.downcast_and_then(Self::clone);
+		let rhs = args.arg(0)?.downcast::<Self>();
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| other.map(|other| *this == other).unwrap_or(false).into())
+		Ok(rhs.map(|rhs| *rhs == *this).unwrap_or(false).into())
 	}
 
 	/// Compares `this` to the first argument.
@@ -1110,6 +1116,10 @@ impl_object_type!{
 	"ceil"  => function Self::qs_ceil,
 	"floor" => function Self::qs_floor,
 	"sqrt"  => function Self::qs_sqrt,
+	"chr" => function |this, _| {
+		Ok((u8::try_from(this.try_downcast::<Self>()?.floor()).unwrap() as char)
+			.to_string().into())
+	}
 }
 
 #[cfg(test)]
@@ -1134,8 +1144,10 @@ mod tests {
 
 			macro_rules! assert_exists_eq {
 				($key:literal, $val:expr) => {
-					assert_eq!(Number::mapping().get_attr_lit($key).unwrap()
-						.downcast_and_then(Number::clone).unwrap(), $val);
+					assert_eq!(
+						*Number::mapping().get_attr_lit($key).unwrap()
+							.downcast::<Number>().unwrap(),
+						$val);
 				}
 			}
 
@@ -1143,7 +1155,7 @@ mod tests {
 			assert_exists_eq!("E", Number::E);
 			assert_exists_eq!("INF", Number::INF);
 			assert!(Number::mapping().get_attr_lit("NAN").unwrap()
-				.downcast_and_then(Number::clone).unwrap().is_nan());
+				.downcast::<Number>().unwrap().is_nan());
 		}
 
 		#[test]
@@ -1243,8 +1255,8 @@ mod tests {
 			// ensure that calling `at_num` doesn't modify the underlying type
 			let obj = Object::from(194);
 			let dup = Number::qs_at_num(&obj, args!()).unwrap();
-			obj.downcast_mut_and_then(|n: &mut Number| *n = Number::from(123)).unwrap();
-			dup.downcast_and_then(|n: &Number| assert_eq!(*n, 123));
+			obj.downcast_mut::<Number>().map(|mut n| *n = Number::from(123)).unwrap();
+			assert_eq!(*dup.downcast::<Number>().unwrap(), 123);
 
 			assert_call_non_idempotent!(Number::qs_at_num(12));
 		}
@@ -1334,15 +1346,15 @@ mod tests {
 
 				assert_call_eq!(Number::qs_hash(n1) -> Number, hash!(n1));
 				assert_eq!(
-					call_unwrap!(Number::qs_hash(n1); Number::clone) == 
-						call_unwrap!(Number::qs_hash(n2); Number::clone),
+					call_unwrap!(Number::qs_hash(n1) -> Number; |n| *n) == 
+						call_unwrap!(Number::qs_hash(n2) -> Number; |n| *n),
 					Number::from(n1) == Number::from(n2)
 				);
 
 				assert_call_eq!(Number::qs_hash(f1) -> Number, hash!(f1));
 				assert_eq!(
-					call_unwrap!(Number::qs_hash(f1); Number::clone) == 
-						call_unwrap!(Number::qs_hash(f2); Number::clone),
+					call_unwrap!(Number::qs_hash(f1) -> Number; |n| *n) == 
+						call_unwrap!(Number::qs_hash(f2) -> Number; |n| *n),
 					Number::from(f1) == Number::from(f2)
 				);
 			}
@@ -1357,7 +1369,7 @@ mod tests {
 			assert_call_eq!(Number::qs_sqrt(12.3) -> Number, (12.3 as FloatType).sqrt());
 			assert_call_eq!(Number::qs_sqrt(12.7) -> Number, (12.7 as FloatType).sqrt());
 			assert_call_eq!(Number::qs_sqrt(Number::INF) -> Number, Number::INF);
-			assert_call!(Number::qs_sqrt(-Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_sqrt(-Number::INF) -> Number; |n| Number::is_nan(&n));
 
 			for _ in 0..1000 {
 				let n = random::<IntegerType>().abs();
@@ -1371,7 +1383,7 @@ mod tests {
 			assert_call_idempotent!(Number::qs_sqrt(12.3));
 
 			// TODO: negative numbers
-			assert_call!(Number::qs_sqrt(-12); Number::is_nan);
+			assert_call!(Number::qs_sqrt(-12); |n| Number::is_nan(&n));
 		}
 
 		#[test]
@@ -1514,8 +1526,8 @@ mod tests {
 			assert_call_eq!(Number::qs_add(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_add(-123, Number::INF) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_add(Number::INF, Number::INF) -> Number, Number::INF);
-			assert_call!(Number::qs_add(Number::INF, -Number::INF) -> Number; Number::is_nan);
-			assert_call!(Number::qs_add(-Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_add(Number::INF, -Number::INF) -> Number; |n| Number::is_nan(&n));
+			assert_call!(Number::qs_add(-Number::INF, Number::INF) -> Number; |n| Number::is_nan(&n));
 			assert_call_eq!(Number::qs_add(-Number::INF, -Number::INF) -> Number, -Number::INF);
 
 			for _ in 0..1000 {
@@ -1562,10 +1574,10 @@ mod tests {
 			assert_call_eq!(Number::qs_sub(0, -123) -> Number, 123);
 			assert_call_eq!(Number::qs_sub(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_sub(-123, Number::INF) -> Number, -Number::INF);
-			assert_call!(Number::qs_sub(Number::INF, Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_sub(Number::INF, Number::INF) -> Number; |n| Number::is_nan(&n));
 			assert_call_eq!(Number::qs_sub(Number::INF, -Number::INF) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_sub(-Number::INF, Number::INF) -> Number, -Number::INF);
-			assert_call!(Number::qs_sub(-Number::INF, -Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_sub(-Number::INF, -Number::INF) -> Number; |n| Number::is_nan(&n));
 
 			for _ in 0..1000 {
 				let n1 = random::<IntegerType>();
@@ -1704,14 +1716,14 @@ mod tests {
 			assert_call_eq!(Number::qs_div(Number::INF, 123) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_div(-123, Number::INF) -> Number, 0);
 
-			assert_call!(Number::qs_div(0, 0) -> Number; Number::is_nan);
+			assert_call!(Number::qs_div(0, 0) -> Number; |n| Number::is_nan(&n));
 			assert_call_eq!(Number::qs_div(1, 0) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_div(-1, 0) -> Number, -Number::INF);
 
-			assert_call!(Number::qs_div(Number::INF, Number::INF) -> Number; Number::is_nan);
-			assert_call!(Number::qs_div(Number::INF, -Number::INF) -> Number; Number::is_nan);
-			assert_call!(Number::qs_div(-Number::INF, Number::INF) -> Number; Number::is_nan);
-			assert_call!(Number::qs_div(-Number::INF, -Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_div(Number::INF, Number::INF) -> Number; |n| Number::is_nan(&n));
+			assert_call!(Number::qs_div(Number::INF, -Number::INF) -> Number; |n| Number::is_nan(&n));
+			assert_call!(Number::qs_div(-Number::INF, Number::INF) -> Number; |n| Number::is_nan(&n));
+			assert_call!(Number::qs_div(-Number::INF, -Number::INF) -> Number; |n| Number::is_nan(&n));
 
 			for _ in 0..1000 {
 				let n1 = random::<IntegerType>();
@@ -1760,17 +1772,17 @@ mod tests {
 			assert_call_eq!(Number::qs_mod(149, 19) -> Number, 149.0 % 19.0);
 			assert_call_eq!(Number::qs_mod(12, -123) -> Number, 12.0 % 123.0);
 			assert_call_eq!(Number::qs_mod(0, -123) -> Number, 0.0 % -123.0);
-			assert_call!(Number::qs_mod(Number::INF, 123) -> Number; Number::is_nan);
+			assert_call!(Number::qs_mod(Number::INF, 123) -> Number; |n| Number::is_nan(&n));
 			assert_call_eq!(Number::qs_mod(-123, Number::INF) -> Number, -123);
 
-			assert_call!(Number::qs_mod(0, 0) -> Number; Number::is_nan);
+			assert_call!(Number::qs_mod(0, 0) -> Number; |n| Number::is_nan(&n));
 			assert_call_eq!(Number::qs_mod(1, 0) -> Number, Number::INF);
 			assert_call_eq!(Number::qs_mod(-1, 0) -> Number, -Number::INF);
 
-			assert_call!(Number::qs_mod(Number::INF, Number::INF) -> Number; Number::is_nan);
-			assert_call!(Number::qs_mod(Number::INF, -Number::INF) -> Number; Number::is_nan);
-			assert_call!(Number::qs_mod(-Number::INF, Number::INF) -> Number; Number::is_nan);
-			assert_call!(Number::qs_mod(-Number::INF, -Number::INF) -> Number; Number::is_nan);
+			assert_call!(Number::qs_mod(Number::INF, Number::INF) -> Number; |n| Number::is_nan(&n));
+			assert_call!(Number::qs_mod(Number::INF, -Number::INF) -> Number; |n| Number::is_nan(&n));
+			assert_call!(Number::qs_mod(-Number::INF, Number::INF) -> Number; |n| Number::is_nan(&n));
+			assert_call!(Number::qs_mod(-Number::INF, -Number::INF) -> Number; |n| Number::is_nan(&n));
 
 			for _ in 0..1000 {
 				let n1 = random::<IntegerType>();
@@ -1858,7 +1870,7 @@ mod tests {
 			}
 
 			// TODO: check for imaginary numbers
-			assert_call!(Number::qs_pow(-1, 0.5) -> Number; Number::is_nan);
+			assert_call!(Number::qs_pow(-1, 0.5) -> Number; |n| Number::is_nan(&n));
 
 			assert_call_missing_parameter!(Number::qs_pow(0), 0);
 			assert_call_idempotent!(Number::qs_pow(12, 4));

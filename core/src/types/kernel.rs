@@ -261,10 +261,10 @@ mod tests {
 				$(
 					assert_eq!(
 						$val,
-						Kernel::mapping()
+						*Kernel::mapping()
 							.get_attr_lit($key)
 							.unwrap()
-							.downcast_and_then(<$ty>::clone).unwrap(),
+							.downcast::<$ty>().unwrap(),
 						"constant {:?} doesn't exist or is wrong value",
 						$key
 					);
