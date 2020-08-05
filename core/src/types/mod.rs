@@ -7,7 +7,7 @@ mod macros;
 mod convert;
 
 /// A trait representing the ability to have default associated attribuets.
-pub trait ObjectType : crate::obj::ConvertToDataType {
+pub trait ObjectType : Send + Sync + Clone + std::fmt::Debug + 'static {
 	/// The list of attributes that objects of this type will have.
 	fn mapping() -> crate::Object;
 

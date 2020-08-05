@@ -13,7 +13,6 @@ mod data;
 mod attributes;
 use attributes::{Attributes, Value};
 use data::Data;
-pub use data::{ConvertToDataType, DataType};
 
 /// The struct that represents any type within Quest.
 #[derive(Clone)]
@@ -70,9 +69,9 @@ impl Object {
 	/// Note that `Parents` isn't publically visible from the outside world---this means that only
 	/// `Object`, `Vec<Object>`, and `()` are allowed to be parents.
 	#[inline]
-	pub fn new_with_parent<T, P>(data: T, parents: P) -> Self
+	pub fn new_with_parent<T: 'static, P>(data: T, parents: P) -> Self
 	where
-		T: data::ConvertToDataType,
+		T: Send + Sync + Clone + Debug,
 		P: Into<attributes::Parents>
 	{
 		// println!("creating new object: {:?} ({:?})", data, type_name<T>());

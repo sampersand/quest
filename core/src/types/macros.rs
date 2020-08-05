@@ -121,12 +121,18 @@ macro_rules! args {
 /// This is soft-deprecated.
 macro_rules! impl_object_type {
 	(@CONVERTIBLE $obj:ty;) => {
-		impl $crate::obj::ConvertToDataType for $obj {
+		/*impl $crate::obj::ConvertToDataType for $obj {
+			type Target = Self;
+
 			fn into_datatype(self) -> $crate::obj::DataType {
 				// $crate::obj::DataType::any(self)
 				unimplemented!()
 			}
-		}
+
+			unsafe fn from_datatype(data: $crate::obj::DataType) -> Self::Target {
+				unimplemented!()
+			}
+		}*/
 	};
 
 	// (@CONVERTIBLE $_obj:ty; (no_convert) $($_ret:tt)*) => {};

@@ -8,11 +8,6 @@ use crate::shared_cow::{SharedCow, Sharable};
 
 type AnyObj = dyn Any + Send + Sync;
 
-pub trait ConvertToDataType : Send + Sync + Clone + Debug + 'static {
-	fn into_datatype(self) -> DataType;
-}
-pub enum DataType {}
-
 pub(crate) struct OwnedAny<T: AsRef<AnyObj>> {
 	dbg: fn(&dyn Any, &mut Formatter) -> fmt::Result,
 	clone: fn(&dyn Any) -> Box<AnyObj>,
@@ -72,7 +67,7 @@ impl Sharable for AnyObj {
 #[derive(Clone)]
 pub struct Data {
 	data: SharedCow<AnyObj>,
-	typename: &'static str
+	typename: &'static str,
 }
 
 struct DowncastWrapper<T, D>(D, PhantomData<T>);
