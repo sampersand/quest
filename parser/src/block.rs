@@ -237,7 +237,7 @@ impl Constructable for Block {
 impl Block {
 	#[inline]
 	pub fn qs_call(this: &Object, args: Args) -> quest_core::Result<Object> {
-		let this_cloned = this.try_downcast_map(Self::clone)?;
+		let this_cloned = this.try_downcast::<Self>()?;
 		Binding::new_stackframe(Some(this.clone()), args, move |_| {
 			/*match */this_cloned.run_block_to_object()/* {
 				Ok(v) => Ok(v),
@@ -249,7 +249,7 @@ impl Block {
 
 	#[inline]
 	pub fn qs_at_text(this: &Object, _: Args) -> quest_core::Result<Object> {
-		this.try_downcast_map(Self::to_string).map(Object::from)
+		Ok(this.try_downcast::<Self>()?.to_string().into())
 	}
 }
 

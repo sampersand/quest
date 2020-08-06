@@ -60,18 +60,19 @@ impl From<RustFn> for Text {
 
 impl RustFn {
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| format!("{:?}", this))
-			.map(Object::from)
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(format!("{:?}", *this).into())
 	}
 
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(Self::clone)
-			.map(Text::from)
-			.map(Object::from)
+		Ok(this.try_downcast::<Self>()?
+			.clone()
+			.into())
 	}
 
 	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
-		let this = this.try_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 		let caller = args.arg(0)?;
 		let args = args.args(1..).unwrap_or_default();
 

@@ -183,7 +183,6 @@ impl Boolean {
 	/// assert(true.$inspect() == "true");
 	/// assert(false.$inspect() == "false");
 	/// ```
-	#[inline]
 	pub fn qs_inspect(this: &Object, args: Args) -> Result<Object> {
 		Self::qs_at_text(this, args)
 	}
@@ -197,23 +196,24 @@ impl Boolean {
 	/// assert(1 + true == 2);
 	/// assert(99 * false == 0);
 	/// ```
-	#[inline]
 	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object> {
-		this.try_downcast_map(|this: &Self| Number::from(*this).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Number::from(*this).into())
 	}
 
 	/// Convert `this` into a [`Text`].
 	///
 	/// [`true`](Boolean::TRUE) becomes `"true"` and [`false`](Boolean::FALSE) becomes `"false"`.
-	#[inline]
 	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object> {
-		this.try_downcast_map(|this: &Self| Text::from(*this).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Text::from(*this).into())
 	}
 
 	/// Converts `this` into a [`Boolean`]
 	///
 	/// This simply calls [`Object::clone`](crate::Object::clone)
-	#[inline]
 	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.clone())
 	}
@@ -224,7 +224,6 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
-	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
@@ -236,95 +235,92 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object to compare against.
-	#[inline]
 	pub fn qs_cmp(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|lhs: &Self| {
-			rhs.call_downcast_map(|rhs: &Self| lhs.cmp(rhs).into())
-				.unwrap_or_default()
-		})
+		Ok(rhs.call_downcast_map(|rhs: &Self| this.cmp(rhs).into())
+			.unwrap_or_default())
 	}
 
 	/// Logical NOT of `this`.
-	#[inline]
 	pub fn qs_not(this: &Object, _: Args) -> Result<Object> {
-		this.try_downcast_map(|this: &Self| (!*this).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok((!*this).into())
 	}
 
 	/// Logical AND of `this` and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[inline]
 	pub fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this & rhs).into())
+		Ok((*this & rhs).into())
 	}
 
 	/// In-place logical AND of `this` and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[inline]
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this &= rhs)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? &= rhs;
+		Ok(this.clone())
 	}
 
 	/// Logical OR of `this` and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[inline]
 	pub fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this | rhs).into())
+		Ok((*this | rhs).into())
 	}
 
 	/// In-place logical OR of `this` and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[inline]
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this |= rhs)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? |= rhs;
+		Ok(this.clone())
 	}
 
 	/// Logical XOR of `this` and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[inline]
 	pub fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this ^ rhs).into())
+		Ok((*this ^ rhs).into())
 	}
 
 	/// In-place logical XOR of this and the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[inline]
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this ^= rhs)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? ^= rhs;
+		Ok(this.clone())
 	}
 
 	/// Hashes `this`.
-	#[inline]
 	pub fn qs_hash(this: &Object, _: Args) -> Result<Object> {
-		this.try_downcast_map(|this: &Self| crate::utils::hash(this).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(crate::utils::hash(&*this).into())
 	}
 }
 

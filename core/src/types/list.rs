@@ -596,10 +596,10 @@ impl List {
 	}
 
 	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
-		this.try_downcast_and_then(|this: &Self| {
-			args.arg(0)?.call_downcast_and_then(|n: &Number| {
-				Ok((this * usize::try_from(*n)?).into())
-			})
+		let this = this.try_downcast::<Self>()?;
+
+		args.arg(0)?.call_downcast_and_then(|n: &Number| {
+			Ok((&*this * usize::try_from(*n)?).into())
 		})
 	}
 
@@ -626,12 +626,11 @@ impl List {
 		if this.is_identical(rhs) {
 			eql = Ok(true)
 		} else {
-			this.try_downcast_map(|this: &Self| {
-				if rhs.try_downcast_map(|rhs: &Self| eql = this.eql(rhs)).is_err() {
-					// allow for downcasting errors whilst also having `eql` able to raise errors.
-					eql = Ok(false);
-				}
-			})?;
+			let this = this.try_downcast::<Self>()?;
+			if rhs.try_downcast::<Self>().map(|rhs| eql = this.eql(&rhs)).is_err() {
+				// allow for downcasting errors whilst also having `eql` able to raise errors.
+				eql = Ok(false);
+			}
 		}
 		eql.map(Object::from)
 	}
@@ -652,8 +651,9 @@ impl List {
 	/// ```
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.clone();
-		this.try_downcast_mut_map(|this: &mut Self| this.push(rhs))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.push(rhs);
+		
+		Ok(this.clone())
 	}
 
 	/// Remove an element from the end of the list, returning [`Null`](crate::types::Null) if empty.
@@ -668,7 +668,9 @@ impl List {
 	/// assert(!list);
 	/// ```
 	pub fn qs_pop(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_mut_map(Self::pop).map(Option::unwrap_or_default)
+		Ok(this.try_downcast_mut::<Self>()?
+			.pop()
+			.unwrap_or_default())
 	}
 
 	/// Add an element at the front of the list, returning the list.
@@ -687,8 +689,9 @@ impl List {
 	/// ```
 	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.clone();
-		this.try_downcast_mut_map(|this: &mut Self| this.unshift(rhs))
-			.map(|_| this.clone())
+		
+		this.try_downcast_mut::<Self>()?.unshift(rhs);
+		Ok(this.clone())
 	}
 
 	/// Remove an element from the front of the list, returning [`Null`](crate::types::Null) if empty.
@@ -703,7 +706,9 @@ impl List {
 	/// assert(!list);
 	/// ```
 	pub fn qs_shift(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_mut_map(Self::shift).map(Option::unwrap_or_default)
+		Ok(this.try_downcast_mut::<Self>()?
+			.shift()
+			.unwrap_or_default())
 	}
 
 	/// Adds two lists together.
@@ -719,8 +724,9 @@ impl List {
 	/// ```
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this| this + rhs).map(Object::from)
+		Ok((&*this + rhs).into())
 	}
 
 	/// Adds a list to the end of this one, in place, returning the first list.
@@ -735,9 +741,9 @@ impl List {
 	/// ```
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		*this.try_downcast_mut::<Self>()? += rhs;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this += rhs)
-			.map(|_| this.clone())
+		Ok(this.clone())
 	}
 
 	/// Returns a new list of elements in the first list but not the second.
@@ -777,7 +783,6 @@ impl List {
 		if this.is_identical(rhs) {
 			return Self::qs_clear(rhs, Args::default());
 		}
-
 
 		this.try_downcast_mut::<Self>()?
 			.try_sub_assign(&rhs.call_downcast_map(Self::clone)?)?;

@@ -65,8 +65,8 @@ mod tests {
 
 	impl_object_type! { for DummyCmp [(parents crate::types::Basic)]:
 		"<=>" => function |this: &Object, args: Args| {
-			let this = this.try_downcast_map(DummyCmp::clone)?;
-			let rhs = args.arg(0)?.try_downcast_map(DummyCmp::clone)?;
+			let this = this.try_downcast::<DummyCmp>()?;
+			let rhs = args.arg(0)?.try_downcast::<DummyCmp>()?;
 			Ok(this.0.cmp(&rhs.0).into())
 		}
 	}

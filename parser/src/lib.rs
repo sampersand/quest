@@ -22,7 +22,7 @@ pub fn initialize() {
 					.map_err(Into::into)
 			}
 
-			this.try_downcast_and_then(|this: &Text| {
+			this.try_downcast::<Text>().and_then(|this| {
 				if let Ok(binding) = args.arg(0) {
 					Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
 				} else {

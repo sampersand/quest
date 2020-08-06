@@ -156,8 +156,8 @@ mod tests {
 			impl_object_type! { for Dummy [(parents Basic)]:
 				"==" => function |this: &Object, args: Args| {
 					let rhs = args.arg(0)?;
-					this.try_downcast_and_then(|this: &Dummy| {
-						rhs.try_downcast_map(|rhs: &Dummy| Object::from(this == rhs))
+					this.try_downcast::<Dummy>().and_then(|this| {
+						rhs.try_downcast::<Dummy>().map(|rhs| Object::from(*this == *rhs))
 					})
 				}
 			}
@@ -205,7 +205,7 @@ mod tests {
 
 			impl_object_type! { for Dummy [(parents Basic)]:
 				"@bool" => function |this: &Object, _: Args| {
-					this.try_downcast_map(|this: &Dummy| Object::from(this.0))
+					this.try_downcast::<Dummy>().map(|this| Object::from(this.0))
 				}
 			}
 
@@ -241,8 +241,9 @@ mod tests {
 
 			impl_object_type! { for Dummy [(parents Basic)]:
 				"==" => function |this: &Object, args: Args| {
-					this.try_downcast_and_then(|this: &Dummy|
-						args.arg(0)?.try_downcast_map(|rhs: &Dummy| this == rhs).map(Object::from)
+					this.try_downcast::<Dummy>().and_then(|this|
+						args.arg(0)?.try_downcast::<Dummy>().map(|rhs| *this == *rhs)
+						.map(Object::from)
 					)
 				}
 			}
