@@ -82,17 +82,19 @@ impl Regex {
 	/// Convert this into a [`Text`].
 	#[inline]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| Text::from(this.to_string()).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Text::from(this.to_string()).into())
 	}
 
 	/// Compares two [`Regex`]s
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
-		this.try_downcast_and_then(|this: &Self| {
-			rhs.try_downcast_map(|rhs: &Self| {
-				(this == rhs).into()
-			})
-		})
+		let rhs = args.arg(0)?.try_downcast::<Self>();
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(rhs.map(|rhs| *rhs == *this)
+				.unwrap_or(false)
+				.into())
 	}
 
 	/// Returns an Array of matched values.
@@ -100,15 +102,14 @@ impl Regex {
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_scan(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| {
-			rhs.call_downcast_map(|rhs: &Text| {
-				this.0
-					.find_iter(rhs.as_ref())
-					.map(|m| Object::from(m.as_str().to_string()))
-					.collect::<crate::types::List>()
-					.into()
-			})
+		rhs.call_downcast_map(|rhs: &Text| {
+			this.0
+				.find_iter(rhs.as_ref())
+				.map(|m| Object::from(m.as_str().to_string()))
+				.collect::<crate::types::List>()
+				.into()
 		})
 	}
 
@@ -117,18 +118,17 @@ impl Regex {
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_match(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| {
-			rhs.call_downcast_map(|rhs: &Text| {
-				this.0
-					.captures(rhs.as_ref())
-					.map(|x| x.iter().map(|m| {
-							m.map(|m| Object::from(m.as_str().to_string()))
-								.unwrap_or_default()
-						}).collect::<Vec<_>>()
-						.into()
-					).unwrap_or_default()
-			})
+		rhs.call_downcast_map(|rhs: &Text| {
+			this.0
+				.captures(rhs.as_ref())
+				.map(|x| x.iter().map(|m| {
+						m.map(|m| Object::from(m.as_str().to_string()))
+							.unwrap_or_default()
+					}).collect::<Vec<_>>()
+					.into()
+				).unwrap_or_default()
 		})
 	}
 
@@ -138,11 +138,10 @@ impl Regex {
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_does_match(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| {
-			rhs.call_downcast_map(|rhs: &Text| {
-				this.0.is_match(rhs.as_ref()).into()
-			})
+		rhs.call_downcast_map(|rhs: &Text| {
+			this.0.is_match(rhs.as_ref()).into()
 		})
 	}
 }

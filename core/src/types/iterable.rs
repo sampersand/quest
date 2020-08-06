@@ -19,9 +19,7 @@ impl_object_type!{
 for BoundRustFn [(parents super::Basic)]:
 	"()" => function |this: &Object, args: Args| {
 		let arg = args.arg(0)?.clone();
-
-		this.try_downcast_and_then(|this: &Self| (this.0)(arg))
-			.map(|_| this.clone())
+		(this.try_downcast::<Self>()?.0)(arg).map(|_| this.clone())
 	}
 }
 

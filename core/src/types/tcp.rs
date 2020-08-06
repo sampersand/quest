@@ -17,7 +17,7 @@ impl Tcp {
 
 impl Tcp {
 	pub fn qs_call(_: &Object, args: Args) -> Result<Object> {
-		args.arg(0)?.try_downcast_and_then(|addr: &Text| {
+		args.arg(0)?.try_downcast::<Text>().and_then(|addr| {
 			Tcp::connect(addr.as_ref())
 				.map(Object::from)
 				.map_err(|err| crate::Error::Messaged(err.to_string()))

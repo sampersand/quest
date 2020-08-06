@@ -231,7 +231,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 		struct Thread(Arc<Mutex<Option<JoinHandle<crate::Result<Object>>>>>);
 
 		impl_object_type! { for Thread [(parents super::Basic)]:
-			"join" => function |this, _| this.try_downcast_and_then(|this: &Thread| {
+			"join" => function |this, _| this.try_downcast::<Thread>().and_then(|this| {
 				this.0.lock().take().expect("no join handle?")
 					.join()
 					.unwrap()

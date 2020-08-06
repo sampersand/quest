@@ -7,13 +7,12 @@ type AnyObj = dyn Any + Send + Sync;
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
-pub enum DataType {
-	Null(types::Null),
-	Number(types::Number),
-	Boolean(types::Boolean),
-	Class(types::Class),
-	#[doc(hidden)]
-	Any(AnyData)
+pub union DataType {
+	null: types::Null,
+	number: types::Number,
+	boolean: types::Boolean,
+	class: types::Class,
+	any: *const dyn DataType
 }
 
 pub trait ConvertToDataType : Sized + 'static {

@@ -141,6 +141,7 @@ impl Object {
 		T: Any,
 		F: FnOnce(&T) -> O,
 	{
+		#[allow(deprecated)]
 		self.try_downcast_and_then(|x| Ok(f(x)))
 	}
 
@@ -166,6 +167,7 @@ impl Object {
 	/// Tries to downcast this object as a `T`, and if it is, calls `f`.
 	///
 	/// If the object isn't a `T`, a [`TypeError`] is returned.
+	#[deprecated]
 	pub fn try_downcast_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
 	where
 		T: Any,

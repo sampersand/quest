@@ -685,23 +685,25 @@ impl Number {
 	/// The base must be `2 <= base <= 36`. 
 	pub fn qs_at_text(this: &Object, args: Args) -> crate::Result<Object> {
 		use std::convert::TryInto;
-		this.try_downcast_and_then(|this: &Self| {
-			if let Ok(radix) = args.arg(0) {
-				this.to_string_radix(radix.call_downcast_map(Self::clone)?.try_into()?)
-					.map_err(|err| TypeError::Messaged(err.to_string()))
-					.map_err(crate::Error::from)
-					.map(Object::from)
-			} else {
-				Ok(Text::from(*this).into())
-			}
-		})
+		let this = this.try_downcast::<Self>()?;
+
+		if let Ok(radix) = args.arg(0) {
+			this.to_string_radix(radix.call_downcast_map(Self::clone)?.try_into()?)
+				.map_err(|err| TypeError::Messaged(err.to_string()))
+				.map_err(crate::Error::from)
+				.map(Object::from)
+		} else {
+			Ok(Text::from(*this).into())
+		}
 	}
 
 	/// Converts `this` to a [`Boolean`].
 	///
 	/// All values but [zero](Number::ZERO) are considered true.
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| Boolean::from(*this).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Boolean::from(*this).into())
 	}
 
 	/// Calling a number is simply an alias for [multiplication](#qs_mul).
@@ -711,12 +713,16 @@ impl Number {
 
 	/// Hash a number.
 	pub fn qs_hash(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(crate::utils::hash::<Self>).map(Object::from)
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(crate::utils::hash(&*this).into())
 	}
 
 	/// Invert `this`'s sign.
 	pub fn qs_neg(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| (-*this).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok((-*this).into())
 	}
 
 	/// Get the absolute value of `this`.
@@ -730,8 +736,9 @@ impl Number {
 	/// 1. (required, `@num`) The addend.
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
 		let addend = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this + addend).into())
+		Ok((*this + addend).into())
 	}
 
 	/// Add `this` and the first argument, in place.
@@ -741,8 +748,8 @@ impl Number {
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let addend = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this += addend)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? += addend;
+		Ok(this.clone())
 	}
 
 	/// Subtract the the first argument from `this`.
@@ -751,8 +758,9 @@ impl Number {
 	/// 1. (required, `@num`) The subtrahend.
 	pub fn qs_sub(this: &Object, args: Args) -> crate::Result<Object> {
 		let subtrahend = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this - subtrahend).into())
+		Ok((*this - subtrahend).into())
 	}
 
 	/// Subtract the the first argument from `this`, in place.
@@ -762,8 +770,8 @@ impl Number {
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let subtrahend = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this -= subtrahend)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? -= subtrahend;
+		Ok(this.clone())
 	}
 
 	/// Multiply `this` and the first argument.
@@ -772,8 +780,9 @@ impl Number {
 	/// 1. (required, `@num`) The multiplicand.
 	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
 		let multiplicand = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this * multiplicand).into())
+		Ok((*this * multiplicand).into())
 	}
 
 	/// Multiply `this` and the first argument, in place.
@@ -783,8 +792,9 @@ impl Number {
 	pub fn qs_mul_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let multiplicand = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this *= multiplicand)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? *= multiplicand;
+		Ok(this.clone())
+
 	}
 
 	/// Divide `this` by the first argument.
@@ -795,8 +805,9 @@ impl Number {
 	/// 1. (required, `@num`) The divisor.
 	pub fn qs_div(this: &Object, args: Args) -> crate::Result<Object> {
 		let divisor = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this / divisor).into())
+		Ok((*this / divisor).into())
 	}
 
 	/// Divide `this` by the first argument, in place.
@@ -806,10 +817,11 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
 	pub fn qs_div_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let divisor = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this /= rhs)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? /= divisor;
+		Ok(this.clone())
+
 	}
 
 	/// Modulo `this` by `divisor`.
@@ -820,8 +832,9 @@ impl Number {
 	/// 1. (required, `@num`) The divisor.
 	pub fn qs_mod(this: &Object, args: Args) -> crate::Result<Object> {
 		let divisor = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| (*this % divisor).into())
+		Ok((*this % divisor).into())
 	}
 
 	/// Modulo `this` by `divisor`, in place.
@@ -833,8 +846,8 @@ impl Number {
 	pub fn qs_mod_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let divisor = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| *this %= divisor)
-			.map(|_| this.clone())
+		*this.try_downcast_mut::<Self>()? %= divisor;
+		Ok(this.clone())
 	}
 
 	/// Raises `this` to the power of `exponent`.
@@ -843,8 +856,9 @@ impl Number {
 	/// 1. (required, `@num`) The exponent.
 	pub fn qs_pow(this: &Object, args: Args) -> crate::Result<Object> {
 		let exponent = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_map(|this: &Self| this.pow(exponent).into())
+		Ok(this.pow(exponent).into())
 	}
 
 	/// Raises `this` to the power of `exponent`, in place.
@@ -854,15 +868,17 @@ impl Number {
 	pub fn qs_pow_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let exponent = args.arg(0)?.call_downcast_map(Self::clone)?;
 
-		this.try_downcast_mut_map(|this: &mut Self| this.pow_assign(exponent))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.pow_assign(exponent);
+		Ok(this.clone())
 	}
 
 	/// Bitwise NOT of `this`.
 	///
 	/// If `this` isn't a whole number, a [`ValueError`] is raised.
 	pub fn qs_bitnot(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_and_then(|this: &Self| Ok((!*this)?.into()))
+		let this = this.try_downcast::<Self>()?;
+
+		Ok((!*this)?.into())
 	}
 
 	/// Bitwise AND of `this` and `other`.
@@ -873,8 +889,9 @@ impl Number {
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| Ok((*this & other)?.into()))
+		Ok((*this & other)?.into())
 	}
 
 	/// Bitwise AND of `this` and `other`, in place.
@@ -887,7 +904,6 @@ impl Number {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut::<Self>()?.try_bitand_assign(other)?;
-
 		Ok(this.clone())
 	}
 
@@ -899,8 +915,9 @@ impl Number {
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| Ok((*this | other)?.into()))
+		Ok((*this | other)?.into())
 	}
 
 	/// Bitwise OR of `this` and `other`, in place.
@@ -913,7 +930,6 @@ impl Number {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut::<Self>()?.try_bitor_assign(other)?;
-
 		Ok(this.clone())
 	}
 
@@ -925,8 +941,9 @@ impl Number {
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| Ok((*this ^ other)?.into()))
+		Ok((*this ^ other)?.into())
 	}
 
 	/// Bitwise XOR of `this` and `other`, in place.
@@ -939,7 +956,6 @@ impl Number {
 		let other = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut::<Self>()?.try_bitxor_assign(other)?;
-
 		Ok(this.clone())
 	}
 
@@ -951,8 +967,9 @@ impl Number {
 	/// 1. (required, `@num`) The value to shift by.
 	pub fn qs_shl(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| Ok((*this << amnt)?.into()))
+		Ok((*this << amnt)?.into())
 	}
 
 	/// Shift `this` left by `amnt`, in place.
@@ -965,7 +982,6 @@ impl Number {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut::<Self>()?.try_shl_assign(amnt)?;
-
 		Ok(this.clone())
 	}
 
@@ -977,8 +993,9 @@ impl Number {
 	/// 1. (required, `@num`) The value to shift by.
 	pub fn qs_shr(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| Ok((*this >> amnt)?.into()))
+		Ok((*this >> amnt)?.into())
 	}
 
 	/// Shift `this` right by `amnt`, in place.
@@ -991,13 +1008,14 @@ impl Number {
 		let amnt = args.arg(0)?.call_downcast_map(Self::clone)?;
 
 		this.try_downcast_mut::<Self>()?.try_shr_assign(amnt)?;
-
 		Ok(this.clone())
 	}
 
 	/// Get the absolute value of `this`.
 	pub fn qs_abs(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| this.abs().into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(this.abs().into())
 	}
 
 	/// See if a `this` is equal to the first argument.
@@ -1018,30 +1036,42 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The value to compare against.
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
-		match args.arg(0)?.call_downcast_map(Self::clone) {
-			Ok(other) => this.try_downcast_map(|this: &Self| this.cmp(&other).into()),
-			Err(_) => Ok(Object::default())
+		let rhs = args.arg(0)?.call_downcast_map(Self::clone);
+
+		if let Ok(rhs) = rhs {
+			let this = this.try_downcast::<Self>()?;
+			Ok(this.cmp(&rhs).into())
+		} else {
+			Ok(Object::default())
 		}
 	}
 
 	/// Returns `this`, rounded down.
 	pub fn qs_floor(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| this.floor().into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(this.floor().into())
 	}
 
 	/// Returns `this`, rounded up.
 	pub fn qs_ceil(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| this.ceil().into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(this.ceil().into())
 	}
 
 	/// Returns `this`, rounded towards the nearest integer. (`##.5` rounds away from zero.)
 	pub fn qs_round(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| this.round().into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(this.round().into())
 	}
 
 	/// Gets the square root of `this`
 	pub fn qs_sqrt(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| Self::from(FloatType::from(*this).sqrt()).into())
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(FloatType::from(*this).sqrt().into())
 	}
 }
 

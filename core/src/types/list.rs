@@ -402,10 +402,10 @@ impl List {
 	///
 	/// assert(list.$@text() == '[1, "a", true]')
 	/// ```
-	#[allow(clippy::redundant_closure)]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_and_then(|this: &Self| Text::try_from(this))
-			.map(Object::from)
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Text::try_from(&*this)?.into())
 	}
 
 	/// Attempts to get an internal representation of the list.
@@ -429,29 +429,22 @@ impl List {
 	/// assert([1, "a", true]);
 	/// assert(![]);
 	/// ```
-	#[allow(clippy::redundant_closure)]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(|this: &Self| Boolean::from(this))
-			.map(Object::from)
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Boolean::from(&*this).into())
 	}
 
 	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.arg(0)?;
 
-		let mut done = false;
 		for idx in 0.. {
-			if done {
+			let this = this.try_downcast::<Self>()?;
+			if idx >= this.len() {
 				break;
+			} else {
+				block.call_attr_lit("()", &[&this.0[idx]])?;
 			}
-
-			this.try_downcast_and_then(|this: &Self| {
-				if idx >= this.len() {
-					done = true;
-					Ok(())
-				} else {
-					block.call_attr_lit("()", &[&this.0[idx]]).and(Ok(()))
-				}
-			})?;
 		}
 
 		Ok(this.clone())
@@ -474,9 +467,11 @@ impl List {
 	/// ```
 	pub fn qs_index(this: &Object, args: Args) -> crate::Result<Object> {
 		let needle = args.arg(0)?;
+		let this = this.try_downcast::<Self>()?;
 
-		this.try_downcast_and_then(|this: &Self| this.index(needle))
-			.map(|x| x.map(Object::from).unwrap_or_default())
+		Ok(this.index(needle)?
+			.map(Object::from)
+			.unwrap_or_default())
 	}
 
 	/// Remove all elements from the list and returns the list.
@@ -490,7 +485,9 @@ impl List {
 	/// assert(!list);
 	/// ```
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_mut_map(Self::clear).map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.clear();
+
+		Ok(this.clone())
 	}
 
 	/// Get the length of the list
@@ -502,7 +499,9 @@ impl List {
 	/// assert(list.$len() == 3);
 	/// assert([].$len() == 0);
 	pub fn qs_len(this: &Object, _: Args) -> crate::Result<Object> {
-		this.try_downcast_map(Self::len).map(Object::from)
+		Ok(this.try_downcast::<Self>()?
+			.len()
+			.into())
 	}
 
 	/// Gets an element or range from the list
@@ -538,10 +537,10 @@ impl List {
 			.map(|n| n.call_downcast_and_then(|n: &Number| Ok(isize::try_from(*n)?)))
 			.transpose()?;
 
-		this.try_downcast_map(|this: &Self| {
-			stop.map(|stop| this.get_rng(start, stop))
-				.unwrap_or_else(|| this.get(start))
-		})
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(stop.map(|stop| this.get_rng(start, stop))
+			.unwrap_or_else(|| this.get(start)))
 	}
 
 	/// Sets an element or range of the list to an element or list.
@@ -568,8 +567,9 @@ impl List {
 			.call_downcast_and_then(|n: &Number| Ok(usize::try_from(*n)?))?;
 
 		let ele = args.arg(1)?.clone();
-		this.try_downcast_mut_map(|this: &mut Self| this.set(pos, ele))
-			.map(|_| this.clone())
+		this.try_downcast_mut::<Self>()?.set(pos, ele);
+
+		Ok(this.clone())
 	}
 
 	/// Combine all elements into a [`Text`], optionally separated by a deliminator.
@@ -585,13 +585,14 @@ impl List {
 	/// assert(["foo", 123, true].$join(" ") == "foo 123 true");
 	/// ```
 	pub fn qs_join(this: &Object, args: Args) -> crate::Result<Object> {
-		this.try_downcast_and_then(|this: &Self| {
-			if let Ok(arg) = args.arg(0) {
-				arg.call_downcast_and_then(|delim: &Text| this.join(Some(delim.as_ref())))
-			} else {
-				this.join(None)
-			}
-		}).map(Object::from)
+		let this = this.try_downcast::<Self>()?;
+
+		if let Ok(arg) = args.arg(0) {
+			arg.call_downcast_and_then(|delim: &Text| this.join(Some(delim.as_ref())))
+				.map(Object::from)
+		} else {
+			this.join(None).map(Object::from)
+		}
 	}
 
 	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
