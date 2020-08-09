@@ -12,7 +12,8 @@ pub fn initialize() {
 	INITIALIZE.call_once(|| {
 		Block::initialize().expect("couldn't initialize block");
 
-		Kernel::mapping().set_attr_lit("Block", Block::mapping()).expect("couldn't defined Block");
+		Kernel::mapping().set_attr_lit("Block", Block::mapping().clone())
+			.expect("couldn't defined Block");
 
 		Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
 			fn execute_text(text: String) -> quest_core::Result<Object> {

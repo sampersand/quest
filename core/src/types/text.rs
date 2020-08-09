@@ -238,7 +238,7 @@ impl Text {
 		let this = this.try_downcast::<Self>()?;
 
 		if let Ok(radix) = args.arg(0) {
-			let radix = radix.call_downcast_map(Number::clone)?;
+			let radix = *radix.call_downcast::<Number>()?;
 			let radix = u32::try_from(radix)
 				.map_err(|err| ValueError::Messaged(format!("bad radix '{}': {}", radix, err)))?;
 
@@ -279,28 +279,28 @@ impl Text {
 	}
 
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
-		let arg = args.arg(0)?.call_downcast_map(Self::clone);
+		let arg = args.arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(arg.map(|a| this.cmp(&a).into()).unwrap_or_default())
 	}
 
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
-		rhs.call_downcast_map(|rhs: &Self| (this.clone() + rhs).into())
+		Ok((this.clone() + &rhs).into())
 	}
 
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
-		let mut this_text = this.try_downcast_mut::<Self>()?;
+		let mut this_mut = this.try_downcast_mut::<Self>()?;
 
 		if this.is_identical(rhs) {
-			let dup = this_text.clone();
-			*this_text += &dup;
+			let dup = this_mut.clone();
+			*this_mut += &dup;
 		} else {
-			rhs.call_downcast_map(|rhs: &Self| *this_text += rhs)?;
+			*this_mut += &*rhs.call_downcast::<Self>()?;
 		}
 
 		Ok(this.clone())
@@ -336,7 +336,7 @@ impl Text {
 
 		let end = args.arg(1)
 			.ok()
-			.map(|n| n.call_downcast_map(Number::clone))
+			.map(|n| n.call_downcast::<Number>().map(|n| *n))
 			.transpose()?
 			.map(isize::try_from)
 			.transpose()?;
@@ -371,13 +371,13 @@ impl Text {
 
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.arg(0)?;
-		let mut this_text = this.try_downcast_mut::<Self>()?;
+		let mut this_mut = this.try_downcast_mut::<Self>()?;
 
 		if this.is_identical(rhs) {
-			let dup = this_text.clone();
-			this_text.push_str(dup.as_ref());
+			let dup = this_mut.clone();
+			this_mut.push_str(dup.as_ref());
 		} else {
-			rhs.call_downcast_map(|rhs: &Self| this_text.push_str(rhs.as_ref()))?;
+			this_mut.push_str(rhs.call_downcast::<Self>()?.as_ref());
 		}
 
 		Ok(this.clone())

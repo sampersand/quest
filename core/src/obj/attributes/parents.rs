@@ -66,6 +66,13 @@ impl From<Vec<Object>> for Parents {
 	}
 }
 
+impl From<Vec<&'static Object>> for Parents {
+	#[inline]
+	fn from(vec: Vec<&'static Object>) -> Self {
+		Self::from_inner(Inner::Builtin(vec.into_iter().map(Object::clone).collect()))
+	}
+}
+
 impl From<()> for Parents {
 	#[inline]
 	fn from(_: ()) -> Self {
@@ -77,6 +84,13 @@ impl From<Object> for Parents {
 	#[inline]
 	fn from(obj: Object) -> Self {
 		Self::from_inner(Inner::Object(obj))
+	}
+}
+
+impl From<&'static Object> for Parents {
+	#[inline]
+	fn from(obj: &'static Object) -> Self {
+		Self::from_inner(Inner::Object(obj.clone()))
 	}
 }
 
@@ -119,7 +133,7 @@ impl Parents {
 		match *self.0.read() {
 			Inner::None => f([].iter()),
 			Inner::Builtin(ref parents) => f(parents.iter()),
-			Inner::Object(ref object) => object.call_downcast_and_then(|l: &List| f(l.iter()))
+			Inner::Object(ref object) => object.call_downcast::<List>().and_then(|l| f(l.iter()))
 		}
 	}
 

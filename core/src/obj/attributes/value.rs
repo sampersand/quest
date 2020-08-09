@@ -38,10 +38,11 @@ impl From<Value> for Object {
 		// we should have a COW here in case the rustfn is modified by the user.
 		match val {
 			Value::RustFn(rustfn) => rustfn.into(),
-			Value::Object(obj) => obj
+			Value::Object(obj) => obj,
 		}
 	}
 }
+
 
 impl From<RustFn> for Value {
 	#[inline]
@@ -53,6 +54,6 @@ impl From<RustFn> for Value {
 impl From<Object> for Value {
 	#[inline]
 	fn from(obj: Object) -> Self {
-		Value::Object(obj)
+		Self::Object(obj)
 	}
 }

@@ -6,7 +6,6 @@ use crate::literal::{EQL, Literal};
 
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
-use std::any::{Any, type_name};
 use std::ops::{Deref, DerefMut};
 
 mod data;
@@ -48,7 +47,7 @@ impl Debug for Object {
 	}
 }
 
-impl<T: Any + ObjectType> From<Option<T>> for Object {
+impl<T: ObjectType> From<Option<T>> for Object {
 	#[inline]
 	fn from(data: Option<T>) -> Self {
 		data.map(Self::new).unwrap_or_default()
@@ -56,10 +55,23 @@ impl<T: Any + ObjectType> From<Option<T>> for Object {
 }
 
 
-impl<T: Any + ObjectType> From<T> for Object {
+impl<T: ObjectType> From<T> for Object {
 	#[inline]
 	fn from(data: T) -> Self {
 		Self::new(data)
+	}
+}
+
+
+impl Internal {
+	#[inline]
+	fn id(&self) -> usize {
+		self.attrs.id()
+	}
+
+	#[inline]
+	fn typename(&self) -> &'static str {
+		self.data.typename()
 	}
 }
 
@@ -75,12 +87,12 @@ impl Object {
 		P: Into<attributes::Parents>
 	{
 		// println!("creating new object: {:?} ({:?})", data, type_name<T>());
-		Object::from_parts(Data::new(data), Attributes::new(parents))
+		Self::from_parts(Data::new(data), Attributes::new(parents))
 	}
 
 	#[inline]
 	fn from_parts(data: Data, attrs: Attributes) -> Self {
-		Object(Arc::new(Internal { data, attrs }))
+		Self(Arc::new(Internal { data, attrs }))
 	}
 
 	/// Creates a new object with its default parents.
@@ -94,13 +106,13 @@ impl Object {
 	/// If two objects share the same id, they are identical.
 	#[inline]
 	pub fn id(&self) -> usize {
-		self.0.attrs.id()
+		self.0.id()
 	}
 
 	/// Fetches the name of the internal data.
 	#[inline]
 	pub fn typename(&self) -> &'static str {
-		self.0.data.typename()
+		self.0.typename()
 	}
 
 	/// Checks to see if two objects are idental.
@@ -122,40 +134,115 @@ impl Object {
 	pub fn deep_clone(&self) -> Object {
 		Object::from_parts(self.0.data.clone(), self.0.attrs.clone())
 	}
+
+	pub(crate) fn _attrs(&self) -> &attributes::Attributes {
+		&self.0.attrs
+	}
+}
+
+impl Internal {
+	#[inline]
+	fn is_a<T: ObjectType>(&self) -> bool {
+		self.data.is_a::<T>()
+	}
+
+	#[inline]
+	fn downcast<'a, T: ObjectType>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
+		self.data.downcast()
+	}
+
+	#[inline]
+	fn downcast_mut<'a, T: ObjectType>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
+		self.data.downcast_mut()
+	}
 }
 
 /// Methods to interact with the Object's data.
 impl Object {
 	/// Checks to see this object is a `T`.
 	#[inline]
-	pub fn is_a<T: Any>(&self) -> bool {
-		self.0.data.is_a::<T>()
+	pub fn is_a<T: ObjectType>(&self) -> bool {
+		self.0.is_a::<T>()
 	}
 
 	#[inline]
-	pub fn downcast<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
-		self.0.data.downcast()
+	pub fn downcast<'a, T: ObjectType>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
+		self.0.downcast()
 	}
 
 	#[inline]
-	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
-		self.0.data.downcast_mut()
+	pub fn downcast_mut<'a, T: ObjectType>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
+		self.0.downcast_mut()
 	}
 
-	pub fn try_downcast<'a, T: Any>(&'a self) -> crate::Result<impl Deref<Target=T> + 'a> {
+	pub fn try_downcast<'a, T: ObjectType>(&'a self) -> crate::Result<impl Deref<Target=T> + 'a> {
 		self.downcast()
 			.ok_or_else(|| TypeError::WrongType {
-				expected: type_name::<T>(),
+				expected: std::any::type_name::<T>(),
 				got: self.typename()
 			}.into())
 	}
 
-	pub fn try_downcast_mut<'a, T: Any>(&'a self) -> crate::Result<impl DerefMut<Target=T> + 'a> {
+	pub fn try_downcast_mut<'a, T: ObjectType>(&'a self) -> crate::Result<impl DerefMut<Target=T> + 'a> {
 		self.downcast_mut()
 			.ok_or_else(|| TypeError::WrongType {
-				expected: type_name::<T>(),
+				expected: std::any::type_name::<T>(),
 				got: self.typename()
 			}.into())
+	}
+}
+
+
+impl Internal {
+	#[inline]
+	fn has_lit(&self, attr: &str) -> crate::Result<bool> {
+		self.attrs.has_lit(attr)
+	}
+
+	#[inline]
+	fn get_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
+		self.attrs.get_lit(attr)
+	}
+
+	#[inline]
+	fn set_lit(&self, attr: Literal, value: Value) -> crate::Result<()> {
+		self.attrs.set_lit(attr, value);
+		Ok(())
+	}
+
+	#[inline]
+	fn del_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
+		Ok(self.attrs.del_lit(attr))
+	}
+
+	#[inline]
+	fn has(&self, attr: &Object) -> crate::Result<bool> {
+		self.attrs.has(attr)
+	}
+
+	#[inline]
+	fn get(&self, attr: &Object) -> crate::Result<Option<Value>> {
+		self.attrs.get(attr)
+	}
+
+	#[inline]
+	fn set(&self, attr: Object, value: Value) -> crate::Result<()> {
+		self.attrs.set(attr, value)
+	}
+
+	#[inline]
+	fn del(&self, attr: &Object) -> crate::Result<Option<Value>> {
+		self.attrs.del(attr)
+	}
+
+	#[inline]
+	fn add_parent(&self, val: Object) -> crate::Result<()> {
+		self.attrs.add_parent(val)
+	}
+
+	#[inline]
+	fn keys(&self, include_parents: bool) -> crate::Result<Vec<Object>> {
+		self.attrs.keys(include_parents)
 	}
 }
 
@@ -170,19 +257,18 @@ impl Object {
 	/// Checks to see if the object has the attribute `attr`.
 	#[inline]
 	pub fn has_attr_lit(&self, attr: &str) -> crate::Result<bool> {
-		self.0.attrs.has_lit(attr)
+		self.0.has_lit(attr)
 	}
-
 
 	/// Fetches a value, returning `None` if it doesn't exist.
 	fn get_value_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
-		self.0.attrs.get_lit(attr)
+		self.0.get_lit(attr)
 	}
 
 	/// Fetches the attribute `attr`, returning a [`KeyError`] if it doesn't exist.
-	pub fn get_attr_lit(&self, attr: &str) -> crate::Result<Object> {
+	pub fn get_attr_lit(&self, attr: &str) -> crate::Result<Self> {
 		self.get_value_lit(attr)?
-			.map(Object::from)
+			.map(Self::from)
 			.ok_or_else(|| KeyError::DoesntExist {
 				attr: attr.to_string().into(), obj: self.clone() }.into())
 	}
@@ -193,26 +279,25 @@ impl Object {
 		V: Into<Value>
 	{
 		// TODO: this will just set a literal value even if the corresponding nonliteral works.
-		self.0.attrs.set_lit(attr, value.into());
-		Ok(())
+		self.0.set_lit(attr, value.into())
 	}
 
 	/// Assigns the attribute `attr` to `value`.
 	#[inline]
-	pub fn set_attr_lit(&self, attr: Literal, value: Object) -> crate::Result<()> {
+	pub fn set_attr_lit(&self, attr: Literal, value: Self) -> crate::Result<()> {
 		self.set_value_lit(attr, value)
 	}
 
 	/// Deletes the object corresponding to `attr`, returning [`KeyError`] if no such object existed.
-	pub fn del_attr_lit(&self, attr: &str) -> crate::Result<Object> {
-		self.0.attrs.del_lit(attr)
-			.map(Object::from)
+	pub fn del_attr_lit(&self, attr: &str) -> crate::Result<Self> {
+		self.0.del_lit(attr)?
+			.map(Self::from)
 			.ok_or_else(|| KeyError::DoesntExist {
 				attr: attr.to_string().into(), obj: self.clone() }.into())
 	}
 
 	/// Calls an attribute with the given args.
-	pub fn call_attr_lit<'s, 'o: 's, A>(&'o self, attr: &str, args: A) -> crate::Result<Object>
+	pub fn call_attr_lit<'s, 'o: 's, A>(&'o self, attr: &str, args: A) -> crate::Result<Self>
 	where
 		A: Into<Args<'s, 'o>>
 	{
@@ -223,38 +308,38 @@ impl Object {
 
 	/// checks to see if the attribute exists
 	#[inline]
-	pub fn has_attr(&self, attr: &Object) -> crate::Result<bool> {
-		self.0.attrs.has(attr)
+	pub fn has_attr(&self, attr: &Self) -> crate::Result<bool> {
+		self.0.has(attr)
 	}
 
 	/// Gets the attribute `attr`, returning `None` if it didn't exist
 	#[inline]
-	pub(crate) fn get_value(&self, attr: &Object) -> crate::Result<Option<Value>> {
-		self.0.attrs.get(attr)
+	pub(crate) fn get_value(&self, attr: &Self) -> crate::Result<Option<Value>> {
+		self.0.get(attr)
 	}
 
 	/// Gets an attribute, returning a [`KeyError`] if it doesn't exist.
-	pub fn get_attr(&self, attr: &Object) -> crate::Result<Object> {
+	pub fn get_attr(&self, attr: &Self) -> crate::Result<Self> {
 		self.get_value(attr)?
-			.map(Object::from)
+			.map(Self::from)
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.clone(), obj: self.clone() }.into())
 	}
 
 	/// Sets the attribute `attr` to `value`.
 	#[inline]
-	pub fn set_attr(&self, attr: Object, value: Object) -> crate::Result<()> {
-		self.0.attrs.set(attr, value.into())
+	pub fn set_attr(&self, attr: Self, value: Self) -> crate::Result<()> {
+		self.0.set(attr, value.into())
 	}
 
 	/// Deletes the attribute `attr`, returning a [`KeyError`] if the attr didn't exist.
-	pub fn del_attr(&self, attr: &Object) -> crate::Result<Object> {
-		self.0.attrs.del(attr)?
-			.map(Object::from)
+	pub fn del_attr(&self, attr: &Self) -> crate::Result<Self> {
+		self.0.del(attr)?
+			.map(Self::from)
 			.ok_or_else(|| KeyError::DoesntExist { attr: attr.clone(), obj: self.clone() }.into())
 	}
 
 	/// Calls the attribute `attr` with the given args, returning a [`KeyError`] if it doesn't exist.
-	pub fn call_attr<'s, 'o: 's, A>(&'o self, attr: &Object, args: A) -> crate::Result<Object>
+	pub fn call_attr<'s, 'o: 's, A>(&'o self, attr: &Self, args: A) -> crate::Result<Self>
 	where
 		A: Into<Args<'s, 'o>>
 	{
@@ -264,13 +349,13 @@ impl Object {
 	}
 
 	/// This will probably be deprecated in the future 
-	pub(crate) fn dot_get_attr(&self, attr: &Object) -> crate::Result<Object> {
+	pub(crate) fn dot_get_attr(&self, attr: &Self) -> crate::Result<Self> {
 		let result = self.get_attr(attr)?;
 
 		// remove this hack? lol
 		if result.is_a::<types::RustFn>() || format!("{:?}", result).starts_with("Object(Block") ||
 				result.is_a::<types::BoundFunction>() {
-			let bound_res = Object::new(crate::types::BoundFunction);
+			let bound_res = Self::new(crate::types::BoundFunction);
 			bound_res.set_attr_lit("__bound_object_owner__", self.clone())?;
 			bound_res.add_parent(result.clone())?;
 			bound_res.set_attr_lit("__bound_object__", result)?;
@@ -286,13 +371,13 @@ impl Object {
 	/// Generally, the [`new_with_parent()`] method is a better idea, as it creates a new obejct with
 	/// parents.
 	#[inline]
-	pub fn add_parent(&self, val: Object) -> crate::Result<()> {
-		self.0.attrs.add_parent(val)
+	pub fn add_parent(&self, val: Self) -> crate::Result<()> {
+		self.0.add_parent(val)
 	}
 
 	/// Gets the list of keys corresponding to this object.
 	#[inline]
-	pub(crate) fn mapping_keys(&self, include_parents: bool) -> crate::Result<Vec<Object>> {
-		self.0.attrs.keys(include_parents)
+	pub(crate) fn mapping_keys(&self, include_parents: bool) -> crate::Result<Vec<Self>> {
+		self.0.keys(include_parents)
 	}
 }

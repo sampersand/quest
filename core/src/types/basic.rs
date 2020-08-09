@@ -123,9 +123,9 @@ mod tests {
 			<Dummy as crate::types::ObjectType>::initialize().unwrap();
 
 			assert_eq!(
-				Object::from(Dummy)
+				*Object::from(Dummy)
 					.call_attr_lit(INSPECT, &[]).unwrap()
-					.call_downcast_map(Text::clone).unwrap(),
+					.call_downcast::<Text>().unwrap(),
 				*"foo"
 			);
 
@@ -170,21 +170,21 @@ mod tests {
 
 			assert_eq!(
 				obj1.call_attr_lit(EQL, &[&obj1]).unwrap()
-					.call_downcast_map(Boolean::clone).unwrap()
+					.call_downcast::<Boolean>().unwrap()
 					.into_inner(),
 				true
 			);
 
 			assert_eq!(
 				obj1.call_attr_lit(EQL, &[&obj2]).unwrap()
-					.call_downcast_map(Boolean::clone).unwrap()
+					.call_downcast::<Boolean>().unwrap()
 					.into_inner(),
 				true
 			);
 
 			assert_eq!(
 				obj1.call_attr_lit(EQL, &[&obj3]).unwrap()
-					.call_downcast_map(Boolean::clone).unwrap()
+					.call_downcast::<Boolean>().unwrap()
 					.into_inner(),
 				false
 			);
@@ -224,8 +224,8 @@ mod tests {
 			let obj1 = Object::from(Basic);
 			let obj2 = Object::from(Basic);
 
-			let hash = Basic::qs_hash(&obj1, args!()).unwrap()
-				.call_downcast_map(Number::clone).unwrap();
+			let hash = *Basic::qs_hash(&obj1, args!()).unwrap()
+				.call_downcast::<Number>().unwrap();
 			// make sure repeated hashes are the same.
 			assert_eq!(hash, call_unwrap!(Basic::qs_hash(obj1) -> Number; |n| *n));
 			// make sure two hashes aren't identical for the same object.

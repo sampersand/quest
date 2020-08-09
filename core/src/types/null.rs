@@ -1,5 +1,4 @@
 use crate::{Object, Args, Result};
-
 use crate::types::{Boolean, List, Number, Text};
 use std::fmt::{self, Display, Formatter};
 
@@ -92,14 +91,6 @@ impl Null {
 		Ok(args.arg(0)?.is_a::<Self>().into())
 	}
 }
-
-
-/*impl crate::obj::ConvertToDataType for Null {
-	#[inline]
-	fn into_datatype(self) -> crate::obj::DataType {
-		crate::obj::DataType::Null(self)
-	}
-}*/
 
 impl_object_type!{
 for Null {

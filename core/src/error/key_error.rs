@@ -30,6 +30,14 @@ pub enum KeyError {
 		/// The object that we're trying to get the attribute of
 		obj: Object
 	},
+
+	// /// The attribute doesn't exist for the given object.
+	// DoesntExist1 {
+	// 	/// The attribute that doens't exist.
+	// 	attr: crate::object::ObjectAttempt,
+	// 	/// The object that we're trying to get the attribute of
+	// 	obj: crate::object::ObjectAttempt
+	// },
 }
 
 impl From<KeyError> for super::Error {
@@ -50,6 +58,8 @@ impl Display for KeyError {
 				write!(f, "range '{}' out of bounds (max: {})", range, len),
 			KeyError::DoesntExist { attr, obj } => 
 				write!(f, "attr {:?} doesn't exist for {:?}", attr, obj),
+			// KeyError::DoesntExist1 { attr, obj } => 
+			// 	write!(f, "attr {:?} doesn't exist for {:?}", attr, obj),
 		}
 	}
 }

@@ -1,106 +1,59 @@
-use crate::Object;
+use crate::{Object, types::ObjectType};
 use crate::error::TypeError;
 use crate::literal::Literal;
 use std::any::{Any, type_name};
 
-pub trait Convertible : Any + Sized + Clone {
+pub trait Convertible : Any + Sized + Clone + ObjectType {
 	const CONVERT_FUNC: Literal;
 }
 
 impl Object {
-	#[inline]
-	pub fn call_downcast_map<T, O, F>(&self, f: F) -> crate::Result<O>
-	where
-		T: Convertible + Any,
-		F: FnOnce(&T) -> O
-	{
-		self.call_downcast_and_then(|x| Ok(f(x)))
-	}
-
-/*
-	pub fn call_downcast<'a, T>(&'a self) -> crate::Result<impl AsRef<T> + 'a>
-	where
-		T: Convertible + Any
-	{
-		use std::marker::PhantomData;
-
-		struct Convert<'a, T>(Object, PhantomData<&'a T>);
-		
-		impl<'a, T: 'static> AsRef<T> for Convert<'a, T> {
-			fn as_ref<'b>(&'b self) -> &'b T {
-				Object::downcast::<'b, T>(self).unwrap()
-			}
-		}
-		// impl<'a, T: 'a> std::ops::Deref for Convert<'a, T> {
-		// 	type Target = &'a T;
-		// 	fn deref(&self) -> &'a Self::Target {
-		// 		self.0.downcast().unwrap()
-		// 	}
-		// }
-
-		Ok(Convert(self.call_attr_lit(T::CONVERT_FUNC, &[])?, PhantomData))
-	}*/
-
-
-/*
 	pub fn call_downcast<'a, T>(&'a self) -> crate::Result<impl std::ops::Deref<Target=T> + 'a>
 	where
-		T: Convertible + Any
+		T: Convertible
 	{
+		use std::ops::Deref;
 		use std::marker::PhantomData;
 
 		enum CalledReader<T, D> {
-			Original(D, std::marker::PhantomData<T>),
-			Converted(Object)
+			Original(D, PhantomData<T>),
+			Converted(Object, D)
 		}
 
-		use std::ops::Deref;
-
-		impl<T: 'static, D: std::ops::Deref<Target=T>> std::ops::Deref for CalledReader<T, D> {
+		impl<T, D> Deref for CalledReader<T, D>
+		where
+			T: ObjectType,
+			D: Deref<Target=T>,
+		{
 			type Target = T;
 			fn deref(&self) -> &Self::Target {
 				match self {
 					Self::Original(orig, _) => &orig,
-					Self::Converted(obj) => obj.downcast::<T>().expect("bad downcast").deref()
+					Self::Converted(_, data) => &data
 				}
 			}
 		}
 
 		if let Some(this) = self.downcast::<T>() {
-			return Ok(CalledReader::Original(this, PhantomData));
-		}
-
-		let converted = self.call_attr_lit(T::CONVERT_FUNC, &[])?;
-		if converted.is_a::<T>() {
-			Ok(CalledReader::Converted(converted))
+			Ok(CalledReader::Original(this, PhantomData))
 		} else {
-			Err(TypeError::ConversionReturnedBadType {
-				func: T::CONVERT_FUNC,
-				expected: type_name::<T>(),
-				got: converted.typename()
-			}.into())
-		}
-	}*/
+			let converted = self.call_attr_lit(T::CONVERT_FUNC, &[])?;
+			if converted.is_a::<T>() {
+				let dc = unsafe {
+					let cdc = converted.downcast::<T>().expect("bad downcast");
+					let dc = std::mem::transmute_copy(&cdc);
+					std::mem::forget(cdc);
+					dc
+				};
 
-	pub fn call_downcast_and_then<T, O, F>(&self, f: F) -> crate::Result<O>
-	where
-		T: Convertible + Any,
-		F: FnOnce(&T) -> crate::Result<O>,
-	{
-		if self.is_a::<T>() {
-			self.downcast().map(|d| f(&d)).unwrap().map_err(Into::into)
-		} else {
-			self.call_attr_lit(T::CONVERT_FUNC, &[]).and_then(|obj| {
-				if obj.is_a::<T>() {
-					obj.downcast().map(|d| f(&d)).unwrap()
-				} else {
-					Err(TypeError::ConversionReturnedBadType {
-						func: T::CONVERT_FUNC,
-						expected: type_name::<T>(),
-						got: obj.typename()
-					}.into())
-				}
-			})
+				Ok(CalledReader::Converted(converted, dc))
+			} else {
+				Err(TypeError::ConversionReturnedBadType {
+					func: T::CONVERT_FUNC,
+					expected: type_name::<T>(),
+					got: converted.typename()
+				}.into())
+			}
 		}
 	}
 }
@@ -130,24 +83,24 @@ mod tests {
 
 
 	#[test]
-	fn call_downcast_map() {
+	fn call_downcast() {
 		use crate::{Error, error::KeyError};
 		<Dummy as crate::types::ObjectType>::initialize().unwrap();
 		<Dummy2 as crate::types::ObjectType>::initialize().unwrap();
 		<Dummy3 as crate::types::ObjectType>::initialize().unwrap();
 
-		Object::from(Dummy).call_downcast_map(|_: &Dummy| {}).unwrap();
-		Object::from(Dummy).call_downcast_map(|_: &Dummy2| {}).unwrap();
+		Object::from(Dummy).call_downcast::<Dummy>().unwrap();
+		Object::from(Dummy).call_downcast::<Dummy2>().unwrap();
 
 		assert_matches!(
-			Object::from(Dummy).call_downcast_map(|_: &Dummy3| {}).unwrap_err(),
+			Object::from(Dummy).call_downcast::<Dummy3>().map(|x| x.clone()).unwrap_err(),
 			Error::TypeError(TypeError::ConversionReturnedBadType {
 				func: Dummy3::CONVERT_FUNC,
 				expected, got }) if expected == type_name::<Dummy3>() && got == type_name::<Dummy>()
 		);
 
 		assert_matches!(
-			Object::from(Dummy2).call_downcast_map(|_: &Dummy| {}).unwrap_err(),
+			Object::from(Dummy2).call_downcast::<Dummy>().map(|x| x.clone()).unwrap_err(),
 			Error::KeyError(KeyError::DoesntExist { ref attr, .. })
 				if attr.eq_obj(&Dummy::CONVERT_FUNC.into()).unwrap_or(false)
 		)

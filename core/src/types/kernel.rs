@@ -26,12 +26,12 @@ fn display(args: &[&Object], newline: bool) -> crate::Result<()> {
 
 #[inline]
 fn is_object_truthy(object: &Object) -> crate::Result<bool> {
-	object.call_downcast_map(Boolean::clone).map(bool::from)
+	object.call_downcast::<Boolean>().map(|b| b.into_inner())
 }
 
 #[inline]
 fn object_to_string(object: &Object) -> crate::Result<String> {
-	object.call_downcast_map(Text::to_string)
+	object.call_downcast::<Text>().map(|t| t.to_string())
 }
 
 impl Kernel {
@@ -84,7 +84,7 @@ impl Kernel {
 
 		let code = args.arg(0)
 			.ok()
-			.map(|x| x.call_downcast_map(Number::floor))
+			.map(|x| x.call_downcast::<Number>().map(|n| n.floor()))
 			.transpose()?
 			.unwrap_or(Number::ONE);
 
@@ -119,10 +119,10 @@ impl Kernel {
 		let mut end: FloatType = 1.0;
 
 		if let Ok(start_num) = args.arg(0) {
-			start = start_num.call_downcast_map(|n: &Number| FloatType::from(*n))?;
+			start = FloatType::from(*start_num.call_downcast::<Number>()?);
 
 			if let Ok(end_num) = args.arg(1) {
-				end = end_num.call_downcast_map(|n: &Number| FloatType::from(*n))?;
+				end = FloatType::from(*end_num.call_downcast::<Number>()?);
 			} else {
 				end = start;
 				start = 0.0;
@@ -176,7 +176,7 @@ impl Kernel {
 	}
 
 	pub fn qs_sleep(_: &Object, args: Args) -> crate::Result<Object> {
-		let dur = args.arg(0)?.call_downcast_map(Number::clone)?;
+		let dur = *args.arg(0)?.call_downcast::<Number>()?;
 		std::thread::sleep(std::time::Duration::from_secs_f64(dur.into()));
 		Ok(Object::default())
 	}
@@ -193,21 +193,21 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"false" => const Boolean::new(false),
 	"null" => const Null::new(),
 
-	"Tcp" => const super::Tcp::mapping(),
-	"Basic" => const super::Basic::mapping(),
-	"Boolean" => const super::Boolean::mapping(),
-	"BoundFunction" => const super::BoundFunction::mapping(),
-	"Function" => const super::Function::mapping(),
-	"Kernel" => const Kernel::mapping(),
-	"List" => const super::List::mapping(),
-	"Null" => const super::Null::mapping(),
-	"Number" => const super::Number::mapping(),
-	"Pristine" => const super::Pristine::mapping(),
-	"RustFn" => const super::RustFn::mapping(),
-	"Scope" => const super::Scope::mapping(),
-	"Text" => const super::Text::mapping(),
-	"Comparable" => const super::Comparable::mapping(),
-	"Iterable" => const super::Iterable::mapping(),
+	"Tcp" => const super::Tcp::mapping().clone(),
+	"Basic" => const super::Basic::mapping().clone(),
+	"Boolean" => const super::Boolean::mapping().clone(),
+	"BoundFunction" => const super::BoundFunction::mapping().clone(),
+	"Function" => const super::Function::mapping().clone(),
+	"Kernel" => const Kernel::mapping().clone(),
+	"List" => const super::List::mapping().clone(),
+	"Null" => const super::Null::mapping().clone(),
+	"Number" => const super::Number::mapping().clone(),
+	"Pristine" => const super::Pristine::mapping().clone(),
+	"RustFn" => const super::RustFn::mapping().clone(),
+	"Scope" => const super::Scope::mapping().clone(),
+	"Text" => const super::Text::mapping().clone(),
+	"Comparable" => const super::Comparable::mapping().clone(),
+	"Iterable" => const super::Iterable::mapping().clone(),
 
 	"if" => function Self::qs_if, 
 	"disp" => function Self::qs_disp,

@@ -236,11 +236,10 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object to compare against.
 	pub fn qs_cmp(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
-		Ok(rhs.call_downcast_map(|rhs: &Self| this.cmp(rhs).into())
-			.unwrap_or_default())
+		Ok(rhs.map(|rhs| this.cmp(&rhs).into()).unwrap_or_default())
 	}
 
 	/// Logical NOT of `this`.
@@ -255,10 +254,10 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let rhs = args.arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
-		Ok((*this & rhs).into())
+		Ok((*this & *rhs).into())
 	}
 
 	/// In-place logical AND of `this` and the first argument.
@@ -266,9 +265,12 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let rhs = args.arg(0)?;
 
-		*this.try_downcast_mut::<Self>()? &= rhs;
+		if !this.is_identical(rhs) { // `true & true = true` and `false & false = false`.
+			*this.try_downcast_mut::<Self>()? &= *rhs.call_downcast::<Self>()?;
+		}
+
 		Ok(this.clone())
 	}
 
@@ -277,10 +279,10 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let rhs = args.arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
-		Ok((*this | rhs).into())
+		Ok((*this | *rhs).into())
 	}
 
 	/// In-place logical OR of `this` and the first argument.
@@ -288,9 +290,12 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let rhs = args.arg(0)?;
 
-		*this.try_downcast_mut::<Self>()? |= rhs;
+		if !this.is_identical(rhs) { // `true | true = true` and `false | false = false`.
+			*this.try_downcast_mut::<Self>()? |= *rhs.call_downcast::<Self>()?;
+		}
+
 		Ok(this.clone())
 	}
 
@@ -299,10 +304,10 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let rhs = args.arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
-		Ok((*this ^ rhs).into())
+		Ok((*this ^ *rhs).into())
 	}
 
 	/// In-place logical XOR of this and the first argument.
@@ -310,9 +315,15 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast_map(Self::clone)?;
+		let rhs = args.arg(0)?;
 
-		*this.try_downcast_mut::<Self>()? ^= rhs;
+
+		if this.is_identical(rhs) {
+			*this.try_downcast_mut::<Self>()? = Self::new(false);
+		} else {
+			*this.try_downcast_mut::<Self>()? ^= *rhs.call_downcast::<Self>()?;
+		}
+
 		Ok(this.clone())
 	}
 
@@ -328,12 +339,27 @@ impl Convertible for Boolean {
 	const CONVERT_FUNC: &'static str = crate::literal::AT_BOOL;
 }
 
+<<<<<<< Updated upstream
 /*impl crate::obj::ConvertToDataType for Boolean {
 	#[inline]
 	fn into_datatype(self) -> crate::obj::DataType {
 		crate::obj::DataType::Boolean(self)
 	}
 }*/
+=======
+// unsafe impl nanbox::Tagged for Boolean {
+// 	fn into_data(self) -> nanbox::Data {
+// 		unsafe {
+// 			nanbox::Data::new_tagged(nanbox::Tag::Boolean, u64::from(self.into_inner()))
+// 		}
+// 	}
+
+// 	fn from_data<'a>(data: &'a nanbox::Data) -> Option<nanbox::TaggedResult<'a, Self>> {
+// 		data.data_if_tag(nanbox::Tag::Boolean)
+// 			.map(|d| nanbox::TaggedResult::Copy(Self::new(d == 1)))
+// 	}
+// }
+>>>>>>> Stashed changes
 
 impl_object_type!{
 for Boolean {

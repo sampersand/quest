@@ -120,20 +120,7 @@ macro_rules! args {
 ///
 /// This is soft-deprecated.
 macro_rules! impl_object_type {
-	(@CONVERTIBLE $obj:ty;) => {
-		/*impl $crate::obj::ConvertToDataType for $obj {
-			type Target = Self;
-
-			fn into_datatype(self) -> $crate::obj::DataType {
-				// $crate::obj::DataType::any(self)
-				unimplemented!()
-			}
-
-			unsafe fn from_datatype(data: $crate::obj::DataType) -> Self::Target {
-				unimplemented!()
-			}
-		}*/
-	};
+	(@CONVERTIBLE $obj:ty;) => { /* TODO */ };
 
 	// (@CONVERTIBLE $_obj:ty; (no_convert) $($_ret:tt)*) => {};
 	(@CONVERTIBLE $obj:ty; (convert $convert_func:expr) $($rest:tt)*) => {
@@ -156,7 +143,7 @@ macro_rules! impl_object_type {
 	(@SET_PARENT $class:ident) => { () };
 	(@SET_PARENT $class:ident (init_parent) $($_rest:tt)*) => { () };
 	(@SET_PARENT $class:ident (init_parent $($init_parent:path)+) $($_rest:tt)*) => {
-		vec![$(<$init_parent as $crate::types::ObjectType>::mapping()),+]
+		vec![$(<$init_parent as $crate::types::ObjectType>::mapping().clone()),+]
 	};
 	(@SET_PARENT $class:ident (parents $parent:path) $($_rest:tt)*) => {
 		impl_object_type!(@SET_PARENT $class (init_parent $parent));
@@ -208,7 +195,7 @@ macro_rules! impl_object_type {
 				Ok(())
 			}
 
-			fn mapping() -> $crate::Object {
+			fn mapping() -> &'static $crate::Object {
 				lazy_static::lazy_static! {
 					static ref CLASS: $crate::Object = $crate::Object::new_with_parent(
 						$crate::types::Class::new(stringify!($obj)),
@@ -216,7 +203,7 @@ macro_rules! impl_object_type {
 					);
 				}
 
-				CLASS.clone()
+				&CLASS
 			}			
 
 			$($new_object)?

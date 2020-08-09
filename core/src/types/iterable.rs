@@ -68,7 +68,7 @@ impl Iterable {
 		let ret2 = ret.clone();
 
 		foreach(this, block.clone(), move |orig, select| {
-			if select.call_downcast_map(crate::types::Boolean::clone)?.into_inner() {
+			if select.call_downcast::<crate::types::Boolean>()?.into_inner() {
 				ret2.lock().push(orig);
 			}
 			Ok(())

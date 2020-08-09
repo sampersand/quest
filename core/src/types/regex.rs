@@ -101,35 +101,30 @@ impl Regex {
 	///
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_scan(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
 
-		rhs.call_downcast_map(|rhs: &Text| {
-			this.0
-				.find_iter(rhs.as_ref())
-				.map(|m| Object::from(m.as_str().to_string()))
-				.collect::<crate::types::List>()
-				.into()
-		})
+		Ok(this.0
+			.find_iter(rhs.as_ref())
+			.map(|m| Object::from(m.as_str().to_string()))
+			.collect::<crate::types::List>()
+			.into())
 	}
 
 	/// Returns an Array of matched groups.
 	///
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_match(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
 
-		rhs.call_downcast_map(|rhs: &Text| {
-			this.0
-				.captures(rhs.as_ref())
-				.map(|x| x.iter().map(|m| {
-						m.map(|m| Object::from(m.as_str().to_string()))
-							.unwrap_or_default()
-					}).collect::<Vec<_>>()
-					.into()
-				).unwrap_or_default()
-		})
+		Ok(this.0
+			.captures(rhs.as_ref())
+			.map(|x| x.iter().map(|m| {
+					m.map(|m| Object::from(m.as_str().to_string())).unwrap_or_default()
+				}).collect::<Vec<_>>()
+				.into()
+			).unwrap_or_default())
 	}
 
 
@@ -137,12 +132,10 @@ impl Regex {
 	///
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_does_match(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
 
-		rhs.call_downcast_map(|rhs: &Text| {
-			this.0.is_match(rhs.as_ref()).into()
-		})
+		Ok(this.0.is_match(rhs.as_ref()).into())
 	}
 }
 

@@ -8,7 +8,8 @@ pub struct Comparable;
 
 #[inline]
 fn compare(lhs: &Object, rhs: &Object) -> crate::Result<Ordering> {
-	let num = lhs.call_attr_lit(CMP, &[rhs])?.call_downcast_map(Number::clone)?;
+	let num = lhs.call_attr_lit(CMP, &[rhs])?;
+	let num = num.call_downcast::<Number>()?;
 	Ok(num.cmp(&Number::ZERO))
 }
 

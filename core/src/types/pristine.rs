@@ -172,7 +172,7 @@ impl Pristine {
 	pub fn qs___keys__(this: &Object, args: Args) -> crate::Result<Object> {
 		let include_parents = args.arg(0)
 			.ok()
-			.map(|x| x.call_downcast_map(Boolean::clone).map(bool::from))
+			.map(|x| x.call_downcast::<Boolean>().map(|b| bool::from(*b)))
 			.transpose()?
 			.unwrap_or(false);
 
