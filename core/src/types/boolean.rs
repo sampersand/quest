@@ -339,28 +339,6 @@ impl Convertible for Boolean {
 	const CONVERT_FUNC: &'static str = crate::literal::AT_BOOL;
 }
 
-<<<<<<< Updated upstream
-/*impl crate::obj::ConvertToDataType for Boolean {
-	#[inline]
-	fn into_datatype(self) -> crate::obj::DataType {
-		crate::obj::DataType::Boolean(self)
-	}
-}*/
-=======
-// unsafe impl nanbox::Tagged for Boolean {
-// 	fn into_data(self) -> nanbox::Data {
-// 		unsafe {
-// 			nanbox::Data::new_tagged(nanbox::Tag::Boolean, u64::from(self.into_inner()))
-// 		}
-// 	}
-
-// 	fn from_data<'a>(data: &'a nanbox::Data) -> Option<nanbox::TaggedResult<'a, Self>> {
-// 		data.data_if_tag(nanbox::Tag::Boolean)
-// 			.map(|d| nanbox::TaggedResult::Copy(Self::new(d == 1)))
-// 	}
-// }
->>>>>>> Stashed changes
-
 impl_object_type!{
 for Boolean {
 	#[inline]
