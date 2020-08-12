@@ -50,6 +50,33 @@ impl<'s, 'o: 's> Args<'s, 'o> {
 
 		Iter(self.0.iter())
 	}
+
+	pub fn arg(&self, index: usize) -> Option<&'o Object> {
+		self.0.get(index).copied()
+	}
+
+	pub fn try_arg(&self, index: usize) -> Result<&'o Object, KeyError> {
+		self.arg(index)
+			.ok_or_else(|| KeyError::OutOfBounds { idx: index as isize, len: self.0.len() })
+	}
+
+	pub fn args<I>(&self, index: I) -> Option<Args<'_, 'o>>
+	where
+		I: SliceIndex<[&'o Object], Output=[&'o Object]>
+	{
+		self.0.get(index).map(Args::from)
+	}
+
+	pub fn try_args<I>(&self, index: I) -> Result<Args<'_, 'o>, KeyError>
+	where
+		I: SliceIndex<[&'o Object], Output=[&'o Object]> + fmt::Debug + Clone
+	{
+		if let Some(rng) = self.args(index.clone()) {
+			Ok(rng)
+		} else {
+			Err(KeyError::BadSlice { range: format!("{:?}", index), len: self.0.len() })
+		}
+	}
 }
 
 impl From<Args<'_, '_>> for Vec<Object> {
@@ -102,7 +129,7 @@ impl<'o> AsMut<Vec<&'o Object>> for Args<'_, 'o> {
 }
 
 impl From<Args<'_, '_>> for types::List {
-	fn from(args: Args<'_, '_>) -> Self {
+	fn from(args: Args) -> Self {
 		types::List::from(Vec::<Object>::from(args))
 	}
 }
@@ -123,23 +150,3 @@ impl<'s, 'o: 's> IntoIterator for Args<'s, 'o> {
 		self.0.into_owned().into_iter()
 	}
 }
-
-impl<'o> Args<'_, 'o> {
-	pub fn arg(&self, idx: usize) -> Result<&'o Object, KeyError> {
-		self.0.get(idx)
-			.copied()
-			.ok_or_else(|| KeyError::OutOfBounds { idx: idx as isize, len: self.0.len() })
-	}
-
-	pub fn args<I>(&self, idx: I) -> Result<Args<'_, 'o>, KeyError>
-	where
-		I: SliceIndex<[&'o Object], Output=[&'o Object]> + fmt::Debug + Clone
-	{
-		if let Some(rng) = self.0.get(idx.clone()) {
-			Ok(rng.into())
-		} else {
-			Err(KeyError::BadSlice { range: format!("{:?}", idx), len: self.0.len() })
-		}
-	}
-}
-

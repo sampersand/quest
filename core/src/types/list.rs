@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::literal::{Literal, INSPECT, AT_LIST};
+use crate::literal::{Literal, INSPECT, AT_LIST, CALL};
 use crate::types::{Convertible, Text, Boolean, Number};
 use std::convert::TryFrom;
 use std::iter::FromIterator;
@@ -67,7 +67,7 @@ impl List {
 
 	/// Get an [`Iterator`](std::iter::Iterator) over elements in this list.
 	#[inline]
-	pub fn iter(&self) -> std::slice::Iter<'_, Object> {
+	pub fn iter(&self) -> std::slice::Iter<Object> {
 		self.0.iter()
 	}
 
@@ -102,6 +102,7 @@ impl List {
 			};
 
 		let stop = correct_index(stop, self.len()).map(|x| x + 1).unwrap_or_else(|| self.len());
+
 		if stop < start {
 			Object::default()
 		} else {
@@ -185,6 +186,7 @@ impl List {
 				return Ok(Some(idx));
 			}
 		}
+
 		Ok(None)
 	}
 }
@@ -197,44 +199,46 @@ impl From<List> for Vec<Object> {
 }
 
 impl From<Vec<Object>> for List {
+	#[inline]
 	fn from(list: Vec<Object>) -> Self {
 		Self::new(list)
 	}
 }
 
 impl From<Vec<Object>> for Object {
+	#[inline]
 	fn from(list: Vec<Object>) -> Self {
 		List::from(list).into()
 	}
 }
 
 impl AsRef<[Object]> for List {
+	#[inline]
 	fn as_ref(&self) -> &[Object] {
 		self.0.as_ref()
 	}
 }
 
-impl TryFrom<&'_ List> for Text {
+impl TryFrom<&List> for Text {
 	type Error = crate::Error;
 
-	fn try_from(l: &List) -> crate::Result<Self> {
-		let mut t = vec![];
-		for item in l.iter() {
+	fn try_from(list: &List) -> crate::Result<Self> {
+		let mut t = Vec::with_capacity(list.len());
+		for item in list.iter() {
 			t.push(item.call_attr_lit(INSPECT, &[])?.call_downcast::<Text>()?.to_string());
 		}
 		Ok(format!("[{}]", t.join(", ")).into())
 	}
 }
 
-impl From<&'_ List> for Boolean {
+impl From<&List> for Boolean {
 	#[inline]
 	fn from(l: &List) -> Self {
 		(!l.is_empty()).into()
 	}
 }
 
-
-impl std::ops::Add<List> for &'_ List {
+impl std::ops::Add<List> for &List {
 	type Output = List;
 
 	/// Create a new list with the other added to the end of the current one
@@ -253,14 +257,14 @@ impl std::ops::AddAssign for List {
 	}
 }
 
-impl std::ops::Mul<usize> for &'_ List {
+impl std::ops::Mul<usize> for &List {
 	type Output = List;
 
 	fn mul(self, len: usize) -> List {
 		let mut v = Vec::with_capacity(len * self.len());
 
 		for _ in 0..len {
-			v.extend(self.clone())
+			v.extend(self.clone());
 		}
 
 		v.into()
@@ -436,14 +440,16 @@ impl List {
 	}
 
 	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
-		let block = args.arg(0)?;
+		let block = args.try_arg(0)?;
 
 		for idx in 0.. {
+			// so as to not lock the object, we check the index each and every time.
+			// this allows it to be modified during the `each` invocation.
 			let this = this.try_downcast::<Self>()?;
 			if idx >= this.len() {
 				break;
 			} else {
-				block.call_attr_lit("()", &[&this.0[idx]])?;
+				block.call_attr_lit(CALL, &[&this.0[idx], &idx.into()])?;
 			}
 		}
 
@@ -466,7 +472,7 @@ impl List {
 	/// assert(list.$index("dog") == null);
 	/// ```
 	pub fn qs_index(this: &Object, args: Args) -> crate::Result<Object> {
-		let needle = args.arg(0)?;
+		let needle = args.try_arg(0)?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.index(needle)?
@@ -529,11 +535,10 @@ impl List {
 	/// assert(list.$get(1, Number::$INF) == [2, 3, false]);
 	/// ```
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
-		let start = isize::try_from(*args.arg(0)?.call_downcast::<Number>()?)?;
+		let start = isize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
 
 		let stop = 
 			args.arg(1)
-			.ok()
 			.map(|n| n.call_downcast::<Number>().map(|n| *n))
 			.transpose()?
 			.map(isize::try_from)
@@ -541,8 +546,7 @@ impl List {
 
 		let this = this.try_downcast::<Self>()?;
 
-		Ok(stop.map(|stop| this.get_rng(start, stop))
-			.unwrap_or_else(|| this.get(start)))
+		Ok(stop.map(|stop| this.get_rng(start, stop)).unwrap_or_else(|| this.get(start)))
 	}
 
 	/// Sets an element or range of the list to an element or list.
@@ -565,9 +569,9 @@ impl List {
 		}
 
 		// also TODO: negative indicies
-		let pos = usize::try_from(*args.arg(0)?.call_downcast::<Number>()?)?;
+		let pos = usize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
+		let ele = args.try_arg(1)?.clone();
 
-		let ele = args.arg(1)?.clone();
 		this.try_downcast_mut::<Self>()?.set(pos, ele);
 
 		Ok(this.clone())
@@ -587,18 +591,14 @@ impl List {
 	/// ```
 	pub fn qs_join(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
-		let delim =
-			args.arg(0)
-				.ok()
-				.map(|arg| arg.call_downcast::<Text>())
-				.transpose()?;
-		this.join(delim.as_ref().map(|delim| delim.as_ref()))
-			.map(Object::from)
+		let delim = args.arg(0).map(|arg| arg.call_downcast::<Text>()).transpose()?;
+
+		this.join(delim.as_ref().map(|delim| delim.as_ref())).map(Object::from)
 	}
 
 	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
-		let amnt = usize::try_from(*args.arg(0)?.call_downcast::<Number>()?)?;
+		let amnt = usize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
 
 		Ok((&*this * amnt).into())
 	}
@@ -619,8 +619,7 @@ impl List {
 	/// assert([1, 2, "a"] != [1, "a", 2]);
 	/// ```
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
-
+		let rhs = args.try_arg(0)?;
 		let mut eql = Ok(false);
 
 		if this.is_identical(rhs) {
@@ -632,6 +631,7 @@ impl List {
 				eql = Ok(false);
 			}
 		}
+
 		eql.map(Object::from)
 	}
 
@@ -650,9 +650,9 @@ impl List {
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.clone();
+		let rhs = args.try_arg(0)?.clone();
 		this.try_downcast_mut::<Self>()?.push(rhs);
-		
+
 		Ok(this.clone())
 	}
 
@@ -688,7 +688,7 @@ impl List {
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
 	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.clone();
+		let rhs = args.try_arg(0)?.clone();
 		
 		this.try_downcast_mut::<Self>()?.unshift(rhs);
 		Ok(this.clone())
@@ -723,7 +723,7 @@ impl List {
 	/// assert(["a", "b"] + [] == ["a", "b"]);
 	/// ```
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((&*this + rhs.clone()).into())
@@ -740,17 +740,15 @@ impl List {
 	/// assert(list == [1, 2, 3, 4]);
 	/// ```
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 		let mut this_mut = this.try_downcast_mut::<Self>()?;
 
-		let addend =
-			if this.is_identical(rhs) {
-				this_mut.clone()
-			} else {
-				rhs.call_downcast::<Self>()?.clone()
-			};
-
-		*this_mut += addend;
+		if this.is_identical(rhs) {
+			let dup = this_mut.clone();
+			*this_mut += dup;
+		} else {
+			*this_mut += rhs.call_downcast::<Self>()?.clone();
+		};
 
 		Ok(this.clone())
 	}
@@ -768,7 +766,7 @@ impl List {
 	/// ```
 	pub fn qs_sub(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_sub(&rhs).map(Object::from)
 	}
@@ -786,7 +784,7 @@ impl List {
 	/// assert(list == ["1", "b"]);
 	/// ```
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 
 		if this.is_identical(rhs) {
 			return Self::qs_clear(rhs, Args::default());
@@ -811,7 +809,7 @@ impl List {
 	/// ```
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_bitand(&rhs).map(Object::from)
 	}
@@ -833,7 +831,7 @@ impl List {
 	/// assert(list == [2]);
 	/// ```
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 
 		if this.is_identical(rhs) {
 			return Ok(this.clone());
@@ -857,7 +855,7 @@ impl List {
 	/// ```
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_bitor(&rhs).map(Object::from)
 	}
@@ -879,7 +877,7 @@ impl List {
 	/// assert(list == [1, 2, "a", 4, 3]);
 	/// ```
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 
 		if this.is_identical(rhs) {
 			return Ok(this.clone());
@@ -904,7 +902,7 @@ impl List {
 	/// ```
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_bitxor(&rhs).map(Object::from)
 	}
@@ -926,7 +924,7 @@ impl List {
 	/// assert(list == [4, 3, 2]);
 	/// ```
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 
 		if this.is_identical(rhs) {
 			return Self::qs_clear(this, Args::default());

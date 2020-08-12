@@ -3,9 +3,58 @@ use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
 use crate::types::Text;
 
-mod flag;
+bitflags::bitflags! {
+	#[derive(Default)]
+	pub struct Flags : u8 {
+		const CASE_INSENSITIVE  = 1 << 1;
+		const MULTI_LINE        = 1 << 2;
+		const DOT_MATCH_NEWLINE = 1 << 3;
+		const SWAP_GREEDY       = 1 << 4;
+		const IGNORE_WHITESPACE = 1 << 5;
+	}
+}
 
-pub use flag::Flags;
+impl Flags  {
+	fn set_options(self, builder: &mut ::regex::RegexBuilder) {
+		macro_rules! build_options {
+			($($variant:ident $fn:ident)*) => {
+				$(
+					if self.contains(Flags::$variant) {
+						builder.$fn(true);
+					}
+				)*
+			};
+		}
+
+		build_options! {
+			CASE_INSENSITIVE case_insensitive
+			MULTI_LINE multi_line
+			DOT_MATCH_NEWLINE dot_matches_new_line
+			SWAP_GREEDY swap_greed
+			IGNORE_WHITESPACE ignore_whitespace
+		}
+	}
+}
+
+impl Display for Flags {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		macro_rules! write_flag {
+			($($variant:ident $lit:literal)*) => {
+				$(
+					if self.contains(Flags::$variant) {
+						write!(f, $lit)?;
+					}
+				)*
+			};
+		}
+
+		write_flag! {
+			CASE_INSENSITIVE "i" MULTI_LINE "m" DOT_MATCH_NEWLINE "n"
+			SWAP_GREEDY "U" IGNORE_WHITESPACE "x"
+		}
+		Ok(())
+	}
+}
 
 /// An error that is caused by a bad regex being parsed.
 pub use ::regex::Error as RegexError;
@@ -40,7 +89,6 @@ impl Regex {
 		Self::try_from(rxp)
 	}
 
-	#[inline]
 	pub fn new_with_options(rxp: &str, flags: Flags) -> Result<Self, RegexError> {
 		let mut builder = ::regex::RegexBuilder::new(rxp);
 		flags.set_options(&mut builder);
@@ -64,10 +112,10 @@ impl<'a> TryFrom<&'a str> for Regex {
 	}
 }
 
-impl From<Regex> for Text {
+impl From<&Regex> for Text {
 	#[inline]
-	fn from(rxp: Regex) -> Self {
-		Self::from(rxp.to_string())
+	fn from(re: &Regex) -> Self {
+		re.to_string().into()
 	}
 }
 
@@ -84,12 +132,12 @@ impl Regex {
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
-		Ok(Text::from(this.to_string()).into())
+		Ok(Text::from(&*this).into())
 	}
 
 	/// Compares two [`Regex`]s
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.try_downcast::<Self>();
+		let rhs = args.try_arg(0)?.try_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(rhs.map(|rhs| *rhs == *this)
@@ -101,7 +149,7 @@ impl Regex {
 	///
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_scan(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Text>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.0
@@ -115,7 +163,7 @@ impl Regex {
 	///
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_match(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Text>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.0
@@ -132,7 +180,7 @@ impl Regex {
 	///
 	/// The first argument is converted to a [`Text`] before matching.
 	pub fn qs_does_match(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Text>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.0.is_match(rhs.as_ref()).into())

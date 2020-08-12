@@ -46,6 +46,9 @@ impl HeapData {
 		Arc::into_raw(self.0)
 	}
 
+	/// stuff
+	/// # Safety
+	/// TODO
 	#[inline]
 	pub unsafe fn from_raw(raw: *const HeapInner) -> Self {
 		Self(Arc::from_raw(raw))

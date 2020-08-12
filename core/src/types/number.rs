@@ -181,8 +181,7 @@ impl Number {
 		match (self.0, rhs.0) {
 			(Inner::Integer(l), Inner::Integer(r)) if 0 <= r && r <= (u32::MAX as IntegerType)
 				=> l.wrapping_pow(r as u32).into(),
-			(Inner::Integer(l), Inner::Integer(r))
-				=> (l as FloatType).powf(r as FloatType).into(),
+			(Inner::Integer(l), Inner::Integer(r)) => (l as FloatType).powf(r as FloatType).into(),
 			(Inner::Integer(l), Inner::Float(r)) => (l as FloatType).powf(r).into(),
 			(Inner::Float(l), Inner::Integer(r)) => l.powf(r as FloatType).into(),
 			(Inner::Float(l), Inner::Float(r)) => l.powf(r).into()
@@ -197,6 +196,7 @@ impl Number {
 		*self = self.pow(rhs);
 	}
 
+	#[inline]
 	pub fn is_nan(&self) -> bool {
 		match self.0 {
 			Inner::Integer(..) => false,
@@ -226,7 +226,7 @@ impl Ord for Number {
 	}
 }
 
-impl TryFrom<&'_ str> for Number {
+impl TryFrom<&str> for Number {
 	type Error = FromStrError;
 
 	/// Try to parse a number from a `&str`.
@@ -295,6 +295,7 @@ impl std::error::Error for FromStrError {
 pub enum ToStringRadixError {
 	/// It's a bad radix.
 	InvalidRadix(u32),
+
 	/// It's not an integer.
 	NotAnInteger(NotAnInteger)
 }
@@ -315,9 +316,10 @@ impl std::error::Error for ToStringRadixError {
 
 /// The given number wasn't an integer when it should have been.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct NotAnInteger(pub(crate) f64);
+pub struct NotAnInteger(f64);
 
 impl Display for NotAnInteger {
+	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		write!(f, "{} is not a whole number", self.0)
 	}
@@ -346,6 +348,7 @@ macro_rules! impl_try_from_eq {
 			}
 
 			impl PartialEq<$int> for Number {
+				#[inline]
 				fn eq(&self, rhs: &$int) -> bool {
 					*self == Self::from(*rhs)
 				}
@@ -354,6 +357,7 @@ macro_rules! impl_try_from_eq {
 
 		$(
 			impl PartialEq<$float> for Number {
+				#[inline]
 				fn eq(&self, rhs: &$float) -> bool {
 					*self == Self::from(*rhs)
 				}
@@ -386,12 +390,14 @@ impl From<IntegerType> for Number {
 }
 
 impl From<FloatType> for Object {
+	#[inline]
 	fn from(f: FloatType) -> Self {
 		Number::from(f).into()
 	}
 }
 
 impl From<IntegerType> for Object {
+	#[inline]
 	fn from(n: IntegerType) -> Self {
 		Number::from(n).into()
 	}
@@ -417,6 +423,7 @@ macro_rules! impl_from {
 			}
 
 			impl From<$int> for Object {
+				#[inline]
 				fn from(num: $int) -> Self {
 					Number::from(num).into()
 				}
@@ -431,6 +438,7 @@ macro_rules! impl_from {
 			}
 
 			impl From<$float> for Object {
+				#[inline]
 				fn from(num: $float) -> Self {
 					Number::from(num).into()
 				}
@@ -556,6 +564,7 @@ impl Number {
 
 	/// If both numbers are integers, replace `self` with [`try_bitand`]'s result. If either isn't an
 	/// integer, [`NotAnInteger`] is returned.
+	#[inline]
 	pub fn try_bitand_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
 		*self = self.try_bitand(rhs)?;
 		Ok(())
@@ -569,6 +578,7 @@ impl Number {
 
 	/// If both numbers are integers, replace `self` with [`try_bitor`]'s result. If either isn't an
 	/// integer, [`NotAnInteger`] is returned.
+	#[inline]
 	pub fn try_bitor_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
 		*self = self.try_bitor(rhs)?;
 		Ok(())
@@ -582,6 +592,7 @@ impl Number {
 
 	/// If both numbers are integers, replace `self` with [`try_bitxor`]'s result. If either isn't an
 	/// integer, [`NotAnInteger`] is returned.
+	#[inline]
 	pub fn try_bitxor_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
 		*self = self.try_bitxor(rhs)?;
 		Ok(())
@@ -595,6 +606,7 @@ impl Number {
 
 	/// If both numbers are integers, replace `self` with [`try_shl`]'s result. If either isn't an
 	/// integer, [`NotAnInteger`] is returned.
+	#[inline]
 	pub fn try_shl_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
 		*self = self.try_shl(rhs)?;
 		Ok(())
@@ -608,6 +620,7 @@ impl Number {
 
 	/// If both numbers are integers, replace `self` with [`try_shr`]'s result. If either isn't an
 	/// integer, [`NotAnInteger`] is returned.
+	#[inline]
 	pub fn try_shr_assign(&mut self, rhs: Self) -> Result<(), NotAnInteger> {
 		*self = self.try_shr(rhs)?;
 		Ok(())
@@ -631,6 +644,7 @@ impl ops::Neg for Number {
 }
 
 impl From<Number> for Text {
+	#[inline]
 	fn from(n: Number) -> Self {
 		Self::from(n.to_string())
 	}
@@ -641,6 +655,7 @@ impl From<Number> for Boolean {
 	///
 	/// [zero](Number::ZERO) is considered [`false`](Boolean::FALSE) while everything else is
 	/// [`true`](Boolean::TRUE)
+	#[inline]
 	fn from(n: Number) -> Self {
 		if n == Number::ZERO {
 			Self::FALSE
@@ -673,7 +688,7 @@ impl Number {
 		use std::convert::TryInto;
 		let this = this.try_downcast::<Self>()?;
 
-		if let Ok(radix) = args.arg(0) {
+		if let Some(radix) = args.arg(0) {
 			this.to_string_radix((*radix.call_downcast::<Self>()?).try_into()?)
 				.map_err(|err| TypeError::Messaged(err.to_string()))
 				.map_err(crate::Error::from)
@@ -721,7 +736,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The addend.
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
-		let addend = args.arg(0)?.call_downcast::<Self>()?;
+		let addend = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this + *addend).into())
@@ -732,7 +747,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The addend.
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let addend = *args.arg(0)?.call_downcast::<Self>()?;
+		let addend = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		*this.try_downcast_mut::<Self>()? += addend;
 		Ok(this.clone())
@@ -743,7 +758,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The subtrahend.
 	pub fn qs_sub(this: &Object, args: Args) -> crate::Result<Object> {
-		let subtrahend = args.arg(0)?.call_downcast::<Self>()?;
+		let subtrahend = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this - *subtrahend).into())
@@ -754,7 +769,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The subtrahend.
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let subtrahend = *args.arg(0)?.call_downcast::<Self>()?;
+		let subtrahend = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		*this.try_downcast_mut::<Self>()? -= subtrahend;
 		Ok(this.clone())
@@ -765,7 +780,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The multiplicand.
 	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
-		let multiplicand = args.arg(0)?.call_downcast::<Self>()?;
+		let multiplicand = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this * *multiplicand).into())
@@ -776,7 +791,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The multiplicand.
 	pub fn qs_mul_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let multiplicand = *args.arg(0)?.call_downcast::<Self>()?;
+		let multiplicand = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		*this.try_downcast_mut::<Self>()? *= multiplicand;
 		Ok(this.clone())
@@ -790,7 +805,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
 	pub fn qs_div(this: &Object, args: Args) -> crate::Result<Object> {
-		let divisor = args.arg(0)?.call_downcast::<Self>()?;
+		let divisor = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this / *divisor).into())
@@ -803,7 +818,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
 	pub fn qs_div_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let divisor = *args.arg(0)?.call_downcast::<Self>()?;
+		let divisor = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		*this.try_downcast_mut::<Self>()? /= divisor;
 		Ok(this.clone())
@@ -817,7 +832,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
 	pub fn qs_mod(this: &Object, args: Args) -> crate::Result<Object> {
-		let divisor = args.arg(0)?.call_downcast::<Self>()?;
+		let divisor = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this % *divisor).into())
@@ -830,7 +845,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
 	pub fn qs_mod_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let divisor = *args.arg(0)?.call_downcast::<Self>()?;
+		let divisor = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		*this.try_downcast_mut::<Self>()? %= divisor;
 		Ok(this.clone())
@@ -841,7 +856,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The exponent.
 	pub fn qs_pow(this: &Object, args: Args) -> crate::Result<Object> {
-		let exponent = args.arg(0)?.call_downcast::<Self>()?;
+		let exponent = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.pow(*exponent).into())
@@ -852,7 +867,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The exponent.
 	pub fn qs_pow_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let exponent = *args.arg(0)?.call_downcast::<Self>()?;
+		let exponent = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_downcast_mut::<Self>()?.pow_assign(exponent);
 		Ok(this.clone())
@@ -874,7 +889,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = args.arg(0)?.call_downcast::<Self>()?;
+		let other = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.try_bitand(*other)?.into())
@@ -887,7 +902,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = *args.arg(0)?.call_downcast::<Self>()?;
+		let other = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_downcast_mut::<Self>()?.try_bitand_assign(other)?;
 		Ok(this.clone())
@@ -900,7 +915,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = args.arg(0)?.call_downcast::<Self>()?;
+		let other = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.try_bitor(*other)?.into())
@@ -913,7 +928,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = *args.arg(0)?.call_downcast::<Self>()?;
+		let other = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_downcast_mut::<Self>()?.try_bitor_assign(other)?;
 		Ok(this.clone())
@@ -926,7 +941,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = args.arg(0)?.call_downcast::<Self>()?;
+		let other = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.try_bitxor(*other)?.into())
@@ -939,7 +954,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let other = *args.arg(0)?.call_downcast::<Self>()?;
+		let other = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_downcast_mut::<Self>()?.try_bitxor_assign(other)?;
 		Ok(this.clone())
@@ -952,7 +967,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
 	pub fn qs_shl(this: &Object, args: Args) -> crate::Result<Object> {
-		let amnt = args.arg(0)?.call_downcast::<Self>()?;
+		let amnt = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.try_shl(*amnt)?.into())
@@ -965,7 +980,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
 	pub fn qs_shl_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let amnt = *args.arg(0)?.call_downcast::<Self>()?;
+		let amnt = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_downcast_mut::<Self>()?.try_shl_assign(amnt)?;
 		Ok(this.clone())
@@ -978,7 +993,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
 	pub fn qs_shr(this: &Object, args: Args) -> crate::Result<Object> {
-		let amnt = args.arg(0)?.call_downcast::<Self>()?;
+		let amnt = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.try_shr(*amnt)?.into())
@@ -991,7 +1006,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
 	pub fn qs_shr_assign(this: &Object, args: Args) -> crate::Result<Object> {
-		let amnt = *args.arg(0)?.call_downcast::<Self>()?;
+		let amnt = *args.try_arg(0)?.call_downcast::<Self>()?;
 
 		this.try_downcast_mut::<Self>()?.try_shr_assign(amnt)?;
 		Ok(this.clone())
@@ -1011,7 +1026,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.downcast::<Self>();
+		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(rhs.map(|rhs| *rhs == *this).unwrap_or(false).into())
@@ -1022,7 +1037,7 @@ impl Number {
 	/// # Arguments
 	/// 1. (required, `@num`) The value to compare against.
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Self>();
+		let rhs = args.try_arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(rhs.map(|rhs| this.cmp(&*rhs).into()).unwrap_or_default())

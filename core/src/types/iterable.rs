@@ -18,7 +18,7 @@ impl Debug for BoundRustFn {
 impl_object_type!{
 for BoundRustFn [(parents super::Basic)]:
 	"()" => function |this: &Object, args: Args| {
-		let arg = args.arg(0)?.clone();
+		let arg = args.try_arg(0)?.clone();
 		(this.try_downcast::<Self>()?.0)(arg).map(|_| this.clone())
 	}
 }
@@ -41,7 +41,7 @@ where
 
 impl Iterable {
 	pub fn qs_map(this: &Object, args: Args) -> crate::Result<Object> {
-		let block = args.arg(0)?;
+		let block = args.try_arg(0)?;
 
 		let ret = Arc::new(Mutex::new(vec![]));
 		let ret2 = ret.clone();
@@ -54,15 +54,12 @@ impl Iterable {
 			// no one else has a refrence, so we're all good.
 			Ok(mutex) => Ok(mutex.into_inner().into()),
 			// we have to clone it now. darn!
-			Err(arc) => {
-				println!("having to clone");
-				Ok(arc.lock().clone().into())
-			}
+			Err(arc) => Ok(arc.lock().clone().into())
 		}
 	}
 
 	pub fn qs_select(this: &Object, args: Args) -> crate::Result<Object> {
-		let block = args.arg(0)?;
+		let block = args.try_arg(0)?;
 
 		let ret = Arc::new(Mutex::new(vec![]));
 		let ret2 = ret.clone();
@@ -78,10 +75,7 @@ impl Iterable {
 			// no one else has a refrence, so we're all good.
 			Ok(mutex) => Ok(mutex.into_inner().into()),
 			// we have to clone it now. darn!
-			Err(arc) => {
-				println!("having to clone");
-				Ok(arc.lock().clone().into())
-			}
+			Err(arc) => Ok(arc.lock().clone().into())
 		}
 	}
 }

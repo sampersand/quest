@@ -159,7 +159,7 @@ impl<T: AsRef<[u8]>> From<T> for BufStream<Cursor<T>> {
 	}
 }
 
-impl TryFrom<&'_ Path> for BufStream<BufReader<File>> {
+impl TryFrom<&Path> for BufStream<BufReader<File>> {
 	type Error = io::Error;
 
 	/// Try to construct a new [`BufStream`](#) from the given path, raising an error if we're not

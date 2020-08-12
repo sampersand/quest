@@ -44,34 +44,37 @@ pub enum Error {
 	}
 }
 
-impl From<String> for Error {
-	fn from(err: String) -> Self { Error::Messaged(err) }
-}
+#[must_use]
+/// An alias for results within quest.
+pub type Result<T> = ::std::result::Result<T, Error>;
 
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Error::Messaged(err) => Display::fmt(&err, f),
-			Error::KeyError(err) => Display::fmt(&err, f),
-			Error::TypeError(err) => Display::fmt(&err, f),
-			Error::ValueError(err) => Display::fmt(&err, f),
-			Error::AssertionFailed(Some(err)) => write!(f, "assertion failed: {}", err),
-			Error::AssertionFailed(None) => write!(f, "assertion failed"),
-			Error::Boxed(err) => Display::fmt(&err, f),
-			Error::Return { to, obj } => write!(f, "uncaught return to {:?}: {:?}", to, obj)
+			Self::Messaged(err) => Display::fmt(&err, f),
+			Self::KeyError(err) => Display::fmt(&err, f),
+			Self::TypeError(err) => Display::fmt(&err, f),
+			Self::ValueError(err) => Display::fmt(&err, f),
+			Self::AssertionFailed(Some(err)) => write!(f, "assertion failed: {}", err),
+			Self::AssertionFailed(None) => write!(f, "assertion failed"),
+			Self::Boxed(err) => Display::fmt(&err, f),
+			Self::Return { to, obj } => write!(f, "uncaught return to {:?}: {:?}", to, obj)
 		}
 	}
 }
 
 impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-		match self {
-			Error::Boxed(err) => Some(err.as_ref()),
-			_ => None
+		if let Self::Boxed(err) = self {
+			Some(err.as_ref())
+		} else {
+			None
 		}
 	}
 }
 
-#[must_use]
-/// An alias for results within quest.
-pub type Result<T> = ::std::result::Result<T, Error>;
+impl From<Box<dyn std::error::Error + Send + Sync>> for Error {
+	fn from(boxed_err: Box<dyn std::error::Error + Send + Sync>) -> Self {
+		Self::Boxed(boxed_err)
+	}
+}

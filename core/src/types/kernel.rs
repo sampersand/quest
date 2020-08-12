@@ -1,5 +1,6 @@
 use crate::{Args, Object, Error};
 use crate::types::{Boolean, Text, Null, Number};
+use crate::literal::CALL;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Kernel;
@@ -35,44 +36,50 @@ fn object_to_string(object: &Object) -> crate::Result<String> {
 }
 
 impl Kernel {
+	/// Checks the first attribute
 	pub fn qs_if(_: &Object, args: Args) -> crate::Result<Object> {
-		if is_object_truthy(args.arg(0)?)? {
-			args.arg(1)?.clone()
+		let cond = args.try_arg(0)?;
+		let if_true = args.try_arg(1)?;
+
+		if is_object_truthy(cond)? {
+			if_true.call_attr_lit(CALL, &[])
+		} else if let Some(if_false) = args.arg(2) {
+			if_false.call_attr_lit(CALL, &[])
 		} else {
-			args.arg(2).map(Clone::clone).unwrap_or_default()
-		}.call_attr_lit("()", &[])
+			Ok(Object::default())
+		}
 	}
 
 	pub fn qs_disp(_: &Object, args: Args) -> crate::Result<Object> {
-		display(args.as_ref(), true).map(|_| Object::default())
+		display(args.as_ref(), true)?;
+
+		Ok(Object::default())
 	}
 
 	pub fn qs_dispn(_: &Object, args: Args) -> crate::Result<Object> {
-		display(args.as_ref(), false).map(|_| Object::default())
+		display(args.as_ref(), false)?;
+
+		Ok(Object::default())
 	}
 
 	pub fn qs_while(_: &Object, args: Args) -> crate::Result<Object> {
-		let cond = args.arg(0)?;
-		let body = args.arg(1)?;
-		// crate::Binding::new_stackframe_old(args.args(2..).unwrap_or_default(), move |b| {
-		// 	b.set_attr_old("name", Object::from("while"))?;
+		let cond = args.try_arg(0)?;
+		let body = args.try_arg(1)?;
+		let mut result = Object::default();
 
-			let mut result = Object::default();
-			while is_object_truthy(&cond.call_attr_lit("()", &[])?)? {
-				result = body.call_attr_lit("()", &[])?;
-			};
-			Ok(result)
-		// })
+		while is_object_truthy(&cond.call_attr_lit(CALL, &[])?)? {
+			result = body.call_attr_lit(CALL, &[])?;
+		}
+
+		Ok(result)
 	}
 
 	pub fn qs_loop(_: &Object, args: Args) -> crate::Result<Object> {
-		let body = args.arg(0)?;
-		// crate::Binding::new_stackframe_old(args.args(1..).unwrap_or_default(), move |b| {
-			// b.set_attr_old("name", Object::from("loop"))?;
-			loop {
-				body.call_attr_lit("()", &[])?;
-			}
-		// })
+		let body = args.try_arg(0)?;
+
+		loop {
+			body.call_attr_lit(CALL, &[])?;
+		}
 	}
 
 	pub fn qs_for(_: &Object, _args: Args) -> crate::Result<Object> {
@@ -82,16 +89,14 @@ impl Kernel {
 	pub fn qs_quit(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::convert::TryFrom;
 
-		let code = args.arg(0)
-			.ok()
-			.map(|x| x.call_downcast::<Number>().map(|n| n.floor()))
-			.transpose()?
-			.unwrap_or(Number::ONE);
+		let code = 
+			if let Some(code) = args.arg(0) {
+				i32::try_from(*code.call_downcast::<Number>()?)?
+			} else {
+				1
+			};
 
-		let code: i32 = i32::try_from(code)
-			.map_err(|err|crate::error::TypeError::NotAnInteger(Number::from(err.0)))?;
-
-		if let Ok(msg) = args.arg(1) {
+		if let Some(msg) = args.arg(1) {
 			display(&[msg], true)?;
 		}
 
@@ -100,10 +105,10 @@ impl Kernel {
 
 	pub fn qs_system(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::process::Command;
-		let cmd = object_to_string(args.arg(0)?)?;
+		let cmd = object_to_string(args.try_arg(0)?)?;
 		let mut command = Command::new(cmd);
 
-		for arg in args.args(1..).unwrap_or_default().as_ref() {
+		for arg in args.try_args(1..).unwrap_or_default().as_ref() {
 			command.arg(object_to_string(arg)?);
 		}
 
@@ -118,11 +123,11 @@ impl Kernel {
 		let mut start: FloatType = 0.0;
 		let mut end: FloatType = 1.0;
 
-		if let Ok(start_num) = args.arg(0) {
-			start = FloatType::from(*start_num.call_downcast::<Number>()?);
+		if let Some(start_num) = args.arg(0) {
+			start = (*start_num.call_downcast::<Number>()?).into();
 
-			if let Ok(end_num) = args.arg(1) {
-				end = FloatType::from(*end_num.call_downcast::<Number>()?);
+			if let Some(end_num) = args.arg(1) {
+				end = (*end_num.call_downcast::<Number>()?).into();
 			} else {
 				end = start;
 				start = 0.0;
@@ -135,54 +140,54 @@ impl Kernel {
 	pub fn qs_prompt(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::io;
 
-		if let Ok(arg) = args.arg(0) {
+		if let Some(arg) = args.arg(0) {
 			display(&[arg], false)?;
 		}
 
 		let mut buf = String::new();
 
-		match io::stdin().read_line(&mut buf) {
-			Ok(_) => {
-				if buf.ends_with('\n') {
-					buf.pop(); // remove trailing newline; only on unix currently...
-				}
+		io::stdin().read_line(&mut buf)
+			.map_err(|err| Error::Messaged(format!("couldn't read from stdin: {}", err)))?;
 
-				Ok(buf.into())
-			},
-			Err(err) => Err(Error::Messaged(format!("couldn't read from stdin: {}", err)))
+		if buf.ends_with('\n') {
+			if cfg!(debug_asserts) {
+				assert_eq!(buf.pop(), Some('\n'));
+			} else {
+				buf.pop();
+			}
 		}
+
+		Ok(buf.into())
 	}
 
 	pub fn qs_return(_: &Object, args: Args) -> crate::Result<Object> {
-		let to = crate::Binding::from(args.arg(0)?.clone());
-		let obj = args.arg(1).map(Clone::clone).unwrap_or_default();
+		let to = crate::Binding::from(args.try_arg(0)?.clone());
+		let obj = args.arg(1).map(Object::clone).unwrap_or_default();
 
 		Err(Error::Return { to, obj })
 	}
 
 	pub fn qs_assert(_: &Object, args: Args) -> crate::Result<Object> {
-		let arg = args.arg(0)?;
+		let arg = args.try_arg(0)?;
+
 		if is_object_truthy(arg)? {
-			Ok(arg.clone())
-		} else {
-			Err(Error::AssertionFailed(
-				if let Ok(msg) = args.arg(1) {
-					Some(object_to_string(msg)?)
-				} else {
-					None
-				})
-			)
+			return Ok(arg.clone());
 		}
+
+		let msg = args.arg(1).map(object_to_string).transpose()?;
+
+		Err(Error::AssertionFailed(msg))
 	}
 
 	pub fn qs_sleep(_: &Object, args: Args) -> crate::Result<Object> {
-		let dur = *args.arg(0)?.call_downcast::<Number>()?;
+		let dur = *args.try_arg(0)?.call_downcast::<Number>()?;
+
 		std::thread::sleep(std::time::Duration::from_secs_f64(dur.into()));
 		Ok(Object::default())
 	}
 
 	pub fn qs_open(_: &Object, _args: Args) -> crate::Result<Object> {
-		// let filename = args.arg(0)?.downcast_call::<types::Text>();
+		// let filename = args.try_arg(0)?.downcast_call::<types::Text>();
 		todo!("open")
 	}
 }
@@ -240,7 +245,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 
 		Thread::initialize().unwrap();
 
-		let block = args.arg(0)?.clone();
+		let block = args.try_arg(0)?.clone();
 		Ok(Thread(Arc::new(Mutex::new(Some(thread::spawn(move ||
 			block.call_attr_lit(crate::literal::CALL, &[&block])
 		))))).into())

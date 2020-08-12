@@ -51,6 +51,9 @@ impl Data {
 		self.from_heap_untyped().map(TaggedResult::Heap)
 	}
 
+	/// todo
+	/// # Safety
+	/// TODO
 	pub(crate) unsafe fn new_tagged(tag: Tag, data: u64) -> Self {
 		debug_assert_eq!(data & 0xffff_ffff_ffff, data, "data has tag bits associated!");
 

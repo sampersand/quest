@@ -2,18 +2,15 @@ use crate::{Object, types::ObjectType};
 use crate::error::TypeError;
 use crate::literal::Literal;
 use std::any::{Any, type_name};
+use std::ops::Deref;
+use std::marker::PhantomData;
 
 pub trait Convertible : Any + Sized + Clone + ObjectType {
 	const CONVERT_FUNC: Literal;
 }
 
 impl Object {
-	pub fn call_downcast<'a, T>(&'a self) -> crate::Result<impl std::ops::Deref<Target=T> + 'a>
-	where
-		T: Convertible
-	{
-		use std::ops::Deref;
-		use std::marker::PhantomData;
+	pub fn call_downcast<'a, T: Convertible>(&'a self) -> crate::Result<impl Deref<Target=T> + 'a> {
 
 		enum CalledReader<T, D> {
 			Original(D, PhantomData<T>),

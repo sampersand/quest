@@ -109,6 +109,7 @@ impl From<Boolean> for Text {
 	fn from(b: Boolean) -> Self {
 		const TRUE: Text = Text::new_static("true");
 		const FALSE: Text = Text::new_static("false");
+
 		if b.into_inner() {
 			TRUE
 		} else {
@@ -122,7 +123,7 @@ impl ops::BitAnd for Boolean {
 
 	#[inline]
 	fn bitand(self, rhs: Self) -> Self {
-		Self::from(self.0 & rhs.0)
+		Self::new(self.0 & rhs.0)
 	}
 }
 
@@ -138,7 +139,7 @@ impl ops::BitOr for Boolean {
 
 	#[inline]
 	fn bitor(self, rhs: Self) -> Self {
-		Self::from(self.0 | rhs.0)
+		Self::new(self.0 | rhs.0)
 	}
 }
 
@@ -154,7 +155,7 @@ impl ops::BitXor for Boolean {
 
 	#[inline]
 	fn bitxor(self, rhs: Self) -> Self {
-		Self::from(self.0 ^ rhs.0)
+		Self::new(self.0 ^ rhs.0)
 	}
 }
 
@@ -170,7 +171,7 @@ impl ops::Not for Boolean {
 
 	#[inline]
 	fn not(self) -> Self {
-		Self::from(!self.0)
+		Self::new(!self.0)
 	}
 }
 
@@ -225,7 +226,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.downcast::<Self>();
+		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
@@ -236,7 +237,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object to compare against.
 	pub fn qs_cmp(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Self>();
+		let rhs = args.try_arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(rhs.map(|rhs| this.cmp(&rhs).into()).unwrap_or_default())
@@ -254,7 +255,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this & *rhs).into())
@@ -265,7 +266,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 
 		if !this.is_identical(rhs) { // `true & true = true` and `false & false = false`.
 			*this.try_downcast_mut::<Self>()? &= *rhs.call_downcast::<Self>()?;
@@ -279,7 +280,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this | *rhs).into())
@@ -290,7 +291,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 
 		if !this.is_identical(rhs) { // `true | true = true` and `false | false = false`.
 			*this.try_downcast_mut::<Self>()? |= *rhs.call_downcast::<Self>()?;
@@ -304,7 +305,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?.call_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((*this ^ *rhs).into())
@@ -315,7 +316,7 @@ impl Boolean {
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
-		let rhs = args.arg(0)?;
+		let rhs = args.try_arg(0)?;
 
 
 		if this.is_identical(rhs) {

@@ -15,22 +15,33 @@ fn compare(lhs: &Object, rhs: &Object) -> crate::Result<Ordering> {
 
 impl Comparable {
 	pub fn qs_lth(this: &Object, args: Args) -> crate::Result<Object> {
-		compare(this, args.arg(0)?).map(|ord| (ord == Ordering::Less).into())
+		let rhs = args.try_arg(0)?;
+		let cmp = compare(this, rhs)?;
+
+		Ok((cmp == Ordering::Less).into())
 	}
 
 	pub fn qs_gth(this: &Object, args: Args) -> crate::Result<Object> {
-		compare(this, args.arg(0)?).map(|ord| (ord == Ordering::Greater).into())
+		let rhs = args.try_arg(0)?;
+		let cmp = compare(this, rhs)?;
+
+		Ok((cmp == Ordering::Greater).into())
 	}
 
 	pub fn qs_leq(this: &Object, args: Args) -> crate::Result<Object> {
-		compare(this, args.arg(0)?).map(|ord| (ord != Ordering::Greater).into())
+		let rhs = args.try_arg(0)?;
+		let cmp = compare(this, rhs)?;
+
+		Ok((cmp != Ordering::Greater).into())
 	}
 
 	pub fn qs_geq(this: &Object, args: Args) -> crate::Result<Object> {
-		compare(this, args.arg(0)?).map(|ord| (ord != Ordering::Less).into())
+		let rhs = args.try_arg(0)?;
+		let cmp = compare(this, rhs)?;
+
+		Ok((cmp != Ordering::Less).into())
 	}
 }
-
 
 impl_object_type!{
 for Comparable [(parents super::Basic)]:
@@ -41,12 +52,13 @@ for Comparable [(parents super::Basic)]:
 }
 
 impl From<Ordering> for crate::Object {
+	#[inline]
 	fn from(ord: Ordering) -> Self {
-		crate::types::Number::from(ord).into()
+		Number::from(ord).into()
 	}
 }
 
-impl From<Ordering> for crate::types::Number {
+impl From<Ordering> for Number {
 	fn from(ord: Ordering) -> Self {
 		match ord {
 			Ordering::Less => -Self::ONE,
@@ -67,7 +79,7 @@ mod tests {
 	impl_object_type! { for DummyCmp [(parents crate::types::Basic)]:
 		"<=>" => function |this: &Object, args: Args| {
 			let this = this.try_downcast::<DummyCmp>()?;
-			let rhs = args.arg(0)?.try_downcast::<DummyCmp>()?;
+			let rhs = args.try_arg(0)?.try_downcast::<DummyCmp>()?;
 			Ok(this.0.cmp(&rhs.0).into())
 		}
 	}

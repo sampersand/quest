@@ -17,7 +17,7 @@ impl Tcp {
 
 impl Tcp {
 	pub fn qs_call(_: &Object, args: Args) -> Result<Object> {
-		args.arg(0)?.try_downcast::<Text>().and_then(|addr| {
+		args.try_arg(0)?.try_downcast::<Text>().and_then(|addr| {
 			Tcp::connect(addr.as_ref())
 				.map(Object::from)
 				.map_err(|err| crate::Error::Messaged(err.to_string()))
@@ -29,14 +29,14 @@ impl_object_type!{
 for Tcp [(parents super::Basic)]:
 	"()" => function Self::qs_call,
 	"get" => function |this, _| {
-		Ok(ureq::get(this.call_downcast::<Text>().map(|t| t.clone())?.as_ref())
+		Ok(ureq::get(this.call_downcast::<Text>()?.as_ref())
 			.call()
 			.into_string()
 			.unwrap()
 			.into())
 	},
 	"write" => function |this, args| {
-		let arg = args.arg(0)?.call_downcast::<Text>()?.clone();
+		let arg = args.try_arg(0)?.call_downcast::<Text>()?.clone();
 
 		this.try_downcast_mut::<Self>().and_then(|tcp| {
 			tcp.0.lock().unwrap().write(&arg.as_ref().as_ref())
@@ -62,17 +62,3 @@ for Tcp [(parents super::Basic)]:
 		})
 	},
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

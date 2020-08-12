@@ -8,7 +8,6 @@ use crate::Object;
 use crate::types::Text;
 use std::fmt::{self, Debug, Formatter};
 use std::hash::{Hash, Hasher};
-// use std::any::Any;
 
 type Inner = for<'s, 'o> fn(&'o Object, Args<'s, 'o>) -> crate::Result<Object>;
 
@@ -73,14 +72,14 @@ impl RustFn {
 
 	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
-		let caller = args.arg(0)?;
-		let args = args.args(1..).unwrap_or_default();
+		let caller = args.try_arg(0)?;
+		let args = args.try_args(1..).unwrap_or_default();
 
 		this.call(caller, args)
 	}
 }
 
-impl_object_type!{
+impl_object_type! {
 for RustFn [(parents super::Function)]:
 	"inspect" => function Self::qs_inspect,
 	"@text" => function Self::qs_at_text,

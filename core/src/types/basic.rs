@@ -34,7 +34,9 @@ impl Basic {
 	/// 1. (required) The other object.
 	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
-		Ok(this.is_identical(args.arg(0)?).into())
+		let rhs = args.try_arg(0)?;
+
+		Ok(this.is_identical(rhs).into())
 	}
 
 	/// See if `this` isn't equal to the first argument.
@@ -155,7 +157,7 @@ mod tests {
 
 			impl_object_type! { for Dummy [(parents Basic)]:
 				"==" => function |this: &Object, args: Args| {
-					let rhs = args.arg(0)?;
+					let rhs = args.try_arg(0)?;
 					this.try_downcast::<Dummy>().and_then(|this| {
 						rhs.try_downcast::<Dummy>().map(|rhs| Object::from(*this == *rhs))
 					})
@@ -242,7 +244,7 @@ mod tests {
 			impl_object_type! { for Dummy [(parents Basic)]:
 				"==" => function |this: &Object, args: Args| {
 					this.try_downcast::<Dummy>().and_then(|this|
-						args.arg(0)?.try_downcast::<Dummy>().map(|rhs| *this == *rhs)
+						args.try_arg(0)?.try_downcast::<Dummy>().map(|rhs| *this == *rhs)
 						.map(Object::from)
 					)
 				}

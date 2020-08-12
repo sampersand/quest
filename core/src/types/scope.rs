@@ -12,8 +12,8 @@ impl Scope {
 	}
 
 	pub fn qs_super(_this: &Object, _args: Args) -> Result<Object> {
-		// let attr = args.arg(0)?;
-		// let mut args = args.args(1..)?;
+		// let attr = args.try_arg(0)?;
+		// let mut args = argstry_.args(1..)?;
 		// args.add_this(this.clone());
 
 		// let default_attr = this.get_attr_old(attr)?;

@@ -7,19 +7,11 @@
 //! - [`quest-bin`](#TODO) the quest executable
 #![allow(clippy::pub_enum_variant_names)]
 
-
-#![allow(
-	// TODO
-	clippy::missing_safety_doc,
-)]
-
-use mimalloc::MiMalloc;
-
+#[cfg(feature = "mimalloc")]
 #[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 mod shared_cow;
-#[doc(hidden)]
 pub mod obj;
 pub mod utils;
 pub mod error;

@@ -129,7 +129,7 @@ impl Parents {
 		}
 	}
 
-	fn with_iter<F: FnOnce(std::slice::Iter<'_, Object>) -> Result<R>, R>(&self, f: F) -> Result<R> {
+	fn with_iter<F: FnOnce(std::slice::Iter<Object>) -> Result<R>, R>(&self, f: F) -> Result<R> {
 		match *self.0.read() {
 			Inner::None => f([].iter()),
 			Inner::Builtin(ref parents) => f(parents.iter()),

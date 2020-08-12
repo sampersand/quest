@@ -50,6 +50,7 @@ use crate::types::Boolean;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pristine;
 
+#[allow(non_snake_case)]
 impl Pristine {
 	/// Gets an internal representation of this type as a [`Text`]
 	///
@@ -66,7 +67,6 @@ impl Pristine {
 	/// ```
 	///
 	/// [`Text`]: crate::types::Text
-	#[allow(non_snake_case)]
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
 		// Ok(format!("<{}:{}>", this.typename(), this.id()).into())
 		Ok(format!("{:?}", this).into())
@@ -88,11 +88,10 @@ impl Pristine {
 	/// assert( 12.$__call_attr__($+, 4) == 16 )
 	/// assert( "foobar".$__call_attr__($get, 0, 2) == "foobar")
 	/// ```
-	#[inline]
-	#[allow(non_snake_case)]
 	pub fn qs___call_attr__<'a>(this: &'a Object, args: Args<'_, 'a>) -> crate::Result<Object> {
-		let attr = args.arg(0)?;
-		let rest = args.args(1..).unwrap_or_default();
+		let attr = args.try_arg(0)?;
+		let rest = args.try_args(1..).unwrap_or_default();
+
 		this.call_attr(attr, rest)
 	}
 
@@ -120,61 +119,45 @@ impl Pristine {
 	/// # => I love to eat oranges
 	/// # => I love to eat melons
 	/// ```
-	#[inline]
-	#[allow(non_snake_case)]
 	pub fn qs___get_attr__(this: &Object, args: Args) -> crate::Result<Object> {
-		let attr = args.arg(0)?;
+		let attr = args.try_arg(0)?;
+
 		this.get_attr(attr)
 	}
 
 	/// Set an attribute on the object
-	#[inline]
-	#[allow(non_snake_case)]
 	pub fn qs___set_attr__(this: &Object, args: Args) -> crate::Result<Object> {
-		let attr = args.arg(0)?;
-		let val = args.arg(1)?;
-		this.set_attr(attr.clone(), val.clone())?;
-		Ok(val.clone())
+		let attr = args.try_arg(0)?;
+		let val = args.try_arg(1)?;
+
+		this.set_attr(attr.clone(), val.clone()).map(|_| val.clone())
 	}
 
-	#[inline]
-	#[allow(non_snake_case)]
 	pub fn qs___has_attr__(this: &Object, args: Args) -> crate::Result<Object> {
-		let attr = args.arg(0)?;
+		let attr = args.try_arg(0)?;
+
 		this.has_attr(attr).map(Object::from)
 	}
 
-	#[inline]
-	#[allow(non_snake_case)]
 	pub fn qs___del_attr__(this: &Object, args: Args) -> crate::Result<Object> {
-		let attr = args.arg(0)?;
+		let attr = args.try_arg(0)?;
+
 		this.del_attr(attr)
 	}
 
-	#[inline]
-	#[allow(non_snake_case)]
-	pub fn qs_root_get_attr(this: &Object, _: Args) -> crate::Result<Object> {
-		crate::Binding::with_stack(|stack| {
-			stack.read()
-				.first().expect("no stack?")
-				.as_ref()
-				.get_attr(this)
-		})
-	}
-
-	#[inline]
 	pub fn qs_dot_get_attr(this: &Object, args: Args) -> crate::Result<Object> {
-		let attr = args.arg(0)?;
+		let attr = args.try_arg(0)?;
+
 		this.dot_get_attr(attr)
 	}
 
-	#[allow(non_snake_case)]
 	pub fn qs___keys__(this: &Object, args: Args) -> crate::Result<Object> {
-		let include_parents = args.arg(0)
-			.ok()
-			.map(|x| x.call_downcast::<Boolean>().map(|b| bool::from(*b)))
-			.transpose()?
-			.unwrap_or(false);
+		let include_parents =
+			args.arg(0)
+				.map(|x| x.call_downcast::<Boolean>())
+				.transpose()?
+				.map(|x| x.into_inner())
+				.unwrap_or(false);
 
 		Ok(this.mapping_keys(include_parents)?
 			.into_iter()
@@ -195,9 +178,14 @@ for Pristine [(init_parent) (parents Pristine)]:
 	"__del_attr__" => function Self::qs___del_attr__,
 	"::" => function Self::qs___get_attr__,
 	".=" => function Self::qs___set_attr__,
-	"::@" => function Self::qs_root_get_attr,
 	"." => function Self::qs_dot_get_attr,
+	// this is mildly deprecated
+	"::@" => function |this, _| {
+		crate::Binding::with_stack(|stack| {
+			stack.read()
+				.first().expect("no stack?")
+				.as_ref()
+				.get_attr(this)
+		})
+	}
 }
-
-
-

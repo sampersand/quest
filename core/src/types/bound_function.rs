@@ -21,6 +21,3 @@ impl_object_type!{
 for BoundFunction [(parents super::Basic)]:
 	"()" => function Self::qs_call,
 }
-
-
-

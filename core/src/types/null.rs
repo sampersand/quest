@@ -27,6 +27,7 @@ impl From<()> for Object {
 }
 
 impl From<()> for Null {
+	#[inline]
 	fn from(_: ()) -> Self {
 		Null
 	}
@@ -88,7 +89,7 @@ impl Null {
 	}
 
 	pub fn qs_eql(_: &Object, args: Args) -> Result<Object> {
-		Ok(args.arg(0)?.is_a::<Self>().into())
+		Ok(args.try_arg(0)?.is_a::<Self>().into())
 	}
 }
 

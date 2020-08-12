@@ -18,13 +18,12 @@ pub fn initialize() {
 		Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
 			fn execute_text(text: String) -> quest_core::Result<Object> {
 				Expression::parse_stream(stream::BufStream::from(text).tokens())
-					.map_err(|err| err.to_string())?
+					.map_err(|err| Box::new(err) as Box<_>)?
 					.execute()
-					.map_err(Into::into)
 			}
 
 			this.try_downcast::<Text>().and_then(|this| {
-				if let Ok(binding) = args.arg(0) {
+				if let Ok(binding) = args.try_arg(0) {
 					Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
 				} else {
 					execute_text(this.to_string())
