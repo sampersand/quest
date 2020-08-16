@@ -21,7 +21,7 @@ impl Executable for StackPos {
 		let len = stack.len();
 		match quest_core::utils::correct_index(self.0, len) {
 			Some(idx) => Ok(stack[idx].clone().into()),
-			None => Err(quest_core::error::KeyError::OutOfBounds{ idx: self.0, len }.into())
+			None => Err(quest_core::error::KeyError::OutOfBounds { index: self.0, len }.into())
 		}
 	}
 }

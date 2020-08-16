@@ -83,13 +83,12 @@ macro_rules! assert_call_eq {
 
 #[cfg(test)]
 macro_rules! assert_call_missing_parameter {
-	($ty:ident::$fn:ident($this:expr $(, $args:expr)*), $idx:expr $(, len=$len:pat)?) => {{
+	($ty:ident::$fn:ident($this:expr $(, $args:expr)*), $index:expr) => {{
 		crate::initialize();
 
 		assert_matches!(
 			$ty::$fn(&$this.into(), args!($($args),*)),
-				Err($crate::Error::KeyError($crate::error::KeyError::OutOfBounds {
-					idx: $idx, $(len: $len,)? .. }))
+				Err($crate::Error::KeyError($crate::error::KeyError::MissingArgument { index: $index }))
 		);
 	}};
 }

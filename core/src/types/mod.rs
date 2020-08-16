@@ -3,8 +3,7 @@
 // #![allow(missing_docs)]
 
 #[macro_use]
-mod macros;
-mod convert;
+mod utils;
 
 /// A trait representing the ability to have default associated attribuets.
 pub trait ObjectType : Send + Sync + Clone + std::fmt::Debug + 'static {
@@ -48,7 +47,7 @@ mod tcp;
 pub use tcp::Tcp;
 
 pub use class::Class;
-pub use convert::Convertible;
+pub use utils::Convertible;
 pub use comparable::Comparable;
 pub use pristine::Pristine;
 pub use kernel::Kernel;

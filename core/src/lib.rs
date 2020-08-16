@@ -22,6 +22,7 @@ use shared_cow::SharedCow;
 pub use obj::Object;
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
+pub use literal::Literal;
 
 /// Start up Quest by initializing all the types.
 pub fn initialize() {

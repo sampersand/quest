@@ -56,8 +56,7 @@ impl<'s, 'o: 's> Args<'s, 'o> {
 	}
 
 	pub fn try_arg(&self, index: usize) -> Result<&'o Object, KeyError> {
-		self.arg(index)
-			.ok_or_else(|| KeyError::OutOfBounds { idx: index as isize, len: self.0.len() })
+		self.arg(index).ok_or_else(|| KeyError::MissingArgument { index })
 	}
 
 	pub fn args<I>(&self, index: I) -> Option<Args<'_, 'o>>

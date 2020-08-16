@@ -1,6 +1,6 @@
 use crate::{Object, Args};
 use crate::literal::{Literal, INSPECT, AT_LIST, CALL};
-use crate::types::{Convertible, Text, Boolean, Number};
+use crate::types::{Convertible, Text, Boolean, Number, utils::{Indexer, IndexResult}};
 use std::convert::TryFrom;
 use std::iter::FromIterator;
 use std::fmt::{self, Debug, Formatter};
@@ -15,7 +15,7 @@ pub struct List(Vec<Object>);
 impl Default for List {
 	#[inline]
 	fn default() -> Self {
-		Self(Vec::default())
+		Self::new(Vec::new())
 	}
 }
 
@@ -41,7 +41,7 @@ impl IntoIterator for List {
 
 impl FromIterator<Object> for List {
     fn from_iter<T: IntoIterator<Item=Object>>(iter: T) -> Self {
-    	Self::from(Vec::from_iter(iter))
+    	Vec::from_iter(iter).into()
     }
 }
 
@@ -49,7 +49,7 @@ impl FromIterator<Object> for List {
 impl List {
 	/// Create a new list.
 	#[inline]
-	pub fn new<L: Into<Vec<Object>>>(list: L) -> Self {
+	pub fn new(list: impl Into<Vec<Object>>) -> Self {
 		Self(list.into())
 	}
 
@@ -83,47 +83,22 @@ impl List {
 		self.0.clear();
 	}
 
+
 	/// Get either a single element or a range of elements.
 	///
 	/// Quest supports negative indexing, which allows you to index from the end of the list.
-	pub fn get(&self, idx: isize) -> Object {
-		correct_index(idx, self.len())
-			.map(|idx| self.0[idx].clone())
-			.unwrap_or_default()
+	pub fn get<'a, I: Indexer<'a, [Object]>>(&'a self, indexer: I) -> Option<I::Output> {
+		indexer.get(&self.0)
 	}
 
-	/// Get either a single element or a range of elements.
-	pub fn get_rng(&self, start: isize, stop: isize) -> Object {
-		let start =
-			if let Some(start) = correct_index(start, self.len()) {
-				start
-			} else {
-				return Object::default()
-			};
-
-		let stop = correct_index(stop, self.len()).map(|x| x + 1).unwrap_or_else(|| self.len());
-
-		if stop < start {
-			Object::default()
-		} else {
-			self.0[start..stop].to_owned().into()
-		}
-	}
-
-	/// Sets a single element in a list
-	pub fn set(&mut self, index: usize, ele: Object)  {
-		if self.len() <= index {
-			self.0.resize_with(index + 1, Object::default);
-		}
-		self.0.as_mut_slice()[index] = ele;
-	}
-
-	/// Sets a range of elements within the list.
+	/// Sets a single element or a range of elements.
 	///
-	/// This can be used to delete sections of the list (set them to an empty list), and also
-	/// resize lists.
-	pub fn set_rng(&self, _start: isize, _stop: isize, _list: Self) {
-		unimplemented!()
+	/// Quest supports negative indexing, which allows you to index from the end of the list.
+	pub fn set<'a, I>(&'a mut self, indexer: I, ele: I::Input) -> IndexResult<I::Input>
+	where
+		I: Indexer<'a, [Object]>
+	{
+		indexer.set(&mut self.0, ele)
 	}
 
 	/// Combine a list's elements into a [`Text`], separated by `joiner`.
@@ -358,23 +333,6 @@ impl List {
 	}
 }
 
-fn correct_index(idx: isize, len: usize) -> Option<usize> {
-	if !idx.is_negative() {
-		if (idx as usize) < len {
-			Some(idx as usize)
-		} else {
-			None
-		}
-	} else {
-		let idx = (-idx) as usize;
-		if idx <= len {
-			Some(len - idx)
-		} else {
-			None
-		}
-	}
-}
-
 /// Quest methods
 impl List {
 	/// Simply returns the list.
@@ -536,17 +494,18 @@ impl List {
 	/// ```
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
 		let start = isize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
-
-		let stop = 
-			args.arg(1)
-			.map(|n| n.call_downcast::<Number>().map(|n| *n))
-			.transpose()?
-			.map(isize::try_from)
-			.transpose()?;
-
 		let this = this.try_downcast::<Self>()?;
 
-		Ok(stop.map(|stop| this.get_rng(start, stop)).unwrap_or_else(|| this.get(start)))
+		Ok(if let Some(stop) = args.arg(1) {
+			let stop = isize::try_from(*stop.call_downcast::<Number>()?)?;
+			this.get(start..stop)
+				.map(|x| x.to_owned().into())
+				.unwrap_or_default()
+		} else {
+			this.get(start)
+				.map(Object::clone)
+				.unwrap_or_default()
+		})
 	}
 
 	/// Sets an element or range of the list to an element or list.
@@ -564,17 +523,34 @@ impl List {
 	/// <TODO>
 	/// ```
 	pub fn qs_set(this: &Object, args: Args) -> crate::Result<Object> {
-		if args.len() != 2 {
-			todo!("non-single-index assigning");
+		let start = isize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
+		let element = args.try_arg(if args.len() <= 2 { 1 } else { 2 })?;
+
+		if args.len() > 2 {
+			let stop = isize::try_from(*args.arg(1).unwrap().call_downcast::<Number>()?)?;
+			let replace = element.call_downcast::<Self>()?.clone();
+
+			match this.try_downcast_mut::<Self>()?.set(start..stop, replace.0) {
+				IndexResult::Ok => Ok(this.clone()),
+				IndexResult::InvalidRange(_) => panic!("invalid range!"),
+				IndexResult::BadInput(_) => panic!("bad input range!"),
+			}
+		} else {
+			match this.try_downcast_mut::<Self>()?.set(start, element.clone()) {
+				IndexResult::Ok => Ok(this.clone()),
+				IndexResult::InvalidRange(_) => Ok(Object::default()),
+				IndexResult::BadInput(_) => unreachable!("single elements can't have bad inputs")
+			}
 		}
+		// if let Some(stop) = args.arg()
 
-		// also TODO: negative indicies
-		let pos = usize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
-		let ele = args.try_arg(1)?.clone();
+		// // also TODO: negative indicies
+		// let pos = usize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
+		// let ele = args.try_arg(1)?.clone();
 
-		this.try_downcast_mut::<Self>()?.set(pos, ele);
+		// this.try_downcast_mut::<Self>()?.set(pos, ele);
 
-		Ok(this.clone())
+		
 	}
 
 	/// Combine all elements into a [`Text`], optionally separated by a deliminator.

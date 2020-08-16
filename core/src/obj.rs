@@ -4,18 +4,17 @@ use crate::types::{self, ObjectType};
 use crate::types::{Boolean};
 use crate::literal::{EQL, Literal};
 
-use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Deref, DerefMut};
 
-mod data;
-mod attributes;
-use attributes::{Attributes, Value};
-use data::Data;
+mod repr;
+
+use repr::heap_only::Value;
+use repr::ObjectRepr;
 
 /// The struct that represents any type within Quest.
 #[derive(Clone)]
-pub struct Object(Arc<Internal>);
+pub struct Object(ObjectRepr);
 
 impl Default for Object {
 	#[inline]
@@ -24,26 +23,10 @@ impl Default for Object {
 	}
 }
 
-struct Internal {
-	/// The attributes (such as id, keys, and parents) of this object
-	attrs: Attributes,
-	/// The actual data of this object
-	data: Data,
-}
-
 impl Debug for Object {
+	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		if f.alternate() {
-			f.debug_struct("Object")
-				.field("data", &self.0.data)
-				.field("attrs", &self.0.attrs)
-				.finish()
-		} else {
-			f.debug_tuple("Object")
-				.field(&self.0.data)
-				.field(&self.0.attrs.id())
-				.finish()
-		}
+		Debug::fmt(&self.0, f)
 	}
 }
 
@@ -62,19 +45,6 @@ impl<T: ObjectType> From<T> for Object {
 	}
 }
 
-
-impl Internal {
-	#[inline]
-	fn id(&self) -> usize {
-		self.attrs.id()
-	}
-
-	#[inline]
-	fn typename(&self) -> &'static str {
-		self.data.typename()
-	}
-}
-
 impl Object {
 	/// Create a new object with the specified set of parents.
 	///
@@ -84,15 +54,12 @@ impl Object {
 	pub fn new_with_parent<T: 'static, P>(data: T, parents: P) -> Self
 	where
 		T: Send + Sync + Clone + Debug,
-		P: Into<attributes::Parents>
+		P: Into<repr::heap_only::Parents>
 	{
 		// println!("creating new object: {:?} ({:?})", data, type_name<T>());
-		Self::from_parts(Data::new(data), Attributes::new(parents))
-	}
-
-	#[inline]
-	fn from_parts(data: Data, attrs: Attributes) -> Self {
-		Self(Arc::new(Internal { data, attrs }))
+		Self(ObjectRepr::from_parts(
+			repr::heap_only::Data::new(data),
+			repr::heap_only::Attributes::new(parents)))
 	}
 
 	/// Creates a new object with its default parents.
@@ -118,7 +85,7 @@ impl Object {
 	/// Checks to see if two objects are idental.
 	#[inline]
 	pub fn is_identical(&self, rhs: &Object) -> bool {
-		Arc::ptr_eq(&self.0, &rhs.0)
+		self.0.is_identical(&rhs.0)
 	}
 
 	/// Compares two objects using [`==`](EQL) to see if they are equal
@@ -132,28 +99,7 @@ impl Object {
 	/// When you [`clone()`] an [`Object`], you're actually just creating another reference to the
 	/// same object in memory. This actually creates another distinct object.
 	pub fn deep_clone(&self) -> Object {
-		Object::from_parts(self.0.data.clone(), self.0.attrs.clone())
-	}
-
-	pub(crate) fn _attrs(&self) -> &attributes::Attributes {
-		&self.0.attrs
-	}
-}
-
-impl Internal {
-	#[inline]
-	fn is_a<T: ObjectType>(&self) -> bool {
-		self.data.is_a::<T>()
-	}
-
-	#[inline]
-	fn downcast<'a, T: ObjectType>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
-		self.data.downcast()
-	}
-
-	#[inline]
-	fn downcast_mut<'a, T: ObjectType>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
-		self.data.downcast_mut()
+		Object(self.0.deep_clone())
 	}
 }
 
@@ -192,59 +138,6 @@ impl Object {
 	}
 }
 
-
-impl Internal {
-	#[inline]
-	fn has_lit(&self, attr: &str) -> crate::Result<bool> {
-		self.attrs.has_lit(attr)
-	}
-
-	#[inline]
-	fn get_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
-		self.attrs.get_lit(attr)
-	}
-
-	#[inline]
-	fn set_lit(&self, attr: Literal, value: Value) -> crate::Result<()> {
-		self.attrs.set_lit(attr, value);
-		Ok(())
-	}
-
-	#[inline]
-	fn del_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
-		Ok(self.attrs.del_lit(attr))
-	}
-
-	#[inline]
-	fn has(&self, attr: &Object) -> crate::Result<bool> {
-		self.attrs.has(attr)
-	}
-
-	#[inline]
-	fn get(&self, attr: &Object) -> crate::Result<Option<Value>> {
-		self.attrs.get(attr)
-	}
-
-	#[inline]
-	fn set(&self, attr: Object, value: Value) -> crate::Result<()> {
-		self.attrs.set(attr, value)
-	}
-
-	#[inline]
-	fn del(&self, attr: &Object) -> crate::Result<Option<Value>> {
-		self.attrs.del(attr)
-	}
-
-	#[inline]
-	fn add_parent(&self, val: Object) -> crate::Result<()> {
-		self.attrs.add_parent(val)
-	}
-
-	#[inline]
-	fn keys(&self, include_parents: bool) -> crate::Result<Vec<Object>> {
-		self.attrs.keys(include_parents)
-	}
-}
 
 /// Methods to interact with the Object's attributes.
 ///

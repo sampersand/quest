@@ -50,11 +50,16 @@ for Tcp [(parents super::Basic)]:
 			let mut res = Vec::<u8>::with_capacity(5);
 			let tcp = tcp.0.lock().unwrap();
 			let mut bufr = BufReader::new(&*tcp);
+			let mut has_hit_end = false;
 			while bufr.read_until(b'\n', res.as_mut())
 				.map_err(|err| crate::Error::Messaged(err.to_string()))? != 0
-			{
+			{dbg!(&res);
 				if res.ends_with(b"\r\n\r\n") {
-					break;
+					if dbg!(has_hit_end) { 
+						break;
+					} else {
+						has_hit_end = true;
+					}
 				}
 			}
 
