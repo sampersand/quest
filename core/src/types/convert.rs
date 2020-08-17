@@ -5,7 +5,11 @@ use std::any::{Any, type_name};
 use std::ops::Deref;
 use std::marker::PhantomData;
 
+
+/// A trait that's used to represent the ability for an object to be converted to within Quest, e.g.
+/// via `@text`.
 pub trait Convertible : Any + Sized + Clone + ObjectType {
+	/// The function that does the actual conversion.
 	const CONVERT_FUNC: Literal;
 }
 

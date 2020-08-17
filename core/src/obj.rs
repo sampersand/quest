@@ -63,6 +63,10 @@ impl<T: ObjectType> From<T> for Object {
 }
 
 
+//-----------------------------------------------------------------------
+// Object creation and metadata
+//-----------------------------------------------------------------------
+
 impl Internal {
 	#[inline]
 	fn id(&self) -> usize {
@@ -134,11 +138,11 @@ impl Object {
 	pub fn deep_clone(&self) -> Object {
 		Object::from_parts(self.0.data.clone(), self.0.attrs.clone())
 	}
-
-	pub(crate) fn _attrs(&self) -> &attributes::Attributes {
-		&self.0.attrs
-	}
 }
+
+//-----------------------------------------------------------------------
+// Interacting with object data
+//-----------------------------------------------------------------------
 
 impl Internal {
 	#[inline]
@@ -165,16 +169,21 @@ impl Object {
 		self.0.is_a::<T>()
 	}
 
+	/// Attempts to downcast data to the given type, returning `None` if it's not the same type that
+	/// was used to construct this object.
 	#[inline]
 	pub fn downcast<'a, T: ObjectType>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
 		self.0.downcast()
 	}
 
+	/// Attempts to mutably downcast data to the given type, returning `None` if it's not the same
+	/// type that was used to construct this object.
 	#[inline]
 	pub fn downcast_mut<'a, T: ObjectType>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
 		self.0.downcast_mut()
 	}
 
+	/// The same as [`Object::downcast`], except this returns a [`TypeError`] instead of [`None`].
 	pub fn try_downcast<'a, T: ObjectType>(&'a self) -> crate::Result<impl Deref<Target=T> + 'a> {
 		self.downcast()
 			.ok_or_else(|| TypeError::WrongType {
@@ -183,6 +192,7 @@ impl Object {
 			}.into())
 	}
 
+	/// The same as [`Object::downcast_mut`], except this returns a [`TypeError`] instead of [`None`].
 	pub fn try_downcast_mut<'a, T: ObjectType>(&'a self) -> crate::Result<impl DerefMut<Target=T> + 'a> {
 		self.downcast_mut()
 			.ok_or_else(|| TypeError::WrongType {
@@ -254,6 +264,9 @@ impl Internal {
 /// The `xxx_lit` methods exist because it's _much_ faster to check if a `&str` exists compared to
 /// [`Object`]s.
 impl Object {
+	// Implementation note: All these simply delegate to `self.0` as it will allow for easier
+	// conversion of how objects are represented in the future.
+
 	/// Checks to see if the object has the attribute `attr`.
 	#[inline]
 	pub fn has_attr_lit(&self, attr: &str) -> crate::Result<bool> {
@@ -364,7 +377,6 @@ impl Object {
 			Ok(result)
 		}
 	}
-
 
 	/// Dynamically add a new parent.
 	///

@@ -25,7 +25,7 @@ impl AttrMap {
 	// in the future, this can be an exact size iterator
 	pub fn keys<'a>(&'a self) -> impl Iterator<Item=Object> + 'a {
 		self.literals.keys()
-			.map(|k| Object::from(*k))
+			.map(|k| Object::from(k.to_string()))
 			.chain(self.objects.iter().map(|(k, _)| k.clone()))
 	}
 

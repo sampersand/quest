@@ -1,4 +1,5 @@
 use crate::types::RustFn;
+use crate::Literal;
 use crate::{Object, Args, Result};
 
 #[derive(Debug, Clone)]
@@ -27,7 +28,7 @@ impl Value {
 						}
 					};
 
-				object.call_attr_lit("()", args)
+				object.call_attr_lit(Literal::CALL, args)
 			}
 		}
 	}

@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 //! The core of the Quest Programming language.
 //!
 //! All the functionality required to actually execute Quest live here.
@@ -12,13 +14,14 @@
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 mod shared_cow;
-pub mod obj;
+mod obj;
+mod literal;
 pub mod utils;
 pub mod error;
 pub mod types;
-pub mod literal;
 
 use shared_cow::SharedCow;
+pub use literal::Literal;
 pub use obj::Object;
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};

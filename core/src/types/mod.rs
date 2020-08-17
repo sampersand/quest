@@ -1,5 +1,4 @@
 //! The core list of types within Quest.
-// #![warn(missing_docs)]
 // #![allow(missing_docs)]
 
 #[macro_use]
