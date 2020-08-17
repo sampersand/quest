@@ -9,7 +9,7 @@ use std::ops::{Deref, DerefMut};
 
 mod repr;
 
-use repr::heap_only::Value;
+use repr::heapdata::Value;
 use repr::ObjectRepr;
 
 /// The struct that represents any type within Quest.
@@ -54,12 +54,16 @@ impl Object {
 	pub fn new_with_parent<T: 'static, P>(data: T, parents: P) -> Self
 	where
 		T: Send + Sync + Clone + Debug,
-		P: Into<repr::heap_only::Parents>
+		P: Into<repr::heapdata::Parents>
 	{
 		// println!("creating new object: {:?} ({:?})", data, type_name<T>());
 		Self(ObjectRepr::from_parts(
-			repr::heap_only::Data::new(data),
-			repr::heap_only::Attributes::new(parents)))
+			repr::heapdata::Data::new(data),
+			repr::heapdata::Attributes::new(parents)))
+	}
+
+	pub fn new_heap<T: ObjectType>(data: T) -> Self {
+		Self(ObjectRepr::NaNBox(repr::NaNBox::new_heap(data)))
 	}
 
 	/// Creates a new object with its default parents.

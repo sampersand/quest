@@ -1,18 +1,21 @@
 // temporarily pub
-pub(super) mod heap_only;
+pub(super) mod heapdata;
 mod nanbox;
+
+pub use heapdata::HeapData;
+pub use nanbox::NaNBox;
 
 #[derive(Debug, Clone)]
 pub enum ObjectRepr {
-	NanBox(nanbox::NanBox),
-	HeapOnly(heap_only::HeapOnly)
+	NaNBox(nanbox::NaNBox),
+	HeapData(heapdata::HeapData)
 }
 
 
 impl ObjectRepr {
 	#[inline]
-	pub(super) fn from_parts(data: heap_only::Data, attrs: heap_only::Attributes) -> Self {
-		Self::HeapOnly(heap_only::HeapOnly::new(data, attrs))
+	pub(super) fn from_parts(data: heapdata::Data, attrs: heapdata::Attributes) -> Self {
+		Self::HeapData(heapdata::HeapData::new_with_parents(data, attrs))
 	}
 }
 
@@ -24,8 +27,8 @@ macro_rules! delegate {
 			$(
 				pub fn $name<$($($generic)*)?>(&$($lt)? self $(,$arg: $argty)*) -> $ret_ty {
 					match self {
-						Self::HeapOnly(heap) => heap.$name($($arg),*),
-						Self::NanBox(_) => unimplemented!(stringify!($name))
+						Self::HeapData(heap) => heap.$name($($arg),*),
+						Self::NaNBox(_) => unimplemented!(stringify!($name))
 					}
 				}
 			)*
@@ -36,22 +39,23 @@ macro_rules! delegate {
 impl ObjectRepr {
 	pub fn is_a<'a, T: crate::types::ObjectType + 'a>(&self) -> bool {
 		match self {
-			Self::HeapOnly(heap) => heap.is_a::<T>(),
-			Self::NanBox(_) => unimplemented!()
+			Self::HeapData(heap) => heap.is_a::<T>(),
+			Self::NaNBox(nanbox) => unimplemented!("{:?}", nanbox)//nanbox.is_a::<T>()
 		}
 	}
 
 	pub fn is_identical(&self, rhs: &Self) -> bool {
 		match (self, rhs) {
-			(Self::HeapOnly(heap), Self::HeapOnly(rhs)) => heap.is_identical(rhs),
-			_ => unimplemented!()
+			(Self::HeapData(heap), Self::HeapData(rhs)) => heap.is_identical(rhs),
+			(Self::NaNBox(nanbox), Self::NaNBox(rhs)) => unimplemented!("{:?} {:?}", nanbox, rhs),//nanbox.is_identical(rhs),
+			_ => false
 		}
 	}
 
 	pub fn deep_clone(&self) -> Self {
 		match self {
-			Self::HeapOnly(heap) => Self::HeapOnly(heap.deep_clone()),
-			_ => unimplemented!()
+			Self::HeapData(heap) => Self::HeapData(heap.deep_clone()),
+			Self::NaNBox(nanbox) => unimplemented!("{:?}", nanbox),//Self::NaNBox(nanbox.deep_clone()),
 		}
 	}
 }
@@ -63,26 +67,26 @@ delegate! {
 	fn downcast_mut['a, T: crate::types::ObjectType](&'a self) -> Option<impl std::ops::DerefMut<Target=T> + 'a>;
 
 	fn has_lit(&self, attr: &str) -> crate::Result<bool>;
-	fn get_lit(&self, attr: &str) -> crate::Result<Option<heap_only::Value>>;
-	fn set_lit(&self, attr: crate::Literal, value: heap_only::Value) -> crate::Result<()>;
-	fn del_lit(&self, attr: &str) -> crate::Result<Option<heap_only::Value>>;
+	fn get_lit(&self, attr: &str) -> crate::Result<Option<heapdata::Value>>;
+	fn set_lit(&self, attr: crate::Literal, value: heapdata::Value) -> crate::Result<()>;
+	fn del_lit(&self, attr: &str) -> crate::Result<Option<heapdata::Value>>;
 	fn has(&self, attr: &crate::Object) -> crate::Result<bool>;
-	fn get(&self, attr: &crate::Object) -> crate::Result<Option<heap_only::Value>>;
-	fn set(&self, attr: crate::Object, value: heap_only::Value) -> crate::Result<()>;
-	fn del(&self, attr: &crate::Object) -> crate::Result<Option<heap_only::Value>>;
+	fn get(&self, attr: &crate::Object) -> crate::Result<Option<heapdata::Value>>;
+	fn set(&self, attr: crate::Object, value: heapdata::Value) -> crate::Result<()>;
+	fn del(&self, attr: &crate::Object) -> crate::Result<Option<heapdata::Value>>;
 	fn add_parent(&self, val: crate::Object) -> crate::Result<()>;
 	fn keys(&self, include_parents: bool) -> crate::Result<Vec<crate::Object>>;
 }
 
 // 	pub fn id(&self) -> usize {
 // 		match self {
-// 			ObjectRepr::HeapOnly(heap) => heap.id()
+// 			ObjectRepr::HeapData(heap) => heap.id()
 // 		}
 // 	}
 
 // 	pub fn typename(&self) -> &'static str {
 // 		match self {
-// 			ObjectRepr::HeapOnly(heap) => heap.typename()
+// 			ObjectRepr::HeapData(heap) => heap.typename()
 // 		}
 // 	}
 // }
