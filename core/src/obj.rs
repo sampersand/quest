@@ -2,7 +2,7 @@ use crate::Args;
 use crate::error::{TypeError, KeyError};
 use crate::types::{self, ObjectType};
 use crate::types::{Boolean};
-use crate::literal::{EQL, Literal};
+use crate::literal::{EQL, Literal_};
 
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
@@ -215,7 +215,7 @@ impl Internal {
 	}
 
 	#[inline]
-	fn set_lit(&self, attr: Literal, value: Value) -> crate::Result<()> {
+	fn set_lit(&self, attr: Literal_, value: Value) -> crate::Result<()> {
 		self.attrs.set_lit(attr, value);
 		Ok(())
 	}
@@ -287,7 +287,7 @@ impl Object {
 	}
 
 	/// Sets the attribute `attr` to `value`.
-	pub fn set_value_lit<V>(&self, attr: Literal, value: V) -> crate::Result<()>
+	pub fn set_value_lit<V>(&self, attr: Literal_, value: V) -> crate::Result<()>
 	where
 		V: Into<Value>
 	{
@@ -297,7 +297,7 @@ impl Object {
 
 	/// Assigns the attribute `attr` to `value`.
 	#[inline]
-	pub fn set_attr_lit(&self, attr: Literal, value: Self) -> crate::Result<()> {
+	pub fn set_attr_lit(&self, attr: Literal_, value: Self) -> crate::Result<()> {
 		self.set_value_lit(attr, value)
 	}
 

@@ -1,6 +1,6 @@
 use crate::{Object, Args};
 use crate::error::ValueError;
-use crate::literal::{Literal, __THIS__, __STACK__};
+use crate::literal::{Literal_, __THIS__, __STACK__};
 use crate::types::{Number, List, Boolean, Regex};
 use crate::Binding;
 use std::borrow::Cow;
@@ -34,7 +34,7 @@ impl Text {
 	}
 
 	#[inline]
-	pub const fn new_static(txt: Literal) -> Self {
+	pub const fn new_static(txt: Literal_) -> Self {
 		Self(Cow::Borrowed(txt))
 	}
 
@@ -70,9 +70,9 @@ impl PartialEq<str> for Text {
 }
 
 
-impl From<Literal> for Text {
+impl From<Literal_> for Text {
 	#[inline]
-	fn from(txt: Literal) -> Self {
+	fn from(txt: Literal_) -> Self {
 		Self::new_static(txt)
 	}
 }
@@ -112,9 +112,9 @@ impl From<String> for Object {
 	}
 }
 
-impl From<Literal> for Object {
+impl From<Literal_> for Object {
 	#[inline]
-	fn from(txt: Literal) -> Self {
+	fn from(txt: Literal_) -> Self {
 		Text::from(txt).into()
 	}
 }

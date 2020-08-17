@@ -1,7 +1,28 @@
+#![allow(unused)]
 //! The list of literal attributes used within quest.
 
 /// A literal attribute, used internally to speed up field access.
-pub type Literal = &'static str;
+pub type Literal_ = &'static str;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct Literal2(&'static str);
+
+impl Literal2 {
+	#[inline]
+	pub const fn new(lit: &'static str) -> Self {
+		Self(lit)
+	}
+
+	#[inline]
+	pub const fn into_inner(self) -> &'static str {
+		self.0
+	}
+}
+
+impl Literal2 {
+	
+}
+
 
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
@@ -9,7 +30,7 @@ macro_rules! literals {
 			#[doc = "The attribute `"]
 			#[doc = $key]
 			#[doc = "`."]
-			pub const $name: Literal = $key;
+			pub const $name: Literal_ = $key;
 		)*
 	};
 }

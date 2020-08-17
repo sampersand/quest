@@ -1,6 +1,4 @@
-use crate::{Object, types::ObjectType};
-use crate::error::TypeError;
-use crate::literal::Literal;
+use crate::{Object, Literal_, types::ObjectType, error::TypeError};
 use std::any::{Any, type_name};
 use std::ops::Deref;
 use std::marker::PhantomData;
@@ -10,7 +8,7 @@ use std::marker::PhantomData;
 /// via `@text`.
 pub trait Convertible : Any + Sized + Clone + ObjectType {
 	/// The function that does the actual conversion.
-	const CONVERT_FUNC: Literal;
+	const CONVERT_FUNC: Literal_;
 }
 
 impl Object {
@@ -66,7 +64,7 @@ mod tests {
 
 	#[derive(Debug, Clone)]
 	struct Dummy;
-	impl Convertible for Dummy { const CONVERT_FUNC: Literal = "@dummy"; }
+	impl Convertible for Dummy { const CONVERT_FUNC: Literal_ = "@dummy"; }
 	impl_object_type! { for Dummy [(parents crate::types::Basic)]:
 		"@dummy2" => function |_, _| Ok(Object::from(Dummy2)),
 		"@dummy3" => function |_, _| Ok(Object::from(Dummy))
@@ -74,12 +72,12 @@ mod tests {
 
 	#[derive(Debug, Clone)]
 	struct Dummy2;
-	impl Convertible for Dummy2 { const CONVERT_FUNC: Literal = "@dummy2"; }
+	impl Convertible for Dummy2 { const CONVERT_FUNC: Literal_ = "@dummy2"; }
 	impl_object_type! { for Dummy2 [(parents crate::types::Basic) (setup IS_SETUP2)]: }
 
 	#[derive(Debug, Clone)]
 	struct Dummy3;
-	impl Convertible for Dummy3 { const CONVERT_FUNC: Literal = "@dummy3"; }
+	impl Convertible for Dummy3 { const CONVERT_FUNC: Literal_ = "@dummy3"; }
 	impl_object_type! { for Dummy3 [(parents crate::types::Basic) (setup IS_SETUP3)]: }
 
 

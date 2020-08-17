@@ -1,5 +1,5 @@
 use crate::{Object, Args};
-use crate::literal::{Literal, INSPECT, AT_LIST, CALL};
+use crate::literal::{Literal_, INSPECT, AT_LIST, CALL};
 use crate::types::{Convertible, Text, Boolean, Number};
 use std::convert::TryFrom;
 use std::iter::FromIterator;
@@ -937,7 +937,7 @@ impl List {
 }
 
 impl Convertible for List {
-	const CONVERT_FUNC: Literal = AT_LIST;
+	const CONVERT_FUNC: Literal_ = AT_LIST;
 }
 impl_object_type!{
 for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:

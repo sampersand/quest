@@ -8,7 +8,7 @@ mod attrmap;
 mod value;
 
 pub use value::Value;
-use attrmap::{AttrMap, Literal};
+use attrmap::{AttrMap, Literal_};
 pub use parents::Parents;
 
 #[derive(Debug, Clone, Default)]
@@ -103,7 +103,7 @@ impl Attributes {
 		}
 	}
 
-	pub fn set_lit(&self, key: Literal, val: Value) {
+	pub fn set_lit(&self, key: Literal_, val: Value) {
 		let mut inner = self.data.write();
 
 		if __PARENTS__ == key {

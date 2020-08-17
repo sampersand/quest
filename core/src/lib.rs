@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 //! The core of the Quest Programming language.
 //!
@@ -21,7 +21,7 @@ pub mod error;
 pub mod types;
 
 use shared_cow::SharedCow;
-pub use literal::Literal;
+pub use literal::Literal_;
 pub use obj::Object;
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};

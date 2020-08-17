@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 
 use super::Value;
-pub type Literal = &'static str;
+pub type Literal_ = &'static str;
 
 #[derive(Clone, Default)]
 pub struct AttrMap {
-	literals: HashMap<Literal, Value>,
+	literals: HashMap<Literal_, Value>,
 	// TODO: allow for `Text`s to be stored in `literals`.
 	objects: Vec<(Object, Value)>
 }
@@ -40,7 +40,7 @@ impl AttrMap {
 	}
 
 	#[inline]
-	pub fn set_lit(&mut self, key: Literal, val: Value) {
+	pub fn set_lit(&mut self, key: Literal_, val: Value) {
 		self.literals.insert(key, val);
 	}
 
