@@ -1,13 +1,16 @@
 #![allow(unused)]
 //! The list of literal attributes used within quest.
 
+use std::fmt::{self, Display, Formatter};
+
 /// A literal attribute, used internally to speed up field access.
 pub type Literal_ = &'static str;
 
+/// A literal attribute, used internally to speed up field access.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct Literal2(&'static str);
+pub struct Literal(&'static str);
 
-impl Literal2 {
+impl Literal {
 	#[inline]
 	pub const fn new(lit: &'static str) -> Self {
 		Self(lit)
@@ -19,13 +22,60 @@ impl Literal2 {
 	}
 }
 
-impl Literal2 {
-	
+impl Display for Literal {
+	#[inline]
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		Display::fmt(&self.0, f)
+	}
+}
+
+impl From<&'static str> for Literal {
+	#[inline]
+	fn from(lit: &'static str) -> Self {
+		Self::new(lit)
+	}
+}
+
+impl AsRef<str> for Literal {
+	#[inline]
+	fn as_ref(&self) -> &str {
+		&self.0
+	}
+}
+
+impl std::borrow::Borrow<str> for Literal {
+	#[inline]
+	fn borrow(&self) -> &str {
+		self.as_ref()
+	}
+}
+
+impl PartialEq<str> for Literal {
+	#[inline]
+	fn eq(&self, rhs: &str) -> bool {
+		self.0 == rhs
+	}
+}
+
+impl From<Literal> for crate::Object {
+	#[inline]
+	fn from(lit: Literal) -> Self {
+		lit.0.into()
+	}
 }
 
 
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
+		impl Literal {
+			$(
+				#[doc = "The attribute `"]
+				#[doc = $key]
+				#[doc = "`."]
+				pub const $name: Literal = Literal::new($key);
+			)*
+		}
+
 		$(
 			#[doc = "The attribute `"]
 			#[doc = $key]

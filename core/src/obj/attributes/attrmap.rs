@@ -1,13 +1,14 @@
-use crate::{Object, Result};
+use crate::{Object, Result, Literal};
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
+use std::hash::Hash;
+use std::borrow::Borrow;
 
 use super::Value;
-pub type Literal_ = &'static str;
 
 #[derive(Clone, Default)]
 pub struct AttrMap {
-	literals: HashMap<Literal_, Value>,
+	literals: HashMap<Literal, Value>,
 	// TODO: allow for `Text`s to be stored in `literals`.
 	objects: Vec<(Object, Value)>
 }
@@ -30,22 +31,34 @@ impl AttrMap {
 	}
 
 	#[inline]
-	pub fn has_lit(&self, key: &str) -> bool {
+	pub fn has_lit<L: ?Sized>(&self, key: &L) -> bool
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.literals.contains_key(key)
 	}
 
 	#[inline]
-	pub fn get_lit(&self, key: &str) -> Option<&Value> {
+	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Option<&Value>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.literals.get(key)
 	}
 
 	#[inline]
-	pub fn set_lit(&mut self, key: Literal_, val: Value) {
+	pub fn set_lit(&mut self, key: Literal, val: Value) {
 		self.literals.insert(key, val);
 	}
 
 	#[inline]
-	pub fn del_lit(&mut self, key: &str) -> Option<Value> {
+	pub fn del_lit<L: ?Sized>(&mut self, key: &L) -> Option<Value>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.literals.remove(key)
 	}
 

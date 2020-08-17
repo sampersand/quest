@@ -1,8 +1,10 @@
-use crate::{Object, Result};
+use crate::{Object, Result, Literal};
 use crate::types::List;
 use super::Value;
 use std::iter::FromIterator;
 use parking_lot::RwLock;
+use std::hash::Hash;
+use std::borrow::Borrow;
 
 #[derive(Debug)]
 pub struct Parents(RwLock<Inner>);
@@ -141,7 +143,11 @@ impl Parents {
 		self.with_iter(|iter| Ok(iter.cloned().collect()))
 	}
 
-	pub fn has_lit(&self, key: &str) -> Result<bool> {
+	pub fn has_lit<L: ?Sized>(&self, key: &L) -> Result<bool>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.with_iter(|iter| {
 			for parent in iter {
 				if parent.has_attr_lit(key)? {
@@ -152,7 +158,11 @@ impl Parents {
 		})
 	}
 
-	pub fn get_lit(&self, key: &str) -> Result<Option<Value>> {
+	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Result<Option<Value>>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.with_iter(|iter| {
 			for parent in iter {
 				if let Some(value) = parent.get_value_lit(key)? {

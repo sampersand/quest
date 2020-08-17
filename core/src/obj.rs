@@ -1,12 +1,13 @@
-use crate::Args;
+use crate::{Args, Literal};
 use crate::error::{TypeError, KeyError};
-use crate::types::{self, ObjectType};
-use crate::types::{Boolean};
+use crate::types::{self, ObjectType, Boolean};
 use crate::literal::{EQL, Literal_};
 
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Deref, DerefMut};
+use std::hash::Hash;
+use std::borrow::Borrow;
 
 mod data;
 mod attributes;
@@ -205,23 +206,35 @@ impl Object {
 
 impl Internal {
 	#[inline]
-	fn has_lit(&self, attr: &str) -> crate::Result<bool> {
+	fn has_lit<L: ?Sized>(&self, attr: &L) -> crate::Result<bool>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.attrs.has_lit(attr)
 	}
 
 	#[inline]
-	fn get_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
+	fn get_lit<L: ?Sized>(&self, attr: &L) -> crate::Result<Option<Value>>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.attrs.get_lit(attr)
 	}
 
 	#[inline]
-	fn set_lit(&self, attr: Literal_, value: Value) -> crate::Result<()> {
+	fn set_lit(&self, attr: Literal, value: Value) -> crate::Result<()> {
 		self.attrs.set_lit(attr, value);
 		Ok(())
 	}
 
 	#[inline]
-	fn del_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
+	fn del_lit<L: ?Sized>(&self, attr: &L) -> crate::Result<Option<Value>>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		Ok(self.attrs.del_lit(attr))
 	}
 
@@ -269,30 +282,44 @@ impl Object {
 
 	/// Checks to see if the object has the attribute `attr`.
 	#[inline]
-	pub fn has_attr_lit(&self, attr: &str) -> crate::Result<bool> {
+	pub fn has_attr_lit<L: ?Sized>(&self, attr: &L) -> crate::Result<bool>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.0.has_lit(attr)
 	}
 
 	/// Fetches a value, returning `None` if it doesn't exist.
-	fn get_value_lit(&self, attr: &str) -> crate::Result<Option<Value>> {
+	fn get_value_lit<L: ?Sized>(&self, attr: &L) -> crate::Result<Option<Value>>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		self.0.get_lit(attr)
 	}
 
 	/// Fetches the attribute `attr`, returning a [`KeyError`] if it doesn't exist.
-	pub fn get_attr_lit(&self, attr: &str) -> crate::Result<Self> {
+	pub fn get_attr_lit<'a, L: ?Sized>(&self, attr: &'a L) -> crate::Result<Self>
+	where
+		Literal: Borrow<L> + From<&'a L>,
+		L: Hash + Eq
+	{
 		self.get_value_lit(attr)?
 			.map(Self::from)
 			.ok_or_else(|| KeyError::DoesntExist {
-				attr: attr.to_string().into(), obj: self.clone() }.into())
+				attr: Literal::from(attr).into(),
+				obj: self.clone()
+		}.into())
 	}
 
 	/// Sets the attribute `attr` to `value`.
-	pub fn set_value_lit<V>(&self, attr: Literal_, value: V) -> crate::Result<()>
+	pub(crate) fn set_value_lit<V>(&self, attr: Literal_, value: V) -> crate::Result<()>
 	where
 		V: Into<Value>
 	{
 		// TODO: this will just set a literal value even if the corresponding nonliteral works.
-		self.0.set_lit(attr, value.into())
+		self.0.set_lit(attr.into(), value.into())
 	}
 
 	/// Assigns the attribute `attr` to `value`.

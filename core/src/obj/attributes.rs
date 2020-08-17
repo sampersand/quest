@@ -1,14 +1,16 @@
-use crate::literal::{__PARENTS__, __ID__};
+use crate::literal::{Literal, __PARENTS__, __ID__};
 use crate::{Object, Result, SharedCow};
 use crate::types::Text;
 use std::fmt::{self, Debug, Formatter};
+use std::borrow::Borrow;
+use std::hash::Hash;
 
 mod parents;
 mod attrmap;
 mod value;
 
+use attrmap::AttrMap;
 pub use value::Value;
-use attrmap::{AttrMap, Literal_};
 pub use parents::Parents;
 
 #[derive(Debug, Clone, Default)]
@@ -79,8 +81,12 @@ impl Attributes {
 }
 
 impl Attributes {
-	pub fn has_lit(&self, key: &str) -> Result<bool> {
-		if key == __ID__ || key == __PARENTS__ {
+	pub fn has_lit<L: ?Sized>(&self, key: &L) -> Result<bool> 
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
+		if key == Literal::__ID__.borrow() || key == Literal::__PARENTS__.borrow() {
 			Ok(true)
 		} else {
 			let inner = self.data.read();
@@ -88,13 +94,17 @@ impl Attributes {
 		}
 	}
 
-	pub fn get_lit(&self, key: &str) -> Result<Option<Value>> {
-		if key == __ID__ {
+	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Result<Option<Value>>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
+		if key == Literal::__ID__.borrow() {
 			return Ok(Some(Object::from(self.id()).into()))
 		}
 
 		let inner = self.data.read();
-		if key == __PARENTS__ {
+		if key == Literal::__PARENTS__.borrow() {
 			Ok(Some(inner.parents.to_object().into()))
 		} else if let Some(lit) = inner.map.get_lit(key).cloned() {
 			Ok(Some(lit))
@@ -103,20 +113,24 @@ impl Attributes {
 		}
 	}
 
-	pub fn set_lit(&self, key: Literal_, val: Value) {
+	pub fn set_lit(&self, key: Literal, val: Value) {
 		let mut inner = self.data.write();
 
-		if __PARENTS__ == key {
+		if key == Literal::__PARENTS__ {
 			inner.parents = Parents::from(Object::from(val));
 		} else {
 			inner.map.set_lit(key, val);
 		}
 	}
 
-	pub fn del_lit(&self, key: &str) -> Option<Value> {
+	pub fn del_lit<L: ?Sized>(&self, key: &L) -> Option<Value>
+	where
+		Literal: Borrow<L>,
+		L: Hash + Eq
+	{
 		let mut inner = self.data.write();
 
-		if __PARENTS__ == key {
+		if key == Literal::__PARENTS__.borrow() {
 			Some(std::mem::take(&mut inner.parents).into())
 		} else {
 			inner.map.del_lit(key)
@@ -148,7 +162,7 @@ impl Attributes {
 
 	pub fn set(&self, key: Object, value: Value) -> Result<()> {
 		if let Some(lit) = key.downcast::<Text>().map(|text| str_to_static(text.as_ref())) {
-			self.set_lit(lit, value);
+			self.set_lit(lit.into(), value);
 			return Ok(());
 		}
 

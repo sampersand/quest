@@ -21,7 +21,7 @@ pub mod error;
 pub mod types;
 
 use shared_cow::SharedCow;
-pub use literal::Literal_;
+pub use literal::{Literal_, Literal};
 pub use obj::Object;
 pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
