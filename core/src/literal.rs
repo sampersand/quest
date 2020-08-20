@@ -73,7 +73,7 @@ impl From<Literal> for crate::Object {
 impl std::borrow::Borrow<Literal> for &'static str {
 	fn borrow(&self) -> &Literal {
 		unsafe {
-			std::mem::transmute(self)
+			&*(self as *const Self as *const Literal)
 		}
 	}
 }
