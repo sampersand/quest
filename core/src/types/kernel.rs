@@ -1,6 +1,5 @@
-use crate::{Args, Object, Error};
+use crate::{Args, Object, Error, Literal};
 use crate::types::{Boolean, Text, Null, Number};
-use crate::literal::CALL;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Kernel;
@@ -42,9 +41,9 @@ impl Kernel {
 		let if_true = args.try_arg(1)?;
 
 		if is_object_truthy(cond)? {
-			if_true.call_attr_lit(CALL, &[])
+			if_true.call_attr_lit(&Literal::CALL, &[])
 		} else if let Some(if_false) = args.arg(2) {
-			if_false.call_attr_lit(CALL, &[])
+			if_false.call_attr_lit(&Literal::CALL, &[])
 		} else {
 			Ok(Object::default())
 		}
@@ -67,8 +66,8 @@ impl Kernel {
 		let body = args.try_arg(1)?;
 		let mut result = Object::default();
 
-		while is_object_truthy(&cond.call_attr_lit(CALL, &[])?)? {
-			result = body.call_attr_lit(CALL, &[])?;
+		while is_object_truthy(&cond.call_attr_lit(&Literal::CALL, &[])?)? {
+			result = body.call_attr_lit(&Literal::CALL, &[])?;
 		}
 
 		Ok(result)
@@ -78,7 +77,7 @@ impl Kernel {
 		let body = args.try_arg(0)?;
 
 		loop {
-			body.call_attr_lit(CALL, &[])?;
+			body.call_attr_lit(&Literal::CALL, &[])?;
 		}
 	}
 
@@ -247,7 +246,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 
 		let block = args.try_arg(0)?.clone();
 		Ok(Thread(Arc::new(Mutex::new(Some(thread::spawn(move ||
-			block.call_attr_lit(crate::literal::CALL, &[&block])
+			block.call_attr_lit(&Literal::CALL, &[&block])
 		))))).into())
 	},
 }

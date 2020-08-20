@@ -125,7 +125,7 @@ macro_rules! impl_object_type {
 	// (@CONVERTIBLE $_obj:ty; (no_convert) $($_ret:tt)*) => {};
 	(@CONVERTIBLE $obj:ty; (convert $convert_func:expr) $($rest:tt)*) => {
 		impl $crate::types::Convertible for $obj {
-			const CONVERT_FUNC: &'static str = $convert_func;
+			const CONVERT_FUNC: $crate::Literal = $crate::Literal::new($convert_func);
 		}
 		impl_object_type!(@CONVERTIBLE $obj; $($rest)*);
 	};
@@ -189,7 +189,7 @@ macro_rules! impl_object_type {
 				}
 
 				let class = Self::mapping();
-				class.set_attr_lit("name", stringify!($obj).into())?;
+				class.set_attr_lit($crate::Literal::NAME, stringify!($obj).into())?;
 
 				impl_object_type!(@SET_ATTRS class $obj; $($body)*);
 				Ok(())

@@ -1,5 +1,4 @@
-use crate::{Object, Result, Args};
-use crate::literal::CALL;
+use crate::{Object, Result, Args, Literal};
 
 /// A type representing a bound function.
 ///
@@ -13,7 +12,7 @@ impl BoundFunction {
 		let bound_owner = &this.get_attr_lit("__bound_object_owner__")?;
 		let bound_object = this.get_attr_lit("__bound_object__")?;
 		let args: Args = std::iter::once(bound_owner).chain(args.into_iter()).collect();
-		bound_object.call_attr_lit(CALL, args)
+		bound_object.call_attr_lit(&Literal::CALL, args)
 	}
 }
 

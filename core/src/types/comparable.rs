@@ -1,5 +1,4 @@
-use crate::{Object, Args};
-use crate::literal::CMP;
+use crate::{Object, Args, Literal};
 use crate::types::Number;
 use std::cmp::Ordering;
 
@@ -8,7 +7,7 @@ pub struct Comparable;
 
 #[inline]
 fn compare(lhs: &Object, rhs: &Object) -> crate::Result<Ordering> {
-	let num = lhs.call_attr_lit(CMP, &[rhs])?;
+	let num = lhs.call_attr_lit(&Literal::CMP, &[rhs])?;
 	let num = num.call_downcast::<Number>()?;
 	Ok(num.cmp(&Number::ZERO))
 }

@@ -23,13 +23,14 @@ impl Debug for AttrMap {
 }
 
 impl AttrMap {
-	// in the future, this can be an exact size iterator
+	/// Get a list of keys associated with this map.
 	pub fn keys<'a>(&'a self) -> impl Iterator<Item=Object> + 'a {
 		self.literals.keys()
 			.map(|k| Object::from(k.to_string()))
 			.chain(self.objects.iter().map(|(k, _)| k.clone()))
 	}
 
+	/// Checks to see if this map has `key`.
 	#[inline]
 	pub fn has_lit<L: ?Sized>(&self, key: &L) -> bool
 	where
@@ -39,6 +40,7 @@ impl AttrMap {
 		self.literals.contains_key(key)
 	}
 
+	/// Gets the value associated with `key`.
 	#[inline]
 	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Option<&Value>
 	where
@@ -48,11 +50,13 @@ impl AttrMap {
 		self.literals.get(key)
 	}
 
+	/// Sets `key` to `value`.
 	#[inline]
-	pub fn set_lit(&mut self, key: Literal, val: Value) {
-		self.literals.insert(key, val);
+	pub fn set_lit(&mut self, key: Literal, value: Value) {
+		self.literals.insert(key, value);
 	}
 
+	/// Deletes the value associated with `key`, returning it.
 	#[inline]
 	pub fn del_lit<L: ?Sized>(&mut self, key: &L) -> Option<Value>
 	where
@@ -62,6 +66,7 @@ impl AttrMap {
 		self.literals.remove(key)
 	}
 
+	/// Checks to see if this map has `key`.
 	pub fn has_obj(&self, key: &Object) -> Result<bool> {
 		for (ref k, _) in self.objects.iter() {
 			if key.eq_obj(k)? {
@@ -72,6 +77,7 @@ impl AttrMap {
 		Ok(false)
 	}
 
+	/// Gets the value associated with `key`.
 	pub fn get_obj(&self, key: &Object) -> Result<Option<&Value>> {
 		for (ref k, ref v) in self.objects.iter() {
 			if key.eq_obj(k)? {
@@ -82,6 +88,7 @@ impl AttrMap {
 		Ok(None)
 	}
 
+	/// Sets `key` to `value`.
 	pub fn set_obj(&mut self, key: Object, value: Value) -> Result<()> {
 		for (ref k, ref mut v) in self.objects.iter_mut() {
 			if key.eq_obj(k)? {
@@ -94,6 +101,7 @@ impl AttrMap {
 		Ok(())
 	}
 
+	/// Deletes the value associated with `key`, returning it.
 	pub fn del_obj(&mut self, key: &Object) -> Result<Option<Value>> {
 		let mut stop_index = None;
 		for (i, (ref k, _)) in self.objects.iter().enumerate() {

@@ -64,6 +64,7 @@ impl Sharable for AnyObj {
 	}
 }
 
+/// The data associated with an [`Object`](crate::Object).
 #[derive(Clone)]
 pub struct Data {
 	data: SharedCow<AnyObj>,
@@ -88,6 +89,7 @@ impl<T: 'static, D: DerefMut<Target=AnyObj>> DerefMut for DowncastWrapper<T, D> 
 
 
 impl Data {
+	/// Create a new [`Data`] initialized with the associated `data`.
 	pub fn new<T: Any + Debug + Send + Sync + Clone>(data: T) -> Self {
 		Self {
 			data: SharedCow::new(
@@ -107,16 +109,19 @@ impl Data {
 		}
 	}
 
+	/// Gets the name of this type. Used when debugging.
 	#[inline]
 	pub fn typename(&self) -> &'static str {
 		self.typename
 	}
 
+	/// Checks to see if the contained data is a `T`.
 	#[inline]
 	pub fn is_a<T: Any>(&self) -> bool {
 		self.data.read().is::<T>()
 	}
 
+	/// Tries to downcast the contained data to a `T`, returning `None` if it's not a `T`.
 	pub fn downcast<'a, T: Any>(&'a self) -> Option<impl Deref<Target=T> + 'a> {
 		let data = self.data.read();
 
@@ -127,6 +132,7 @@ impl Data {
 		}
 	}
 
+	/// Tries to mutably downcast the contained data to a `T`, returning `None` if it's not a `T`.
 	pub fn downcast_mut<'a, T: Any>(&'a self) -> Option<impl DerefMut<Target=T> + 'a> {
 		let data = self.data.write();
 

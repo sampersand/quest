@@ -1,6 +1,5 @@
-use crate::{Object, Args};
+use crate::{Object, Args, Literal};
 use crate::error::ValueError;
-use crate::literal::{Literal_, __THIS__, __STACK__};
 use crate::types::{Number, List, Boolean, Regex};
 use crate::Binding;
 use std::borrow::Cow;
@@ -34,14 +33,16 @@ impl Text {
 	}
 
 	#[inline]
-	pub const fn new_static(txt: Literal_) -> Self {
+	pub const fn new_static(txt: &'static str) -> Self {
 		Self(Cow::Borrowed(txt))
 	}
 
 	pub fn evaluate(&self) -> crate::Result<Object> {
 		match self.as_ref() {
-			__THIS__ => Ok(Binding::instance().as_ref().clone()),
-			__STACK__ => Ok(Binding::stack().into_iter().map(Object::from).collect::<Vec<_>>().into()),
+			s if Literal::__THIS__ == s 
+				=> Ok(Binding::instance().as_ref().clone()),
+			s if Literal::__STACK__ == s 
+				=> Ok(Binding::stack().into_iter().map(Object::from).collect::<Vec<_>>().into()),
 			_ => Binding::instance().as_ref().dot_get_attr(&self.to_string().into())
 		}
 	}
@@ -70,10 +71,10 @@ impl PartialEq<str> for Text {
 }
 
 
-impl From<Literal_> for Text {
+impl From<Literal> for Text {
 	#[inline]
-	fn from(txt: Literal_) -> Self {
-		Self::new_static(txt)
+	fn from(txt: Literal) -> Self {
+		Self::new_static(txt.into_inner())
 	}
 }
 
@@ -98,6 +99,13 @@ impl From<char> for Object {
 	}
 }
 
+impl From<&str> for Object {
+	#[inline]
+	fn from(c: &str) -> Self {
+		Text::from(c).into()
+	}
+}
+
 impl From<String> for Text {
 	#[inline]
 	fn from(txt: String) -> Self {
@@ -105,16 +113,16 @@ impl From<String> for Text {
 	}
 }
 
-impl From<String> for Object {
+impl From<&str> for Text {
 	#[inline]
-	fn from(txt: String) -> Self {
-		Text::from(txt).into()
+	fn from(txt: &str) -> Self {
+		Self::new(txt.into())
 	}
 }
 
-impl From<Literal_> for Object {
+impl From<String> for Object {
 	#[inline]
-	fn from(txt: Literal_) -> Self {
+	fn from(txt: String) -> Self {
 		Text::from(txt).into()
 	}
 }
@@ -263,7 +271,7 @@ impl Text {
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
 
-		if this.downcast::<Self>().map(|this| &*this == __THIS__).unwrap_or(false) {
+		if this.downcast::<Self>().map(|this| Literal::__THIS__ == this.as_ref()).unwrap_or(false) {
 			return Ok(Binding::set_binding(rhs).into())
 		}
 

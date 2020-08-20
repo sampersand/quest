@@ -1,4 +1,4 @@
-use crate::Literal_;
+use crate::Literal;
 use std::fmt::{self, Display, Formatter};
 
 /// The type was wrong for a given operation.
@@ -10,7 +10,7 @@ pub enum TypeError {
 	/// A conversion returned a bad type.
 	ConversionReturnedBadType {
 		/// The conversion function.
-		func: Literal_,
+		func: Literal,
 		/// The type that was expected after the function was called.
 		expected: &'static str,
 		/// The type that was actually received after the function was called.

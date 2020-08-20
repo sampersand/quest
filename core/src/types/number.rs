@@ -1073,7 +1073,7 @@ impl Number {
 }
 
 impl Convertible for Number {
-	const CONVERT_FUNC: crate::Literal_ = crate::literal::AT_NUM;
+	const CONVERT_FUNC: crate::Literal = crate::Literal::AT_NUM;
 }
 
 impl_object_type!{

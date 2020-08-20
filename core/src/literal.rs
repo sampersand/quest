@@ -4,10 +4,8 @@
 use std::fmt::{self, Display, Formatter};
 
 /// A literal attribute, used internally to speed up field access.
-pub type Literal_ = &'static str;
-
-/// A literal attribute, used internally to speed up field access.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[repr(transparent)]
 pub struct Literal(&'static str);
 
 impl Literal {
@@ -57,6 +55,14 @@ impl PartialEq<str> for Literal {
 	}
 }
 
+
+impl PartialEq<&str> for Literal {
+	#[inline]
+	fn eq(&self, rhs: &&str) -> bool {
+		self.0 == *rhs
+	}
+}
+
 impl From<Literal> for crate::Object {
 	#[inline]
 	fn from(lit: Literal) -> Self {
@@ -64,6 +70,13 @@ impl From<Literal> for crate::Object {
 	}
 }
 
+impl std::borrow::Borrow<Literal> for &'static str {
+	fn borrow(&self) -> &Literal {
+		unsafe {
+			std::mem::transmute(self)
+		}
+	}
+}
 
 macro_rules! literals {
 	($($name:ident $key:literal)*) => {
@@ -75,13 +88,6 @@ macro_rules! literals {
 				pub const $name: Literal = Literal::new($key);
 			)*
 		}
-
-		$(
-			#[doc = "The attribute `"]
-			#[doc = $key]
-			#[doc = "`."]
-			pub const $name: Literal_ = $key;
-		)*
 	};
 }
 
@@ -95,7 +101,7 @@ literals! {
 	AT_BOOL "@bool" AT_TEXT "@text" AT_NUM "@num" AT_LIST "@list"
 
 	// common functions
-	CLONE "clone" HASH "hash" INSPECT "inspect"
+	CLONE "clone" HASH "hash" INSPECT "inspect" NAME "name"
 
 	// operators
 	ADD  "+"   SUB  "-"    MUL "*"    DIV    "/"   MOD "%"    POW "**"   POS  "+@"   NEG "-@"

@@ -1,5 +1,4 @@
-use crate::{Object, Result, Args};
-use crate::literal::{EQL, AT_BOOL, NOT, INSPECT};
+use crate::{Object, Result, Args, Literal};
 
 /// A class that holds all the basic functions objects can have.
 ///
@@ -23,7 +22,7 @@ impl Basic {
 	/// This is simply a redirect to the `inspect` method.
 	#[inline]
 	pub fn qs_at_text<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
-		this.call_attr_lit(INSPECT, args)
+		this.call_attr_lit(&Literal::INSPECT, args)
 	}
 
 	/// See if `this` is equal to the first argument.
@@ -47,7 +46,7 @@ impl Basic {
 	/// 1. (required) The other object.
 	#[inline]
 	pub fn qs_neq<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
-		this.call_attr_lit(EQL, args)?.call_attr_lit(NOT, &[])
+		this.call_attr_lit(&Literal::EQL, args)?.call_attr_lit(&Literal::NOT, &[])
 	}
 
 	/// Get the logical inverse of `this`.
@@ -55,7 +54,7 @@ impl Basic {
 	/// This simply calls the `@bool` method and then the `!` method on the result.
 	#[inline]
 	pub fn qs_not<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
-		this.call_attr_lit(AT_BOOL, args)?.call_attr_lit(NOT, &[])
+		this.call_attr_lit(&Literal::AT_BOOL, args)?.call_attr_lit(&Literal::NOT, &[])
 	}
 
 	/// Get a hash of `this`.
@@ -126,7 +125,7 @@ mod tests {
 
 			assert_eq!(
 				*Object::from(Dummy)
-					.call_attr_lit(INSPECT, &[]).unwrap()
+					.call_attr_lit(&Literal::INSPECT, &[]).unwrap()
 					.call_downcast::<Text>().unwrap(),
 				*"foo"
 			);
@@ -171,21 +170,21 @@ mod tests {
 			let obj3 = Object::from(Dummy(14));
 
 			assert_eq!(
-				obj1.call_attr_lit(EQL, &[&obj1]).unwrap()
+				obj1.call_attr_lit(&Literal::EQL, &[&obj1]).unwrap()
 					.call_downcast::<Boolean>().unwrap()
 					.into_inner(),
 				true
 			);
 
 			assert_eq!(
-				obj1.call_attr_lit(EQL, &[&obj2]).unwrap()
+				obj1.call_attr_lit(&Literal::EQL, &[&obj2]).unwrap()
 					.call_downcast::<Boolean>().unwrap()
 					.into_inner(),
 				true
 			);
 
 			assert_eq!(
-				obj1.call_attr_lit(EQL, &[&obj3]).unwrap()
+				obj1.call_attr_lit(&Literal::EQL, &[&obj3]).unwrap()
 					.call_downcast::<Boolean>().unwrap()
 					.into_inner(),
 				false

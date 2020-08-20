@@ -1,6 +1,9 @@
 use crate::types::RustFn;
-use crate::{Object, Args, Result};
+use crate::{Object, Args, Result, Literal};
 
+/// A value.
+///
+/// This exists because it is _so_ much faster to call `RustFn`s directly than to try to downcast.
 #[derive(Debug, Clone)]
 pub enum Value {
 	RustFn(RustFn),
@@ -8,6 +11,7 @@ pub enum Value {
 }
 
 impl Value {
+	/// Calls this value, returning the result.
 	pub fn call<'o>(&self, owner: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		use std::borrow::Cow;
 		match self {
@@ -27,7 +31,7 @@ impl Value {
 						}
 					};
 
-				object.call_attr_lit("()", args)
+				object.call_attr_lit(&Literal::CALL, args)
 			}
 		}
 	}

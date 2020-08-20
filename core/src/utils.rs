@@ -13,3 +13,20 @@ pub fn hash<T: std::hash::Hash + 'static>(data: &T) -> u64 {
 
 	hasher.finish()
 }
+
+pub fn correct_index(idx: isize, len: usize) -> Option<usize> {
+	if !idx.is_negative() {
+		if (idx as usize) < len {
+			Some(idx as usize)
+		} else {
+			None
+		}
+	} else {
+		let idx = (-idx) as usize;
+		if idx <= len {
+			Some(len - idx)
+		} else {
+			None
+		}
+	}
+}

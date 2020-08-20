@@ -6,6 +6,7 @@ use parking_lot::RwLock;
 use std::hash::Hash;
 use std::borrow::Borrow;
 
+/// A list of parents associated with an object.
 #[derive(Debug)]
 pub struct Parents(RwLock<Inner>);
 
@@ -103,6 +104,7 @@ impl FromIterator<Object> for Parents {
 }
 
 impl Parents {
+	/// Add a new parent to the list of parents.
 	pub fn add_parent(&mut self, parent: Object) -> Result<()> {
 		let mut inner = self.0.write();
 		match *inner {
@@ -114,6 +116,7 @@ impl Parents {
 		Ok(())
 	}
 
+	/// Converts `self` to an object.
 	pub fn to_object(&self) -> Object {
 		let mut inner = self.0.write();
 		match *inner {
@@ -139,10 +142,12 @@ impl Parents {
 		}
 	}
 
+	/// Gets the list of keys associated all the parents.
 	pub fn keys(&self) -> Result<Vec<Object>> {
 		self.with_iter(|iter| Ok(iter.cloned().collect()))
 	}
 
+	/// Checks to see if any of the parents responds to `Key`.
 	pub fn has_lit<L: ?Sized>(&self, key: &L) -> Result<bool>
 	where
 		Literal: Borrow<L>,
@@ -158,6 +163,7 @@ impl Parents {
 		})
 	}
 
+	/// Gets a value associated with `key` from the parents.
 	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Result<Option<Value>>
 	where
 		Literal: Borrow<L>,
@@ -173,6 +179,7 @@ impl Parents {
 		})
 	}
 
+	/// Checks to see if any of the parents responds to `Key`.
 	pub fn has_obj(&self, key: &Object) -> Result<bool> {
 		self.with_iter(|iter| {
 			for parent in iter {
@@ -184,6 +191,7 @@ impl Parents {
 		})
 	}
 
+	/// Gets a value associated with `key` from the parents.
 	pub fn get_obj(&self, key: &Object) -> Result<Option<Value>> {
 		self.with_iter(|iter| {
 			for parent in iter {

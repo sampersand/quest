@@ -1,5 +1,4 @@
-use crate::{Object, Args};
-use crate::literal::{Literal_, INSPECT, AT_LIST, CALL};
+use crate::{Object, Args, Literal};
 use crate::types::{Convertible, Text, Boolean, Number};
 use std::convert::TryFrom;
 use std::iter::FromIterator;
@@ -225,7 +224,7 @@ impl TryFrom<&List> for Text {
 	fn try_from(list: &List) -> crate::Result<Self> {
 		let mut t = Vec::with_capacity(list.len());
 		for item in list.iter() {
-			t.push(item.call_attr_lit(INSPECT, &[])?.call_downcast::<Text>()?.to_string());
+			t.push(item.call_attr_lit(&Literal::INSPECT, &[])?.call_downcast::<Text>()?.to_string());
 		}
 		Ok(format!("[{}]", t.join(", ")).into())
 	}
@@ -449,7 +448,7 @@ impl List {
 			if idx >= this.len() {
 				break;
 			} else {
-				block.call_attr_lit(CALL, &[&this.0[idx], &idx.into()])?;
+				block.call_attr_lit(&Literal::CALL, &[&this.0[idx], &idx.into()])?;
 			}
 		}
 
@@ -937,7 +936,7 @@ impl List {
 }
 
 impl Convertible for List {
-	const CONVERT_FUNC: Literal_ = AT_LIST;
+	const CONVERT_FUNC: Literal = Literal::AT_LIST;
 }
 impl_object_type!{
 for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:

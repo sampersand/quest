@@ -1,5 +1,4 @@
-use crate::literal::{Literal, __PARENTS__, __ID__};
-use crate::{Object, Result, SharedCow};
+use crate::{Object, Result, Literal, SharedCow};
 use crate::types::Text;
 use std::fmt::{self, Debug, Formatter};
 use std::borrow::Borrow;
@@ -19,6 +18,7 @@ struct Inner {
 	parents: Parents
 }
 
+/// The attributes associated with an [`Object`](crate::Object).
 #[derive(Default)]
 pub struct Attributes {
 	data: SharedCow<Inner>,
@@ -27,6 +27,7 @@ pub struct Attributes {
 
 impl Debug for Attributes {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		// we explicitly don't include data because it can cause infinite regression.
 		f.debug_struct("Attributes")
 			.field("id", &self.id)
 			.finish()
@@ -35,19 +36,21 @@ impl Debug for Attributes {
 
 impl Clone for Attributes {
 	fn clone(&self) -> Self {
-		Attributes::from_data(self.data.clone())
+		Self::from_data(self.data.clone())
 	}
 }
 
 impl Attributes {
-	pub fn new<P: Into<Parents>>(parents: P) -> Self {
-		Attributes::from_data(
+	/// Create an empty `Attributes`, initialized with the given parents
+	pub fn new(parents: impl Into<Parents>) -> Self {
+		Self::from_data(
 			SharedCow::new(Inner {
 				parents: parents.into(),
 				map: Default::default()
 			})
 		)
 	}
+
 	fn from_data(data: SharedCow<Inner>) -> Self {
 		use std::sync::atomic::{AtomicUsize, Ordering};
 		static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -55,20 +58,23 @@ impl Attributes {
 		Attributes { data, id: ID_COUNTER.fetch_add(1, Ordering::Relaxed) }
 	}
 
+	/// Gets the id associated with these attributes.
 	#[inline]
 	pub fn id(&self) -> usize {
 		self.id
 	}
 
+	/// Add a parent to the list of parents.
 	pub fn add_parent(&self, parent: Object) -> Result<()> {
 		self.data.write().parents.add_parent(parent)
 	}
 
+	/// Get a list of keys for this class, optionally including all keys defined on parents as well.
 	pub fn keys(&self, include_parents: bool) -> Result<Vec<Object>> {
 		let mut keys = vec![];
 
-		keys.push(__PARENTS__.into());
-		keys.push(__ID__.into());
+		keys.push(Literal::__PARENTS__.into());
+		keys.push(Literal::__ID__.into());
 
 		let inner = self.data.write();
 		keys.extend(inner.map.keys());
@@ -81,6 +87,7 @@ impl Attributes {
 }
 
 impl Attributes {
+	/// Checks to see if `self` directly or its parents includes `key`.
 	pub fn has_lit<L: ?Sized>(&self, key: &L) -> Result<bool> 
 	where
 		Literal: Borrow<L>,
@@ -94,6 +101,7 @@ impl Attributes {
 		}
 	}
 
+	/// Gets the associated value to `key` from `self` directly or its parents.
 	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Result<Option<Value>>
 	where
 		Literal: Borrow<L>,
@@ -113,16 +121,20 @@ impl Attributes {
 		}
 	}
 
-	pub fn set_lit(&self, key: Literal, val: Value) {
+	/// Sets the associated `key` to `value` from `self` directly or its parents.
+	pub fn set_lit(&self, key: impl Into<Literal>, value: impl Into<Value>) {
 		let mut inner = self.data.write();
+		let key = key.into();
+		let value = value.into();
 
 		if key == Literal::__PARENTS__ {
-			inner.parents = Parents::from(Object::from(val));
+			inner.parents = Parents::from(Object::from(value));
 		} else {
-			inner.map.set_lit(key, val);
+			inner.map.set_lit(key, value);
 		}
 	}
 
+	/// Deletes the associated value to `key` from `self` directly or its parents.
 	pub fn del_lit<L: ?Sized>(&self, key: &L) -> Option<Value>
 	where
 		Literal: Borrow<L>,
@@ -137,6 +149,7 @@ impl Attributes {
 		}
 	}
 
+	/// Checks to see if `self` directly or its parents includes `key`.
 	pub fn has(&self, key: &Object) -> Result<bool> {
 		if let Some(res) = key.downcast::<Text>().map(|text| self.has_lit(text.as_ref())) {
 			return res
@@ -146,6 +159,7 @@ impl Attributes {
 		Ok(inner.map.has_obj(key)? || inner.parents.has_obj(key)?)
 	}
 
+	/// Gets the associated value to `key` from `self` directly or its parents.
 	pub fn get(&self, key: &Object) -> Result<Option<Value>> {
 		if let Some(res) = key.downcast::<Text>().map(|text| self.get_lit(text.as_ref())) {
 			return res;
@@ -160,15 +174,17 @@ impl Attributes {
 		}
 	}
 
+	/// Sets the associated `key` to `value` from `self` directly or its parents.
 	pub fn set(&self, key: Object, value: Value) -> Result<()> {
-		if let Some(lit) = key.downcast::<Text>().map(|text| str_to_static(text.as_ref())) {
-			self.set_lit(lit.into(), value);
+		if let Some(text) = key.downcast::<Text>() {
+			self.set_lit(str_to_static(text.as_ref()), value);
 			return Ok(());
 		}
 
 		self.data.write().map.set_obj(key, value)
 	}
 
+	/// Deletes the associated value to `key` from `self` directly or its parents.
 	pub fn del(&self, key: &Object) -> Result<Option<Value>> {
 		if let Some(res) = key.downcast::<Text>().map(|text| self.del_lit(text.as_ref())) {
 			return Ok(res);
@@ -186,7 +202,6 @@ fn str_to_static(key: &str) -> &'static str {
 		// a list of strings that have been converted so far; this is to improve efficiency.
 		static STATIC_STRS: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
 	}
-
 
 	STATIC_STRS.with(|set| {
 		if let Some(static_key) = set.borrow().get(key) {

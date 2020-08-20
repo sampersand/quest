@@ -337,7 +337,7 @@ impl Boolean {
 }
 
 impl Convertible for Boolean {
-	const CONVERT_FUNC: &'static str = crate::literal::AT_BOOL;
+	const CONVERT_FUNC: crate::Literal = crate::Literal::AT_BOOL;
 }
 
 impl_object_type!{
@@ -556,7 +556,7 @@ mod tests {
 			struct Dummy;
 			impl_object_type! { for Dummy [(parents crate::types::Pristine)]: }
 
-			assert!(!Object::from(Dummy).has_attr_lit(crate::literal::AT_BOOL).unwrap());
+			assert!(!Object::from(Dummy).has_attr_lit(&crate::Literal::AT_BOOL).unwrap());
 			assert_call_eq!(Boolean::qs_cmp(true, Dummy) -> Null, Null);
 
 			assert_call_missing_parameter!(Boolean::qs_cmp(true), 0);
