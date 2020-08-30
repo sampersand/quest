@@ -78,10 +78,32 @@ impl Iterable {
 			Err(arc) => Ok(arc.lock().clone().into())
 		}
 	}
+
+	pub fn qs_reduce(this: &Object, args: Args) -> crate::Result<Object> {
+		let block = args.try_arg(0)?;
+
+		let ret = Arc::new(Mutex::new(vec![]));
+		let ret2 = ret.clone();
+
+		foreach(this, block.clone(), move |orig, select| {
+			if select.call_downcast::<crate::types::Boolean>()?.into_inner() {
+				ret2.lock().push(orig);
+			}
+			Ok(())
+		})?;
+
+		match Arc::try_unwrap(ret) {
+			// no one else has a refrence, so we're all good.
+			Ok(mutex) => Ok(mutex.into_inner().into()),
+			// we have to clone it now. darn!
+			Err(arc) => Ok(arc.lock().clone().into())
+		}
+	}
 }
 
 impl_object_type!{
 for Iterable [(parents super::Basic)]:
 	"map" => function Self::qs_map,
 	"select" => function Self::qs_select,
+	"reduce" => function Self::qs_reduce
 }

@@ -1,13 +1,13 @@
 //! The [`Number`] type in Quest.
 
+use crate::{Object, Args};
+use crate::types::{Text, Boolean, Convertible};
+use crate::error::{TypeError, ValueError};
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::cmp::Ordering;
 use std::ops;
-use crate::{Object, Args};
-use crate::types::{Text, Boolean, Convertible};
 use std::hash::{Hash, Hasher};
-use crate::error::{TypeError, ValueError};
 
 /// The type used by [`Number`] to keep track of integers.
 pub type IntegerType = i64;
