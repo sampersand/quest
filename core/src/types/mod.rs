@@ -36,30 +36,66 @@ mod scope;
 pub mod rustfn;
 
 mod null;
-mod boolean;
 mod class;
-pub mod number;
 mod text;
+pub mod boolean;
+pub mod number;
 pub mod regex;
 mod list;
 
 mod tcp;
+
+#[doc(inline)]
 pub use tcp::Tcp;
 
+#[doc(inline)]
 pub use class::Class;
+
+#[doc(inline)]
 pub use convert::Convertible;
+
+#[doc(inline)]
 pub use comparable::Comparable;
+
+#[doc(inline)]
 pub use pristine::Pristine;
+
+#[doc(inline)]
 pub use kernel::Kernel;
+
+#[doc(inline)]
 pub use basic::Basic;
+
+#[doc(inline)]
 pub use bound_function::BoundFunction;
+
+#[doc(inline)]
 pub use function::Function;
+
+#[doc(inline)]
 pub use iterable::Iterable;
+
+#[doc(inline)]
 pub use rustfn::RustFn;
+
+#[doc(inline)]
 pub use scope::Scope;
+
+#[doc(inline)]
 pub use null::Null;
+
+#[doc(inline)]
 pub use boolean::Boolean;
+
+#[doc(inline)]
 pub use number::Number;
+
+#[doc(inline)]
 pub use text::Text;
+
+#[doc(inline)]
 pub use list::List;
+
+#[doc(inline)]
 pub use self::regex::Regex;
+

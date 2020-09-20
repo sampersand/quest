@@ -28,21 +28,19 @@ impl Display for Text {
 
 impl Text {
 	#[inline]
-	pub fn new(txt: String) -> Self {
-		Self(Cow::Owned(txt))
+	pub fn new(txt: impl Into<String>) -> Self {
+		Self(Cow::Owned(txt.into()))
 	}
 
 	#[inline]
-	pub const fn new_static(txt: &'static str) -> Self {
+	pub const fn const_new(txt: &'static str) -> Self {
 		Self(Cow::Borrowed(txt))
 	}
 
 	pub fn evaluate(&self) -> crate::Result<Object> {
 		match self.as_ref() {
-			s if Literal::__THIS__ == s 
-				=> Ok(Binding::instance().as_ref().clone()),
-			s if Literal::__STACK__ == s 
-				=> Ok(Binding::stack().into_iter().map(Object::from).collect::<Vec<_>>().into()),
+			s if Literal::__THIS__ == s => Ok(Binding::instance().as_ref().clone()),
+			s if Literal::__STACK__ == s => Ok(Binding::stack().into_iter().map(Object::from).collect::<Vec<_>>().into()),
 			_ => Binding::instance().as_ref().dot_get_attr(&self.to_string().into())
 		}
 	}
@@ -74,7 +72,7 @@ impl PartialEq<str> for Text {
 impl From<Literal> for Text {
 	#[inline]
 	fn from(txt: Literal) -> Self {
-		Self::new_static(txt.into_inner())
+		Self::const_new(txt.into_inner())
 	}
 }
 
@@ -116,7 +114,7 @@ impl From<String> for Text {
 impl From<&str> for Text {
 	#[inline]
 	fn from(txt: &str) -> Self {
-		Self::new(txt.into())
+		Self::new(txt)
 	}
 }
 

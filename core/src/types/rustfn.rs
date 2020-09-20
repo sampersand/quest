@@ -53,7 +53,7 @@ impl RustFn {
 impl From<RustFn> for Text {
 	#[inline]
 	fn from(rustfn: RustFn) -> Self {
-		Self::new_static(rustfn.0)
+		Self::const_new(rustfn.0)
 	}
 }
 

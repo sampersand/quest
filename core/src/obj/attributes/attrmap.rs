@@ -13,6 +13,7 @@ pub struct AttrMap {
 	objects: Vec<(Object, Value)>
 }
 
+
 impl Debug for AttrMap {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		f.debug_map()

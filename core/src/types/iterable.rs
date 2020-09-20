@@ -28,10 +28,10 @@ where
 	F: Fn(Object, Object) -> crate::Result<()> + Send + Sync + 'static
 {
 	let bound =
-		BoundRustFn(Arc::new(Box::new(move |obj| {
+		BoundRustFn(Arc::new(move |obj| {
 			let called = block.call_attr_lit("()", &[&obj])?;
 			f(obj, called)
-		})));
+		}));
 
 	let each = this.get_attr_lit("each")?;
 	each.call_attr_lit("()", &[this, &Object::from(bound)])?;
@@ -45,6 +45,7 @@ impl Iterable {
 
 		let ret = Arc::new(Mutex::new(vec![]));
 		let ret2 = ret.clone();
+
 		foreach(this, block.clone(), move |_, obj| {
 			ret2.lock().push(obj);
 			Ok(())
@@ -61,7 +62,7 @@ impl Iterable {
 	pub fn qs_select(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?;
 
-		let ret = Arc::new(Mutex::new(vec![]));
+		let ret = Arc::new(Mutex::new(Vec::new()));
 		let ret2 = ret.clone();
 
 		foreach(this, block.clone(), move |orig, select| {

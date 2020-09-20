@@ -6,7 +6,7 @@ pub struct Scope;
 
 impl Scope {
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
-		const UNNAMED_SCOPE: Text = Text::new_static("<unnamed scope>");
+		const UNNAMED_SCOPE: Text = Text::const_new("<unnamed scope>");
 
 		Ok(this.get_attr_lit("name").unwrap_or_else(|_| UNNAMED_SCOPE.into()))
 	}

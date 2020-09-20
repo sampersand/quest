@@ -29,39 +29,38 @@ impl From<()> for Object {
 impl From<()> for Null {
 	#[inline]
 	fn from(_: ()) -> Self {
-		Null
+		Self
 	}
 }
 
 impl From<Null> for Boolean {
 	#[inline]
 	fn from(_: Null) -> Self {
-		Self::FALSE
+		Self::default()
 	}
 }
 
 impl From<Null> for List {
 	#[inline]
 	fn from(_: Null) -> Self {
-		Self::new(vec![])
+		Self::default()
 	}
 }
 
 impl From<Null> for Number {
 	#[inline]
 	fn from(_: Null) -> Self {
-		Self::ZERO
+		Self::default()
 	}
 }
 
 impl From<Null> for Text {
 	#[inline]
 	fn from(_: Null) -> Self {
-		const NULL_TEXT: Text = Text::new_static("null");
+		const NULL_TEXT: Text = Text::const_new("null");
 		NULL_TEXT
 	}
 }
-
 
 impl Null {
 	pub fn qs_inspect(_: &Object, _: Args) -> Result<Object> {

@@ -1,30 +1,60 @@
 //! The [`Boolean`] type in Quest.
-
-use crate::{Object, Result, Args};
+use crate::{Object, Args};
 use crate::types::{Number, Text, Convertible};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops;
 
 /// The Boolean type within Quest.
 ///
-/// Internally, this is simply a newtype wrapping a `bool`.
+/// This type can only be [`true`](Self::TRUE) or [`false`](Self::FALSE).
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct Boolean(bool);
 
-impl Boolean {
-	/// A constant representing the boolean value "false".
-	pub const FALSE: Self = Self::new(false);
+/// An error returned when parsing a bool using from_str fails.
+pub type ParseBoolError = std::str::ParseBoolError;
 
+impl Boolean {
 	/// A constant representing the boolean value "true".
+	///
+	/// # Examples
+	/// ```rust
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(Boolean::TRUE, true);
+	/// ```
 	pub const TRUE: Self = Self::new(true);
 
+	/// A constant representing the boolean value "false".
+	///
+	/// # Examples
+	/// ```rust
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(Boolean::FALSE, false);
+	/// ```
+	pub const FALSE: Self = Self::new(false);
+
 	/// Simply create a new [`Boolean`].
+	///
+	/// # Examples
+	/// ```rust
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(Boolean::new(true), true);
+	/// ```
 	#[inline]
 	pub const fn new(b: bool) -> Self {
 		Self(b)
 	}
 
 	/// Unwraps the value.
+	///
+	/// # Examples
+	/// ```rust
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(Boolean::TRUE.into_inner(), true);
+	/// ```
 	#[inline]
 	pub const fn into_inner(self) -> bool {
 		self.0
@@ -35,6 +65,12 @@ impl PartialEq<bool> for Boolean {
 	#[inline]
 	fn eq(&self, rhs: &bool) -> bool {
 		self.0 == *rhs
+	}
+}
+
+impl PartialOrd<bool> for Boolean {
+	fn partial_cmp(&self, rhs: &bool) -> Option<std::cmp::Ordering> {
+		self.0.partial_cmp(rhs)
 	}
 }
 
@@ -55,8 +91,29 @@ impl Display for Boolean {
 	}
 }
 
+impl std::str::FromStr for Boolean {
+	type Err = ParseBoolError;
+
+	/// Tries to convert `inp` to a [`Boolean`].
+	///
+	/// `"true"` will become [`Boolean::TRUE`] and `"false"` will become [`Boolean::FALSE`]. Any other value will yield a
+	/// [`ParseBoolError`].
+	fn from_str(inp: &str) -> Result<Self, Self::Err> {
+		inp.parse().map(Self::new)
+	}
+}
+
+impl std::convert::TryFrom<&str> for Boolean {
+	type Error = ParseBoolError;
+
+	#[inline]
+	fn try_from(val: &str) -> Result<Self, Self::Error> {
+		val.parse()
+	}
+}
+
 impl From<bool> for Object {
-	/// Converts this into a [`Boolean`] and then into an [`Object`]
+	/// Converts this into a [`Boolean`] and then into an [`Object`].
 	#[inline]
 	fn from(inp: bool) -> Self {
 		Boolean::new(inp).into()
@@ -84,6 +141,12 @@ impl AsRef<bool> for Boolean {
 	}
 }
 
+impl std::borrow::Borrow<bool> for Boolean {
+	fn borrow(&self) -> &bool {
+		self.as_ref()
+	}
+}
+
 impl AsMut<bool> for Boolean {
 	#[inline]
 	fn as_mut(&mut self) -> &mut bool {
@@ -92,8 +155,7 @@ impl AsMut<bool> for Boolean {
 }
 
 impl From<Boolean> for Number {
-	/// Convert to a [`Number`] by mapping `true` to [`Number::ONE`] and `false` to
-	/// [`Number::ZERO`]
+	/// Convert to a [`Number`] by mapping `true` to [`Number::ONE`] and `false` to [`Number::ZERO`].
 	fn from(b: Boolean) -> Self {
 		if b.into_inner() {
 			Self::ONE
@@ -105,15 +167,11 @@ impl From<Boolean> for Number {
 
 impl From<Boolean> for Text {
 	/// Convert to a [`Text`] by mapping `true` to `"true"` and `false` to `"false"`
-	#[inline]
 	fn from(b: Boolean) -> Self {
-		const TRUE: Text = Text::new_static("true");
-		const FALSE: Text = Text::new_static("false");
-
 		if b.into_inner() {
-			TRUE
+			Self::const_new("true")
 		} else {
-			FALSE
+			Self::const_new("false")
 		}
 	}
 }
@@ -179,25 +237,69 @@ impl ops::Not for Boolean {
 impl Boolean {
 	/// Inspects `this`.
 	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// A [`Text`] object of containing either `true` or `false`.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], a [`TypeError::WrongType`](crate::error::TypeError::WrongType) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Boolean, Text};
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_inspect(&true.into(), Args::default()).unwrap()
+	/// 		.downcast::<Text>().unwrap(),
+	/// 	Text::new("true")
+	/// );
+	/// ```
+	///
 	/// # Quest Examples
 	/// ```quest
 	/// assert(true.$inspect() == "true");
 	/// assert(false.$inspect() == "false");
 	/// ```
-	pub fn qs_inspect(this: &Object, args: Args) -> Result<Object> {
+	///
+	/// # See Also
+	/// - [`Boolean::qs_at_text`] -- Identical to this function.
+	pub fn qs_inspect(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_at_text(this, args)
 	}
 
 	/// Convert `this` into a [`Number`].
 	///
-	/// [`true`](Boolean::TRUE) becomes [`1`](Number::ONE) and [`false`](Boolean::FALSE) becomes
-	/// [`0`](Number::ZERO)
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// A [`Number`] object containing either [`1`](Number::ONE) (for  [`true`](Self::TRUE)) or [`0`](Number::ZERO) (
+	/// for [`false`](Self::FALSE)).
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], a [`TypeError::WrongType`](crate::error::TypeError::WrongType) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Boolean, Number};
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_at_num(&true.into(), Args::default()).unwrap()
+	/// 		.downcast::<Number>().unwrap(),
+	/// 	Number::ONE
+	/// );
+	/// ```
+	///
 	/// # Quest Examples
 	/// ```quest
 	/// assert(1 + true == 2);
 	/// assert(99 * false == 0);
 	/// ```
-	pub fn qs_at_num(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_at_num(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(Number::from(*this).into())
@@ -205,46 +307,103 @@ impl Boolean {
 
 	/// Convert `this` into a [`Text`].
 	///
-	/// [`true`](Boolean::TRUE) becomes `"true"` and [`false`](Boolean::FALSE) becomes `"false"`.
-	pub fn qs_at_text(this: &Object, _: Args) -> Result<Object> {
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// [`true`](Self::TRUE) becomes `"true"` and [`false`](Self::FALSE) becomes `"false"`.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], a [`TypeError::WrongType`](crate::error::TypeError::WrongType) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Boolean, Text};
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_at_text(&true.into(), Args::default()).unwrap()
+	/// 		.downcast::<Text>().unwrap(),
+	/// 	Text::new("true")
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert("yes: " + true == "yes: true");
+	/// assert("no: " + false == "no: false");
+	/// ```
+	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(Text::from(*this).into())
 	}
 
-	/// Converts `this` into a [`Boolean`]
+	/// Converts `this` into a [`Boolean`].
 	///
-	/// This simply calls [`Object::clone`](crate::Object::clone)
-	pub fn qs_at_bool(this: &Object, _: Args) -> Result<Object> {
+	/// This simply calls [`Object::clone`](crate::Object::clone).
+	/// 
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// `this`.
+	///
+	/// # Errors
+	/// None.
+	/// 
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::Boolean;
+	///
+	/// let obj = Object::from(true);
+	/// let dup = Boolean::qs_at_bool(&obj, Args::default()).unwrap();
+	///
+	/// assert!(obj.is_identical(&dup));
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// $obj = true;
+	/// $dup = obj.$dup();
+	/// assert(obj == dup);
+	/// assert(obj.$__id__ != dup.$__id__);
+	/// ```
+	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
 
 	/// See if a `this` is equal to the first argument.
 	///
-	/// Unlike most methods, the first argument is not implicitly converted to a [`Boolean`] first.
+	/// Unlike most methods, the first argument is not implicitly converted to a [`Boolean`] first. This will return
+	/// `true` if 
 	///
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
-	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
+	///
+	/// # 
+	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
-		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
+		Ok(rhs.map_or(false, |rhs| *this == *rhs).into())
 	}
 
 	/// Compares `this` to the first argument.
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object to compare against.
-	pub fn qs_cmp(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
-		Ok(rhs.map(|rhs| this.cmp(&rhs).into()).unwrap_or_default())
+		// Ok(rhs.map(|rhs| this.cmp(&rhs).into()).unwrap_or_default())
+		Ok(rhs.ok().map_or_else(Default::default, |rhs| this.cmp(&rhs).into()))
 	}
 
 	/// Logical NOT of `this`.
-	pub fn qs_not(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_not(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok((!*this).into())
@@ -254,7 +413,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	pub fn qs_bitand(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
@@ -265,7 +424,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	pub fn qs_bitand_assign(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
 		if !this.is_identical(rhs) { // `true & true = true` and `false & false = false`.
@@ -279,7 +438,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	pub fn qs_bitor(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
@@ -290,7 +449,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	pub fn qs_bitor_assign(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
 		if !this.is_identical(rhs) { // `true | true = true` and `false | false = false`.
@@ -304,7 +463,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	pub fn qs_bitxor(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
 
@@ -315,9 +474,8 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	pub fn qs_bitxor_assign(this: &Object, args: Args) -> Result<Object> {
+	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
-
 
 		if this.is_identical(rhs) {
 			*this.try_downcast_mut::<Self>()? = Self::new(false);
@@ -329,7 +487,7 @@ impl Boolean {
 	}
 
 	/// Hashes `this`.
-	pub fn qs_hash(this: &Object, _: Args) -> Result<Object> {
+	pub fn qs_hash(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(crate::utils::hash(&*this).into())
@@ -341,6 +499,7 @@ impl Convertible for Boolean {
 }
 
 impl_object_type!{
+
 for Boolean {
 	#[inline]
 	fn new_object(self) -> Object {
@@ -349,8 +508,7 @@ for Boolean {
 
 		lazy_static! {
 			static ref TRUE: Object = Object::new_with_parent(Boolean::TRUE, vec![Boolean::mapping()]);
-			static ref FALSE: Object = Object::new_with_parent(Boolean::FALSE,
-				vec![Boolean::mapping()]);
+			static ref FALSE: Object = Object::new_with_parent(Boolean::FALSE, vec![Boolean::mapping()]);
 		}
 
 		if self.into_inner() { 
