@@ -8,6 +8,7 @@ use std::ops::{Deref, DerefMut};
 use std::hash::Hash;
 use std::borrow::Borrow;
 
+mod nanbox;
 mod data;
 mod attributes;
 use attributes::{Attributes, Value};

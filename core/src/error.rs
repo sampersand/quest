@@ -10,9 +10,9 @@ pub use type_error::TypeError;
 pub use key_error::KeyError;
 pub use value_error::ValueError;
 
+/// The generic type for all errors that can occur within quest.
 #[derive(Debug)]
 #[non_exhaustive]
-/// The generic type for all errors that can occur within quest.
 pub enum Error {
 	/// Something that we don't have an error type for yet
 	Messaged(String),
