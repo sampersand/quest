@@ -1,6 +1,6 @@
-#![allow(unused)]
 //! The list of literal attributes used within quest.
 
+use std::borrow::Borrow;
 use std::fmt::{self, Display, Formatter};
 
 /// A literal attribute, used internally to speed up field access.
@@ -41,7 +41,7 @@ impl AsRef<str> for Literal {
 	}
 }
 
-impl std::borrow::Borrow<str> for Literal {
+impl Borrow<str> for Literal {
 	#[inline]
 	fn borrow(&self) -> &str {
 		self.as_ref()
@@ -70,10 +70,10 @@ impl From<Literal> for crate::Object {
 	}
 }
 
-impl std::borrow::Borrow<Literal> for &'static str {
+impl Borrow<Literal> for &'static str {
 	fn borrow(&self) -> &Literal {
 		unsafe {
-			&*(self as *const Self as *const Literal)
+			std::mem::transmute::<&&'static str, &Literal>(self)
 		}
 	}
 }
