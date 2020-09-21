@@ -7,7 +7,7 @@
 //! # See Also
 //! - [`quest-parser`](#TODO) for parsing quest
 //! - [`quest-bin`](#TODO) the quest executable
-#![allow(clippy::pub_enum_variant_names)]
+#![allow(clippy::pub_enum_variant_names, clippy::tabs_in_doc_comments)]
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -19,6 +19,8 @@ mod literal;
 pub mod utils;
 pub mod error;
 pub mod types;
+// experimental.
+pub mod object;
 
 use shared_cow::SharedCow;
 pub use literal::Literal;
