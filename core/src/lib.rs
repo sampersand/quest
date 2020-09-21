@@ -19,8 +19,6 @@ mod literal;
 pub mod utils;
 pub mod error;
 pub mod types;
-// experimental.
-pub mod object;
 
 use shared_cow::SharedCow;
 pub use literal::Literal;

@@ -33,10 +33,6 @@ enum Inner {
 	// should we add a "not a number" variant here?
 }
 
-pub fn foo () -> i32 {
-	23;
-}
-
 impl Eq for Number {}
 
 impl PartialEq for Number {
