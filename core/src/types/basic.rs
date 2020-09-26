@@ -12,7 +12,39 @@ impl Basic {
 	/// Convert `this` into a [`Boolean`](crate::types::Boolean).
 	///
 	/// All objects are [`true`](crate::types::Boolean::TRUE) by default.
-	#[inline]
+	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// The value [true](crate::types::Boolean::TRUE).
+	///
+	/// # Errors
+	/// None.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # use quest_core::{impl_object_type, types::ObjectType};
+	/// use quest_core::{Object, Literal, types::Boolean};
+	/// #[derive(Debug, Clone, PartialEq)]
+	/// struct Dummy;
+	/// 
+	/// impl_object_type! { for Dummy [(parents quest_core::types::Basic)]: }
+	/// # quest_core::initialize();
+	/// # <Dummy as quest_core::types::ObjectType>::initialize().unwrap();
+	/// 
+	/// assert_eq!(
+	/// 	*Object::new(Dummy)
+	/// 		.call_attr_lit(&Literal::AT_BOOL, &[]).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(Basic.$@bool() == true);
+	/// ```
 	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
 		Ok(true.into())
 	}
@@ -20,7 +52,41 @@ impl Basic {
 	/// Converts `this` into a [`Text`](crate::types::Text).
 	///
 	/// This is simply a redirect to the `inspect` method.
-	#[inline]
+	///
+	/// # Arguments
+	/// Any arguments given are passed to the `inspect` method.
+	///
+	/// # Returns
+	/// The result of calling `this`'s `inspect` attribute with the given `args`.
+	///
+	/// # Errors
+	/// Any errors returned by calling `this`'s `inspect` attribute with the given `args` are returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # use quest_core::{impl_object_type, types::ObjectType};
+	/// use quest_core::{Object, Literal, types::Text};
+	/// #[derive(Debug, Clone, PartialEq)]
+	/// struct Dummy;
+	/// 
+	/// impl_object_type! { for Dummy [(parents quest_core::types::Basic)]:
+	/// 	"inspect" => function |_, _| Ok("hi friend".into())
+	/// }
+	/// # quest_core::initialize();
+	/// # <Dummy as quest_core::types::ObjectType>::initialize().unwrap();
+	/// 
+	/// assert_eq!(
+	/// 	*Object::new(Dummy)
+	/// 		.call_attr_lit(&Literal::AT_TEXT, &[]).unwrap()
+	/// 		.downcast::<Text>().unwrap(),
+	/// 	Text::new("hi friend")
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(Basic.$@text() == Basic.$inspect());
+	/// ```
 	pub fn qs_at_text<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(&Literal::INSPECT, args)
 	}
@@ -31,6 +97,47 @@ impl Basic {
 	///
 	/// # Arguments
 	/// 1. (required) The other object.
+	///
+	/// # Returns
+	/// Returns whether `this` [is identical](Object::is_identical) to the first argument.
+	///
+	/// # Errors
+	/// An [`ArgumentError`] is returned if no arguments are given.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # use quest_core::{impl_object_type, types::ObjectType};
+	/// use quest_core::{Object, Literal, types::Boolean};
+	/// #[derive(Debug, Clone, PartialEq)]
+	/// struct Dummy;
+	/// 
+	/// impl_object_type! { for Dummy [(parents quest_core::types::Basic)]: }
+	/// # quest_core::initialize();
+	/// # <Dummy as quest_core::types::ObjectType>::initialize().unwrap();
+	/// 
+	/// let obj = Object::new(Dummy);
+	///
+	/// // When they're not identical, they won't be equal.
+	/// assert_eq!(
+	/// 	*obj
+	/// 		.call_attr_lit(&Literal::EQL, vec![&Object::new(Dummy)]).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(false)
+	/// );
+	///
+	/// // when they're identical they're the same.
+	/// assert_eq!(
+	/// 	*obj
+	/// 		.call_attr_lit(&Literal::EQL, vec![&obj]).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(Basic == Basic);
+	/// ```
 	#[inline]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.try_arg(0)?;

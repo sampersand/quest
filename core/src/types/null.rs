@@ -79,11 +79,10 @@ impl Null {
 	///
 	/// # Rust Examples
 	/// ```rust
-	/// use quest_core::{Object, Args};
 	/// use quest_core::types::{Null, Text};
 	///
 	/// assert_eq!(
-	/// 	*Null::qs_inspect(&Null.into(), Args::default()).unwrap()
+	/// 	*Null::qs_inspect(&Null.into(), Default::default()).unwrap()
 	/// 		.downcast::<Text>().unwrap(),
 	/// 	Text::new("null")
 	/// );
@@ -113,11 +112,10 @@ impl Null {
 	///
 	/// # Rust Examples
 	/// ```rust
-	/// use quest_core::{Object, Args};
 	/// use quest_core::types::{Null, Boolean};
 	///
 	/// assert_eq!(
-	/// 	*Null::qs_at_bool(&Null.into(), Args::default()).unwrap()
+	/// 	*Null::qs_at_bool(&Null.into(), Default::default()).unwrap()
 	/// 		.downcast::<Boolean>().unwrap(),
 	/// 	Boolean::new(false)
 	/// );
@@ -144,11 +142,10 @@ impl Null {
 	///
 	/// # Rust Examples
 	/// ```rust
-	/// use quest_core::{Object, Args};
 	/// use quest_core::types::{Null, List};
 	///
 	/// assert!(
-	/// 	Null::qs_at_list(&Null.into(), Args::default()).unwrap()
+	/// 	Null::qs_at_list(&Null.into(), Default::default()).unwrap()
 	/// 		.downcast::<List>().unwrap()
 	/// 		.is_empty()
 	/// );
@@ -175,11 +172,10 @@ impl Null {
 	///
 	/// # Rust Examples
 	/// ```rust
-	/// use quest_core::{Object, Args};
 	/// use quest_core::types::{Null, Number};
 	///
 	/// assert_eq!(
-	/// 	*Null::qs_at_num(&Null.into(), Args::default()).unwrap()
+	/// 	*Null::qs_at_num(&Null.into(), Default::default()).unwrap()
 	/// 		.downcast::<Number>().unwrap(),
 	///	Number::ZERO
 	/// );
@@ -206,11 +202,10 @@ impl Null {
 	///
 	/// # Rust Examples
 	/// ```rust
-	/// use quest_core::{Object, Args};
 	/// use quest_core::types::{Null, Text};
 	///
 	/// assert_eq!(
-	/// 	*Null::qs_at_text(&Null.into(), Args::default()).unwrap()
+	/// 	*Null::qs_at_text(&Null.into(), Default::default()).unwrap()
 	/// 		.downcast::<Text>().unwrap(),
 	/// 	Text::new("null")
 	/// );
@@ -240,11 +235,10 @@ impl Null {
 	///
 	/// # Rust Examples
 	/// ```rust
-	/// use quest_core::{Object, Args};
 	/// use quest_core::types::Null;
 	///
 	/// assert!(
-	/// 	Null::qs_call(&Null.into(), Args::default()).unwrap()
+	/// 	Null::qs_call(&Null.into(), Default::default()).unwrap()
 	/// 		.downcast::<Null>()
 	/// 		.is_some()
 	/// );
@@ -271,7 +265,6 @@ impl Null {
 	///
 	/// # Rust Examples
 	/// ```rust
-	/// use quest_core::{Object, Args};
 	/// use quest_core::types::{Null, Boolean};
 	///
 	/// assert_eq!(

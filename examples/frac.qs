@@ -21,3 +21,9 @@ $Frac = {
 
 	__this__
 }();
+
+# Tests
+assert(Frac(3, 4).$@text() == "3/4");
+assert(Frac(1, 2) + Frac(3, 4) == Frac(5, 4));
+assert(Frac(1, 2) < Frac(3, 4));
+assert(Frac(1, 2).$@num() == 0.5);

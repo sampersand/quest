@@ -36,3 +36,7 @@ memoizing: 7
 memoizing: 6
 55
 */
+
+# Tests
+assert(fibonacci(5) == 5);
+assert(fibonacci(10) == 55);

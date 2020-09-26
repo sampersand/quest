@@ -36,3 +36,10 @@ $child = Child('Sammie', 'Boy');
 
 sam.$speak(); # Sam W says: hi
 child.$speak(); # Baby 'Sammie Boy' says: Waa! I want food!
+
+# Tests
+assert(sam.$@text() == "Sam W");
+assert(sam.$SAYS_WHAT == "hi");
+
+assert(child.$@text() == "Baby 'Sammie Boy'");
+assert(child.$SAYS_WHAT == "Waa! I want food!");

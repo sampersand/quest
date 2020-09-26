@@ -1,5 +1,3 @@
-
-
 # This is how you would represent classical "classes" within Quest by having
 # the "class" be its own object too.
 
@@ -36,3 +34,7 @@ disp(Person); # => Person
 disp(sam); # => Sam W
 disp(sam.$class == Person); # => true
 
+# Tests
+assert(Person.$@text() == "Person");
+assert(sam.$@text() == "Sam W");
+assert(sam.$class == Person);

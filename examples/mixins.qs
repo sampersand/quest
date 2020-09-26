@@ -20,4 +20,9 @@ $Person = {
 
 $john = Person("john doe", 20);
 $jane = Person("jane doe", 22);
-disp(john < jane); # => true
+
+disp(if(john > jane, $john, $jane).$name, "is older");
+
+# Tests
+assert(john < jane);
+assert("jane doe is older" == if(john > jane, $john, $jane).$name + " is older");
