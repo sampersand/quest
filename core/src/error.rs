@@ -55,11 +55,8 @@ impl Display for Error {
 			Self::KeyError(err) => Display::fmt(&err, f),
 			Self::TypeError(err) => Display::fmt(&err, f),
 			Self::ValueError(err) => Display::fmt(&err, f),
-			Self::AssertionFailed(Some(err)) => {
-				Display::fmt(&"assertion failed: ", f)?;
-				Display::fmt(&err, f)
-			},
-			Self::AssertionFailed(None) => Display::fmt("assertion failed", f),
+			Self::AssertionFailed(Some(err)) => write!(f, "assertion failed: {}", err),
+			Self::AssertionFailed(None) => write!(f, "assertion failed"),
 			Self::Boxed(err) => Display::fmt(&err, f),
 			Self::Return { to, obj } => write!(f, "uncaught return to {:?}: {:?}", to, obj)
 		}

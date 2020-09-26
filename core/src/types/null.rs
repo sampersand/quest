@@ -2,13 +2,17 @@ use crate::{Object, Args, Result};
 use crate::types::{Boolean, List, Number, Text};
 use std::fmt::{self, Display, Formatter};
 
+/// A type that represents "nothing" in Quest.
+///
+/// Functions that are only used for their side effects will generally return [`Null`], as well as certain situations
+/// where data cannot be accessed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Null;
 
 impl Display for Null {
 	#[inline]
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		Display::fmt("null", f)
+		f.write_str("null")
 	}
 }
 
@@ -57,36 +61,237 @@ impl From<Null> for Number {
 impl From<Null> for Text {
 	#[inline]
 	fn from(_: Null) -> Self {
-		const NULL_TEXT: Text = Text::const_new("null");
-		NULL_TEXT
+		Self::const_new("null")
 	}
 }
 
 impl Null {
+	/// Inspects `this`.
+	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// A [`Text`] object containing `"null"`.
+	///
+	/// # Errors
+	/// None.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Null, Text};
+	///
+	/// assert_eq!(
+	/// 	*Null::qs_inspect(&Null.into(), Args::default()).unwrap()
+	/// 		.downcast::<Text>().unwrap(),
+	/// 	Text::new("null")
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(null.$inspect() == "null");
+	/// ```
+	///
+	/// # See Also
+	/// - [`Null::qs_at_text`] -- Identical to this function.
 	pub fn qs_inspect(_: &Object, _: Args) -> Result<Object> {
 		Ok(Text::from(Self).into())
 	}
 
+	/// Converts this to a [`Boolean`].
+	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// The [`Boolean`] [`false`](Boolean::FALSE).
+	///
+	/// # Errors
+	/// None.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Null, Boolean};
+	///
+	/// assert_eq!(
+	/// 	*Null::qs_at_bool(&Null.into(), Args::default()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(false)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(null.$@bool() == false);
+	/// ```
 	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
 		Ok(Boolean::from(Self).into())
 	}
 
+	/// Converts this to a [`List`].
+	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// An empty [`List`].
+	///
+	/// # Errors
+	/// None.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Null, List};
+	///
+	/// assert!(
+	/// 	Null::qs_at_list(&Null.into(), Args::default()).unwrap()
+	/// 		.downcast::<List>().unwrap()
+	/// 		.is_empty()
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(null.$@list() == []);
+	/// ```
 	pub fn qs_at_list(_: &Object, _: Args) -> Result<Object> {
 		Ok(List::from(Self).into())
 	}
 
+	/// Converts this to a [`Number`].
+	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// The number [zero](Number::ZERO).
+	///
+	/// # Errors
+	/// None.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Null, Number};
+	///
+	/// assert_eq!(
+	/// 	*Null::qs_at_num(&Null.into(), Args::default()).unwrap()
+	/// 		.downcast::<Number>().unwrap(),
+	///	Number::ZERO
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(null.$@num() == 0);
+	/// ```
 	pub fn qs_at_num(_: &Object, _: Args) -> Result<Object> {
 		Ok(Number::from(Self).into())
 	}
 
+	/// Converts this to a [`Text`].
+	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// A [`Text`] object containing `"null"`.
+	///
+	/// # Errors
+	/// None.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Null, Text};
+	///
+	/// assert_eq!(
+	/// 	*Null::qs_at_text(&Null.into(), Args::default()).unwrap()
+	/// 		.downcast::<Text>().unwrap(),
+	/// 	Text::new("null")
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(null.$@text() == "null");
+	/// ```
+	///
+	/// # See Also
+	/// - [`Null::qs_inspect`] -- Identical to this function.
 	pub fn qs_at_text(_: &Object, _: Args) -> Result<Object> {
 		Ok(Text::from(Self).into())
 	}
 
+	/// Calls [`Null`], returning [`Null`] regardless of the provided arguments.
+	///
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// A [`Null`] regardless of the arguments given.
+	///
+	/// # Errors
+	/// None.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::Null;
+	///
+	/// assert!(
+	/// 	Null::qs_call(&Null.into(), Args::default()).unwrap()
+	/// 		.downcast::<Null>()
+	/// 		.is_some()
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(null() == null);
+	/// ```
 	pub fn qs_call(_: &Object, _: Args) -> Result<Object> {
 		Ok(Self.into())
 	}
 
+	/// Checks to see if the right-hand-side is a [`Null`].
+	///
+	/// # Arguments
+	/// 1. (required) The argument to check to see if it's null.
+	///
+	/// # Returns
+	/// [true](Boolean::TRUE) if the first argument is [`Null`], [false](Boolean::FALSE) otherwise.
+	///
+	/// # Errors
+	/// Returns an [`ArgumentError`] if an argument isn't provided.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Null, Boolean};
+	///
+	/// assert_eq!(
+	/// 	*Null::qs_eql(&Null.into(), vec![&Null.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	///
+	/// assert_eq!(
+	/// 	*Null::qs_eql(&Null.into(), vec![&false.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(false)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(null == null);
+	/// assert(null != false);
+	/// ```
 	pub fn qs_eql(_: &Object, args: Args) -> Result<Object> {
 		Ok(args.try_arg(0)?.is_a::<Self>().into())
 	}

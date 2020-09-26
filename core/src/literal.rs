@@ -1,5 +1,3 @@
-//! The list of literal attributes used within quest.
-
 use std::borrow::Borrow;
 use std::fmt::{self, Display, Formatter};
 
@@ -9,11 +7,31 @@ use std::fmt::{self, Display, Formatter};
 pub struct Literal(&'static str);
 
 impl Literal {
+	/// Creates a new [`Literal`].
+	///
+	/// # Examples
+	/// ```rust
+	/// use quest_core::Literal;
+	///
+	/// let foo = Literal::new("foo");
+	///
+	/// assert_eq!(foo, "foo");
+	/// ```
 	#[inline]
 	pub const fn new(lit: &'static str) -> Self {
 		Self(lit)
 	}
 
+	/// Returns the `&'static str` that was used to create `self`.
+	///
+	/// # Examples
+	/// ```rust
+	/// use quest_core::Literal;
+	///
+	/// let foo = Literal::new("foo");
+	///
+	/// assert_eq!("foo", foo.into_inner());
+	/// ```
 	#[inline]
 	pub const fn into_inner(self) -> &'static str {
 		self.0
@@ -55,7 +73,6 @@ impl PartialEq<str> for Literal {
 	}
 }
 
-
 impl PartialEq<&str> for Literal {
 	#[inline]
 	fn eq(&self, rhs: &&str) -> bool {
@@ -72,6 +89,8 @@ impl From<Literal> for crate::Object {
 
 impl Borrow<Literal> for &'static str {
 	fn borrow(&self) -> &Literal {
+		// SAFETY: We ensure that `Literal` and `&'static str` have the same layout by
+		// the `#[repr(transparent)]`. Thus, this is a valid conversion.
 		unsafe {
 			&*(self as *const Self as *const Literal)
 		}

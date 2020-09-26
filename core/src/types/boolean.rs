@@ -241,7 +241,7 @@ impl Boolean {
 	/// None.
 	///
 	/// # Returns
-	/// A [`Text`] object of containing either `true` or `false`.
+	/// A [`Text`] object containing either `true` or `false`.
 	///
 	/// # Errors
 	/// If `this` isn't a [`Boolean`], a [`TypeError::WrongType`](crate::error::TypeError::WrongType) is returned.
