@@ -589,7 +589,7 @@ impl List {
 			let ele = args.try_arg(2)?.call_downcast::<Self>()?.clone();
 			let mut this = this.try_downcast_mut::<Self>()?;
 
-			if this.set_rng(pos, end, ele.0.clone()).is_some() {
+			if this.set_rng(pos, end, ele.0).is_some() {
 				Err(KeyError::OutOfBounds { idx: pos, len: this.len() }.into())
 			} else {
 				// Ok(this.0[this.0.len() - 1].clone())

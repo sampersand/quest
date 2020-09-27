@@ -28,12 +28,10 @@ pub fn correct_index(idx: isize, len: usize) -> Result<usize, IndexError> {
 		} else {
 			Err(IndexError::TooNegative)
 		}
+	} else if (idx as usize) < len {
+		Ok(idx as usize)
 	} else {
-		if (idx as usize) < len {
-			Ok(idx as usize)
-		} else {
-			Err(IndexError::TooPositive)
-		}
+		Err(IndexError::TooPositive)
 	}
 }
 
