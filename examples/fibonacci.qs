@@ -1,27 +1,31 @@
-# A fibonacci function that keeps an internal memo of previously computed values.
+# A Fibonacci function that keeps an internal memo of previously computed
+# values.
 # 
 # Note that we immediately call this block after its definition: `fibonacci` is
 # set to the return value of the block.
-$fibonacci = {
+Number.$fibonacci = {
 	# initialize memo to a blank object.
 	$memo = { __this__ }();
-	# then assign some values to it.
+
+	# Then assign some starting, initial values.
 	memo.0 = 0;
 	memo.1 = 1;
 
-	# This is the "actual" fibonacci function that will be run when `fibonacci` is called.
+	# This is the "actual" fibonacci function that will be run when `fibonacci
+	# is called. We still have access to the enclosing scope, which allows us to
+	# hide the `memo` object so no one else can interact with it.
 	{
-		if(memo.$__has_attr__(_1), {
-			memo._1
+		if(memo.$__has_attr__(_0), {
+			memo._0
 		}, {
-			disp("memoizing:", _1);
-			memo._1 = fibonacci(_1 - 1) + fibonacci(_1 - 2)
+			disp("memoizing:", _0);
+			memo._0 = (_0 - 1).$fibonacci() + (_0 - 2).$fibonacci()
 		})
 	}
 }();
 
-disp(fibonacci(5));
-disp(fibonacci(10));
+disp(5.$fibonacci());
+disp(10.$fibonacci());
 
 /* => 
 memoizing: 5
@@ -38,5 +42,5 @@ memoizing: 6
 */
 
 # Tests
-assert(fibonacci(5) == 5);
-assert(fibonacci(10) == 55);
+assert(5.$fibonacci() == 5);
+assert(10.$fibonacci() == 55);

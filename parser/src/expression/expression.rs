@@ -1,13 +1,13 @@
 use crate::{Result, Block};
 use crate::expression::{Constructable, Constructor, Executable, BoundOperator};
 use crate::stream::{Context, Contexted};
-use crate::token::{Token, Primative, Operator, ParenType};
+use crate::token::{Token, Primitive, Operator, ParenType};
 use quest_core::{Object, Args};
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expression {
-	Primative(Primative),
+	Primitive(Primitive),
 	Block(Block),
 	Operator(BoundOperator),
 	FunctionCall(Box<Self>, Block)
@@ -16,7 +16,7 @@ pub enum Expression {
 impl Display for Expression {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		match self {
-			Self::Primative(prim) => Display::fmt(prim, f),
+			Self::Primitive(prim) => Display::fmt(prim, f),
 			Self::Block(block) => Display::fmt(block, f),
 			Self::Operator(op) => Display::fmt(op, f),
 			Self::FunctionCall(this, block) => write!(f, "{}{}", this, block)
@@ -38,7 +38,7 @@ fn call_function(this: &Expression, block: &Block) -> quest_core::Result<Object>
 impl Executable for Expression {
 	fn execute(&self) -> quest_core::Result<Object> {
 		match self {
-			Self::Primative(prim) => prim.execute(),
+			Self::Primitive(prim) => prim.execute(),
 			Self::Block(block) => block.execute(),
 			Self::Operator(op) => op.execute(),
 			Self::FunctionCall(this, block) => call_function(&this, &block)
@@ -46,10 +46,10 @@ impl Executable for Expression {
 	}
 }
 
-impl From<Primative> for Expression {
+impl From<Primitive> for Expression {
 	#[inline]
-	fn from(prim: Primative) -> Self {
-		Self::Primative(prim)
+	fn from(prim: Primitive) -> Self {
+		Self::Primitive(prim)
 	}
 }
 
@@ -75,7 +75,7 @@ impl Constructable for Expression {
 	where
 		C: Iterator<Item=Result<Token>> + super::PutBack + Contexted
 	{
-		if let Some(prim) = Primative::try_construct_primary(ctor)? {
+		if let Some(prim) = Primitive::try_construct_primary(ctor)? {
 			Ok(Some(prim.into()))
 		} else if let Some(oper) = BoundOperator::try_construct_primary(ctor)? {
 			Ok(Some(oper.into()))

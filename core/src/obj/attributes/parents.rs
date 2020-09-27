@@ -138,7 +138,8 @@ impl Parents {
 		match *self.0.read() {
 			Inner::None => f([].iter()),
 			Inner::Builtin(ref parents) => f(parents.iter()),
-			Inner::Object(ref object) => object.call_downcast::<List>().and_then(|l| f(l.iter()))
+			Inner::Object(ref object)
+			=> object.call_downcast::<List>().and_then(|l| f(l.as_ref().iter()))
 		}
 	}
 

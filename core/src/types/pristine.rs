@@ -61,9 +61,9 @@ impl Pristine {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(  == 1.$inspect() == "1" );
-	/// assert(  == 2.$inspect() == '"2"' );
-	/// assert(  == ["2", 3].$inspect() == '["2", 3]' );
+	/// assert(1.$inspect() == "1");
+	/// assert(2.$inspect() == '"2"');
+	/// assert(["2", 3].$inspect() == '["2", 3]');
 	/// ```
 	///
 	/// [`Text`]: crate::types::Text

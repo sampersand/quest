@@ -15,13 +15,12 @@ impl Display for StackPos {
 }
 
 impl Executable for StackPos {
-	#[inline]
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 		let stack = Binding::stack();
 		let len = stack.len();
 		match quest_core::utils::correct_index(self.0, len) {
-			Some(idx) => Ok(stack[idx].clone().into()),
-			None => Err(quest_core::error::KeyError::OutOfBounds{ idx: self.0, len }.into())
+			Ok(idx) => Ok(stack[idx].clone().into()),
+			_ => Err(quest_core::error::KeyError::OutOfBounds{ idx: self.0, len }.into())
 		}
 	}
 }

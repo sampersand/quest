@@ -10,12 +10,11 @@ Quest is an "non-typed" language that is designed to allow for efficient code re
 # Features
 Quest supports everything you'd expect from a programming language and more!
 - No "keywords"
-- No syntactic distinction between classes, functions, and hashmaps.
+- No syntactic distinction between classes, functions, and maps/dicts/hashmaps.
 - No distinction between [l- and r-values](https://en.wikipedia.org/wiki/Value_%28computer_scienc%29#lrvalue)
-- _Everything_ is fair game, including methods defined on primatives.
+- _Everything_ is fair game, including methods defined on primitives.
 
 # Installation
-
 1. Clone the repo
 2. If you haven't already, [install Rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 3. Run `$ cargo build` to create the project
@@ -26,9 +25,9 @@ If all arguments are omitted a REPL instance will be launched.
 
 # Examples
 
-See the `examples` folder for some examples of what Quest can do!
-## Basic Examples
+See the `examples` folder for some examples of what Quest can do! Most of them expect that you've read at least
 
+## Basic Examples
 ```quest
 # Text can either be single or double quotes: they're identical (like python).
 $where = "world";
@@ -52,6 +51,12 @@ disp("4 squared is:", { _1 ** 2 }(4)); # => 4 squared is: 16
 # You can assign anonymous functions to variables too:
 $square = { _1 ** 2 };
 disp("4 squared is:", square(4)); # => 4 squared is: 16
+
+# You can even just straight-up add them to builtin classes:
+# The `_0` argument is the the object that this method was called on, akin to
+# `self` or `this` in other languages.
+Number.$square = { _0 ** 2 };
+disp("4 squared is:", 4.$square());
 ```
 
 Maps are created by simply returning the result of an executed block of code:
@@ -59,9 +64,9 @@ Maps are created by simply returning the result of an executed block of code:
 $traffic_lights = {
 	# A blank scope is created whenever a block is called.
 
-	"red" = 'stop';
-	"green" = "go";
-	"yellow" = "go, if you can";
+	__this__."red" = 'stop';
+	__this__."green" = "go";
+	__this__."yellow" = "go, if you can";
 
 	__this__ # Return the current scope
 }();

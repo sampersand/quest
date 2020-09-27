@@ -14,19 +14,60 @@ pub fn hash<T: std::hash::Hash + 'static>(data: &T) -> u64 {
 	hasher.finish()
 }
 
-pub fn correct_index(idx: isize, len: usize) -> Option<usize> {
-	if !idx.is_negative() {
-		if (idx as usize) < len {
-			Some(idx as usize)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum IndexError {
+	TooPositive,
+	TooNegative
+}
+
+pub fn correct_index(idx: isize, len: usize) -> Result<usize, IndexError> {
+	if idx.is_negative() {
+		let idx = !idx as usize + 1;
+		if idx <= len {
+			Ok(len - idx)
 		} else {
-			None
+			Err(IndexError::TooNegative)
 		}
 	} else {
-		let idx = (-idx) as usize;
-		if idx <= len {
-			Some(len - idx)
+		if (idx as usize) < len {
+			Ok(idx as usize)
 		} else {
-			None
+			Err(IndexError::TooPositive)
 		}
 	}
+}
+
+#[test]
+fn test_correct_index() {
+	assert_eq!(correct_index(2, 0), Err(IndexError::TooPositive));
+	assert_eq!(correct_index(2, 1), Err(IndexError::TooPositive));
+	assert_eq!(correct_index(2, 2), Err(IndexError::TooPositive));
+
+	assert_eq!(correct_index(1, 0), Err(IndexError::TooPositive));
+	assert_eq!(correct_index(1, 1), Err(IndexError::TooPositive));
+	assert_eq!(correct_index(1, 2), Ok(1));
+
+	assert_eq!(correct_index(0, 0), Err(IndexError::TooPositive));
+	assert_eq!(correct_index(0, 1), Ok(0));
+	assert_eq!(correct_index(0, 2), Ok(0));
+
+	assert_eq!(correct_index(-1, 0), Err(IndexError::TooNegative));
+	assert_eq!(correct_index(-1, 1), Ok(0));
+	assert_eq!(correct_index(-1, 2), Ok(1));
+
+	assert_eq!(correct_index(-2, 0), Err(IndexError::TooNegative));
+	assert_eq!(correct_index(-2, 1), Err(IndexError::TooNegative));
+	assert_eq!(correct_index(-2, 2), Ok(0));
+
+	assert_eq!(correct_index(-3, 0), Err(IndexError::TooNegative));
+	assert_eq!(correct_index(-3, 1), Err(IndexError::TooNegative));
+	assert_eq!(correct_index(-3, 2), Err(IndexError::TooNegative));
+}
+
+#[test]
+fn test_correct_index_edge_cases() {
+	assert_eq!(correct_index(0, usize::MAX), Ok(0));
+	assert_eq!(correct_index(-1, usize::MAX), Ok(usize::MAX - 1));
+	assert_eq!(correct_index(isize::MAX, usize::MAX), Ok(isize::MAX as usize));
+	assert_eq!(correct_index(isize::MIN, usize::MAX), Ok(usize::MAX - (!isize::MIN as usize + 1)));
 }

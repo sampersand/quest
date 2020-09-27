@@ -1,6 +1,7 @@
-use crate::{Object, Args, Literal};
+use crate::{Object, Args, Literal, error::KeyError};
+use crate::utils::{correct_index, IndexError};
 use crate::types::{Convertible, Text, Boolean, Number};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::iter::FromIterator;
 use std::fmt::{self, Debug, Formatter};
 
@@ -8,15 +9,8 @@ use std::fmt::{self, Debug, Formatter};
 ///
 /// Lists are what you'd expect from other languages: They start at 0, you can index
 /// from the end (eg `list.(-1)` is the same as `list.(list.$len() - 1))`), etc.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct List(Vec<Object>);
-
-impl Default for List {
-	#[inline]
-	fn default() -> Self {
-		Self(Vec::default())
-	}
-}
 
 impl Debug for List {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -48,8 +42,8 @@ impl FromIterator<Object> for List {
 impl List {
 	/// Create a new list.
 	#[inline]
-	pub fn new<L: Into<Vec<Object>>>(list: L) -> Self {
-		Self(list.into())
+	pub fn new(list: impl IntoIterator<Item=Object>) -> Self {
+		list.into_iter().collect()
 	}
 
 	/// Get the list's length
@@ -66,7 +60,7 @@ impl List {
 
 	/// Get an [`Iterator`](std::iter::Iterator) over elements in this list.
 	#[inline]
-	pub fn iter(&self) -> std::slice::Iter<Object> {
+	pub fn iter(&self) -> impl Iterator<Item=&Object> {
 		self.0.iter()
 	}
 
@@ -85,44 +79,71 @@ impl List {
 	/// Get either a single element or a range of elements.
 	///
 	/// Quest supports negative indexing, which allows you to index from the end of the list.
-	pub fn get(&self, idx: isize) -> Object {
-		correct_index(idx, self.len())
-			.map(|idx| self.0[idx].clone())
-			.unwrap_or_default()
+	pub fn get(&self, index: isize) -> Option<&Object> {
+		correct_index(index, self.len())
+			.map(|index| &self.0[index])
+			.ok()
 	}
 
 	/// Get either a single element or a range of elements.
-	pub fn get_rng(&self, start: isize, stop: isize) -> Object {
-		let start =
-			if let Some(start) = correct_index(start, self.len()) {
-				start
-			} else {
-				return Object::default()
+	pub fn get_rng(&self, start: isize, stop: isize) -> Option<&[Object]> {
+		let start = correct_index(start, self.len()).ok()?;
+		let stop = 
+			match correct_index(stop, self.len()) {
+				Ok(stop) => stop + 1,
+				Err(IndexError::TooPositive) => self.len(), // saturate to our biggest value.
+				Err(IndexError::TooNegative) => return None
 			};
 
-		let stop = correct_index(stop, self.len()).map(|x| x + 1).unwrap_or_else(|| self.len());
-
 		if stop < start {
-			Object::default()
+			None
 		} else {
-			self.0[start..stop].to_owned().into()
+			Some(&self.0[start..stop])
 		}
 	}
 
 	/// Sets a single element in a list
-	pub fn set(&mut self, index: usize, ele: Object)  {
-		if self.len() <= index {
-			self.0.resize_with(index + 1, Object::default);
+	#[must_use="it's possible for the index to be out of bounds."]
+	pub fn set(&mut self, index: isize, ele: Object) -> Option<Object> {
+		match correct_index(index, self.len()) {
+			Ok(index) => {
+				self.0[index] = ele;
+				None
+			},
+			Err(IndexError::TooPositive) => {
+				let index = index as usize;
+				self.0.resize_with(index, Default::default);
+				self.0.push(ele);
+				None
+			},
+			Err(IndexError::TooNegative) => Some(ele)
 		}
-		self.0.as_mut_slice()[index] = ele;
 	}
 
 	/// Sets a range of elements within the list.
 	///
 	/// This can be used to delete sections of the list (set them to an empty list), and also
 	/// resize lists.
-	pub fn set_rng(&self, _start: isize, _stop: isize, _list: Self) {
-		unimplemented!()
+	pub fn set_rng(&mut self, start: isize, stop: isize, eles: Vec<Object>) -> Option<Vec<Object>> {
+		let start = correct_index(start, self.len()).ok()?;
+		let stop = 
+			match correct_index(stop, self.len()) {
+				Ok(stop) => stop + 1,
+				Err(IndexError::TooPositive) => self.len(), // saturate to our biggest value.
+				Err(IndexError::TooNegative) => return Some(eles)
+			};
+
+		if stop < start {
+			return Some(eles);
+		}
+
+		if stop >= self.len() {
+			self.0.resize_with(stop, Default::default);
+		}
+
+		self.0.splice(start..stop, eles);
+
+		None
 	}
 
 	/// Combine a list's elements into a [`Text`], separated by `joiner`.
@@ -200,7 +221,7 @@ impl From<List> for Vec<Object> {
 impl From<Vec<Object>> for List {
 	#[inline]
 	fn from(list: Vec<Object>) -> Self {
-		Self::new(list)
+		Self(list)
 	}
 }
 
@@ -354,23 +375,6 @@ impl List {
 		}
 
 		Ok(())
-	}
-}
-
-fn correct_index(idx: isize, len: usize) -> Option<usize> {
-	if !idx.is_negative() {
-		if (idx as usize) < len {
-			Some(idx as usize)
-		} else {
-			None
-		}
-	} else {
-		let idx = (-idx) as usize;
-		if idx <= len {
-			Some(len - idx)
-		} else {
-			None
-		}
 	}
 }
 
@@ -534,7 +538,7 @@ impl List {
 	/// assert(list.$get(1, Number::$INF) == [2, 3, false]);
 	/// ```
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
-		let start = isize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
+		let start: isize = args.try_arg(0)?.call_downcast::<Number>().map(|n| *n)?.try_into()?;
 
 		let stop = 
 			args.arg(1)
@@ -545,7 +549,13 @@ impl List {
 
 		let this = this.try_downcast::<Self>()?;
 
-		Ok(stop.map(|stop| this.get_rng(start, stop)).unwrap_or_else(|| this.get(start)))
+		if let Some(stop) = stop {
+			Ok(this.get_rng(start, stop)
+				.map(|x| Self::new(x.to_owned()).into())
+				.unwrap_or_default())
+		} else {
+			Ok(this.get(start).cloned().unwrap_or_default())
+		}
 	}
 
 	/// Sets an element or range of the list to an element or list.
@@ -563,17 +573,30 @@ impl List {
 	/// <TODO>
 	/// ```
 	pub fn qs_set(this: &Object, args: Args) -> crate::Result<Object> {
-		if args.len() != 2 {
-			todo!("non-single-index assigning");
+		let pos: isize = args.try_arg(0)?.call_downcast::<Number>().map(|n| *n)?.try_into()?;
+
+		if args.len() == 2 {
+			let ele = args.arg(1).unwrap().clone();
+			let mut this = this.try_downcast_mut::<Self>()?;
+
+			if this.set(pos, ele.clone()).is_some() {
+				Err(KeyError::OutOfBounds { idx: pos, len: this.len() }.into())
+			} else {
+				Ok(ele)
+			}
+		} else {
+			let end: isize = args.try_arg(1)?.call_downcast::<Number>().map(|n| *n)?.try_into()?;
+			let ele = args.try_arg(2)?.call_downcast::<Self>()?.clone();
+			let mut this = this.try_downcast_mut::<Self>()?;
+
+			if this.set_rng(pos, end, ele.0.clone()).is_some() {
+				Err(KeyError::OutOfBounds { idx: pos, len: this.len() }.into())
+			} else {
+				// Ok(this.0[this.0.len() - 1].clone())
+				// TODO: return type
+				Ok(Default::default())
+			}
 		}
-
-		// also TODO: negative indicies
-		let pos = usize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
-		let ele = args.try_arg(1)?.clone();
-
-		this.try_downcast_mut::<Self>()?.set(pos, ele);
-
-		Ok(this.clone())
 	}
 
 	/// Combine all elements into a [`Text`], optionally separated by a deliminator.
