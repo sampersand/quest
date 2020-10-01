@@ -1,5 +1,5 @@
 # Objects, Classes, and Maps (Part 2)
-In the [part 1](objects-and-maps-part1.md), we explored how objects, classes, mixins (and interfaces), and maps were all fundamentally able to be represented by the same construct within Quest (with the help of `__parents__`).
+In the [part 1](docs/objects-and-maps-part1.md), we explored how objects, classes, mixins (and interfaces), and maps were all fundamentally able to be represented by the same construct within Quest (with the help of `__parents__`).
 
 
 ## A Quick tl;dr of Part 1
@@ -179,4 +179,4 @@ Number.$__parents__.$push(Greeter);
 As you can see, mixins can be used in the exact same way classes are: You simply add them to the list of parents, and they'll automatically become part of the hierarchy
 
 # Final Remarks
-Whew, that article was much longer than I intended it to be. [Part 3](objects-and-maps-part3) discusses the `{ ...; :0 }()` syntax, explaining why _functions_ and objects can be constructed with the same syntax!
+Whew, that article was much longer than I intended it to be. [Part 3](docs/objects-and-maps-part3) discusses the `{ ...; :0 }()` syntax, explaining why _functions_ and objects can be constructed with the same syntax!
