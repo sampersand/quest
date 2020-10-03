@@ -17,4 +17,5 @@ take_mut = "0.2"
 mimalloc = { version = "0.1", optional = true }
 ureq = '*'
 bitflags = "1.2"
+tracing = "0.1"
 # tracing = "0.1.19"

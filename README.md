@@ -244,5 +244,28 @@ disp(12.$__has_attr__($cube)); # => false
 ## More
 See the `examples` folder for more examples of what Quest can do!
 
+There's also some stuff I've written up in the `docs` that goes more into depth.
+
 ## TODO
 I should probably add more discussion of Quest's features.
+
+
+
+# Misc
+## Formal syntax Specification
+```
+
+code := (expr;)* expr
+expr := primary | expr <binary-op> expr | function_call
+primary := <unary-op> expr | block | <literal>
+function_call := expr block
+block := '(' block_inner ')' | '[' block_inner ']' | '{' block_inner '}'
+block_inner := (line;)* (line)?
+line := (expr,)* (expr)?
+```
+
+
+
+
+
+

@@ -8,3 +8,6 @@ edition = "2018"
 quest-core = { path = "../core" }
 quest-parser = { path = "../parser" }
 clap = "~3.0.0-beta.1"
+tracing = "0.1"
+tracing-subscriber = "0.2"
+tracing-tree = "0.1"

@@ -47,6 +47,14 @@ impl Binding {
 	where
 		F: FnOnce(&Binding) -> crate::Result<Object>,
 	{
+		let span = 
+			if let Some(ref parent) = parent {
+				tracing::trace_span!("stackframe", id=%parent.id())
+			} else {
+				tracing::trace_span!("stackframe")
+			};
+		let _guard = span.enter();
+
 		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
 		impl Drop for StackGuard<'_> {
 			#[inline]
@@ -82,9 +90,8 @@ impl Binding {
 				stack.push(binding.clone());
 			};
 
-
 			let _guard = StackGuard(stack, &binding);
-			
+ 			
 			match func(&binding) {
 				Err(crate::Error::Return { to, obj }) if to.as_ref().eq_obj(binding.as_ref())?
 					=> Ok(obj),
