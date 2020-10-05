@@ -37,10 +37,16 @@ fn object_to_string(object: &Object) -> crate::Result<String> {
 impl Kernel {
 	/// Checks the first attribute
 	pub fn qs_if(_: &Object, args: Args) -> crate::Result<Object> {
+		let span = tracing::debug_span!("if");
+		let _guard = span.enter();
+
 		let cond = args.try_arg(0)?;
 		let if_true = args.try_arg(1)?;
+		let is_truthy = is_object_truthy(cond)?;
 
-		if is_object_truthy(cond)? {
+		tracing::debug!(?cond, %is_truthy);
+
+		if is_truthy {
 			if_true.call_attr_lit(&Literal::CALL, &[])
 		} else if let Some(if_false) = args.arg(2) {
 			if_false.call_attr_lit(&Literal::CALL, &[])
@@ -62,6 +68,9 @@ impl Kernel {
 	}
 
 	pub fn qs_while(_: &Object, args: Args) -> crate::Result<Object> {
+		let span = tracing::debug_span!("while");
+		let _guard = span.enter();
+
 		let cond = args.try_arg(0)?;
 		let body = args.try_arg(1)?;
 		let mut result = Object::default();
@@ -276,7 +285,7 @@ mod tests {
 			}
 		}
 
-		crate::initialize();
+		crate::init();
 
 		assert_exists_eq!(
 			"true" Boolean, Boolean::new(true),
@@ -288,7 +297,7 @@ mod tests {
 	#[test]
 	fn classes_exist() {
 		use crate::types::*;
-		crate::initialize();
+		crate::init();
 
 		macro_rules! assert_mapping_eq {
 			($($key:literal $class:ty),*) => {

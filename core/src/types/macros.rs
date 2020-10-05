@@ -4,7 +4,7 @@ macro_rules! assert_call_idempotent {
 	(@INTO $_ty:ident $into:ty) => { $into };
 
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*) $( $(-> $into:ty)?, $expected:expr)?) => {
-		crate::initialize();
+		crate::init();
 
 		let old = Object::from($this);
 		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
@@ -20,7 +20,7 @@ macro_rules! assert_call_idempotent {
 #[cfg(test)]
 macro_rules! assert_call_non_idempotent {
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*) $( $(-> $into:ty)?, $expected:expr)?) => {{
-		crate::initialize();
+		crate::init();
 
 		let old = Object::from($this);
 		let new = $ty::$fn(&old, args!($($args),*)).unwrap();
@@ -37,7 +37,7 @@ macro_rules! assert_call_non_idempotent {
 #[cfg(test)]
 macro_rules! call_unwrap {
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*) $(-> $ret:ty)?; $block:expr) => {{
-		crate::initialize();
+		crate::init();
 		#[allow(unused_imports)]
 		use crate::types::*;
 
@@ -50,7 +50,7 @@ macro_rules! call_unwrap {
 #[cfg(test)]
 macro_rules! call_unwrap_err {
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*)) => {{
-		crate::initialize();
+		crate::init();
 		#[allow(unused_imports)]
 		use crate::types::*;
 
@@ -84,7 +84,7 @@ macro_rules! assert_call_eq {
 #[cfg(test)]
 macro_rules! assert_call_missing_parameter {
 	($ty:ident::$fn:ident($this:expr $(, $args:expr)*), $idx:expr $(, len=$len:pat)?) => {{
-		crate::initialize();
+		crate::init();
 
 		assert_matches!(
 			$ty::$fn(&$this.into(), args!($($args),*)),
