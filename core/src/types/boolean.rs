@@ -370,9 +370,9 @@ impl Boolean {
 	/// # Quest Examples
 	/// ```quest
 	/// $obj = true;
-	/// $dup = obj.$dup();
+	/// $dup = obj.$clone();
 	/// assert(obj == dup);
-	/// assert(obj.$__id__ != dup.$__id__);
+	/// assert(obj.$__id__ == dup.$__id__);
 	/// ```
 	#[instrument(level="trace", skip(this), fields(self = ?this))]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
@@ -382,12 +382,42 @@ impl Boolean {
 	/// See if a `this` is equal to the first argument.
 	///
 	/// Unlike most methods, the first argument is not implicitly converted to a [`Boolean`] first. This will return
-	/// `true` if 
+	/// `true` only if both `this` and the first argument are [`Boolean`]s and have the same value.
 	///
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
 	///
-	/// # 
+	/// # Returns
+	/// [`true`](Boolean::TRUE) if `this` and the first arg are both `true` or both `false`, [`false`](Boolean::FALSE)
+	/// otherwise.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], a [`TypeError::WrongType`](crate::error::TypeError::WrongType) is returned.
+	/// If `args` is empty, a [`KeyError::OutOfBounds`](crate::error::KeyError::OutOfBounds) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_eql(&true.into(), vec![&true.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_eql(&true.into(), vec![&1.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(false)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(true == true);
+	/// assert(true != 1);
+	/// ```
 	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.downcast::<Self>();
@@ -396,20 +426,83 @@ impl Boolean {
 		Ok(rhs.map_or(false, |rhs| *this == *rhs).into())
 	}
 
-	/// Compares `this` to the first argument.
+	/// Compares `this` to the first argument, returning [`Null`](crate::types::Null) if the argument isn't a
+	/// [`Boolean`].
 	///
 	/// # Arguments
-	/// 1. (required, `@bool`) The other object to compare against.
+	/// 1. (required) The other object to compare against.
+	///
+	/// # Returns
+	/// If the first argument isn't able to be converted into a [`Boolean`], [`Null`](crate::types::Null) is returned.
+	/// Otherwise, `-1` is returned if `self` is false and the converted first argument is true, `1` if `self` is true
+	/// and the converted argument is false, and `0` otherwise.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], a [`TypeError::WrongType`](crate::error::TypeError::WrongType) is returned.
+	/// If `args` is empty, a [`KeyError::OutOfBounds`](crate::error::KeyError::OutOfBounds) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # quest_core::init();
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::{Boolean, Number, Null};
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_cmp(&false.into(), vec![&true.into()].into()).unwrap()
+	/// 		.downcast::<Number>().unwrap(),
+	/// 	Number::new(-1)
+	/// );
+	///
+	/// assert!(
+	/// 	Boolean::qs_cmp(&true.into(), vec![&"a".into()].into()).unwrap()
+	/// 		.downcast::<Null>()
+	/// 		.is_some(),
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(true == true);
+	/// assert(true != 1);
+	/// ```
 	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.try_arg(0)?.call_downcast::<Self>();
+		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
 		// Ok(rhs.map(|rhs| this.cmp(&rhs).into()).unwrap_or_default())
-		Ok(rhs.ok().map_or_else(Default::default, |rhs| this.cmp(&rhs).into()))
+		Ok(rhs.map_or_else(Default::default, |rhs| this.cmp(&rhs).into()))
 	}
 
 	/// Logical NOT of `this`.
+	/// 
+	/// # Arguments
+	/// None.
+	///
+	/// # Returns
+	/// The logical negation of `this`.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], a [`TypeError::WrongType`](crate::error::TypeError::WrongType) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # quest_core::init();
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_not(&false.into(), vec![].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(!true == false);
+	/// assert(!false == true);
+	/// ```
 	#[instrument(level="trace", skip(this), fields(self = ?this))]
 	pub fn qs_not(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
@@ -421,6 +514,39 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
+	///
+	/// # Returns
+	/// `true` if both the first argument (after calling `@bool`) and `this` are `true`. `false` otherwise.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], or the first argument can't be converted to one, a [`TypeError::WrongType`](
+	/// crate::error::TypeError::WrongType) is returned.
+	/// If `args` is empty, a [`KeyError::OutOfBounds`](crate::error::KeyError::OutOfBounds) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # quest_core::init();
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_bitand(&true.into(), vec![&true.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_bitand(&true.into(), vec![&0.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(false)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(true & true == true);
+	/// assert(true & 0 == false);
+	/// ```
 	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
@@ -448,6 +574,39 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
+	///
+	/// # Returns
+	/// `true` if either the first argument (after calling `@bool`) or `this` are `true`. `false` otherwise.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], or the first argument can't be converted to one, a [`TypeError::WrongType`](
+	/// crate::error::TypeError::WrongType) is returned.
+	/// If `args` is empty, a [`KeyError::OutOfBounds`](crate::error::KeyError::OutOfBounds) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # quest_core::init();
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_bitor(&false.into(), vec![&true.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_bitor(&false.into(), vec![&0.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(false)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(false | true == true);
+	/// assert(false | 0 == false);
+	/// ```
 	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
@@ -475,6 +634,39 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
+	///
+	/// # Returns
+	/// `true` if exactly one of the first argument (after calling `@bool`) and `this` are `true`. `false` otherwise.
+	///
+	/// # Errors
+	/// If `this` isn't a [`Boolean`], or the first argument can't be converted to one, a [`TypeError::WrongType`](
+	/// crate::error::TypeError::WrongType) is returned.
+	/// If `args` is empty, a [`KeyError::OutOfBounds`](crate::error::KeyError::OutOfBounds) is returned.
+	///
+	/// # Rust Examples
+	/// ```rust
+	/// # quest_core::init();
+	/// use quest_core::{Object, Args};
+	/// use quest_core::types::Boolean;
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_bitxor(&false.into(), vec![&true.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(true)
+	/// );
+	///
+	/// assert_eq!(
+	/// 	*Boolean::qs_bitxor(&false.into(), vec![&0.into()].into()).unwrap()
+	/// 		.downcast::<Boolean>().unwrap(),
+	/// 	Boolean::new(false)
+	/// );
+	/// ```
+	///
+	/// # Quest Examples
+	/// ```quest
+	/// assert(false ^ true == true);
+	/// assert(false ^ false == false);
+	/// ```
 	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;

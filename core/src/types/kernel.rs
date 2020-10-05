@@ -285,7 +285,7 @@ mod tests {
 			}
 		}
 
-		crate::initialize();
+		crate::init();
 
 		assert_exists_eq!(
 			"true" Boolean, Boolean::new(true),
@@ -297,7 +297,7 @@ mod tests {
 	#[test]
 	fn classes_exist() {
 		use crate::types::*;
-		crate::initialize();
+		crate::init();
 
 		macro_rules! assert_mapping_eq {
 			($($key:literal $class:ty),*) => {

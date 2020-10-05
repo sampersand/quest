@@ -1,7 +1,7 @@
 #![allow(clippy::module_inception, clippy::missing_const_for_fn)]
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
-pub fn initialize() {
+pub fn init() {
 	use quest_core::{Object, types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding}};
 	use crate::expression::Executable;
 

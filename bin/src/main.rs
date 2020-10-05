@@ -69,8 +69,8 @@ fn setup_tracing() {
 fn main() {
 	setup_tracing();
 
-	quest_core::initialize();
-	quest_parser::initialize();
+	quest_core::init();
+	quest_parser::init();
 
 	// The following line is used by me internally for benchmarking.
 	// if true {run::run_file("code.ignore/fib.qs", Default::default()).unwrap(); return}

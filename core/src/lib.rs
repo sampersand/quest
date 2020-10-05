@@ -27,7 +27,7 @@ pub use error::{Error, Result};
 pub use types::rustfn::{Args, Binding};
 
 /// Start up Quest by initializing all the types.
-pub fn initialize() {
+pub fn init() {
 	use types::*;
 	use parking_lot::Once;
 

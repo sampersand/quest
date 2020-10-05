@@ -30,7 +30,7 @@ impl Basic {
 	/// struct Dummy;
 	/// 
 	/// impl_object_type! { for Dummy [(parents quest_core::types::Basic)]: }
-	/// # quest_core::initialize();
+	/// # quest_core::init();
 	/// # <Dummy as quest_core::types::ObjectType>::initialize().unwrap();
 	/// 
 	/// assert_eq!(
@@ -72,7 +72,7 @@ impl Basic {
 	/// impl_object_type! { for Dummy [(parents quest_core::types::Basic)]:
 	/// 	"inspect" => function |_, _| Ok("hi friend".into())
 	/// }
-	/// # quest_core::initialize();
+	/// # quest_core::init();
 	/// # <Dummy as quest_core::types::ObjectType>::initialize().unwrap();
 	/// 
 	/// assert_eq!(
@@ -112,7 +112,7 @@ impl Basic {
 	/// struct Dummy;
 	/// 
 	/// impl_object_type! { for Dummy [(parents quest_core::types::Basic)]: }
-	/// # quest_core::initialize();
+	/// # quest_core::init();
 	/// # <Dummy as quest_core::types::ObjectType>::initialize().unwrap();
 	/// 
 	/// let obj = Object::new(Dummy);
