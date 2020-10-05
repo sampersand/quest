@@ -179,7 +179,7 @@ impl<'a> TryFrom<&'a Text> for Number {
 }
 
 impl Text {
-	fn shift(&mut self) -> Option<char> {
+	pub fn shift(&mut self) -> Option<char> {
 		if self.is_empty() {
 			None
 		} else {
@@ -187,24 +187,34 @@ impl Text {
 		}
 	}
 
-	fn inspect(&self) -> Self {
+	pub fn inspect(&self) -> Self {
 		format!("{:?}", self.0).into()
 	}
 
-	// fn unshift(&mut self, val: char) {
+	// pub fn unshift(&mut self, val: char) {
 	// 	self.0.to_mut().insert(0, val);
 	// }
 
-	fn pop(&mut self) -> Option<char> {
+	pub fn pop(&mut self) -> Option<char> {
 		self.0.to_mut().pop()
 	}
 
-	fn push_str(&mut self, s: &str) {
+	pub fn push_str(&mut self, s: &str) {
 		self.0.to_mut().push_str(s);
 	}
 
-	fn clear(&mut self) {
+	pub fn clear(&mut self) {
 		self.0.to_mut().clear()
+	}
+
+	pub fn reverse(&self) -> Self {
+		self.0.as_ref().chars().rev().collect()
+	}
+}
+
+impl std::iter::FromIterator<char> for Text {
+	fn from_iter<T: IntoIterator<Item=char>>(iter: T) -> Self {
+		Self::new(iter.into_iter().collect::<String>())
 	}
 }
 
@@ -416,7 +426,11 @@ impl Text {
 		todo!("split")
 	}
 
-	pub fn qs_reverse(_this: &Object, _: Args) -> crate::Result<Object> { todo!("reverse") }
+	pub fn qs_reverse(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(this.reverse().into())
+	}
 }
 
 impl_object_type!{
