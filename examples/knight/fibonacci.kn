@@ -1,0 +1,9 @@
+; = a 0
+; = b 1
+; = n 10
+; = WHILE (> n 1)
+	; = t b
+	; = b (+ b a)
+	; = a t
+	= n - n 1
+OUTPUT b

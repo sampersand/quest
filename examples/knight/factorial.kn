@@ -1,0 +1,7 @@
+; = fact FNDEF
+	IF (< x 1)
+		1
+		; = x (- x 1)
+		  * (+ 1 x) (CALL fact)
+; = x 10
+OUTPUT CALL fact

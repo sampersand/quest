@@ -1,0 +1,14 @@
+; = max 100                          # max = 100
+; = secret (R 1 max)                 # secret = rand(1, max)
+; = nguess 0                         # nguess = 0
+; = guess 0                          # guess = 0
+; O (+ 'guess 1-' max)               # print("pick from 1-" + m)
+; W (| (< guess secret) (> guess secret)) # while guess != s:
+  ; = guess (+ 0 (P '> '))           #   guess = int(prompt("> "))
+  ; = nguess (+ nguess 1)            #   nguess += 1
+    O (                              #   print(
+     I (< guess secret) 'too low'    #     if guess < secret: 'too low'
+     I (> guess secret) 'too high'   #     if guess > secret: 'too high'
+                'correct')           #     else: 'correct')
+; O (+ 'tries: ' nguess)             # print("tries: " + n)
+
