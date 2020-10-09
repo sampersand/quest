@@ -80,4 +80,4 @@ If you look at the example within the `Method Resolution` section, you'll notice
 Because of this, there's _not a `Map` type in Quest_. (I know, I lied a little.) Since every object _already_ has key-value pairs associated with them, every object can be thought of as a map. (In practice, an empty `Scope` is usually used.)
 
 # Final Remarks
-Hopefully this post made it a little clearer why all these seemingly disparate concepts can all be unified by using the `__parents__` concept in concert with being able to add fields to any object. In [part 2](docs/obejcts-and-maps-part2.md), we'll look at how these concepts can be put into practice.
+Hopefully this post made it a little clearer why all these seemingly disparate concepts can all be unified by using the `__parents__` concept in concert with being able to add fields to any object. In [part 2](objects-and-maps-part2.md), we'll look at how these concepts can be put into practice.
