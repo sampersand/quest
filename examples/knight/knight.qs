@@ -21,7 +21,9 @@ Text.$next_num = {
 Text.$next_text = {
 	if(_0.$get(0) == "'", {
 		_0.$shift();
-		_0.$take_while({ ($x=_0) && { x.$get(0) != "'" } })
+		$l=_0.$take_while({ ($x=_0) && { x.$get(0) != "'" } });
+		_0.$shift();
+		l
 	})
 };
 
@@ -35,7 +37,15 @@ Text.$take_while = {
 	acc
 };
 
-$functions = {
+
+$knight = {
+	_1.$next_expr()()
+};
+
+$functions = {:0}();
+
+{
+	$__this__ = functions;
 	$unary_fn = {
 		$op = :0::$_1;
 		{
@@ -54,19 +64,20 @@ $functions = {
 	};
 
 	$! = unary_fn(Basic::$!);
-	$Q = ($QUIT = unary_fn(quit));
-	$O = ($OUTPUT = unary_fn(disp));
-	$P = ($PROMPT = unary_fn(prompt));
-	$E = ($EVAL = unary_fn({ knight(_0) }));
-	$S = ($SYSTEM = unary_fn(system)); # this doesn't work currently
-	$F = ($FNDEF = { $l = _0.$next_expr(); { l } });
-	$C = ($CALL = unary_fn({ _0() }));
+	$Q = $QUIT = unary_fn(quit);
+	$O = $OUTPUT = unary_fn(disp);
+	$P = $PROMPT = unary_fn(prompt);
+	$E = $EVAL = unary_fn(knight);
+	$S = $SYSTEM = unary_fn(system); # this doesn't work currently
+	$F = $FNDEF = { $l = _0.$next_expr(); l.$itself };
+	$C = $CALL = unary_fn({ _0() });
 
 	$+ = binary_fn(Number::$+);
 	$- = binary_fn(Number::$-);
 	$* = binary_fn(Number::$*);
 	$/ = binary_fn(Number::$/);
 	$^ = binary_fn(Number::$**);
+	$% = binary_fn(Number::$%);
 	$& = binary_fn(Number::$&);
 	$| = binary_fn(Number::$|);
 	$< = binary_fn(Number::$<);
@@ -78,15 +89,15 @@ $functions = {
 		$r = _0.$next_expr();
 		{ env.l = r() }
 	};
-	$R = ($RAND = binary_fn({ rand(_0, _1).$round() }));
-	$W = ($WHILE = { while << (_0.$next_expr()) << (_0.$next_expr()) });
+	$R = $RAND = binary_fn({ rand(_0, _1).$round() });
+	$W = $WHILE = { while << (_0.$next_expr()) << (_0.$next_expr()) };
 
-	$I = ($IF = {
+	$I = $IF = {
 		$c = _0.$next_expr();
 		:0::$c.$@bool = { _0().$@bool() };
 
 		if << (:0::$c) << (_0.$next_expr()) << (_0.$next_expr())
-	});
+	};
 
 	:0
 }();
@@ -95,23 +106,23 @@ $functions = {
 Text.$next_expr = {
 	_0.$lstrip();
 
-	while({ /^#/.$match(_0) }, {
-		_0.$take_while({ ($v=_0.$get(0)) != null && { v.$get(0) != "\n" } });
+	while(/^#/.$match << _0, {
+		_0.$take_while(/^\n/.$match);
 		_0.$lstrip();
 	});
 
 	if(!_0, { return(:1); });
 
 	if(null != ($ident = _0.$next_ident()), {
-		return(:1, { env.ident });
+		return(:1, env.$. << ident);
 	});
 
 	if(null != ($num = _0.$next_num()), {
-		return(:1, { num });
+		return(:1, num.$itself);
 	});
 
 	if(null != ($text = _0.$next_text()), {
-		return(:1, { text });
+		return(:1, text.$itself);
 	});
 
 	$cmd = _0.$next_cmd() || _0.$shift;
@@ -119,11 +130,7 @@ Text.$next_expr = {
 	(functions::cmd)(_0)
 };
 
-Kernel.$env = {:0.null = null; :0}();
-
-$knight = {
-	_1.$next_expr()()
-};
+Kernel.$env = { :0.null = null; :0 }();
 
 if(__has_attr__($_1), {
 	if(_1 == '-e', {

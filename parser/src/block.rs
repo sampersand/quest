@@ -29,7 +29,10 @@ impl Debug for Block {
 				.field("context", &self.context)
 				.finish()
 		} else {
-			write!(f, "Block({})", self)
+			f.debug_struct("Block")
+				.field("lineno", &self.context.lineno)
+				.field("file", &self.context.file.as_deref().unwrap_or_else(|| std::path::Path::new("<eval>")))
+				.finish()
 		}
 	}
 }

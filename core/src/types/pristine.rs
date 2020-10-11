@@ -1,5 +1,6 @@
 use crate::{Object, Args};
 use crate::types::Boolean;
+use tracing::instrument;
 
 /// The base type that all other Quest types inherit from.
 ///
@@ -67,6 +68,7 @@ impl Pristine {
 	/// ```
 	///
 	/// [`Text`]: crate::types::Text
+	#[instrument(name="Pristine::hash", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
 		// Ok(format!("<{}:{}>", this.typename(), this.id()).into())
 		Ok(format!("{:?}", this).into())
@@ -88,6 +90,7 @@ impl Pristine {
 	/// assert( 12.$__call_attr__($+, 4) == 16 )
 	/// assert( "foobar".$__call_attr__($get, 0, 2) == "foobar")
 	/// ```
+	#[instrument(name="Pristine::__call_attr__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___call_attr__<'a>(this: &'a Object, args: Args<'_, 'a>) -> crate::Result<Object> {
 		let attr = args.try_arg(0)?;
 		let rest = args.try_args(1..).unwrap_or_default();
@@ -119,6 +122,7 @@ impl Pristine {
 	/// # => I love to eat oranges
 	/// # => I love to eat melons
 	/// ```
+	#[instrument(name="Pristine::__get_attr__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___get_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.try_arg(0)?;
 
@@ -126,6 +130,7 @@ impl Pristine {
 	}
 
 	/// Set an attribute on the object
+	#[instrument(name="Pristine::__set_attr__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___set_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.try_arg(0)?;
 		let val = args.try_arg(1)?;
@@ -133,24 +138,28 @@ impl Pristine {
 		this.set_attr(attr.clone(), val.clone()).map(|_| val.clone())
 	}
 
+	#[instrument(name="Pristine::__has_attr__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___has_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.try_arg(0)?;
 
 		this.has_attr(attr).map(Object::from)
 	}
 
+	#[instrument(name="Pristine::__del_attr__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___del_attr__(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.try_arg(0)?;
 
 		this.del_attr(attr)
 	}
 
+	#[instrument(name="Pristine::.", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_dot_get_attr(this: &Object, args: Args) -> crate::Result<Object> {
 		let attr = args.try_arg(0)?;
 
 		this.dot_get_attr(attr)
 	}
 
+	#[instrument(name="Pristine::__keys__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___keys__(this: &Object, args: Args) -> crate::Result<Object> {
 		let include_parents =
 			args.arg(0)

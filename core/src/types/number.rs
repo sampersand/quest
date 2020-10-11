@@ -8,6 +8,7 @@ use crate::{Object, Args};
 use crate::types::{Text, Boolean, Convertible};
 use std::hash::{Hash, Hasher};
 use crate::error::{TypeError, ValueError};
+use tracing::instrument;
 
 /// The type used by [`Number`] to keep track of integers.
 pub type IntegerType = i64;
@@ -670,6 +671,7 @@ impl Number {
 	/// Inspects `this`.
 	///
 	/// This is identical to [`qs_at_text`](#qs_at_text).
+	#[instrument(name="Number::inspect", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_inspect(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_at_text(this, args)
 	}
@@ -677,6 +679,7 @@ impl Number {
 	/// Convert `this` to a [`Number`].
 	///
 	/// This simply returns the same object.
+	#[instrument(name="Number::@num", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_num(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
@@ -684,6 +687,7 @@ impl Number {
 	/// Converts `this` to a [`Text`], with an optional base parameter.
 	///
 	/// The base must be `2 <= base <= 36`. 
+	#[instrument(name="Number::@text", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_at_text(this: &Object, args: Args) -> crate::Result<Object> {
 		use std::convert::TryInto;
 		let this = this.try_downcast::<Self>()?;
@@ -701,6 +705,7 @@ impl Number {
 	/// Converts `this` to a [`Boolean`].
 	///
 	/// All values but [zero](Number::ZERO) are considered true.
+	#[instrument(name="Number::@bool", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -708,11 +713,13 @@ impl Number {
 	}
 
 	/// Calling a number is simply an alias for [multiplication](#qs_mul).
+	#[instrument(name="Number::()", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_mul(this, args)
 	}
 
 	/// Hash a number.
+	#[instrument(name="Number::hash", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_hash(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -720,6 +727,7 @@ impl Number {
 	}
 
 	/// Invert `this`'s sign.
+	#[instrument(name="Number::-@", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_neg(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -727,6 +735,7 @@ impl Number {
 	}
 
 	/// Get the absolute value of `this`.
+	#[instrument(name="Number::+@", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_pos(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_abs(this, args)
 	}
@@ -735,6 +744,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The addend.
+	#[instrument(name="Number::+", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
 		let addend = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -746,6 +756,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The addend.
+	#[instrument(name="Number::+=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let addend = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -757,6 +768,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The subtrahend.
+	#[instrument(name="Number::-", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_sub(this: &Object, args: Args) -> crate::Result<Object> {
 		let subtrahend = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -768,6 +780,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The subtrahend.
+	#[instrument(name="Number::-=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let subtrahend = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -779,6 +792,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The multiplicand.
+	#[instrument(name="Number::*", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
 		let multiplicand = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -790,6 +804,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The multiplicand.
+	#[instrument(name="Number::*=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_mul_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let multiplicand = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -804,6 +819,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
+	#[instrument(name="Number::/", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_div(this: &Object, args: Args) -> crate::Result<Object> {
 		let divisor = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -817,6 +833,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
+	#[instrument(name="Number::/=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_div_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let divisor = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -831,6 +848,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
+	#[instrument(name="Number::%", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_mod(this: &Object, args: Args) -> crate::Result<Object> {
 		let divisor = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -844,6 +862,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The divisor.
+	#[instrument(name="Number::%=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_mod_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let divisor = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -855,6 +874,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The exponent.
+	#[instrument(name="Number::**", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_pow(this: &Object, args: Args) -> crate::Result<Object> {
 		let exponent = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -866,6 +886,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The exponent.
+	#[instrument(name="Number::**=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_pow_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let exponent = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -876,6 +897,7 @@ impl Number {
 	/// Bitwise NOT of `this`.
 	///
 	/// If `this` isn't a whole number, a [`ValueError`] is raised.
+	#[instrument(name="Number::~", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_bitnot(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -888,6 +910,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
+	#[instrument(name="Number::&", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -901,6 +924,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
+	#[instrument(name="Number::&=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -914,6 +938,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
+	#[instrument(name="Number::|", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -927,6 +952,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
+	#[instrument(name="Number::|=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -940,6 +966,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
+	#[instrument(name="Number::^", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -953,6 +980,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The other value.
+	#[instrument(name="Number::^=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let other = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -966,6 +994,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
+	#[instrument(name="Number::<<", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_shl(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -979,6 +1008,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
+	#[instrument(name="Number::<<=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_shl_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -992,6 +1022,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
+	#[instrument(name="Number::>>", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_shr(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -1005,6 +1036,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The value to shift by.
+	#[instrument(name="Number::>>=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_shr_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let amnt = *args.try_arg(0)?.call_downcast::<Self>()?;
 
@@ -1013,6 +1045,7 @@ impl Number {
 	}
 
 	/// Get the absolute value of `this`.
+	#[instrument(name="Number::abs", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_abs(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -1025,6 +1058,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required) The other object to compare against.
+	#[instrument(name="Number::==", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
@@ -1036,6 +1070,7 @@ impl Number {
 	///
 	/// # Arguments
 	/// 1. (required, `@num`) The value to compare against.
+	#[instrument(name="Number::<=>", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
@@ -1044,6 +1079,7 @@ impl Number {
 	}
 
 	/// Returns `this`, rounded down.
+	#[instrument(name="Number::floor", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_floor(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -1051,6 +1087,7 @@ impl Number {
 	}
 
 	/// Returns `this`, rounded up.
+	#[instrument(name="Number::ceil", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_ceil(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -1058,6 +1095,7 @@ impl Number {
 	}
 
 	/// Returns `this`, rounded towards the nearest integer. (`##.5` rounds away from zero.)
+	#[instrument(name="Number::round", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_round(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -1065,6 +1103,7 @@ impl Number {
 	}
 
 	/// Gets the square root of `this`
+	#[instrument(name="Number::sqrt", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_sqrt(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 

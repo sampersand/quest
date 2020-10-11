@@ -4,6 +4,7 @@ use crate::types::{Convertible, Text, Boolean, Number};
 use std::convert::{TryFrom, TryInto};
 use std::iter::FromIterator;
 use std::fmt::{self, Debug, Formatter};
+use tracing::instrument;
 
 /// A List in Quest.
 ///
@@ -394,6 +395,7 @@ impl List {
 	///
 	/// assert(clone == list);
 	/// ```
+	#[instrument(name="List::@list", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_list(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
@@ -409,6 +411,7 @@ impl List {
 	///
 	/// assert(list.$@text() == '[1, "a", true]')
 	/// ```
+	#[instrument(name="List::@text", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -423,6 +426,7 @@ impl List {
 	///
 	/// assert(list.$inspect() == '[1, "a", true]')
 	/// ```
+	#[instrument(name="List::inspect", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_inspect(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_at_text(this, args)
 	}
@@ -436,12 +440,14 @@ impl List {
 	/// assert([1, "a", true]);
 	/// assert(![]);
 	/// ```
+	#[instrument(name="List::@bool", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(Boolean::from(&*this).into())
 	}
 
+	#[instrument(name="List::each", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?;
 
@@ -474,6 +480,7 @@ impl List {
 	/// assert(list.$index(3.5) == 2);
 	/// assert(list.$index("dog") == null);
 	/// ```
+	#[instrument(name="List::index", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_index(this: &Object, args: Args) -> crate::Result<Object> {
 		let needle = args.try_arg(0)?;
 		let this = this.try_downcast::<Self>()?;
@@ -493,6 +500,7 @@ impl List {
 	/// list.$clear();
 	/// assert(!list);
 	/// ```
+	#[instrument(name="List::clear", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_mut::<Self>()?.clear();
 
@@ -507,6 +515,7 @@ impl List {
 	///
 	/// assert(list.$len() == 3);
 	/// assert([].$len() == 0);
+	#[instrument(name="List::len", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_len(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.try_downcast::<Self>()?
 			.len()
@@ -537,6 +546,7 @@ impl List {
 	/// assert(list.$get(1, 2) == [2, 3]);
 	/// assert(list.$get(1, Number::$INF) == [2, 3, false]);
 	/// ```
+	#[instrument(name="List::get", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
 		let start: isize = args.try_arg(0)?.call_downcast::<Number>().map(|n| *n)?.try_into()?;
 
@@ -572,6 +582,7 @@ impl List {
 	/// ```quest
 	/// <TODO>
 	/// ```
+	#[instrument(name="List::set", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_set(this: &Object, args: Args) -> crate::Result<Object> {
 		let pos: isize = args.try_arg(0)?.call_downcast::<Number>().map(|n| *n)?.try_into()?;
 
@@ -611,6 +622,7 @@ impl List {
 	/// assert(["foo", 123, true].$join() == "foo123true");
 	/// assert(["foo", 123, true].$join(" ") == "foo 123 true");
 	/// ```
+	#[instrument(name="List::join", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_join(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 		let delim = args.arg(0).map(|arg| arg.call_downcast::<Text>()).transpose()?;
@@ -618,6 +630,7 @@ impl List {
 		this.join(delim.as_ref().map(|delim| delim.as_ref())).map(Object::from)
 	}
 
+	#[instrument(name="List::*", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_mul(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 		let amnt = usize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
@@ -625,6 +638,7 @@ impl List {
 		Ok((&*this * amnt).into())
 	}
 
+	#[instrument(name="List::*=", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
 	pub fn qs_mul_assign(_this: &Object, _args: Args) -> crate::Result<Object> {
 		todo!()
 	}
@@ -640,6 +654,7 @@ impl List {
 	/// assert([1, 2, "a"] == [1, 2, "a"]);
 	/// assert([1, 2, "a"] != [1, "a", 2]);
 	/// ```
+	#[instrument(name="List::==", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let mut eql = Ok(false);
@@ -671,6 +686,7 @@ impl List {
 	///
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
+	#[instrument(name="List::push", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
 		this.try_downcast_mut::<Self>()?.push(rhs);
@@ -689,6 +705,7 @@ impl List {
 	/// assert(list.$pop() == null);
 	/// assert(!list);
 	/// ```
+	#[instrument(name="List::pop", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_pop(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.try_downcast_mut::<Self>()?
 			.pop()
@@ -709,6 +726,7 @@ impl List {
 	///
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
+	#[instrument(name="List::unshift", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
 		
@@ -727,6 +745,7 @@ impl List {
 	/// assert(list.$shift() == null);
 	/// assert(!list);
 	/// ```
+	#[instrument(name="List::shift", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_shift(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.try_downcast_mut::<Self>()?
 			.shift()
@@ -744,6 +763,7 @@ impl List {
 	/// assert([1, 2] + [3, 4] == [1, 2, 3, 4]);
 	/// assert(["a", "b"] + [] == ["a", "b"]);
 	/// ```
+	#[instrument(name="List::+", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -761,6 +781,7 @@ impl List {
 	/// list += [3, 4];
 	/// assert(list == [1, 2, 3, 4]);
 	/// ```
+	#[instrument(name="List::+=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let mut this_mut = this.try_downcast_mut::<Self>()?;
@@ -786,6 +807,7 @@ impl List {
 	/// assert([1, 2, 3, "A", 2] - [1, 2] == [3, "A"]);
 	/// assert(["1", "b", "c"] - [1, "c", "c", "e"] == ["1", "b"]);
 	/// ```
+	#[instrument(name="List::-", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_sub(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
@@ -805,6 +827,7 @@ impl List {
 	/// list -= [1, "c", "c", "e"];
 	/// assert(list == ["1", "b"]);
 	/// ```
+	#[instrument(name="List::-=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_sub_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
@@ -829,6 +852,7 @@ impl List {
 	/// assert([1, 2, 3] & [4, 5, 6] == []);
 	/// assert([1, 2, 3] & [1, 2, 4] == [1, 2]);
 	/// ```
+	#[instrument(name="List::&", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
@@ -852,6 +876,7 @@ impl List {
 	/// list &= [2, "a"];
 	/// assert(list == [2]);
 	/// ```
+	#[instrument(name="List::&=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
@@ -875,6 +900,7 @@ impl List {
 	/// assert([1, 2, 3] | [1, 1, "a", "b"] == [1, 2, 3, "a", "b"]);
 	/// assert(["a", "b", "c"] | ["c", "b", "d", "e"] == ["a", "b", "c", "d", "e"]);
 	/// ```
+	#[instrument(name="List::|", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
@@ -898,6 +924,7 @@ impl List {
 	/// list |= ["a", 2]; # already present, don't do anything
 	/// assert(list == [1, 2, "a", 4, 3]);
 	/// ```
+	#[instrument(name="List::|=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
@@ -922,6 +949,7 @@ impl List {
 	/// assert([1, 2, 3] ^ [4, 5, 6] == [1, 2, 3, 4, 5, 6]);
 	/// assert([1, 2, 3] ^ [1, 2, 4] == [3, 4]);
 	/// ```
+	#[instrument(name="List::^", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
@@ -945,6 +973,7 @@ impl List {
 	/// list ^= [2, "a"];
 	/// assert(list == [4, 3, 2]);
 	/// ```
+	#[instrument(name="List::^=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 

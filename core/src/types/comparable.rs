@@ -1,6 +1,7 @@
 use crate::{Object, Args, Literal};
 use crate::types::Number;
 use std::cmp::Ordering;
+use tracing::instrument;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Comparable;
@@ -13,6 +14,7 @@ fn compare(lhs: &Object, rhs: &Object) -> crate::Result<Ordering> {
 }
 
 impl Comparable {
+	#[instrument(name="Comparable::<", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_lth(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;
@@ -20,6 +22,7 @@ impl Comparable {
 		Ok((cmp == Ordering::Less).into())
 	}
 
+	#[instrument(name="Comparable::>", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_gth(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;
@@ -27,6 +30,7 @@ impl Comparable {
 		Ok((cmp == Ordering::Greater).into())
 	}
 
+	#[instrument(name="Comparable::<=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_leq(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;
@@ -34,6 +38,7 @@ impl Comparable {
 		Ok((cmp != Ordering::Greater).into())
 	}
 
+	#[instrument(name="Comparable::>=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_geq(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;

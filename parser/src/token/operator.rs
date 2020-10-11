@@ -73,17 +73,18 @@ macro_rules! operator_enum {
 // "Longer" operators need to be at the top so shorter ones don't overshadow them
 operator_enum!{
 	// 3 characters
-	PowAssign("**=" 16) LshAssign("<<=" 16) RshAssign(">>=" 16) Cmp("<=>" 13)
+	PowAssign("**=" 16 RightToLeft) LshAssign("<<=" 16 RightToLeft) RshAssign(">>=" 16 RightToLeft) Cmp("<=>" 13)
 
 	// 2 characters
-	AddAssign("+=" 16) SubAssign("-=" 16) MulAssign("*=" 16) DivAssign("/=" 16) ModAssign("%=" 16) 
-	BAndAssign("&=" 16) BOrAssign("|=" 16) BXorAssign("^=" 16) Or("||" 15) And("&&" 14) Eql("==" 12)
-	Neq("!=" 12) Leq("<=" 11) Geq(">=" 11) Lsh("<<" 7) Rsh(">>" 7) Pow("**" 3) Scoped("::" 0)
+	AddAssign("+=" 16 RightToLeft) SubAssign("-=" 16 RightToLeft) MulAssign("*=" 16 RightToLeft)
+	DivAssign("/=" 16 RightToLeft) ModAssign("%=" 16 RightToLeft) BAndAssign("&=" 16 RightToLeft)
+	BOrAssign("|=" 16 RightToLeft) BXorAssign("^=" 16 RightToLeft)
+	Or("||" 15) And("&&" 14) Eql("==" 12) Neq("!=" 12) Leq("<=" 11) Geq(">=" 11) Lsh("<<" 7) Rsh(">>" 7)
+	Pow("**" 3 RightToLeft) Scoped("::" 0)
 
 	// 1 Character
-	Assign("=" 16) Lth("<" 11) Gth(">" 11) BXor("^" 10) BOr("|" 9) BAnd("&" 8) Add("+" 6) Sub("-" 6)
-	Mul("*" 5) Div("/" 5) Mod("%" 5) Not("!" 2 UnaryOperOnLeft 1) BNot("~" 2 UnaryOperOnLeft 1)
-	Dot("." 0)
+	Assign("=" 16 RightToLeft) Lth("<" 11) Gth(">" 11) BXor("^" 10) BOr("|" 9) BAnd("&" 8) Add("+" 6) Sub("-" 6)
+	Mul("*" 5) Div("/" 5) Mod("%" 5) Not("!" 2 UnaryOperOnLeft 1) BNot("~" 2 UnaryOperOnLeft 1) Dot("." 0)
 
 	// Unrepresentable
 	Neg("-@" () 4 UnaryOperOnLeft 1)

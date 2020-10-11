@@ -4,8 +4,8 @@
 # Note that we immediately call this block after its definition: `fibonacci` is
 # set to the return value of the block.
 Number.$fibonacci = {
-	# initialize memo to a blank object.
-	$memo = { __this__ }();
+	# Initialize memo to a blank object; this is the syntax for empty maps.
+	$memo = { :0 }();
 
 	# Then assign some starting, initial values.
 	memo.0 = 0;
@@ -22,7 +22,7 @@ Number.$fibonacci = {
 			memo._0 = (_0 - 1).$fibonacci() + (_0 - 2).$fibonacci()
 		})
 	}
-}();
+}(); # <-- we call the block here
 
 disp(5.$fibonacci());
 disp(10.$fibonacci());

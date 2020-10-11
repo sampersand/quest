@@ -2,12 +2,13 @@ use crate::{Object, Args};
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use parking_lot::Mutex;
+use tracing::instrument;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Iterable;
 
 #[derive(Clone)]
-pub struct BoundRustFn(Arc<dyn Fn(Object) -> crate::Result<()> + Send + Sync>);
+pub struct BoundRustFn(pub Arc<dyn Fn(Object) -> crate::Result<()> + Send + Sync>);
 
 impl Debug for BoundRustFn {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -16,7 +17,7 @@ impl Debug for BoundRustFn {
 }
 
 impl_object_type!{
-for BoundRustFn [(parents super::Basic)]:
+for BoundRustFn [(parents super::Function)]:
 	"()" => function |this: &Object, args: Args| {
 		let arg = args.try_arg(0)?.clone();
 		(this.try_downcast::<Self>()?.0)(arg).map(|_| this.clone())
@@ -40,6 +41,7 @@ where
 }
 
 impl Iterable {
+	#[instrument(name="Iterable::map", level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_map(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?;
 
@@ -59,6 +61,7 @@ impl Iterable {
 		}
 	}
 
+	#[instrument(name="Iterable::select", level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_select(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?;
 

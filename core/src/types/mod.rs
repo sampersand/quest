@@ -45,6 +45,8 @@ mod list;
 
 mod tcp;
 
+pub use function::BoundRustFn;
+
 #[doc(inline)]
 pub use tcp::Tcp;
 

@@ -1,0 +1,6 @@
+; = i 0
+; WHILE (< (= i + i 1) 101)
+	OUTPUT
+		IF (% i 3)
+			IF (% i 5) i 'Buzz'
+		IF (% i 15) 'Fizz' 'FizzBuzz'

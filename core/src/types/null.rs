@@ -1,6 +1,7 @@
 use crate::{Object, Args, Result};
 use crate::types::{Boolean, List, Number, Text};
 use std::fmt::{self, Display, Formatter};
+use tracing::instrument;
 
 /// A type that represents "nothing" in Quest.
 ///
@@ -95,6 +96,7 @@ impl Null {
 	///
 	/// # See Also
 	/// - [`Null::qs_at_text`] -- Identical to this function.
+	#[instrument(name="Null::inspect", level="trace")]
 	pub fn qs_inspect(_: &Object, _: Args) -> Result<Object> {
 		Ok(Text::from(Self).into())
 	}
@@ -125,6 +127,7 @@ impl Null {
 	/// ```quest
 	/// assert(null.$@bool() == false);
 	/// ```
+	#[instrument(name="Null::@bool", level="trace")]
 	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
 		Ok(Boolean::from(Self).into())
 	}
@@ -155,6 +158,7 @@ impl Null {
 	/// ```quest
 	/// assert(null.$@list() == []);
 	/// ```
+	#[instrument(name="Null::@list", level="trace")]
 	pub fn qs_at_list(_: &Object, _: Args) -> Result<Object> {
 		Ok(List::from(Self).into())
 	}
@@ -185,6 +189,7 @@ impl Null {
 	/// ```quest
 	/// assert(null.$@num() == 0);
 	/// ```
+	#[instrument(name="Null::@num", level="trace")]
 	pub fn qs_at_num(_: &Object, _: Args) -> Result<Object> {
 		Ok(Number::from(Self).into())
 	}
@@ -218,6 +223,7 @@ impl Null {
 	///
 	/// # See Also
 	/// - [`Null::qs_inspect`] -- Identical to this function.
+	#[instrument(name="Null::@text", level="trace")]
 	pub fn qs_at_text(_: &Object, _: Args) -> Result<Object> {
 		Ok(Text::from(Self).into())
 	}
@@ -248,6 +254,7 @@ impl Null {
 	/// ```quest
 	/// assert(null() == null);
 	/// ```
+	#[instrument(name="Null::()", level="trace")]
 	pub fn qs_call(_: &Object, _: Args) -> Result<Object> {
 		Ok(Self.into())
 	}
@@ -285,6 +292,7 @@ impl Null {
 	/// assert(null == null);
 	/// assert(null != false);
 	/// ```
+	#[instrument(name="Null::==", level="trace")]
 	pub fn qs_eql(_: &Object, args: Args) -> Result<Object> {
 		Ok(args.try_arg(0)?.is_a::<Self>().into())
 	}

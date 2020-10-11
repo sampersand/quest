@@ -187,7 +187,10 @@ impl BoundOperator {
 	{
 
 		match ctor.next().transpose()? {
-			Some(Token::Operator(oper)) if parent_op.map(|parent_op| oper < parent_op).unwrap_or(true)
+			Some(Token::Operator(oper)) if parent_op
+				.map(|parent_op| oper < parent_op || 
+						oper <= parent_op && oper.assoc() == crate::token::operator::Associativity::RightToLeft
+				).unwrap_or(true)
 				=> build_op(oper, ctor, lhs),
 			Some(t @ Token::Operator(_))
 				| Some(t @ Token::Endline)

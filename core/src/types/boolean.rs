@@ -267,7 +267,7 @@ impl Boolean {
 	///
 	/// # See Also
 	/// - [`Boolean::qs_at_text`] -- Identical to this function.
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::inspect", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_inspect(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_at_text(this, args)
 	}
@@ -301,7 +301,7 @@ impl Boolean {
 	/// assert(1 + true == 2);
 	/// assert(99 * false == 0);
 	/// ```
-	#[instrument(level="trace", skip(this), fields(self = ?this))]
+	#[instrument(name="Boolean::@num", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_num(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -336,7 +336,7 @@ impl Boolean {
 	/// assert("yes: " + true == "yes: true");
 	/// assert("no: " + false == "no: false");
 	/// ```
-	#[instrument(level="trace", skip(this), fields(self = ?this))]
+	#[instrument(name="Boolean::@text", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -374,7 +374,7 @@ impl Boolean {
 	/// assert(obj == dup);
 	/// assert(obj.$__id__ == dup.$__id__);
 	/// ```
-	#[instrument(level="trace", skip(this), fields(self = ?this))]
+	#[instrument(name="Boolean::@bool", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
@@ -418,7 +418,7 @@ impl Boolean {
 	/// assert(true == true);
 	/// assert(true != 1);
 	/// ```
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::==", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
@@ -465,12 +465,11 @@ impl Boolean {
 	/// assert(true == true);
 	/// assert(true != 1);
 	/// ```
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::<=>", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
 
-		// Ok(rhs.map(|rhs| this.cmp(&rhs).into()).unwrap_or_default())
 		Ok(rhs.map_or_else(Default::default, |rhs| this.cmp(&rhs).into()))
 	}
 
@@ -503,7 +502,7 @@ impl Boolean {
 	/// assert(!true == false);
 	/// assert(!false == true);
 	/// ```
-	#[instrument(level="trace", skip(this), fields(self = ?this))]
+	#[instrument(name="Boolean::!", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_not(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -547,7 +546,7 @@ impl Boolean {
 	/// assert(true & true == true);
 	/// assert(true & 0 == false);
 	/// ```
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::&", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitand(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -559,7 +558,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::&=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitand_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
@@ -607,7 +606,7 @@ impl Boolean {
 	/// assert(false | true == true);
 	/// assert(false | 0 == false);
 	/// ```
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::|", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitor(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -619,7 +618,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::|=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
@@ -667,7 +666,7 @@ impl Boolean {
 	/// assert(false ^ true == true);
 	/// assert(false ^ false == false);
 	/// ```
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::^", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitxor(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -679,7 +678,7 @@ impl Boolean {
 	///
 	/// # Arguments
 	/// 1. (required, `@bool`) The other object.
-	#[instrument(level="trace", skip(this, args), fields(self = ?this, ?args))]
+	#[instrument(name="Boolean::^=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_bitxor_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 
@@ -693,7 +692,7 @@ impl Boolean {
 	}
 
 	/// Hashes `this`.
-	#[instrument(level="trace", skip(this), fields(self = ?this))]
+	#[instrument(name="Boolean::hash", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_hash(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 

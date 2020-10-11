@@ -2,6 +2,7 @@ use crate::{Object, Args};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
 use crate::types::Text;
+use tracing::instrument;
 
 bitflags::bitflags! {
 	#[derive(Default)]
@@ -123,12 +124,14 @@ impl From<&Regex> for Text {
 impl Regex {
 	/// Inspects the [`Regex`].
 	#[inline]
+	#[instrument(name="Regex::inspect", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_inspect(this: &Object, args: Args) -> crate::Result<Object> {
 		Self::qs_at_text(this, args)
 	}
 
 	/// Convert this into a [`Text`].
 	#[inline]
+	#[instrument(name="Regex::@text", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -136,6 +139,7 @@ impl Regex {
 	}
 
 	/// Compares two [`Regex`]s
+	#[instrument(name="Regex::==", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.try_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
@@ -148,6 +152,7 @@ impl Regex {
 	/// Returns an Array of matched values.
 	///
 	/// The first argument is converted to a [`Text`] before matching.
+	#[instrument(name="Regex::scan", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_scan(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -162,6 +167,7 @@ impl Regex {
 	/// Returns an Array of matched groups.
 	///
 	/// The first argument is converted to a [`Text`] before matching.
+	#[instrument(name="Regex::match", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_match(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -179,6 +185,7 @@ impl Regex {
 	/// Checks to see if the first argument matches.
 	///
 	/// The first argument is converted to a [`Text`] before matching.
+	#[instrument(name="Regex::does_match", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_does_match(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;

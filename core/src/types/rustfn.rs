@@ -8,6 +8,7 @@ use crate::Object;
 use crate::types::Text;
 use std::fmt::{self, Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use tracing::instrument;
 
 type Inner = for<'s, 'o> fn(&'o Object, Args<'s, 'o>) -> crate::Result<Object>;
 
@@ -58,18 +59,21 @@ impl From<RustFn> for Text {
 }
 
 impl RustFn {
+	#[instrument(name="RustFn::inspect", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(format!("{:?}", *this).into())
 	}
 
+	#[instrument(name="RustFn::@text", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.try_downcast::<Self>()?
 			.clone()
 			.into())
 	}
 
+	#[instrument(name="RustFn::()", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 		let caller = args.try_arg(0)?;

@@ -4,6 +4,7 @@ use crate::types::Text;
 use std::sync::{Arc, Mutex};
 use std::net::{ToSocketAddrs, TcpStream};
 use std::io::{self, Write};
+use tracing::instrument;
 
 #[derive(Debug, Clone)]
 pub struct Tcp(Arc<Mutex<TcpStream>>);
@@ -16,6 +17,7 @@ impl Tcp {
 }
 
 impl Tcp {
+	#[instrument(name="Tcp::()", level="trace")]
 	pub fn qs_call(_: &Object, args: Args) -> Result<Object> {
 		args.try_arg(0)?.try_downcast::<Text>().and_then(|addr| {
 			Tcp::connect(addr.as_ref())

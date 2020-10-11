@@ -5,6 +5,7 @@ use crate::Binding;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::convert::TryFrom;
+use tracing::instrument;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Text(Cow<'static, str>);
@@ -219,10 +220,12 @@ impl std::iter::FromIterator<char> for Text {
 }
 
 impl Text {
+	#[instrument(name="Text::@text", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.clone())
 	}
 
+	#[instrument(name="Text::@regex", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_regex(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -231,24 +234,28 @@ impl Text {
 			.map_err(|err| crate::Error::Messaged(err.to_string()))
 	}
 
+	#[instrument(name="Text::inspect", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_inspect(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(this.inspect().into())
 	}
 
+	#[instrument(name="Text::@list", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_list(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(List::from(&*this).into())
 	}
 
+	#[instrument(name="Text::@bool", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
 		Ok(Boolean::from(&*this).into())
 	}
 
+	#[instrument(name="Text::@num", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_num(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -268,6 +275,7 @@ impl Text {
 		}
 	}
 
+	#[instrument(name="Text::()", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_call(this: &Object, _: Args) -> crate::Result<Object> {
 		if let Some(this) = this.downcast::<Self>() {
 			this.evaluate()
@@ -276,6 +284,7 @@ impl Text {
 		}
 	}
 
+	#[instrument(name="Text::=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
 
@@ -286,6 +295,7 @@ impl Text {
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
 	}
 
+	#[instrument(name="Text::==", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_eql(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
@@ -293,6 +303,7 @@ impl Text {
 		Ok(rhs.map(|rhs| *this == *rhs).unwrap_or(false).into())
 	}
 
+	#[instrument(name="Text::<=>", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
 		let arg = args.try_arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
@@ -300,6 +311,7 @@ impl Text {
 		Ok(arg.map(|a| this.cmp(&a).into()).unwrap_or_default())
 	}
 
+	#[instrument(name="Text::+", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_add(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 		let this = this.try_downcast::<Self>()?;
@@ -307,6 +319,7 @@ impl Text {
 		Ok((this.clone() + &rhs).into())
 	}
 
+	#[instrument(name="Text::+=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_add_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let mut this_mut = this.try_downcast_mut::<Self>()?;
@@ -321,6 +334,7 @@ impl Text {
 		Ok(this.clone())
 	}
 
+	#[instrument(name="Text::len", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_len(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -344,6 +358,7 @@ impl Text {
 		}
 	}
 
+	#[instrument(name="Text::get", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 
@@ -379,10 +394,12 @@ impl Text {
 		}
 	}
 
+	#[instrument(name="Text::set", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
 	pub fn qs_set(_this: &Object, _args: Args) -> crate::Result<Object> {
 		todo!()
 	}
 
+	#[instrument(name="Text::push", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_push(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?;
 		let mut this_mut = this.try_downcast_mut::<Self>()?;
@@ -397,7 +414,8 @@ impl Text {
 		Ok(this.clone())
 	}
 
-	pub fn qs_pop(this: &Object, _args: Args) -> crate::Result<Object> {
+	#[instrument(name="Text::pop", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_pop(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.try_downcast_mut::<Self>()?
 			.pop()
 			.map(|c| c.to_string())
@@ -405,10 +423,12 @@ impl Text {
 			.unwrap_or_default())
 	}
 
+	#[instrument(name="Text::unshift", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
 	pub fn qs_unshift(_this: &Object, _args: Args) -> crate::Result<Object> {
 		todo!()
 	}
 
+	#[instrument(name="Text::shift", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_shift(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.try_downcast_mut::<Self>()?
 			.shift()
@@ -416,16 +436,19 @@ impl Text {
 			.unwrap_or_default())
 	}
 
+	#[instrument(name="Text::clear", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_clear(this: &Object, _: Args) -> crate::Result<Object> {
 		this.try_downcast_mut::<Self>()?.clear();
 
 		Ok(this.clone())
 	}
 
+	#[instrument(name="Text::split", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
 	pub fn qs_split(_this: &Object, _args: Args) -> crate::Result<Object> {
 		todo!("split")
 	}
 
+	#[instrument(name="Text::reverse", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_reverse(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
 

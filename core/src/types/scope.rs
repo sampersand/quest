@@ -1,16 +1,19 @@
 use crate::{Object, Result, Args};
 use crate::types::Text;
+use tracing::instrument;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Scope;
 
 impl Scope {
+	#[instrument(name="Scope::@text", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
 		const UNNAMED_SCOPE: Text = Text::const_new("<unnamed scope>");
 
 		Ok(this.get_attr_lit("name").unwrap_or_else(|_| UNNAMED_SCOPE.into()))
 	}
 
+	#[instrument(name="Scope::super", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
 	pub fn qs_super(_this: &Object, _args: Args) -> Result<Object> {
 		// let attr = args.try_arg(0)?;
 		// let mut args = argstry_.args(1..)?;

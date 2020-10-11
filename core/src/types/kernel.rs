@@ -1,5 +1,6 @@
 use crate::{Args, Object, Error, Literal};
 use crate::types::{Boolean, Text, Null, Number};
+use tracing::instrument;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Kernel;
@@ -36,10 +37,8 @@ fn object_to_string(object: &Object) -> crate::Result<String> {
 
 impl Kernel {
 	/// Checks the first attribute
+	#[instrument(name="Kernel::if", level="trace")]
 	pub fn qs_if(_: &Object, args: Args) -> crate::Result<Object> {
-		let span = tracing::debug_span!("if");
-		let _guard = span.enter();
-
 		let cond = args.try_arg(0)?;
 		let if_true = args.try_arg(1)?;
 		let is_truthy = is_object_truthy(cond)?;
@@ -55,22 +54,22 @@ impl Kernel {
 		}
 	}
 
+	#[instrument(name="Kernel::disp", level="trace")]
 	pub fn qs_disp(_: &Object, args: Args) -> crate::Result<Object> {
 		display(args.as_ref(), true)?;
 
 		Ok(Object::default())
 	}
 
+	#[instrument(name="Kernel::dispn", level="trace")]
 	pub fn qs_dispn(_: &Object, args: Args) -> crate::Result<Object> {
 		display(args.as_ref(), false)?;
 
 		Ok(Object::default())
 	}
 
+	#[instrument(name="Kernel::while", level="trace")]
 	pub fn qs_while(_: &Object, args: Args) -> crate::Result<Object> {
-		let span = tracing::debug_span!("while");
-		let _guard = span.enter();
-
 		let cond = args.try_arg(0)?;
 		let body = args.try_arg(1)?;
 		let mut result = Object::default();
@@ -82,6 +81,7 @@ impl Kernel {
 		Ok(result)
 	}
 
+	#[instrument(name="Kernel::loop", level="trace")]
 	pub fn qs_loop(_: &Object, args: Args) -> crate::Result<Object> {
 		let body = args.try_arg(0)?;
 
@@ -90,10 +90,12 @@ impl Kernel {
 		}
 	}
 
+	#[instrument(name="Kernel::for", level="trace")]
 	pub fn qs_for(_: &Object, _args: Args) -> crate::Result<Object> {
 		todo!("r#for")
 	}
 
+	#[instrument(name="Kernel::quit", level="trace")]
 	pub fn qs_quit(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::convert::TryFrom;
 
@@ -111,6 +113,7 @@ impl Kernel {
 		std::process::exit(code as i32)
 	}
 
+	#[instrument(name="Kernel::system", level="trace")]
 	pub fn qs_system(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::process::Command;
 		let cmd = object_to_string(args.try_arg(0)?)?;
@@ -125,6 +128,7 @@ impl Kernel {
 			.map(|output| String::from_utf8_lossy(&output.stdout).to_string().into())
 	}
 
+	#[instrument(name="Kernel::rand", level="trace")]
 	pub fn qs_rand(_: &Object, args: Args) -> crate::Result<Object> {
 		use crate::types::number::FloatType;
 
@@ -145,6 +149,7 @@ impl Kernel {
 		Ok((rand::random::<FloatType>() * (end - start) + start).into())
 	}
 
+	#[instrument(name="Kernel::prompt", level="trace")]
 	pub fn qs_prompt(_: &Object, args: Args) -> crate::Result<Object> {
 		use std::io;
 
@@ -168,6 +173,7 @@ impl Kernel {
 		Ok(buf.into())
 	}
 
+	#[instrument(name="Kernel::return", level="trace")]
 	pub fn qs_return(_: &Object, args: Args) -> crate::Result<Object> {
 		let to = crate::Binding::from(args.try_arg(0)?.clone());
 		let obj = args.arg(1).map(Object::clone).unwrap_or_default();
@@ -175,6 +181,7 @@ impl Kernel {
 		Err(Error::Return { to, obj })
 	}
 
+	#[instrument(name="Kernel::assert", level="trace")]
 	pub fn qs_assert(_: &Object, args: Args) -> crate::Result<Object> {
 		let arg = args.try_arg(0)?;
 
@@ -187,6 +194,7 @@ impl Kernel {
 		Err(Error::AssertionFailed(msg))
 	}
 
+	#[instrument(name="Kernel::sleep", level="trace")]
 	pub fn qs_sleep(_: &Object, args: Args) -> crate::Result<Object> {
 		let dur = *args.try_arg(0)?.call_downcast::<Number>()?;
 
@@ -194,6 +202,7 @@ impl Kernel {
 		Ok(Object::default())
 	}
 
+	#[instrument(name="Kernel::open", level="trace")]
 	pub fn qs_open(_: &Object, _args: Args) -> crate::Result<Object> {
 		// let filename = args.try_arg(0)?.downcast_call::<types::Text>();
 		todo!("open")

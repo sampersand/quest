@@ -1,4 +1,5 @@
 use crate::{Object, Result, Args, Literal};
+use tracing::instrument;
 
 /// A class that holds all the basic functions objects can have.
 ///
@@ -45,7 +46,8 @@ impl Basic {
 	/// ```quest
 	/// assert(Basic.$@bool() == true);
 	/// ```
-	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
+	#[instrument(name="Basic::@bool", level="trace", skip(_this), fields(self=?_this))]
+	pub fn qs_at_bool(_this: &Object, _: Args) -> Result<Object> {
 		Ok(true.into())
 	}
 
@@ -87,6 +89,7 @@ impl Basic {
 	/// ```quest
 	/// assert(Basic.$@text() == Basic.$inspect());
 	/// ```
+	#[instrument(name="Basic::@text", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_at_text<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(&Literal::INSPECT, args)
 	}
@@ -138,7 +141,7 @@ impl Basic {
 	/// ```quest
 	/// assert(Basic == Basic);
 	/// ```
-	#[inline]
+	#[instrument(name="Basic::==", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_eql(this: &Object, args: Args) -> Result<Object> {
 		let rhs = args.try_arg(0)?;
 
@@ -151,7 +154,7 @@ impl Basic {
 	///
 	/// # Arguments
 	/// 1. (required) The other object.
-	#[inline]
+	#[instrument(name="Basic::!=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_neq<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(&Literal::EQL, args)?.call_attr_lit(&Literal::NOT, &[])
 	}
@@ -159,7 +162,7 @@ impl Basic {
 	/// Get the logical inverse of `this`.
 	///
 	/// This simply calls the `@bool` method and then the `!` method on the result.
-	#[inline]
+	#[instrument(name="Basic::!", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_not<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		this.call_attr_lit(&Literal::AT_BOOL, args)?.call_attr_lit(&Literal::NOT, &[])
 	}
@@ -167,7 +170,7 @@ impl Basic {
 	/// Get a hash of `this`.
 	///
 	/// This generates a unique hash per object by hashing the object's [`id`](Object::id).
-	#[inline]
+	#[instrument(name="Basic::hash", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_hash(this: &Object, _: Args) -> Result<Object> {
 		Ok(crate::utils::hash(&this.id()).into())
 	}
@@ -176,7 +179,7 @@ impl Basic {
 	///
 	/// This doesn't actually clone the underlying data---it marks it as "shared", and if it's
 	/// modified it will be cloned.
-	#[inline]
+	#[instrument(name="Basic::clone", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_clone(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.deep_clone())
 	}
@@ -184,7 +187,7 @@ impl Basic {
 	/// Simply returns `this`.
 	///
 	/// This is useful for passing methods around to functions.
-	#[inline]
+	#[instrument(name="Basic::itself", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_itself(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.clone())
 	}

@@ -1,9 +1,9 @@
-; = a 0
-; = b 1
-; = n 10
-; = WHILE (> n 1)
-	; = t b
-	; = b (+ b a)
-	; = a t
-	= n - n 1
-OUTPUT b
+; = a 0              # a = 0
+; = b 1              # b = 1
+; = n 10             # n = 10
+; = WHILE (> n 1)    # while (n > 1):
+  ; = tmp b          #   tmp = b
+  ; = b (+ b a)      #   b = b + a
+  ; = a tmp          #   a = tmp
+  = n - n 1          #   n = n -1
+OUTPUT b             # print(b)

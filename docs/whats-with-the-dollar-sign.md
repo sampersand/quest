@@ -30,7 +30,7 @@ When you write `disp`, you're actually looking up the binding for the value `dis
 Eesh. But, this serves a purpose: It allows the language to be truly key-value based, as "identifiers" are actually objects!
 
 # Why use Dollar Signs---The `.` operator
-So we've now explained _how_ the `$` works. But why? Simply put, it allows us to treat identifiers/variable names as simply another object type---we're no longer limited to indexing via `Text`s, but we also can use `Number`s, `Boolean`s, or anything else! (You can read more about the rational behind this in the [Object and Maps](docs/obejcts-and-maps-part1.md) series.)  This gives us a lot of flexibility in how we define and interact with objects.
+So we've now explained _how_ the `$` works. But why? Simply put, it allows us to treat identifiers/variable names as simply another object type---we're no longer limited to indexing via `Text`s, but we also can use `Number`s, `Boolean`s, or anything else! (You can read more about the rational behind this in the [Object and Maps](obejcts-and-maps-part1.md) series.)  This gives us a lot of flexibility in how we define and interact with objects.
 
 In fact, `.` is an operator, just like `+` or `*`! Its normal function is just what you'd expect: Looking up values associated with keys. However, you can completely redefine it however you want, allowing you to redefine how attributes work. This Let's dive into the `.` operator!
 

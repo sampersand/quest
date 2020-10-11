@@ -46,24 +46,27 @@ fn run_options(Opts { file, eval, args, .. }: Opts) -> Result<Object> {
 }
 
 fn setup_tracing() {
-	use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
-	use tracing_tree::HierarchicalLayer;
-	let layer = HierarchicalLayer::default()
-		.with_indent_lines(true)
-		.with_indent_amount(2)
-		.with_thread_names(true)
-		.with_thread_ids(true)
-		.with_verbose_exit(true)
-		.with_verbose_entry(true)
-		.with_targets(true);
+	// use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
+	// use tracing_tree::HierarchicalLayer;
+	// let layer = HierarchicalLayer::default()
+	// 	.with_indent_lines(true)
+	// 	.with_indent_amount(2)
+	// 	.with_thread_names(true)
+	// 	.with_thread_ids(true)
+	// 	.with_verbose_exit(true)
+	// 	.with_verbose_entry(true)
+	// 	.with_targets(true);
 
-	let subscriber = Registry::default().with(layer);
-	tracing::subscriber::set_global_default(subscriber).unwrap();
+	// let subscriber = Registry::default().with(layer);
+	// tracing::subscriber::set_global_default(subscriber).unwrap();
+	if std::env::var("QUEST_LOGGING").is_err() {
+		return;
+	}
 
-	// tracing_subscriber::fmt()
-	// 	.with_max_level(tracing::level_filters::LevelFilter::TRACE)
-	// 	.with_span_events(tracing_subscriber::fmt::format::FmtSpan::FULL)
-	// 	.init();
+	tracing_subscriber::fmt()
+		.with_max_level(tracing::level_filters::LevelFilter::TRACE)
+		.with_span_events(tracing_subscriber::fmt::format::FmtSpan::FULL)
+		.init();
 }
 
 fn main() {
