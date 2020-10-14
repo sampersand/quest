@@ -32,9 +32,7 @@ impl Eq for RustFn {}
 impl PartialEq for RustFn {
 	#[inline]
 	fn eq(&self, rhs: &Self) -> bool {
-		let eql = (self.func as usize) == (rhs.func as usize);
-		debug_assert_eq!(eql, self.name == rhs.name);
-		eql
+		self.name == rhs.name
 	}
 }
 
