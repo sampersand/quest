@@ -454,12 +454,15 @@ impl List {
 		for idx in 0.. {
 			// so as to not lock the object, we check the index each and every time.
 			// this allows it to be modified during the `each` invocation.
-			let this = this.try_downcast::<Self>()?;
-			if idx >= this.len() {
-				break;
-			} else {
-				block.call_attr_lit(&Literal::CALL, &[&this.0[idx], &idx.into()])?;
-			}
+			let obj = {
+				let this = this.try_downcast::<Self>()?;
+				if idx >= this.len() {
+					break;
+				}
+				this.0[idx].clone()
+			};
+
+			block.call_attr_lit(&Literal::CALL, &[&obj])?;
 		}
 
 		Ok(this.clone())

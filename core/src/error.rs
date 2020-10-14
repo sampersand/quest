@@ -5,10 +5,12 @@ use std::fmt::{self, Display, Formatter};
 mod key_error;
 mod type_error;
 mod value_error;
+mod argument_error;
 
 pub use type_error::TypeError;
 pub use key_error::KeyError;
 pub use value_error::ValueError;
+pub use argument_error::ArgumentError;
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -19,6 +21,9 @@ pub enum Error {
 
 	/// An invalid key was requested
 	KeyError(KeyError),
+
+	/// A problem occurred with the arguments.
+	ArgumentError(ArgumentError),
 
 	/// An invalid type was supplied somewhere
 	TypeError(TypeError),
@@ -55,6 +60,7 @@ impl Display for Error {
 			Self::KeyError(err) => Display::fmt(&err, f),
 			Self::TypeError(err) => Display::fmt(&err, f),
 			Self::ValueError(err) => Display::fmt(&err, f),
+			Self::ArgumentError(err) => Display::fmt(&err, f),
 			Self::AssertionFailed(Some(err)) => write!(f, "assertion failed: {}", err),
 			Self::AssertionFailed(None) => write!(f, "assertion failed"),
 			Self::Boxed(err) => Display::fmt(&err, f),

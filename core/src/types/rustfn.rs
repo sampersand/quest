@@ -1,6 +1,8 @@
 mod args;
 mod binding;
+mod closure;
 
+pub use closure::RustClosure;
 pub use args::Args;
 pub use binding::Binding;
 
@@ -10,14 +12,19 @@ use std::fmt::{self, Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use tracing::instrument;
 
-type Inner = for<'s, 'o> fn(&'o Object, Args<'s, 'o>) -> crate::Result<Object>;
+type FnPointer = for<'s, 'o> fn(&'o Object, Args<'s, 'o>) -> crate::Result<Object>;
 
 #[derive(Clone, Copy)]
-pub struct RustFn(&'static str, Inner);
+pub struct RustFn { 
+	name: &'static str,
+	func: FnPointer
+}
 
 impl Debug for RustFn {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		f.debug_tuple("RustFn").field(&self.0).finish()
+		f.debug_tuple("RustFn")
+			.field(&self.name)
+			.finish()
 	}
 }
 
@@ -25,8 +32,8 @@ impl Eq for RustFn {}
 impl PartialEq for RustFn {
 	#[inline]
 	fn eq(&self, rhs: &Self) -> bool {
-		let eql = (self.1 as usize) == (rhs.1 as usize);
-		debug_assert_eq!(eql, self.0 == rhs.0);
+		let eql = (self.func as usize) == (rhs.func as usize);
+		debug_assert_eq!(eql, self.name == rhs.name);
 		eql
 	}
 }
@@ -34,19 +41,19 @@ impl PartialEq for RustFn {
 impl Hash for RustFn {
 	#[inline]
 	fn hash<H: Hasher>(&self, h: &mut H) {
-		(self.1 as usize).hash(h)
+		(self.func as usize).hash(h)
 	}
 }
 
 impl RustFn {
 	#[inline]
-	pub fn new(name: &'static str, func: Inner) -> Self {
-		Self(name, func)
+	pub fn new(name: &'static str, func: FnPointer) -> Self {
+		Self { name, func }
 	}
 
 	#[inline]
 	pub fn call<'o>(&self, obj: &'o Object, args: Args<'_, 'o>) -> crate::Result<Object> {
-		(self.1)(obj, args)
+		(self.func)(obj, args)
 	}
 }
 
@@ -54,7 +61,7 @@ impl RustFn {
 impl From<RustFn> for Text {
 	#[inline]
 	fn from(rustfn: RustFn) -> Self {
-		Self::const_new(rustfn.0)
+		Self::const_new(rustfn.name)
 	}
 }
 

@@ -6,7 +6,7 @@ use std::process::Command;
 //
 // Ideally we'd separate tests from examples or we'd have a way of indicating
 // this, but for a single item it's not worth it.
-const SKIP: &[&str] = &["guessing_game.qs"];
+const SKIP: &[&str] = &["guessing-game.qs", "knight/guess.kn"];
 
 fn should_skip(p: &Path) -> bool {
 	SKIP.iter().any(|to_skip| p.ends_with(*to_skip))

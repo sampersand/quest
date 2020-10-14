@@ -44,8 +44,8 @@ pub fn init() {
 	INITIALIZE.call_once(||
 		initialize!(
 			Pristine, Basic, Boolean, BoundFunction, Comparable, Function, Kernel,
-			List, Null, Number, Regex, RustFn, Scope, Text, Iterable, Tcp,
-			iterable::BoundRustFn, BoundRustFn
+			List, Null, Number, Regex, RustFn, RustClosure, Scope, Text, Iterable, Tcp,
+			BoundRustFn // todo: remove it?
 		)
 	)
 }

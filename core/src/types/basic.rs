@@ -156,7 +156,8 @@ impl Basic {
 	/// 1. (required) The other object.
 	#[instrument(name="Basic::!=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_neq<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
-		this.call_attr_lit(&Literal::EQL, args)?.call_attr_lit(&Literal::NOT, &[])
+		this.call_attr_lit(&Literal::EQL, args)?
+			.call_attr_lit(&Literal::NOT, &[])
 	}
 
 	/// Get the logical inverse of `this`.
@@ -164,7 +165,8 @@ impl Basic {
 	/// This simply calls the `@bool` method and then the `!` method on the result.
 	#[instrument(name="Basic::!", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_not<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
-		this.call_attr_lit(&Literal::AT_BOOL, args)?.call_attr_lit(&Literal::NOT, &[])
+		this.call_attr_lit(&Literal::AT_BOOL, args)?
+			.call_attr_lit(&Literal::NOT, &[])
 	}
 
 	/// Get a hash of `this`.

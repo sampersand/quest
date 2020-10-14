@@ -16,7 +16,7 @@ impl From<ValueError> for super::Error {
 
 impl Display for ValueError {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		write!(f, "type error: ")?;
+		write!(f, "value error: ")?;
 		match self {
 			ValueError::Messaged(msg) => Display::fmt(&msg, f),
 		}

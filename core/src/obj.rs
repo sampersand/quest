@@ -402,7 +402,8 @@ impl Object {
 		let result = self.get_attr(attr)?;
 
 		// remove this hack? lol
-		if result.is_a::<types::RustFn>() || format!("{:?}", result).starts_with("Object(Block") ||
+		if result.is_a::<types::RustFn>() || result.is_a::<types::RustClosure>() || 
+				format!("{:?}", result).starts_with("Object(Block") ||
 				result.is_a::<types::BoundFunction>() {
 			let bound_res = Self::new(crate::types::BoundFunction);
 			bound_res.set_attr_lit("__bound_object_owner__", self.clone())?;

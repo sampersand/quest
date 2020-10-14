@@ -1,91 +1,66 @@
 use crate::{Object, Args};
-use std::fmt::{self, Debug, Formatter};
+use crate::types::{RustClosure, Boolean};
+use tracing::instrument;
 use std::sync::Arc;
 use parking_lot::Mutex;
-use tracing::instrument;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Iterable;
 
-#[derive(Clone)]
-pub struct BoundRustFn(pub Arc<dyn Fn(Object) -> crate::Result<()> + Send + Sync>);
-
-impl Debug for BoundRustFn {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		f.debug_tuple("BoundRustFn").field(&"<fn>").finish()
-	}
-}
-
-impl_object_type!{
-for BoundRustFn [(parents super::Function)]:
-	"()" => function |this: &Object, args: Args| {
-		let arg = args.try_arg(0)?.clone();
-		(this.try_downcast::<Self>()?.0)(arg).map(|_| this.clone())
-	}
-}
-
-fn foreach<F>(this: &Object, block: Object, f: F) -> crate::Result<()>
+fn foreach<F>(this: &Object, func: F) -> crate::Result<Object>
 where
-	F: Fn(Object, Object) -> crate::Result<()> + Send + Sync + 'static
+	F: Fn(Args, &mut Vec<Object>) -> crate::Result<Object> + Send + Sync + 'static
 {
-	let bound =
-		BoundRustFn(Arc::new(move |obj| {
-			let called = block.call_attr_lit("()", &[&obj])?;
-			f(obj, called)
-		}));
+	let ret = Arc::new(Mutex::new(vec![]));
+	let ret_clone = ret.clone();
 
-	let each = this.get_attr_lit("each")?;
-	each.call_attr_lit("()", &[this, &Object::from(bound)])?;
+	let closure = RustClosure::new(move |args| (func)(args, &mut ret_clone.lock()));
 
-	Ok(())
+	this.call_attr_lit("each", &[&closure.into()])?;
+
+	match Arc::try_unwrap(ret) {
+		// no one else has a reference, so we're all good.
+		Ok(mutex) => Ok(mutex.into_inner().into()),
+		// we have to clone it now. darn!
+		Err(arc) => Ok(arc.lock().clone().into())
+	}
 }
 
 impl Iterable {
 	#[instrument(name="Iterable::map", level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_map(this: &Object, args: Args) -> crate::Result<Object> {
-		let block = args.try_arg(0)?;
+		let block = args.try_arg(0)?.clone();
 
-		let ret = Arc::new(Mutex::new(vec![]));
-		let ret2 = ret.clone();
-
-		foreach(this, block.clone(), move |_, obj| {
-			ret2.lock().push(obj);
-			Ok(())
-		})?;
-
-		match Arc::try_unwrap(ret) {
-			// no one else has a refrence, so we're all good.
-			Ok(mutex) => Ok(mutex.into_inner().into()),
-			// we have to clone it now. darn!
-			Err(arc) => Ok(arc.lock().clone().into())
-		}
+		foreach(this, move |args, list| {
+			let mapped = block.call_attr_lit("()", args.shorten())?;
+			list.push(mapped.clone());
+			Ok(mapped)
+		})
 	}
 
 	#[instrument(name="Iterable::select", level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_select(this: &Object, args: Args) -> crate::Result<Object> {
-		let block = args.try_arg(0)?;
+		let block = args.try_arg(0)?.clone();
 
-		let ret = Arc::new(Mutex::new(Vec::new()));
-		let ret2 = ret.clone();
+		foreach(this, move |args, list| {
+			let obj = args.try_arg(0)?.clone();
 
-		foreach(this, block.clone(), move |orig, select| {
-			if select.call_downcast::<crate::types::Boolean>()?.into_inner() {
-				ret2.lock().push(orig);
+			let should_keep = block.call_attr_lit("()", args.shorten())?;
+
+			if should_keep.call_downcast::<Boolean>()?.into_inner() {
+				list.push(obj);
 			}
-			Ok(())
-		})?;
 
-		match Arc::try_unwrap(ret) {
-			// no one else has a refrence, so we're all good.
-			Ok(mutex) => Ok(mutex.into_inner().into()),
-			// we have to clone it now. darn!
-			Err(arc) => Ok(arc.lock().clone().into())
-		}
+			Ok(should_keep) // or should it be `obj`?
+		})
 	}
 }
 
 impl_object_type!{
 for Iterable [(parents super::Basic)]:
-	"map" => function Self::qs_map,
-	"select" => function Self::qs_select,
+	"map2" => function Self::qs_map,
+	"select2" => function Self::qs_select,
 }
+
+
+ // => [:each_slice, :each_cons, :each_with_object, :zip, :take, :take_while, :drop, :drop_while, :cycle, :chunk, :slice_before, :slice_after, :slice_when, :chunk_while, :sum, :uniq, :chain, :lazy, :to_set, :to_h, :include?, :max, :min, :to_a, :find, :entries, :sort, :sort_by, :grep, :grep_v, :count, :detect, :find_index, :find_all, :select, :filter, :filter_map, :reject, :collect, :map, :flat_map, :collect_concat, :inject, :reduce, :partition, :group_by, :tally, :first, :all?, :any?, :one?, :none?, :minmax, :min_by, :max_by, :minmax_by, :member?, :each_with_index, :reverse_each, :each_entry] 

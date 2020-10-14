@@ -1,4 +1,4 @@
-use crate::{Object, Result, Args};
+use crate::{Object, Result, Args, Literal, types::RustClosure};
 use std::sync::Arc;
 use std::fmt::{self, Debug, Formatter};
 use tracing::instrument;
@@ -33,27 +33,30 @@ impl BoundRustFn {
 }
 
 impl Function {
+	pub fn curry(this: Object, rhs: Object) -> Object {
+		RustClosure::new(move |args| {
+			let mut args = args.shorten();
+			args.prepend(&rhs);
+			this.call_attr_lit(&Literal::CALL, args)
+		}).into()
+	}
+}
+
+impl Function {
 	#[instrument(name="Function::<<", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_lsh(this: &Object, args: Args) -> Result<Object> {
 		let this = this.clone();
-		let args = args.into_inner().into_owned().into_iter().map(Clone::clone).collect::<Vec<_>>();
+		let rhs = args.try_arg(0)?.clone();
 
-		Ok(BoundRustFn::new(move |new_args| {
-			let mut args = args.clone();
-			args.extend(new_args.into_iter().map(Clone::clone));
-
-			this.call_attr_lit(&crate::Literal::CALL, args.iter().collect::<Vec<_>>())
-		}).into())
+		Ok(Self::curry(this, rhs))
 	}
 
-	#[instrument(name="Function::>>", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
-	pub fn qs_rsh(_this: &Object, _args: Args) -> Result<Object> {
-		todo!(">>")
-	}
+	#[instrument(name="Function::>>", level="trace", skip(this, args), fields(self=?this, args=?args))]
+	pub fn qs_rsh(this: &Object, args: Args) -> Result<Object> {
+		let this = this.clone();
+		let rhs = args.try_arg(0)?.clone();
 
-	#[instrument(name="Function::curry", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
-	pub fn qs_curry(_this: &Object, _args: Args) -> Result<Object> {
-		todo!("curry")
+		Ok(Self::curry(rhs, this))
 	}
 }
 
@@ -61,7 +64,6 @@ impl_object_type!{
 for Function [(parents super::Basic)]:
 	"<<" => function Self::qs_lsh,
 	">>" => function Self::qs_rsh,
-	"curry" => function Self::qs_curry
 }
 
 mod tests {
@@ -72,8 +74,4 @@ mod tests {
 	#[test]
 	#[ignore]
 	fn rsh() { todo!() }
-
-	#[test]
-	#[ignore]
-	fn curry() { todo!() }
 }

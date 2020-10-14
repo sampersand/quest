@@ -1,5 +1,9 @@
 //! Shared utilities across quest code.
 
+mod slice_index;
+
+pub use slice_index::SliceIndex;
+
 /// Hash  an object by including its type id first.
 pub fn hash<T: std::hash::Hash + 'static>(data: &T) -> u64 {
 	use std::collections::hash_map::DefaultHasher;

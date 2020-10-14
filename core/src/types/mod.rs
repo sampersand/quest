@@ -29,7 +29,7 @@ mod kernel;
 mod basic;
 
 mod function;
-pub mod iterable;
+mod iterable;
 mod comparable;
 mod bound_function;
 mod scope;
@@ -78,7 +78,7 @@ pub use function::Function;
 pub use iterable::Iterable;
 
 #[doc(inline)]
-pub use rustfn::RustFn;
+pub use rustfn::{RustFn, RustClosure};
 
 #[doc(inline)]
 pub use scope::Scope;

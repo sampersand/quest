@@ -2,7 +2,7 @@
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
 pub fn init() {
-	use quest_core::{Object, types::{ObjectType, RustFn, Text, Kernel, rustfn::Binding}};
+	use quest_core::{Object, Binding, types::{ObjectType, RustFn, Text, Kernel}};
 	use crate::expression::Executable;
 
 	use std::sync::Once;

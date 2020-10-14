@@ -454,6 +454,28 @@ impl Text {
 
 		Ok(this.reverse().into())
 	}
+
+	#[instrument(name="Text::each", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
+		let block = args.try_arg(0)?;
+
+		for idx in 0.. {
+			// so as to not lock the object, we check the index each and every time.
+			// this allows it to be modified during the `each` invocation.
+			let obj = {
+				let this = this.try_downcast::<Self>()?;
+				if let Some(c) = this.as_ref().chars().nth(idx) {
+					c.into()
+				} else {
+					break
+				}
+			};
+
+			block.call_attr_lit(&Literal::CALL, &[&obj])?;
+		}
+
+		Ok(this.clone())
+	}
 }
 
 impl_object_type!{
@@ -484,7 +506,7 @@ for Text
 			.deep_clone()
 	}
 }
-[(init_parent super::Basic super::Comparable) (parents super::Basic) (convert "@text")]:
+[(init_parent super::Basic super::Comparable super::Iterable) (parents super::Basic) (convert "@text")]:
 	"@text" => function Text::qs_at_text,
 	"@regex" => function Text::qs_at_regex,
 	"inspect"  => function Text::qs_inspect,
@@ -509,5 +531,6 @@ for Text
 	"clear"   => function Text::qs_clear,
 	"split"   => function Text::qs_split,
 	"reverse" => function Text::qs_reverse,
+	"each"    => function Self::qs_each
 	// "strip"   => function Text::qs_strip,
 }
