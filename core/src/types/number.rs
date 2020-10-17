@@ -1072,8 +1072,8 @@ impl Number {
 	/// 1. (required, `@num`) The value to compare against.
 	#[instrument(name="Number::<=>", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_cmp(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.try_arg(0)?.call_downcast::<Self>();
 		let this = this.try_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.downcast::<Self>();
 
 		Ok(rhs.map(|rhs| this.cmp(&*rhs).into()).unwrap_or_default())
 	}

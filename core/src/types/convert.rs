@@ -6,14 +6,19 @@ use std::marker::PhantomData;
 
 /// A trait that's used to represent the ability for an object to be converted to within Quest, e.g.
 /// via `@text`.
+///
+/// Not every object needs to implement this. For example, it doesn't make much sense to have a `@rustfn`, as there's no
+/// way to convert to [`RustFn`]s(crate::types::RustFn).
 pub trait Convertible : Any + Sized + Clone + ObjectType {
 	/// The function that does the actual conversion.
 	const CONVERT_FUNC: Literal;
 }
 
 impl Object {
+	/// Attempts to convert `self` to the given type, calling [`T::CONVERT_FUNC`](Convertible::CONVERT_FUNC) if `self` is
+	/// not the correct type.
 	pub fn call_downcast<'a, T: Convertible>(&'a self) -> crate::Result<impl Deref<Target=T> + 'a> {
-
+		// We either have an `Original` reference or a `Converted` Object.
 		enum CalledReader<T, D> {
 			Original(D, PhantomData<T>),
 			Converted(Object, D)
@@ -34,25 +39,29 @@ impl Object {
 		}
 
 		if let Some(this) = self.downcast::<T>() {
-			Ok(CalledReader::Original(this, PhantomData))
-		} else {
-			let converted = self.call_attr_lit(&T::CONVERT_FUNC, &[])?;
-			if converted.is_a::<T>() {
-				let dc = unsafe {
-					let cdc = converted.downcast::<T>().expect("bad downcast");
-					let dc = std::mem::transmute_copy(&cdc);
-					std::mem::forget(cdc);
-					dc
-				};
+			return Ok(CalledReader::Original(this, PhantomData));
+		}
 
-				Ok(CalledReader::Converted(converted, dc))
-			} else {
-				Err(TypeError::ConversionReturnedBadType {
-					func: T::CONVERT_FUNC,
-					expected: type_name::<T>(),
-					got: converted.typename()
-				}.into())
-			}
+		let converted = self.call_attr_lit(&T::CONVERT_FUNC, &[])?;
+
+		if converted.is_a::<T>() {
+			// SAFETY: Since we know the `converted` is a `T` already, then we're able to transmute.
+			// This is needed because the compiler isn't smar tenough to know that the two opaque `impl` types are actually
+			// the same.
+			let dc = unsafe {
+				let cdc = converted.downcast::<T>().expect("bad downcast");
+				let dc = std::mem::transmute_copy(&cdc);
+				std::mem::forget(cdc);
+				dc
+			};
+
+			Ok(CalledReader::Converted(converted, dc))
+		} else {
+			Err(TypeError::ConversionReturnedBadType {
+				func: T::CONVERT_FUNC,
+				expected: type_name::<T>(),
+				got: converted.typename()
+			}.into())
 		}
 	}
 }

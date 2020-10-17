@@ -37,6 +37,8 @@ fn call_function(this: &Expression, block: &Block) -> quest_core::Result<Object>
 
 impl Executable for Expression {
 	fn execute(&self) -> quest_core::Result<Object> {
+		// dbg!(self);
+		// std::process::exit(0);
 		match self {
 			Self::Primitive(prim) => prim.execute(),
 			Self::Block(block) => block.execute(),

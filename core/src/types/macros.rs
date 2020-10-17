@@ -115,6 +115,7 @@ macro_rules! args {
 	};
 }
 
+
 #[macro_export]
 /// Create a new object type.
 ///

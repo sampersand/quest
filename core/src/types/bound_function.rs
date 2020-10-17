@@ -3,7 +3,7 @@ use tracing::instrument;
 
 /// A type representing a bound function.
 ///
-/// This may be removed in the future, as all it's used for is wrapping callable objects.
+/// This will be redesigned in the future, as it's not working ideally.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BoundFunction;
 
