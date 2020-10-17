@@ -18,10 +18,13 @@ use tracing::instrument;
 pub struct Comparable;
 
 /// Compare the two sides.
-fn compare(lhs: &Object, rhs: &Object) -> crate::Result<Ordering> {
+fn compare(lhs: &Object, rhs: &Object) -> crate::Result<Option<Ordering>> {
 	let num = lhs.call_attr_lit(&Literal::CMP, &[rhs])?;
-	let num = num.call_downcast::<Number>()?;
-	Ok(num.cmp(&Number::ZERO))
+	if let Some(num) = num.downcast::<Number>().map(|n| *n) {
+		Ok(Some(num.cmp(&Number::ZERO)))
+	} else {
+		Ok(None)
+	}
 }
 
 impl Comparable {
@@ -33,7 +36,7 @@ impl Comparable {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;
 
-		Ok((cmp == Ordering::Less).into())
+		Ok(cmp.map_or(false, |c| c == Ordering::Less).into())
 	}
 
 	/// Check to see if `this` is greater than the first argument in `args`.
@@ -44,7 +47,7 @@ impl Comparable {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;
 
-		Ok((cmp == Ordering::Greater).into())
+		Ok(cmp.map_or(false, |c| c == Ordering::Greater).into())
 	}
 
 	/// Check to see if `this` is less than or equal to the first argument in `args`.
@@ -55,7 +58,7 @@ impl Comparable {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;
 
-		Ok((cmp != Ordering::Greater).into())
+		Ok(cmp.map_or(false, |c| c != Ordering::Greater).into())
 	}
 
 	/// Check to see if `this` is less than or equal to the first argument in `args`.
@@ -66,7 +69,7 @@ impl Comparable {
 		let rhs = args.try_arg(0)?;
 		let cmp = compare(this, rhs)?;
 
-		Ok((cmp != Ordering::Less).into())
+		Ok(cmp.map_or(false, |c| c != Ordering::Less).into())
 	}
 }
 
@@ -109,8 +112,11 @@ mod tests {
 	impl_object_type! { for DummyCmp [(parents crate::types::Basic)]:
 		"<=>" => function |this: &Object, args: Args| {
 			let this = this.try_downcast::<DummyCmp>()?;
-			let rhs = args.try_arg(0)?.try_downcast::<DummyCmp>()?;
-			Ok(this.0.cmp(&rhs.0).into())
+			if let Some(rhs) = args.try_arg(0)?.downcast::<DummyCmp>() {
+				Ok(this.0.cmp(&rhs.0).into())
+			} else {
+				Ok(Object::default())
+			}
 		}
 	}
 
@@ -118,7 +124,7 @@ mod tests {
 	fn lth() {
 		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
-		// assert_call_eq!(Comparable::qs_lth(DummyCmp(0), Number::default()) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_lth(DummyCmp(0), Number::default()) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(1)) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(0)) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_lth(DummyCmp(1), DummyCmp(2)) -> Boolean, true);
@@ -128,7 +134,7 @@ mod tests {
 	fn gth() {
 		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
-		// assert_call_eq!(Comparable::qs_gth(DummyCmp(0), Number::default()) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_gth(DummyCmp(0), Number::default()) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(1)) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(0)) -> Boolean, true);
 		assert_call_eq!(Comparable::qs_gth(DummyCmp(1), DummyCmp(2)) -> Boolean, false);
@@ -138,7 +144,7 @@ mod tests {
 	fn leq() {
 		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
-		// assert_call_eq!(Comparable::qs_leq(DummyCmp(0), Number::default()) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_leq(DummyCmp(0), Number::default()) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(1)) -> Boolean, true);
 		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(0)) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_leq(DummyCmp(1), DummyCmp(2)) -> Boolean, true);
@@ -148,7 +154,7 @@ mod tests {
 	fn geq() {
 		<DummyCmp as crate::types::ObjectType>::initialize().unwrap();
 
-		// assert_call_eq!(Comparable::qs_geq(DummyCmp(0), Number::default()) -> Boolean, false);
+		assert_call_eq!(Comparable::qs_geq(DummyCmp(0), Number::default()) -> Boolean, false);
 		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(1)) -> Boolean, true);
 		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(0)) -> Boolean, true);
 		assert_call_eq!(Comparable::qs_geq(DummyCmp(1), DummyCmp(2)) -> Boolean, false);
