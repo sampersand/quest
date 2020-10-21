@@ -7,14 +7,14 @@ $Person = {
 		$first = _1;
 		$last = _2;
 
-		__this__
+		:0
 	};
 
 	$SAYS_WHAT = 'hi';
 	$@text = { _0.$first + ' ' + _0.$last };
 	$speak = { disp(_0, 'says:', _0.$SAYS_WHAT); };
 
-	__this__
+	:0
 }();
 
 $Child = {
@@ -28,7 +28,7 @@ $Child = {
 		"Baby '" + parent_ims::$@text(_0) + "'"
 	};
 
-	__this__
+	:0
 }();
 
 $sam = Person('Sam', 'W');

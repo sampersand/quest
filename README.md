@@ -36,8 +36,9 @@ disp("Hello, " + where + "!"); # => Hello, world!
 
 Local variables are actually just string keys on the current object. The following is identical to the previous example:
 ```quest
-__this__."where" = "world";
-disp("Hello, " + __this__."where" + "!"); # => Hello, world!
+# `:0` is the same as `this` or `self` in other languages.
+:0."where" = "world";
+disp("Hello, " + :0."where" + "!"); # => Hello, world!
 ```
 
 ## Functions, Classes, and Maps
@@ -62,13 +63,14 @@ disp("4 squared is:", 4.$square());
 Maps are created by simply returning the result of an executed block of code:
 ```quest
 $traffic_lights = {
-	# A blank scope is created whenever a block is called.
+	# A blank scope is created whenever a block is called. Again, `:0` is the
+	# same as `this` / `self` in other languages. In this case, it means the
+	# current scope.
+	:0."red" = 'stop';
+	:0."green" = "go";
+	:0."yellow" = "go, if you can";
 
-	__this__."red" = 'stop';
-	__this__."green" = "go";
-	__this__."yellow" = "go, if you can";
-
-	__this__ # Return the current scope
+	:0 # Return the current scope
 }();
 
 disp("Green means", traffic_lights."green"); # => Green means go
@@ -81,7 +83,7 @@ $Person = {
 
 	# Whenever something is called, the `()` attribute is run.
 	# "Constructors" are really just defining a `()` attribute that overwrites `__parents__` and
-	# returns `__this__` as the last value.
+	# returns `:0` as the last value.
 	$() = {
 		# You can have multiple parents (to allow for multiple inheritance and mixins).
 		# However, here we don't need to have multiple parents.
@@ -90,7 +92,7 @@ $Person = {
 		$first = _1;
 		$last = _2;
 
-		__this__ # return the current scope, i.e. the new object
+		:0 # return the current scope, i.e. the new object
 	};
 
 	# Define the conversion to a text object
@@ -100,7 +102,7 @@ $Person = {
 		_0.$first + " " + _0.$last
 	};
 
-	__this__ # like in `traffic_lights`, we return the current scope.
+	:0 # like in `traffic_lights`, we return the current scope.
 }();
 
 $person = Person("John", "Doe");
@@ -206,12 +208,12 @@ Unlike most languages, `=` is actually an _operator_. Only `Text` has it defined
 $x = 5; # call the `Text::=` function implicitly
 $y.$=(6); # call the `Text::=` function explicitly
 
-disp(__this__.$x, __this__.$y); # => 5 6
+disp(:0.$x, :0.$y); # => 5 6
 
 Number.$= = Text::$=; # now you can assign numbers.
 
 3 = 4;
-disp(__this__.3) # => 4
+disp(:0.3) # => 4
 ```
 
 (Minor note: `a.b = c` doesn't actually use the `=` operator; it's syntactic sugar for the `.=` operator—`a.$.=(b,c)`—and is accessible on every object that inherits from `Pristine` (which is everything, by default).)
@@ -220,7 +222,7 @@ disp(__this__.3) # => 4
 
 ```quest
 $x = 5;
-disp(x, $x(), 'x'(), __this__.'x', __this__.$x); # => 5 5 5 5 5
+disp(x, $x(), 'x'(), :0.'x', :0.$x); # => 5 5 5 5 5
 ```
 
 ## Everything is fair game

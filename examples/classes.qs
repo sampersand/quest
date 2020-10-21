@@ -10,8 +10,8 @@ $Person = {
 
 	# There is no "constructor," per se. Generally, overloading the "call"
 	# operator (i.e. `()`) is used to construct a class (by modifying the scope
-	# of the function and returning `__this__` at the end), but this is just a
-	# convention.
+	# of the function and returning `:0` (which means `self`/`this` in other
+	# languages) at the end), but this is just a convention.
 	$() = {
 		# Since we're within a scope, `__parents__` defaults to `Scope`. We want to
 		# change that so our parents is just `Person`. Note that `_0` is the object
@@ -24,7 +24,7 @@ $Person = {
 		$last = _2;
 
 		# We return the current scope, as it's the current object.
-		__this__
+		:0
 	};
 
 	$instance_methods = {
@@ -35,10 +35,10 @@ $Person = {
 			_0.$first + " " + _0.$last
 		};
 
-		__this__
+		:0
 	}();
 
-	__this__
+	:0
 }();
 
 $sam = Person("Sam", "W");
