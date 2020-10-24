@@ -40,7 +40,6 @@ impl Text {
 
 	pub fn evaluate(&self) -> crate::Result<Object> {
 		match self.as_ref() {
-			s if Literal::__THIS__ == s => Ok(Binding::instance().as_ref().clone()),
 			s if Literal::__STACK__ == s => Ok(Binding::stack().into_iter().map(Object::from).collect::<Vec<_>>().into()),
 			_ => Binding::instance().as_ref().dot_get_attr(&self.to_string().into())
 		}
@@ -288,9 +287,9 @@ impl Text {
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
 
-		if this.downcast::<Self>().map(|this| Literal::__THIS__ == this.as_ref()).unwrap_or(false) {
-			return Ok(Binding::set_binding(rhs).into())
-		}
+		// if this.downcast::<Self>().map(|this| Literal::__THIS__ == this.as_ref()).unwrap_or(false) {
+		// 	return Ok(Binding::set_binding(rhs).into())
+		// }
 
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
 	}
