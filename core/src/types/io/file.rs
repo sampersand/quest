@@ -11,23 +11,33 @@ use std::io::{self, Read, Write, Seek, SeekFrom, BufReader, BufRead};
 
 // is an `Arc<Mutex>` really the best way to do this
 #[derive(Debug)]
-pub struct File(BufReader<fs::File>);
-
+pub struct File {
+	file: BufReader<fs::File>
+}
 
 impl Clone for File {
 	fn clone(&self) -> Self {
-		self.0.get_ref().try_clone().expect("unable to cloen fiel")
+		Self::new(self.file.get_ref().try_clone().expect("unable to clone file"))
 	}
 }
+
 impl File {
 	pub fn new(file: fs::File) -> Self {
-		Self(Arc::new(Mutex::new(BufReader::new(file))))
+		Self { file: BufReader::new(file) }
 	}
 
-	pub fn read_to_end(&mut self) -> io::Result<Text> {
-		let mut buf = Text::default();
+	pub fn read_all(&mut self) -> io::Result<Vec<u8>> {
+		let mut buf = Vec::with_capacity(self.file.buffer().len());
 
-		self.0.lock().read_to_string(buf.as_mut())?;
+		self.file.read_to_end(&mut buf)?;
+
+		Ok(buf)
+	}
+
+	pub fn read_amnt(&mut self, amnt: usize) -> io::Result<Vec<u8>> {
+		let mut buf = vec![0; amnt];
+
+		self.file.read_exact(&mut buf)?;
 
 		Ok(buf)
 	}
@@ -74,9 +84,6 @@ impl File {
 
 	#[instrument(name="File::open", level="trace", skip(this, args), fields(self=?this, args=?args))]
 	pub fn qs_read(this: &Object, args: Args) -> crate::Result<Object> {
-		fn read_until(mut inp: impl Read, cap: usize, func: impl Fn(&str) -> bool) -> io::Result<String> {
-			let mut buf = Vec::with_capacity(cap);
-		}
 		let mut this = this.try_downcast_mut::<Self>()?;
 
 		let arg = args.arg(0);
@@ -86,26 +93,27 @@ impl File {
 				.map_err(|_| crate::error::ValueError::Messaged("bad read amount given".into()))?;
 			let mut buf = vec![0; amnt];
 
-			this.0.lock().read_exact(&mut buf)?;
+			this.file.read_exact(&mut buf)?;
 
 			Ok(String::from_utf8_lossy(&buf).into_owned().into())
 		} else if let Some(end) = arg.and_then(Object::downcast::<Text>) {
 			// TODO: optimize this lol.
-			let mut reader = this.0.lock();
+			let mut reader = this;
 
 			let mut s = String::with_capacity(end.len());
 			loop {
 				unimplemented!()
-				// this.0.lock().read
+				// this.read
 			}
 			// Ok(this.read_)
 		} else if arg.map_or(true, Object::is_a::<Null>) {
 			let mut buf = String::default();
 
-			this.0.lock().read_to_string(&mut buf)?;
+			this.file.read_to_string(&mut buf)?;
 
 			Ok(buf.into())
-		} else if arg.has_attr(&Literal::CALL) {
+		} else if arg.as_ref().unwrap().has_attr_lit(&Literal::CALL)? {
+			panic!();
 		} else {
 			Err(crate::error::TypeError::Messaged("wrong type given to read".into()).into())
 		}
