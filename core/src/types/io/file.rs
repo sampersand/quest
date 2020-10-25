@@ -174,7 +174,15 @@ impl File {
 		} else {
 			Err(crate::error::TypeError::Messaged("wrong type given to read".into()).into())
 		}
+	}
 
+	#[instrument(name="File::write", level="trace", skip(this, args), fields(self=?this, args=?args))]
+	pub fn qs_write(this: &Object, args: Args) -> crate::Result<Object> {
+		let to_write = args.try_arg(0)?.call_downcast::<Text>()?;
+
+		this.try_downcast_mut::<Self>()?.file.get_mut().write(to_write.as_ref().as_ref())?;
+
+		Ok(this.clone())
 	}
 }
 
@@ -182,6 +190,6 @@ impl_object_type!{
 for File [(parents super::Io)]:
 	"open" => function Self::qs_open,
 	"read" => function Self::qs_read,
-	// "write" => function Self::qs_write,
+	"write" => function Self::qs_write,
 	// "close" => function Self::qs_close
 }
