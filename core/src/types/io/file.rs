@@ -14,14 +14,11 @@ use std::io::{self, Read, Write, Seek, SeekFrom, BufReader, BufRead};
 pub struct File(BufReader<fs::File>);
 
 
-impl crate::utils::TryClone for File {
-	type Err = io::Error;
-
-	fn try_clone(&self) -> Result<Self, Self::Err> {
-		self.0.get_ref().try_clone()
+impl Clone for File {
+	fn clone(&self) -> Self {
+		self.0.get_ref().try_clone().expect("unable to cloen fiel")
 	}
 }
-
 impl File {
 	pub fn new(file: fs::File) -> Self {
 		Self(Arc::new(Mutex::new(BufReader::new(file))))
