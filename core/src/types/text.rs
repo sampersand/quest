@@ -217,6 +217,15 @@ impl Text {
 		self.0.as_ref().chars().rev().collect()
 	}
 
+	pub fn strip(&self) -> Self {
+		self.0.as_ref().trim().into()
+	}
+
+	pub fn replace(&mut self, with: &str) {
+		self.as_mut().clear();
+		self.as_mut().push_str(with);
+	}
+
 	pub fn split(&self, on: Option<&str>) -> Vec<String> {
 		if let Some(on) = on {
 			self.0.split(on).map(ToOwned::to_owned).collect()
@@ -490,6 +499,26 @@ impl Text {
 		Ok(this.reverse().into())
 	}
 
+	#[instrument(name="Text::strip", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_strip(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(this.strip().into())
+	}
+
+	#[instrument(name="Text::replace", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_replace(this: &Object, args: Args) -> crate::Result<Object> {
+		let arg = args.try_arg(0)?;
+
+		if this.is_identical(arg) {
+			return Ok(this.clone());
+		}
+
+		this.try_downcast_mut::<Self>()?.replace(arg.call_downcast::<Self>()?.as_ref());
+
+		Ok(this.clone())
+	}
+
 	#[instrument(name="Text::each", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?;
@@ -566,6 +595,7 @@ for Text
 	"clear"   => function Text::qs_clear,
 	"split"   => function Text::qs_split,
 	"reverse" => function Text::qs_reverse,
-	"each"    => function Self::qs_each
-	// "strip"   => function Text::qs_strip,
+	"each"    => function Self::qs_each,
+	"strip"   => function Text::qs_strip,
+	"replace" => function Text::qs_replace,
 }

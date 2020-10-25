@@ -1,6 +1,6 @@
 #![allow(unused)]
 use crate::{Object, Args, Literal};
-use crate::types::{Text, Number, Null};
+use crate::types::{Text, Number, Null, Regex};
 use tracing::instrument;
 use parking_lot::Mutex;
 use std::convert::TryFrom;
@@ -26,20 +26,84 @@ impl File {
 		Self { file: BufReader::new(file) }
 	}
 
-	pub fn read_all(&mut self) -> io::Result<Vec<u8>> {
-		let mut buf = Vec::with_capacity(self.file.buffer().len());
+	pub fn read_all(&mut self) -> io::Result<String> {
+		let mut buf = String::with_capacity(self.file.buffer().len());
 
-		self.file.read_to_end(&mut buf)?;
+		self.file.read_to_string(&mut buf)?;
 
 		Ok(buf)
 	}
 
-	pub fn read_amnt(&mut self, amnt: usize) -> io::Result<Vec<u8>> {
+	pub fn read_amnt(&mut self, amnt: usize) -> io::Result<String> {
 		let mut buf = vec![0; amnt];
 
 		self.file.read_exact(&mut buf)?;
 
-		Ok(buf)
+		Ok(String::from_utf8_lossy(&buf).into_owned())
+	}
+
+	// note that if EOF is encountered before the sentinel is hit, we just return everything.
+	pub fn read_until_sentinel(&mut self, sentinel: &str) -> io::Result<String> {
+		if sentinel.is_empty() {
+			return self.read_all();
+		}
+
+		let mut buf = Vec::with_capacity(sentinel.len());
+
+		loop {
+			let file_buf = self.file.fill_buf()?;
+
+			if file_buf.is_empty() {
+				break;
+			}
+
+			if std::str::from_utf8(&file_buf).is_err() {
+				return Err(io::Error::new(io::ErrorKind::InvalidData, "stream did not contain valid UTF-8"));
+			}
+
+			if let Some((i, _)) = file_buf.windows(sentinel.len()).enumerate().find(|(_, x)| *x == sentinel.as_bytes()) {
+				let end = i + sentinel.len();
+				buf.extend(&file_buf[..end]);
+				self.file.consume(end);
+				break;
+			} else {
+				buf.extend(file_buf);
+				let len = file_buf.len();
+				self.file.consume(len);
+			}
+
+		}
+
+		Ok(String::from_utf8(buf).expect("we checked to make sure it was valid utf8"))
+	}
+
+	// note that if EOF is encountered before the sentinel is hit, we just return everything.
+	pub fn read_until_func(&mut self, func: impl Fn(&str) -> crate::Result<Option<usize>>) -> crate::Result<String> {
+		let mut buf = Vec::new();
+
+		loop {
+			let file_buf = self.file.fill_buf()?;
+
+			if file_buf.is_empty() {
+				break;
+			}
+
+			let contents = std::str::from_utf8(&file_buf).map_err(|_| 
+					io::Error::new(io::ErrorKind::InvalidData, "stream did not contain valid UTF-8"))?;
+
+			if let Some(end) = func(contents)? {
+				buf.extend(&file_buf[..end]);
+				self.file.consume(end);
+				break;
+			} else {
+				buf.extend(file_buf);
+				let len = file_buf.len();
+				self.file.consume(len);
+			}
+
+		}
+
+		Ok(String::from_utf8(buf).expect("we checked to make sure it was valid utf8"))
 	}
 }
 
@@ -60,7 +124,7 @@ impl From<fs::File> for Object {
 impl File {
 	#[instrument(name="File::open", level="trace", skip(args), fields(args=?args))]
 	pub fn qs_open(_: &Object, args: Args) -> crate::Result<Object> {
-		let filename = args.try_arg(0)?.call_downcast::<Text>()?;
+		let filename = args.try_arg(0)?;
 		let mut openopts = OpenOptions::new();
 
 		if let Some(arg) = args.arg(1) {
@@ -77,7 +141,7 @@ impl File {
 			openopts.read(true);
 		}
 
-		let file = openopts.open(filename.as_ref())?;
+		let file = openopts.open(filename.call_downcast::<Text>()?.as_ref())?;
 
 		Ok(file.into())
 	}
@@ -89,31 +153,24 @@ impl File {
 		let arg = args.arg(0);
 
 		if let Some(amnt) = arg.and_then(Object::downcast::<Number>) {
-			let amnt = usize::try_from(*amnt)
-				.map_err(|_| crate::error::ValueError::Messaged("bad read amount given".into()))?;
-			let mut buf = vec![0; amnt];
-
-			this.file.read_exact(&mut buf)?;
-
-			Ok(String::from_utf8_lossy(&buf).into_owned().into())
+			Ok(this.read_amnt(amnt.truncate() as usize)?.into())
 		} else if let Some(end) = arg.and_then(Object::downcast::<Text>) {
-			// TODO: optimize this lol.
-			let mut reader = this;
-
-			let mut s = String::with_capacity(end.len());
-			loop {
-				unimplemented!()
-				// this.read
-			}
-			// Ok(this.read_)
+			Ok(this.read_until_sentinel(end.as_ref())?.into())
+		} else if let Some(rxp) = arg.and_then(Object::downcast::<Regex>) {
+			// TODO: use the actual `match` quest function
+			Ok(this.read_until_func(|slice| Ok(rxp.as_ref().find(slice).map(|x| x.end())))?.into())
 		} else if arg.map_or(true, Object::is_a::<Null>) {
-			let mut buf = String::default();
-
-			this.file.read_to_string(&mut buf)?;
-
-			Ok(buf.into())
+			Ok(this.read_all()?.into())
 		} else if arg.as_ref().unwrap().has_attr_lit(&Literal::CALL)? {
-			panic!();
+			let arg = arg.unwrap();
+			Ok(this.read_until_func(|slice| {
+				let res = arg.call_attr_lit(&Literal::CALL, &[&slice.into()])?;
+				if let Some(num) = res.downcast::<Number>().map(|n| n.truncate()) {
+					Ok(Some(num as usize))
+				} else {
+					Ok(None)
+				}
+			})?.into())
 		} else {
 			Err(crate::error::TypeError::Messaged("wrong type given to read".into()).into())
 		}

@@ -23,7 +23,7 @@ pub fn init() {
 			}
 
 			this.try_downcast::<Text>().and_then(|this| {
-				if let Ok(binding) = args.try_arg(0) {
+				if let Some(binding) = args.arg(0) {
 					Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
 				} else {
 					execute_text(this.to_string())

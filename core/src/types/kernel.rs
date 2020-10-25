@@ -358,10 +358,6 @@ mod tests {
 
 	#[test]
 	#[ignore]
-	fn eval() { todo!() }
-
-	#[test]
-	#[ignore]
 	fn prompt() { todo!() }
 
 	#[test]

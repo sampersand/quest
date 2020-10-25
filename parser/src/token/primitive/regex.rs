@@ -65,6 +65,7 @@ impl Tokenizable for Regex {
 				'i' => flags.insert(Flags::CASE_INSENSITIVE),
 				'm' => flags.insert(Flags::MULTI_LINE),
 				's' => flags.insert(Flags::DOT_MATCH_NEWLINE),
+				'n' => flags.insert(Flags::DOT_MATCH_NEWLINE),
 				'U' => flags.insert(Flags::SWAP_GREEDY),
 				'x' => flags.insert(Flags::IGNORE_WHITESPACE),
 				chr => {

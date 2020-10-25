@@ -45,7 +45,7 @@ $knight = {
 $functions = {:0}();
 
 {
-	$__this__ = functions;
+	:0 = functions;
 	$unary_fn = {
 		$op = :0::$_1;
 		{
@@ -98,7 +98,6 @@ $functions = {:0}();
 
 		if << (:0::$c) << (_0.$next_expr()) << (_0.$next_expr())
 	};
-
 	:0
 }();
 

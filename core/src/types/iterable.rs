@@ -58,8 +58,8 @@ impl Iterable {
 
 impl_object_type!{
 for Iterable [(parents super::Basic)]:
-	"map2" => function Self::qs_map,
-	"select2" => function Self::qs_select,
+	"map" => function Self::qs_map,
+	"select" => function Self::qs_select,
 }
 
 
