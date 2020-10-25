@@ -199,22 +199,7 @@ impl Object {
 				got: self.typename()
 			}.into())
 	}
-
-	// pub fn classify(&self) -> BuiltinTypes {
-	// 	if let Some(null) = self.downcast::<crate::types::Null>() {
-	// 		BuiltinTypes::Null(&null)
-	// 	} else {
-	// 		BuiltinTypes::Other
-	// 	}
-	// }
 }
-
-pub enum BuiltinTypes<'a> {
-	Null(&'a crate::types::Null),
-	Number(&'a crate::types::Number),
-	Other
-}
-
 
 impl Internal {
 	#[inline]

@@ -63,6 +63,6 @@ for Scope {
 	"@text" => function Self::qs_at_text,
 	"super" => function Self::qs_super,
 	"=" => function |_, args| {
-		return Ok(crate::Binding::set_binding(args.try_arg(0)?.clone()).into())
+		Ok(crate::Binding::set_binding(args.try_arg(0)?.clone()).into())
 	}
 }
