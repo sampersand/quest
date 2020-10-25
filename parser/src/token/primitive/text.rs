@@ -22,7 +22,7 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Option<
 
 	while let Some(chr) = stream.next().transpose()? {
 		match chr {
-			'\\' => match stream.next().transpose()? {
+			'\\' if quote == '"' => match stream.next().transpose()? {
 				Some(chr @ '\\')
 					| Some(chr @ '\'')
 					| Some(chr @ '\"') => text.push(chr),
@@ -35,6 +35,11 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Option<
 					| Some('x') | Some('X') => todo!("additional string parsing"),
 				Some(chr) => return Err(parse_error!(stream, BadEscapeChar(chr))),
 				None      => return Err(parse_error!(context=starting_context, UnterminatedQuote)),
+			},
+			'\\' => match stream.next().transpose()? {
+				Some(chr @ '\\') | Some(chr @ '\'') => text.push(chr),
+				Some(other) => { text.push('\\'); text.push(other); },
+				None => return Err(parse_error!(context=starting_context, UnterminatedQuote))
 			},
 			chr if chr == quote => return Ok(Some(text.into())),
 			chr => text.push(chr)

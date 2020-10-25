@@ -2,7 +2,7 @@
 
 /// Setup the quest parser. This should be run before anything within `quest_parser` is used.
 pub fn init() {
-	use quest_core::{Object, Binding, types::{ObjectType, RustFn, Text, Kernel}};
+	use quest_core::{Binding, types::{ObjectType, RustFn, Text, Kernel}};
 	use crate::expression::Executable;
 
 	use std::sync::Once;
@@ -16,18 +16,14 @@ pub fn init() {
 			.expect("couldn't defined Block");
 
 		Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
-			fn execute_text(text: String) -> quest_core::Result<Object> {
-				Expression::parse_stream(stream::BufStream::from(text).tokens())
-					.map_err(|err| Box::new(err) as Box<_>)?
-					.execute()
-			}
-
 			this.try_downcast::<Text>().and_then(|this| {
 				if let Some(binding) = args.arg(0) {
-					Binding::new_stackframe(Some(binding.clone()), args, |_| execute_text(this.to_string()))
-				} else {
-					execute_text(this.to_string())
+					Binding::set_binding(binding.clone());
 				}
+
+				Expression::parse_stream(stream::BufStream::from(this.to_string()).tokens())
+					.map_err(|err| Box::new(err) as Box<_>)?
+					.execute()
 			})
 		})).expect("couldn't define `eval`");
 	});
