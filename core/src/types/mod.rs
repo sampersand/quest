@@ -41,11 +41,15 @@ mod text;
 pub mod boolean;
 pub mod number;
 pub mod regex;
+pub mod io;
 mod list;
 
 mod tcp;
 
 pub use function::BoundRustFn;
+
+#[doc(inline)]
+pub use io::Io;
 
 #[doc(inline)]
 pub use tcp::Tcp;

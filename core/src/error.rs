@@ -19,6 +19,8 @@ pub enum Error {
 	/// Something that we don't have an error type for yet
 	Messaged(String),
 
+	IoError(std::io::Error),
+
 	/// An invalid key was requested
 	KeyError(KeyError),
 
@@ -59,6 +61,7 @@ impl Display for Error {
 			Self::Messaged(err) => Display::fmt(&err, f),
 			Self::KeyError(err) => Display::fmt(&err, f),
 			Self::TypeError(err) => Display::fmt(&err, f),
+			Self::IoError(err) => Display::fmt(&err, f),
 			Self::ValueError(err) => Display::fmt(&err, f),
 			Self::ArgumentError(err) => Display::fmt(&err, f),
 			Self::AssertionFailed(Some(err)) => write!(f, "assertion failed: {}", err),
@@ -69,6 +72,13 @@ impl Display for Error {
 	}
 }
 
+
+impl From<std::io::Error> for Error {
+	#[inline]
+	fn from(err: std::io::Error) -> Self {
+		Self::IoError(err)
+	}
+}
 impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
 		if let Self::Boxed(err) = self {

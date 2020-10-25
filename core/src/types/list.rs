@@ -292,6 +292,26 @@ impl std::ops::Mul<usize> for &List {
 	}
 }
 
+impl std::ops::MulAssign<usize> for List {
+	fn mul_assign(&mut self, len: usize) {
+		if len == 0 {
+			self.clear();
+			return;
+		}
+
+		self.0.reserve(self.len() * len);
+		let slice = self.0.clone();
+
+		// start from `1` so we skip what we already have, end at len-1 so we can
+		// insert the full slice in when we're done.
+		for _ in 1..len-1 {
+			self.0.extend(slice.iter().cloned());
+		}
+
+		self.0.extend(slice);
+	}
+}
+
 /// "Try" operators
 impl List {
 	#[inline]
@@ -641,9 +661,13 @@ impl List {
 		Ok((&*this * amnt).into())
 	}
 
-	#[instrument(name="List::*=", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
-	pub fn qs_mul_assign(_this: &Object, _args: Args) -> crate::Result<Object> {
-		todo!()
+	#[instrument(name="List::*=", level="trace", skip(this, args), fields(self=?this, args=?args))]
+	pub fn qs_mul_assign(this: &Object, args: Args) -> crate::Result<Object> {
+		let amnt = usize::try_from(*args.try_arg(0)?.call_downcast::<Number>()?)?;
+
+		*this.try_downcast_mut::<Self>()? *= amnt;
+
+		Ok(this.clone())
 	}
 
 	/// Compares two [`List`]s

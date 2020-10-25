@@ -10,6 +10,7 @@ use std::borrow::Borrow;
 
 mod data;
 mod attributes;
+
 use attributes::{Attributes, Value};
 use data::Data;
 
@@ -54,14 +55,12 @@ impl<T: ObjectType> From<Option<T>> for Object {
 	}
 }
 
-
 impl<T: ObjectType> From<T> for Object {
 	#[inline]
 	fn from(data: T) -> Self {
 		Self::new(data)
 	}
 }
-
 
 //-----------------------------------------------------------------------
 // Object creation and metadata
@@ -121,12 +120,12 @@ impl Object {
 
 	/// Checks to see if two objects are idental.
 	#[inline]
-	pub fn is_identical(&self, rhs: &Object) -> bool {
+	pub fn is_identical(&self, rhs: &Self) -> bool {
 		Arc::ptr_eq(&self.0, &rhs.0)
 	}
 
 	/// Compares two objects using [`==`](EQL) to see if they are equal
-	pub fn eq_obj(&self, rhs: &Object) -> crate::Result<bool> {
+	pub fn eq_obj(&self, rhs: &Self) -> crate::Result<bool> {
 		self.call_attr_lit(&Literal::EQL, &[rhs])
 			.map(|obj| obj.downcast::<Boolean>().map(|b| (*b).into_inner()).unwrap_or(false))
 	}
@@ -135,7 +134,7 @@ impl Object {
 	///
 	/// When you [`clone()`] an [`Object`], you're actually just creating another reference to the
 	/// same object in memory. This actually creates another distinct object.
-	pub fn deep_clone(&self) -> Object {
+	pub fn deep_clone(&self) -> Self {
 		Object::from_parts(self.0.data.clone(), self.0.attrs.clone())
 	}
 }

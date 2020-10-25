@@ -162,6 +162,10 @@ impl Kernel {
 		io::stdin().read_line(&mut buf)
 			.map_err(|err| Error::Messaged(format!("couldn't read from stdin: {}", err)))?;
 
+		if buf.is_empty() {
+			return Ok(Object::default())
+		}
+
 		if buf.ends_with('\n') {
 			if cfg!(debug_asserts) {
 				assert_eq!(buf.pop(), Some('\n'));
@@ -215,6 +219,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"false" => const Boolean::new(false),
 	"null" => const Null::new(),
 
+	"Io" => const super::Io::mapping().clone(),
 	"Tcp" => const super::Tcp::mapping().clone(),
 	"Basic" => const super::Basic::mapping().clone(),
 	"Boolean" => const super::Boolean::mapping().clone(),

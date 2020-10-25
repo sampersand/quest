@@ -4,6 +4,21 @@ mod slice_index;
 
 pub use slice_index::SliceIndex;
 
+/// Attempts to clone a resource, which can possibly fail.
+pub trait TryClone : Sized {
+	type Err;
+
+	fn try_clone(&self) -> Result<Self, Self::Err>;
+}
+
+impl<T: Clone> TryClone for T {
+	type Err = std::convert::Infallible;
+
+	fn try_clone(&self) -> Result<Self, Self::Err> {
+		Ok(self.clone())
+	}
+}
+
 /// Hash  an object by including its type id first.
 pub fn hash<T: std::hash::Hash + 'static>(data: &T) -> u64 {
 	use std::collections::hash_map::DefaultHasher;

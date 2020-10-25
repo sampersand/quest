@@ -126,6 +126,9 @@ impl Number {
 		}
 	}
 
+	pub fn truncate(&self) -> IntegerType {
+		TryFrom::try_from(self.round()).unwrap()
+	}
 
 	/// Rounds `self` to the nearest integer (nothing's done if `self` is an integer).
 	pub fn round(&self) -> Self {

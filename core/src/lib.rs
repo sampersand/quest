@@ -28,7 +28,7 @@ pub use types::{ObjectType, rustfn::{Args, Binding}};
 
 /// Start up Quest by initializing all the types.
 pub fn init() {
-	use types::*;
+	use crate::types::*;
 	use parking_lot::Once;
 
 	macro_rules! initialize {
@@ -45,7 +45,7 @@ pub fn init() {
 		initialize!(
 			Pristine, Basic, Boolean, BoundFunction, Comparable, Function, Kernel,
 			List, Null, Number, Regex, RustFn, RustClosure, Scope, Text, Iterable, Tcp,
-			BoundRustFn // todo: remove it?
+			BoundRustFn, Io, types::io::File // todo: remove it?
 		)
 	)
 }

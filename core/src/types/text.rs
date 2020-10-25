@@ -132,6 +132,12 @@ impl AsRef<str> for Text {
 	}
 }
 
+impl AsMut<String> for Text {
+	fn as_mut(&mut self) -> &mut String {
+		self.0.to_mut()
+	}
+}
+
 impl std::ops::Add<&Self> for Text {
 	type Output = Self;
 
@@ -142,7 +148,7 @@ impl std::ops::Add<&Self> for Text {
 
 impl std::ops::AddAssign<&Self> for Text {
 	fn add_assign(&mut self, rhs: &Self) {
-		*self.0.to_mut() += rhs.as_ref();
+		*self.as_mut() += rhs.as_ref();
 	}
 }
 
@@ -183,7 +189,7 @@ impl Text {
 		if self.is_empty() {
 			None
 		} else {
-			Some(self.0.to_mut().remove(0))
+			Some(self.as_mut().remove(0))
 		}
 	}
 
@@ -191,24 +197,32 @@ impl Text {
 		format!("{:?}", self.0).into()
 	}
 
-	// pub fn unshift(&mut self, val: char) {
-	// 	self.0.to_mut().insert(0, val);
-	// }
+	pub fn unshift(&mut self, val: &str) {
+		self.as_mut().insert_str(0, val);
+	}
 
 	pub fn pop(&mut self) -> Option<char> {
-		self.0.to_mut().pop()
+		self.as_mut().pop()
 	}
 
 	pub fn push_str(&mut self, s: &str) {
-		self.0.to_mut().push_str(s);
+		self.as_mut().push_str(s);
 	}
 
 	pub fn clear(&mut self) {
-		self.0.to_mut().clear()
+		self.as_mut().clear()
 	}
 
 	pub fn reverse(&self) -> Self {
 		self.0.as_ref().chars().rev().collect()
+	}
+
+	pub fn split(&self, on: Option<&str>) -> Vec<String> {
+		if let Some(on) = on {
+			self.0.split(on).map(ToOwned::to_owned).collect()
+		} else {
+			self.0.chars().map(|c| c.to_string()).collect()
+		}
 	}
 }
 
@@ -422,9 +436,23 @@ impl Text {
 			.unwrap_or_default())
 	}
 
-	#[instrument(name="Text::unshift", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
-	pub fn qs_unshift(_this: &Object, _args: Args) -> crate::Result<Object> {
-		todo!()
+	#[instrument(name="Text::unshift", level="trace", skip(this, args), fields(self=?this, args=?args))]
+	pub fn qs_unshift(this: &Object, args: Args) -> crate::Result<Object> {
+		let arg = args.try_arg(0)?;
+
+		let is_identical = arg.is_identical(this);
+
+		{
+			let mut this = this.try_downcast_mut::<Self>()?;
+			if is_identical {
+				let dup = this.to_string();
+				this.unshift(&dup);
+			} else {
+				this.unshift(arg.call_downcast::<Self>()?.as_ref());
+			}
+		}
+
+		Ok(this.clone())
 	}
 
 	#[instrument(name="Text::shift", level="trace", skip(this), fields(self=?this))]
@@ -442,9 +470,17 @@ impl Text {
 		Ok(this.clone())
 	}
 
-	#[instrument(name="Text::split", level="trace", skip(_this, _args), fields(self=?_this, args=?_args))]
-	pub fn qs_split(_this: &Object, _args: Args) -> crate::Result<Object> {
-		todo!("split")
+	#[instrument(name="Text::split", level="trace", skip(this, args), fields(self=?this, args=?args))]
+	pub fn qs_split(this: &Object, args: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(
+			if let Some(on) = args.arg(0) {
+				this.split(Some(on.call_downcast::<Self>()?.as_ref()))
+			} else {
+				this.split(None)
+			}.into_iter().map(Object::from).collect::<List>().into()
+		)
 	}
 
 	#[instrument(name="Text::reverse", level="trace", skip(this), fields(self=?this))]
