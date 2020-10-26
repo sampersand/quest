@@ -313,13 +313,13 @@ for Null {
 	}
 }
 [(parents super::Basic) (no_convert)]:
-	"@text" => function Self::qs_at_text,
-	"inspect" => function Self::qs_inspect,
-	"@bool" => function Self::qs_at_bool,
-	"@list" => function Self::qs_at_list,
-	"@num" => function Self::qs_at_num,
-	"()" => function Self::qs_call,
-	"==" => function Self::qs_eql,
+	"@text" => method Self::qs_at_text,
+	"inspect" => method Self::qs_inspect,
+	"@bool" => method Self::qs_at_bool,
+	"@list" => method Self::qs_at_list,
+	"@num" => method Self::qs_at_num,
+	"()" => method Self::qs_call,
+	"==" => method Self::qs_eql,
 }
 
 #[cfg(test)]

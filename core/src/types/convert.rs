@@ -75,8 +75,8 @@ mod tests {
 	struct Dummy;
 	impl Convertible for Dummy { const CONVERT_FUNC: Literal = Literal::new("@dummy"); }
 	impl_object_type! { for Dummy [(parents crate::types::Basic)]:
-		"@dummy2" => function |_, _| Ok(Object::from(Dummy2)),
-		"@dummy3" => function |_, _| Ok(Object::from(Dummy))
+		"@dummy2" => method |_, _| Ok(Object::from(Dummy2)),
+		"@dummy3" => method |_, _| Ok(Object::from(Dummy))
 	}
 
 	#[derive(Debug, Clone)]

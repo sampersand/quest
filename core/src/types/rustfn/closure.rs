@@ -69,6 +69,6 @@ impl RustClosure {
 
 impl_object_type! {
 for RustClosure [(parents super::super::Function)]:
-	"inspect" => function Self::qs_inspect,
-	"()" => function Self::qs_call,
+	"inspect" => method Self::qs_inspect,
+	"()" => method Self::qs_call,
 }

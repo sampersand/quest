@@ -15,7 +15,7 @@ pub fn init() {
 		Kernel::mapping().set_attr_lit("Block", Block::mapping().clone())
 			.expect("couldn't defined Block");
 
-		Text::mapping().set_value_lit("eval", RustFn::new("Text::eval", |this, args| {
+		Text::mapping().set_value_lit("eval", RustFn::method("Text::eval", |this, args| {
 			this.try_downcast::<Text>().and_then(|this| {
 				if let Some(binding) = args.arg(0) {
 					Binding::set_binding(binding.clone());

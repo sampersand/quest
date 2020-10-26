@@ -38,65 +38,73 @@ fn object_to_string(object: &Object) -> crate::Result<String> {
 impl Kernel {
 	/// Checks the first attribute
 	#[instrument(name="Kernel::if", level="trace")]
-	pub fn qs_if(_: &Object, args: Args) -> crate::Result<Object> {
-		let cond = args.try_arg(0)?;
-		let if_true = args.try_arg(1)?;
+	pub fn qs_if(cond: &Object, args: Args) -> crate::Result<Object> {
+		let if_true = args.try_arg(0)?;
 		let is_truthy = is_object_truthy(cond)?;
 
 		tracing::debug!(?cond, %is_truthy);
 
 		if is_truthy {
 			if_true.call_attr_lit(&Literal::CALL, &[])
-		} else if let Some(if_false) = args.arg(2) {
+		} else if let Some(if_false) = args.arg(1) {
 			if_false.call_attr_lit(&Literal::CALL, &[])
 		} else {
-			Ok(Object::default())
+			Ok(cond.clone())
 		}
 	}
 
+	#[instrument(name="Kernel::unless", level="trace")]
+	pub fn qs_unless(cond: &Object, args: Args) -> crate::Result<Object> {
+		let if_true = args.try_arg(0)?;
+		let is_truthy = is_object_truthy(cond)?;
+
+		tracing::debug!(?cond, %is_truthy);
+
+		if !is_truthy {
+			if_true.call_attr_lit(&Literal::CALL, &[])
+		} else if let Some(if_false) = args.arg(1) {
+			if_false.call_attr_lit(&Literal::CALL, &[])
+		} else {
+			Ok(cond.clone())
+		}
+	}
+
+
 	#[instrument(name="Kernel::disp", level="trace")]
-	pub fn qs_disp(_: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs_disp(args: Args) -> crate::Result<Object> {
 		display(args.as_ref(), true)?;
 
 		Ok(Object::default())
 	}
 
 	#[instrument(name="Kernel::dispn", level="trace")]
-	pub fn qs_dispn(_: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs_dispn(args: Args) -> crate::Result<Object> {
 		display(args.as_ref(), false)?;
 
 		Ok(Object::default())
 	}
 
 	#[instrument(name="Kernel::while", level="trace")]
-	pub fn qs_while(_: &Object, args: Args) -> crate::Result<Object> {
-		let cond = args.try_arg(0)?;
-		let body = args.try_arg(1)?;
-		let mut result = Object::default();
+	pub fn qs_while(cond: &Object, args: Args) -> crate::Result<Object> {
+		let body = args.try_arg(0)?;
+		let mut result = None;
 
 		while is_object_truthy(&cond.call_attr_lit(&Literal::CALL, &[])?)? {
-			result = body.call_attr_lit(&Literal::CALL, &[])?;
+			result = Some(body.call_attr_lit(&Literal::CALL, &[])?);
 		}
 
-		Ok(result)
+		Ok(result.unwrap_or_default())
 	}
 
 	#[instrument(name="Kernel::loop", level="trace")]
-	pub fn qs_loop(_: &Object, args: Args) -> crate::Result<Object> {
-		let body = args.try_arg(0)?;
-
+	pub fn qs_loop(body: &Object, _: Args) -> crate::Result<Object> {
 		loop {
 			body.call_attr_lit(&Literal::CALL, &[])?;
 		}
 	}
 
-	#[instrument(name="Kernel::for", level="trace")]
-	pub fn qs_for(_: &Object, _args: Args) -> crate::Result<Object> {
-		todo!("r#for")
-	}
-
 	#[instrument(name="Kernel::quit", level="trace")]
-	pub fn qs_quit(_: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs_quit(args: Args) -> crate::Result<Object> {
 		use std::convert::TryFrom;
 
 		let code = 
@@ -114,12 +122,12 @@ impl Kernel {
 	}
 
 	#[instrument(name="Kernel::system", level="trace")]
-	pub fn qs_system(_: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs_system(cmd: &Object, args: Args) -> crate::Result<Object> {
 		use std::process::Command;
-		let cmd = object_to_string(args.try_arg(0)?)?;
+		let cmd = object_to_string(cmd)?;
 		let mut command = Command::new(cmd);
 
-		for arg in args.try_args(1..).unwrap_or_default().as_ref() {
+		for arg in args.as_ref() {
 			command.arg(object_to_string(arg)?);
 		}
 
@@ -129,7 +137,7 @@ impl Kernel {
 	}
 
 	#[instrument(name="Kernel::rand", level="trace")]
-	pub fn qs_rand(_: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs_rand(args: Args) -> crate::Result<Object> {
 		use crate::types::number::FloatType;
 
 		let mut start: FloatType = 0.0;
@@ -150,7 +158,7 @@ impl Kernel {
 	}
 
 	#[instrument(name="Kernel::prompt", level="trace")]
-	pub fn qs_prompt(_: &Object, args: Args) -> crate::Result<Object> {
+	pub fn qs_prompt(args: Args) -> crate::Result<Object> {
 		use std::io;
 
 		if let Some(arg) = args.arg(0) {
@@ -178,31 +186,34 @@ impl Kernel {
 	}
 
 	#[instrument(name="Kernel::return", level="trace")]
-	pub fn qs_return(_: &Object, args: Args) -> crate::Result<Object> {
-		let to = crate::Binding::from(args.try_arg(0)?.clone());
-		let obj = args.arg(1).map(Object::clone).unwrap_or_default();
+	pub fn qs_return(to: &Object, args: Args) -> crate::Result<Object> {
+		let to = crate::Binding::from(to.clone());
+		let obj = args.arg(0).map(Object::clone).unwrap_or_default();
 
 		Err(Error::Return { to, obj })
 	}
 
 	#[instrument(name="Kernel::assert", level="trace")]
-	pub fn qs_assert(_: &Object, args: Args) -> crate::Result<Object> {
-		let arg = args.try_arg(0)?;
-
-		if is_object_truthy(arg)? {
-			return Ok(arg.clone());
+	pub fn qs_assert(cond: &Object, args: Args) -> crate::Result<Object> {
+		if is_object_truthy(cond)? {
+			return Ok(cond.clone());
 		}
 
-		let msg = args.arg(1).map(object_to_string).transpose()?;
+		let msg = args.arg(0).map(object_to_string).transpose()?;
 
 		Err(Error::AssertionFailed(msg))
 	}
 
 	#[instrument(name="Kernel::sleep", level="trace")]
-	pub fn qs_sleep(_: &Object, args: Args) -> crate::Result<Object> {
-		let dur = *args.try_arg(0)?.call_downcast::<Number>()?;
+	pub fn qs_sleep(args: Args) -> crate::Result<Object> {
+		if let Some(arg) = args.arg(0) {
+			let dur: f64 = (*arg.call_downcast::<Number>()?).into();
+			std::thread::sleep(std::time::Duration::from_secs_f64(dur));
+		} else {
+			// technically doesn't sleep forever lol.
+			std::thread::sleep(std::time::Duration::from_secs_f64(f64::MAX));
+		}
 
-		std::thread::sleep(std::time::Duration::from_secs_f64(dur.into()));
 		Ok(Object::default())
 	}
 
@@ -236,21 +247,21 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"Comparable" => const super::Comparable::mapping().clone(),
 	"Iterable" => const super::Iterable::mapping().clone(),
 
-	"if" => function Self::qs_if, 
+	"if" => method Self::qs_if, 
+	"unless" => method Self::qs_unless, 
 	"disp" => function Self::qs_disp,
 	"dispn" => function Self::qs_dispn,
 	"quit" => function Self::qs_quit,
-	"system" => function Self::qs_system,
+	"system" => method Self::qs_system,
 	"rand" => function Self::qs_rand,
 	"prompt" => function Self::qs_prompt,
-	"while" => function Self::qs_while,
-	"loop" => function Self::qs_loop,
-	"for" => function Self::qs_for,
+	"while" => method Self::qs_while,
+	"loop" => method Self::qs_loop,
 	"sleep" => function Self::qs_sleep,
-	"open" => function Self::qs_open,
-	"return" => function Self::qs_return,
-	"assert" => function Self::qs_assert,
-	"spawn" => function |_, args| {
+	"open" => method Self::qs_open,
+	"return" => method Self::qs_return,
+	"assert" => method Self::qs_assert,
+	"spawn" => method |block, _| {
 		use std::thread::{self, JoinHandle};
 		use std::sync::Arc;
 		use parking_lot::Mutex;
@@ -258,7 +269,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 		struct Thread(Arc<Mutex<Option<JoinHandle<crate::Result<Object>>>>>);
 
 		impl_object_type! { for Thread [(parents super::Basic)]:
-			"join" => function |this, _| this.try_downcast::<Thread>().and_then(|this| {
+			"join" => method |this, _| this.try_downcast::<Thread>().and_then(|this| {
 				this.0.lock().take().expect("no join handle?")
 					.join()
 					.unwrap()
@@ -267,7 +278,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 
 		Thread::initialize().unwrap();
 
-		let block = args.try_arg(0)?.clone();
+		let block = block.clone();
 		Ok(Thread(Arc::new(Mutex::new(Some(thread::spawn(move ||
 			block.call_attr_lit(&Literal::CALL, &[&block])
 		))))).into())

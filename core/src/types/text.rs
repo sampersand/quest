@@ -41,7 +41,7 @@ impl Text {
 	pub fn evaluate(&self) -> crate::Result<Object> {
 		match self.as_ref() {
 			s if Literal::__STACK__ == s => Ok(Binding::stack().into_iter().map(Object::from).collect::<Vec<_>>().into()),
-			_ => Binding::instance().as_ref().dot_get_attr(&self.to_string().into())
+			_ => Binding::instance().as_ref().get_attr(&self.to_string().into())
 		}
 	}
 
@@ -571,31 +571,38 @@ for Text
 	}
 }
 [(init_parent super::Basic super::Comparable super::Iterable) (parents super::Basic) (convert "@text")]:
-	"@text" => function Text::qs_at_text,
-	"@regex" => function Text::qs_at_regex,
-	"inspect"  => function Text::qs_inspect,
-	"@num"    => function Text::qs_at_num,
-	"@list"   => function Text::qs_at_list,
-	"@bool"   => function Text::qs_at_bool,
-	"()"      => function Text::qs_call,
+	"@text" => method Text::qs_at_text,
+	"@regex" => method Text::qs_at_regex,
+	"inspect"  => method Text::qs_inspect,
+	"@num"    => method Text::qs_at_num,
+	"@list"   => method Text::qs_at_list,
+	"@bool"   => method Text::qs_at_bool,
+	"()"      => method Text::qs_call,
 
-	"="       => function Text::qs_assign,
-	"<=>"     => function Text::qs_cmp,
-	"=="      => function Text::qs_eql,
-	"+"       => function Text::qs_add,
-	"+="      => function Text::qs_add_assign,
+	"="       => method Text::qs_assign,
+	"<=>"     => method Text::qs_cmp,
+	"=="      => method Text::qs_eql,
+	"+"       => method Text::qs_add,
+	"+="      => method Text::qs_add_assign,
 
-	"len"     => function Text::qs_len,
-	"get"     => function Text::qs_get,
-	"set"     => function Text::qs_set,
-	"push"    => function Text::qs_push,
-	"pop"     => function Text::qs_pop,
-	"unshift" => function Text::qs_unshift,
-	"shift"   => function Text::qs_shift,
-	"clear"   => function Text::qs_clear,
-	"split"   => function Text::qs_split,
-	"reverse" => function Text::qs_reverse,
-	"each"    => function Self::qs_each,
-	"strip"   => function Text::qs_strip,
-	"replace" => function Text::qs_replace,
+	"len"     => method Text::qs_len,
+	"get"     => method Text::qs_get,
+	"set"     => method Text::qs_set,
+	"push"    => method Text::qs_push,
+	"pop"     => method Text::qs_pop,
+	"unshift" => method Text::qs_unshift,
+	"shift"   => method Text::qs_shift,
+	"clear"   => method Text::qs_clear,
+	"split"   => method Text::qs_split,
+	"reverse" => method Text::qs_reverse,
+	"each"    => method Self::qs_each,
+	"strip"   => method Text::qs_strip,
+	"replace" => method Text::qs_replace,
+
+	"includes" => method |this, args| {
+		let this = this.try_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
+
+		Ok(this.as_ref().contains(rhs.as_ref()).into())
+	}
 }

@@ -29,15 +29,15 @@ impl Tcp {
 
 impl_object_type!{
 for Tcp [(parents super::Basic)]:
-	"()" => function Self::qs_call,
-	"get" => function |this, _| {
+	"()" => method Self::qs_call,
+	"get" => method |this, _| {
 		Ok(ureq::get(this.call_downcast::<Text>()?.as_ref())
 			.call()
 			.into_string()
 			.unwrap()
 			.into())
 	},
-	"write" => function |this, args| {
+	"write" => method |this, args| {
 		let arg = args.try_arg(0)?.call_downcast::<Text>()?.clone();
 
 		this.try_downcast_mut::<Self>().and_then(|tcp| {
@@ -46,7 +46,7 @@ for Tcp [(parents super::Basic)]:
 				.map_err(|err| crate::Error::Messaged(err.to_string()))
 		})
 	},
-	"read" => function |this, _| -> Result<Object> {
+	"read" => method |this, _| -> Result<Object> {
 		this.try_downcast_mut::<Self>().and_then(|tcp| {
 			use std::io::{BufReader, BufRead};
 			let mut res = Vec::<u8>::with_capacity(5);

@@ -60,9 +60,9 @@ for Scope {
 	}
 }
 [(init_parents super::Kernel super::Basic) (parents super::Basic)]:
-	"@text" => function Self::qs_at_text,
-	"super" => function Self::qs_super,
-	"=" => function |_, args| {
+	"@text" => method Self::qs_at_text,
+	"super" => method Self::qs_super,
+	"=" => method |_, args| {
 		Ok(crate::Binding::set_binding(args.try_arg(0)?.clone()).into())
 	}
 }

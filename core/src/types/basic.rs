@@ -72,7 +72,7 @@ impl Basic {
 	/// struct Dummy;
 	/// 
 	/// impl_object_type! { for Dummy [(parents quest_core::types::Basic)]:
-	/// 	"inspect" => function |_, _| Ok("hi friend".into())
+	/// 	"inspect" => method |_, _| Ok("hi friend".into())
 	/// }
 	/// # quest_core::init();
 	/// # <Dummy as quest_core::types::ObjectType>::initialize().unwrap();
@@ -193,18 +193,31 @@ impl Basic {
 	pub fn qs_itself(this: &Object, _: Args) -> Result<Object> {
 		Ok(this.clone())
 	}
+
+	// methods to update:
 }
 
 impl_object_type!{
 for Basic [(parents super::Pristine)]:
-	"@bool" => function Self::qs_at_bool,
-	"@text" => function Self::qs_at_text,
-	"==" => function Self::qs_eql,
-	"!=" => function Self::qs_neq,
-	"!" => function Self::qs_not,
-	"clone" => function Self::qs_clone,
-	"hash" => function Self::qs_hash,
-	"itself" => function Self::qs_itself,
+	"@bool" => method Self::qs_at_bool,
+	"@text" => method Self::qs_at_text,
+	"==" => method Self::qs_eql,
+	"!=" => method Self::qs_neq,
+	"!" => method Self::qs_not,
+	"clone" => method Self::qs_clone,
+	"hash" => method Self::qs_hash,
+	"itself" => method Self::qs_itself,
+
+	// TODO: move these out of kernel
+	"if" => method super::Kernel::qs_if, 
+	"and" => method super::Kernel::qs_if, 
+	"or" => method super::Kernel::qs_unless, 
+	"disp" => function super::Kernel::qs_disp,
+	"dispn" => function super::Kernel::qs_dispn,
+	"while" => method super::Kernel::qs_while,
+	"loop" => method super::Kernel::qs_loop,
+	"return" => method super::Kernel::qs_return,
+	"assert" => method super::Kernel::qs_assert,
 	// "||"    => Self::or,
 	// "&&"    => Self::and,
 }
@@ -230,7 +243,7 @@ mod tests {
 			struct Dummy;
 
 			impl_object_type! { for Dummy [(parents Basic)]:
-				"inspect" => function |_, _| Ok("foo".into())
+				"inspect" => method |_, _| Ok("foo".into())
 			}
 
 			<Dummy as crate::types::ObjectType>::initialize().unwrap();
@@ -267,7 +280,7 @@ mod tests {
 			struct Dummy(i64);
 
 			impl_object_type! { for Dummy [(parents Basic)]:
-				"==" => function |this: &Object, args: Args| {
+				"==" => method |this: &Object, args: Args| {
 					let rhs = args.try_arg(0)?;
 					this.try_downcast::<Dummy>().and_then(|this| {
 						rhs.try_downcast::<Dummy>().map(|rhs| Object::from(*this == *rhs))
@@ -317,7 +330,7 @@ mod tests {
 			struct Dummy(bool);
 
 			impl_object_type! { for Dummy [(parents Basic)]:
-				"@bool" => function |this: &Object, _: Args| {
+				"@bool" => method |this: &Object, _: Args| {
 					this.try_downcast::<Dummy>().map(|this| Object::from(this.0))
 				}
 			}
@@ -353,7 +366,7 @@ mod tests {
 			struct Dummy(i32);
 
 			impl_object_type! { for Dummy [(parents Basic)]:
-				"==" => function |this: &Object, args: Args| {
+				"==" => method |this: &Object, args: Args| {
 					this.try_downcast::<Dummy>().and_then(|this|
 						args.try_arg(0)?.try_downcast::<Dummy>().map(|rhs| *this == *rhs)
 						.map(Object::from)

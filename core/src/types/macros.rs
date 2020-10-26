@@ -162,7 +162,14 @@ macro_rules! impl_object_type {
 	}};
 
 	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => function $val:expr $(, $($args:tt)*)?) => {{
-		$class.set_value_lit($attr, $crate::types::RustFn::new(
+		$class.set_value_lit($attr, $crate::types::RustFn::function(
+			concat!(stringify!($obj), "::", $attr), $val)
+		)?;
+		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);
+	}};
+
+	(@SET_ATTRS $class:ident $obj:ty; $attr:expr => method $val:expr $(, $($args:tt)*)?) => {{
+		$class.set_value_lit($attr, $crate::types::RustFn::method(
 			concat!(stringify!($obj), "::", $attr), $val)
 		)?;
 		impl_object_type!(@SET_ATTRS $class $obj; $($($args)*)?);

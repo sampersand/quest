@@ -75,10 +75,10 @@ impl Comparable {
 
 impl_object_type!{
 for Comparable [(parents super::Basic)]:
-	"<" => function Self::qs_lth,
-	">" => function Self::qs_gth,
-	"<=" => function Self::qs_leq,
-	">=" => function Self::qs_geq,
+	"<" => method Self::qs_lth,
+	">" => method Self::qs_gth,
+	"<=" => method Self::qs_leq,
+	">=" => method Self::qs_geq,
 }
 
 impl From<Ordering> for crate::Object {
@@ -110,7 +110,7 @@ mod tests {
 	struct DummyCmp(u8);
 
 	impl_object_type! { for DummyCmp [(parents crate::types::Basic)]:
-		"<=>" => function |this: &Object, args: Args| {
+		"<=>" => method |this: &Object, args: Args| {
 			let this = this.try_downcast::<DummyCmp>()?;
 			if let Some(rhs) = args.try_arg(0)?.downcast::<DummyCmp>() {
 				Ok(this.0.cmp(&rhs.0).into())

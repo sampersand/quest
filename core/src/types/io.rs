@@ -36,7 +36,8 @@ impl Io {
 impl_object_type!{
 for Io [(parents super::Iterable)]:
 	"File" => const file::File::mapping().clone(),
-	"each" => function Self::qs_each,
-	// "write" => function Self::qs_write,
-	// "close" => function Self::qs_close
+	"Stdin" => const file::File::from_fd(0, true, false).expect("cant create stdin"),
+	"Stdout" => const file::File::from_fd(1, false, true).expect("cant create stdout"),
+	"Stderr" => const file::File::from_fd(2, false, true).expect("cant create stdout"),
+	"each" => method Self::qs_each,
 }

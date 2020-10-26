@@ -32,5 +32,5 @@ impl Class {
 
 impl_object_type!{
 for Class [(parents super::Basic) (no_convert)]:
-	"name" => function Class::qs_name
+	"name" => method Class::qs_name
 }

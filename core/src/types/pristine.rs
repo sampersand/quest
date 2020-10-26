@@ -178,18 +178,18 @@ impl Pristine {
 
 impl_object_type!{
 for Pristine [(init_parent) (parents Pristine)]:
-	"inspect" => function Self::qs_inspect,
-	"__keys__" => function Self::qs___keys__,
-	"__call_attr__" => function Self::qs___call_attr__,
-	"__get_attr__" => function Self::qs___get_attr__,
-	"__set_attr__" => function Self::qs___set_attr__,
-	"__has_attr__" => function Self::qs___has_attr__,
-	"__del_attr__" => function Self::qs___del_attr__,
-	"::" => function Self::qs___get_attr__,
-	".=" => function Self::qs___set_attr__,
-	"." => function Self::qs_dot_get_attr,
+	"inspect" => method Self::qs_inspect,
+	"__keys__" => method Self::qs___keys__,
+	"__call_attr__" => method Self::qs___call_attr__,
+	"__get_attr__" => method Self::qs___get_attr__,
+	"__set_attr__" => method Self::qs___set_attr__,
+	"__has_attr__" => method Self::qs___has_attr__,
+	"__del_attr__" => method Self::qs___del_attr__,
+	"::" => method Self::qs___get_attr__,
+	".=" => method Self::qs___set_attr__,
+	"." => method Self::qs_dot_get_attr,
 	// this is mildly deprecated
-	"::@" => function |this, _| {
+	"::@" => method |this, _| {
 		crate::Binding::with_stack(|stack| {
 			stack.read()
 				.first().expect("no stack?")

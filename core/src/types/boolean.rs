@@ -725,20 +725,20 @@ for Boolean {
 	}
 }
 [(parents super::Basic) (no_convert)]:
-	"@text"   => function Self::qs_at_text,
-	"inspect" => function Self::qs_inspect,
-	"@num"    => function Self::qs_at_num,
-	"@bool"   => function Self::qs_at_bool,
-	"=="      => function Self::qs_eql,
-	"!"       => function Self::qs_not,
-	"&"       => function Self::qs_bitand,
-	"&="      => function Self::qs_bitand_assign,
-	"|"       => function Self::qs_bitor,
-	"|="      => function Self::qs_bitor_assign,
-	"^"       => function Self::qs_bitxor,
-	"^="      => function Self::qs_bitxor_assign,
-	"<=>"     => function Self::qs_cmp,
-	"hash"    => function Self::qs_hash,
+	"@text"   => method Self::qs_at_text,
+	"inspect" => method Self::qs_inspect,
+	"@num"    => method Self::qs_at_num,
+	"@bool"   => method Self::qs_at_bool,
+	"=="      => method Self::qs_eql,
+	"!"       => method Self::qs_not,
+	"&"       => method Self::qs_bitand,
+	"&="      => method Self::qs_bitand_assign,
+	"|"       => method Self::qs_bitor,
+	"|="      => method Self::qs_bitor_assign,
+	"^"       => method Self::qs_bitxor,
+	"^="      => method Self::qs_bitxor_assign,
+	"<=>"     => method Self::qs_cmp,
+	"hash"    => method Self::qs_hash,
 }
 
 #[cfg(test)]

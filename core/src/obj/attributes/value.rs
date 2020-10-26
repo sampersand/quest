@@ -15,7 +15,7 @@ impl Value {
 	pub fn call<'o>(&self, owner: &'o Object, args: Args<'_, 'o>) -> Result<Object> {
 		use std::borrow::Cow;
 		match self {
-			Value::RustFn(rustfn) => rustfn.call(owner, args),
+			Value::RustFn(rustfn) => rustfn.call_with_owner(owner, args),
 			Value::Object(object) => {
 				let args = 
 					match args.into_inner() {

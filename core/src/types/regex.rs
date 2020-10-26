@@ -196,9 +196,9 @@ impl Regex {
 
 impl_object_type!{
 for Regex [(parents super::Basic) (convert "@regex")]:
-	"inspect" => function Self::qs_inspect,
-	"==" => function Self::qs_eql,
-	"does_match" => function Self::qs_does_match,
-	"match" => function Self::qs_match,
-	"scan" => function Self::qs_scan,
+	"inspect" => method Self::qs_inspect,
+	"==" => method Self::qs_eql,
+	"does_match" => method Self::qs_does_match,
+	"match" => method Self::qs_match,
+	"scan" => method Self::qs_scan,
 }

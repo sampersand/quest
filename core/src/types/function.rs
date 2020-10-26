@@ -17,7 +17,7 @@ impl Debug for BoundRustFn {
 
 impl_object_type!{
 for BoundRustFn [(parents super::Function)]:
-	"()" => function |this: &Object, args: Args| {
+	"()" => method |this: &Object, args: Args| {
 		let this = this.try_downcast::<Self>()?;
 		(this.0)(args)
 	}
@@ -62,8 +62,8 @@ impl Function {
 
 impl_object_type!{
 for Function [(parents super::Basic)]:
-	"<<" => function Self::qs_lsh,
-	">>" => function Self::qs_rsh,
+	"<<" => method Self::qs_lsh,
+	">>" => method Self::qs_rsh,
 }
 
 mod tests {
