@@ -1,8 +1,6 @@
 # A Hack until I get thread in the Kernel properly.
-disp(3);
 if(!:0.$__has_attr__($Thread), {
 	Kernel.$Thread = {
-	disp(1);
 		$x = spawn({});
 		$tmp = x.$__parents__.$get(0);
 		x.$join();
@@ -32,17 +30,15 @@ $sieve = {
 		.$map({
 			$i = _0;
 
-			if(!array.$get(i - 2), {
-				return(:1);
-			});
+			array.$get(i - 2).$or(:0.$return);
 
 			spawn({
 				$j = 0;
 				while({ (:1.$k = i**2 + j*i) <= max }, {
 					array.$set(k - 2, false);
 					j += 1;
-				});
-			});
+				})
+			})
 		})
 		.$select(Number::$itself)
 		.$each(Thread::$join);

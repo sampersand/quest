@@ -1,36 +1,7 @@
-Pristine.'||' = { if(_0, $_0, _1) };
-Pristine.'&&' = { if(_0, _1, $_0) };
-
-Text.$lstrip = {
-	while(/^[\s()]/.$match << _0, _0.$shift);
-	_0
-};
-
-Text.$next_ident = {
-	if(/^[a-z_]/.$match(_0), _0.$take_while << /^[a-z\d_]/.$match)
-};
-
-Text.$next_cmd = {
-	if(/^[A-Z]/.$match(_0), _0.$take_while << /^[A-Z_\d]/.$match)
-};
-
-Text.$next_num = {
-	if(/^\d/.$match(_0), { _0.$take_while(/^\d/.$match).$@num() })
-};
-
-Text.$next_text = {
-	if(_0.$get(0) == "'", {
-		_0.$shift();
-		$l=_0.$take_while({ ($x=_0) && { x.$get(0) != "'" } });
-		_0.$shift();
-		l
-	})
-};
-
 Text.$take_while = {
 	$acc = '';
 
-	while(:0::$_1 << _0, {
+	while(_1 << _0, {
 		acc += _0.$shift();
 	});
 
@@ -38,28 +9,52 @@ Text.$take_while = {
 };
 
 
-$knight = {
-	_1.$next_expr()()
+Text.$next_ident = {
+
+if(/^[a-z_]/.$match(_0), {
+	_0.$take_while(/^[a-z\d_]/.$match)
+})
+
+	/^[a-z_]/.$match(_0).$and(_0.$take_while << /^[a-z\d_]/.$match)
 };
+
+Text.$next_cmd = {
+	/^[A-Z]/.$match(_0).$and(_0.$take_while << /^[A-Z_\d]/.$match)
+};
+
+Text.$next_num = {
+	/^\d/.$match(_0).$and({ _0.$take_while(/^\d/.$match).$@num() })
+};
+
+Text.$next_text = {
+	/^['"]/.$match(_0).$and({
+		$quote = _0.$shift();
+		$l = _0.$take_while({ _0.$and({ _0.$get(0) != quote }) });
+		_0.$shift();
+		l
+	})
+};
+
+$knight = { _0.$next_expr()() };
 
 $functions = {:0}();
 
 {
 	:0 = functions;
 	$unary_fn = {
-		$op = :0::$_1;
+		$op = _0;
 		{
 			$x = _0.$next_expr();
-			{ :0::$op(x()) }
+			{ op(x()) }
 		}
 	};
 
 	$binary_fn = {
-		$op = :0::$_1;
+		$op = _0;
 		{
 			$l = _0.$next_expr();
 			$r = _0.$next_expr();
-			{ :0::$op(l(), r()) }
+			{ op(l(), r()) }
 		}
 	};
 
@@ -84,7 +79,7 @@ $functions = {:0}();
 	$> = binary_fn(Number::$>);
 	';'= binary_fn({ _1 });
 	$= = {
-		_0.$lstrip();
+		_0.$replace(_0.$strip());
 		$l = _0.$next_ident();
 		$r = _0.$next_expr();
 		{ env.l = r() }
@@ -94,44 +89,35 @@ $functions = {:0}();
 
 	$I = $IF = {
 		$c = _0.$next_expr();
-		:0::$c.$@bool = { _0().$@bool() };
+		c.$@bool = { _0().$@bool() };
 
-		if << (:0::$c) << (_0.$next_expr()) << (_0.$next_expr())
+		if << c << (_0.$next_expr()) << (_0.$next_expr())
 	};
 	:0
 }();
 
-
 Text.$next_expr = {
-	_0.$lstrip();
+	_0.$replace(_0.$strip());
 
 	while(/^#/.$match << _0, {
 		_0.$take_while(/^\n/.$match);
-		_0.$lstrip();
+		_0.$replace(_0.$strip());
 	});
 
-	if(!_0, { return(:1); });
+	_0.$or(:0.$return);
 
-	if(null != ($ident = _0.$next_ident()), {
-		return(:1, env.$. << ident);
-	});
+	(null != ($ident = _0.$next_ident())).$and(:0.$return << ident.$itself);
+	(null != ($num = _0.$next_num()).$and(:0.$return << num.$itself);
+	(null != ($text = _0.$next_text()).$and(:0.$return << txt.$itself);
 
-	if(null != ($num = _0.$next_num()), {
-		return(:1, num.$itself);
-	});
-
-	if(null != ($text = _0.$next_text()), {
-		return(:1, text.$itself);
-	});
-
-	$cmd = _0.$next_cmd() || _0.$shift;
+	$cmd = _0.$next_cmd().$or(_0.$shift);
 
 	(functions::cmd)(_0)
 };
 
 Kernel.$env = { :0.null = null; :0 }();
 
-if(__has_attr__($_1), {
+if(:0.$__has_attr__($_1), {
 	if(_1 == '-e', {
 		knight(_2)
 	}, {

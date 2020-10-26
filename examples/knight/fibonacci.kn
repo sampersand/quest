@@ -7,7 +7,3 @@
   ; = a tmp      #   a = tmp
   = n - n 1      #   n = n -1
 OUTPUT b         # print(b)
-
-
-
-;=a 0;=b 1;=n 10;=W<1n;=b+a=t b;=a t=n-n 1Ob
