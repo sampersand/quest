@@ -1,6 +1,13 @@
 # A Hack until I get thread in the Kernel properly.
-if(!__has_attr__($Thread), {
-	Kernel.$Thread = { $x = spawn({}); $tmp = x.$__parents__.$get(0); x.$join(); tmp }();
+disp(3);
+if(!:0.$__has_attr__($Thread), {
+	Kernel.$Thread = {
+	disp(1);
+		$x = spawn({});
+		$tmp = x.$__parents__.$get(0);
+		x.$join();
+		tmp
+	}();
 });
 
 # Creates an array from `_1` to `_2` and fills it with those numbers.
@@ -18,7 +25,7 @@ Number.$upto = {
 };
 
 $sieve = {
-	$max = _1;
+	$max = _0;
 	$array = 2.$upto(max);
 
 	2.$upto(max.$sqrt())

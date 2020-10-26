@@ -2,7 +2,7 @@
 
 # If an argument was supplied to this executable, use that as the maximum value.
 # otherwise, default to 100.
-$MAX = if(__has_attr__($_1), { _1.$@num() }, { 100 });
+$MAX = if(:0.$__has_attr__($_1), { _1.$@num() }, { 100 });
 
 disp('Guessing game! Guess from 1-' + MAX);
 

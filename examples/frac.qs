@@ -15,7 +15,7 @@ $Frac = {
 		Frac(lhs.$numer + rhs * lhs.$denom, lhs.$denom)
 	};
 
-	$<=>   = { _0.$@num() <=> _1 };
+	$<=>   = { _0.$@num() <=> _1.$@num() };
 	$@text = { _0.$numer.$@text() + '/' + _0.$denom };
 	$@num  = { _0.$numer / _0.$denom };
 

@@ -7,7 +7,7 @@ disp("Hello, " + where + "!");
 
 # Using a function
 $greet = {
-	disp("Hello, " + _1 + "!");
+	disp("Hello, " + _0 + "!");
 };
 
 greet("world");

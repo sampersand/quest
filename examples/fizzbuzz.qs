@@ -12,7 +12,7 @@ Number.$upto = {
 };
 
 $fizzbuzz = {
-	1.$upto(_1)
+	1.$upto(_0)
 		.$map({
 			if(_0 % 3, {
 				if(_0 % 5, $_0, {"Buzz"})
@@ -22,8 +22,7 @@ $fizzbuzz = {
 		})
 };
 
-fizzbuzz(100)
-	.$each({ disp(_0) });
+fizzbuzz(100).$each(disp);
 
 # Tests
 assert([
