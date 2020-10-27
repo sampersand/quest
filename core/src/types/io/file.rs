@@ -368,7 +368,7 @@ impl File {
 	pub fn qs_write(this: &Object, args: Args) -> crate::Result<Object> {
 		let to_write = args.try_arg(0)?.call_downcast::<Text>()?;
 
-		this.try_downcast_mut::<Self>()?.write(to_write.as_ref().as_ref())?;
+		this.try_downcast_mut::<Self>()?.file.get_mut().write_all(to_write.as_ref().as_ref())?;
 
 		Ok(this.clone())
 	}
