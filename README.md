@@ -29,14 +29,14 @@ If all arguments are omitted a REPL instance will be launched.
 See the `examples` folder for some examples of what Quest can do! Most of them expect that you've read at least
 
 ## Basic Examples
-```quest
+```php
 # Text can either be single or double quotes: they're identical (like python).
 $where = "world";
 disp("Hello, " + where + "!"); # => Hello, world!
 ```
 
 Local variables are actually just string keys on the current object. The following is identical to the previous example:
-```quest
+```php
 # `:0` is the same as `this` or `self` in other languages.
 :0."where" = "world";
 disp("Hello, " + :0."where" + "!"); # => Hello, world!
@@ -45,7 +45,7 @@ disp("Hello, " + :0."where" + "!"); # => Hello, world!
 ## Functions, Classes, and Maps
 
 In Quest, there are no named/anonymous functions—they're both simply `Block`s, written as `{ ... }`:
-```quest
+```php
 # Arguments are passed via local variables `_0`, `_1`, `_2`, etc.
 # The last statement in a block is implicitly returned.
 disp("4 squared is:", { _0 ** 2 }(4)); # => 4 squared is: 16
@@ -63,7 +63,7 @@ disp("4 squared is:", 4.$square());
 ```
 
 Maps are created by simply returning the result of an executed block of code:
-```quest
+```php
 $traffic_lights = {
 	# A blank scope is created whenever a block is called. Again, `:0` is the
 	# same as `this` / `self` in other languages. 
@@ -78,7 +78,7 @@ disp("Green means", traffic_lights."green"); # => Green means go
 ```
 
 **Classes are actually just objects too**: They're just a group of methods which are available for any object which makes the "class" its parent. There is no intrinsic concept of a "constructor" either, and is generally implemented by overloading the "call" (`()`) function and returning the new scope.
-```quest
+```php
 $Person = {
 	# `$xxx` is identical to `"xxx"`. So the following could be written as `"()" = { ... };`
 
@@ -109,7 +109,7 @@ disp(person); # => "John Doe"
 ## No Keywords
 Sticking to the theme of extensibility and freedom, there aren't traditional "keywords." Traditional control-flow keywords (such as `if`, `while`, and `return`) are simply attributes defined on the `Kernel` object (which most objects inherit from). And traditional "definition" keywords (such as `class` and function-declaration keywords) aren't relevant.
 
-```quest
+```php
 $factorial = $n -> {
 	# The if function executes whichever branch is chosen
 	if(n <= 1, {
@@ -136,7 +136,7 @@ while({ i < 5 }, {
 The `return` keyword is a bit different than other languages. Because there is no concept of "functions vs blocks", you must return to a specific scope:
 
 
-```quest
+```php
 $make_dinner = {
 	$the_magic_word = prompt("what's the magic word? ");
 	if(the_magic_word != "please", {
@@ -167,7 +167,7 @@ disp(if(make_dinner(), { "time to eat!" }, { "aww" }));
 ```
 
 This also removes the need for `continue` and `break` keywords that so many other languages have:
-```quest
+```php
 $i = 0;
 while({ i < 100 }, {
 	i += 1;
@@ -187,7 +187,7 @@ while({ i < 100 }, {
 		# This is analogous to `break`.
 		return(:2);
 	})
-});}
+});
 
 disp("done");
 
@@ -206,7 +206,7 @@ disp("done");
 Because there's no separate concept of an "identifier" in Quest (as all identifiers are really `Text`s), there's no _true_ l- or r-value concept. Instead, they are implemented via attributes defined on Text: `=` and `()`.
 
 Unlike most languages, `=` is actually an _operator_. Only `Text` has it defined by default (but like any other operator, anything can overload it.):
-```quest
+```php
 # remember `$xxx` is identical to `'xxx'`
 $x = 5; # call the `Text::=` function implicitly
 $y.$=(6); # call the `Text::=` function explicitly
@@ -225,7 +225,7 @@ disp(:0.3) # => 4
 
 `Text` also has the `()` method defined, where it simply looks up its value in the current scope: (Bare variables, eg `foo`, were added so `$foo()` wouldn't be necessary.)
 
-```quest
+```php
 $x = 5;
 disp(x, $x(), 'x'(), :0.'x', :0.$x); # => 5 5 5 5 5
 ```
@@ -233,7 +233,7 @@ disp(x, $x(), 'x'(), :0.'x', :0.$x); # => 5 5 5 5 5
 ## Everything is fair game
 Most runtime languages support some form of instance variables that can be added to objects. However, Quest takes this a step further, and allows _everything_ to have attributes added/removed from them, including primitives like numbers. (For those language-savvy folks, every Quest object is a singleton object.)
 
-```quest
+```php
 # define the `square` method on Numbers in general.
 Number.$square = $self -> { self ** 2 };
 
@@ -261,7 +261,6 @@ I should probably add more discussion of Quest's features.
 # Misc
 ## Formal syntax Specification
 ```
-
 code := (expr;)* expr
 expr := primary | expr <binary-op> expr | function_call
 primary := <unary-op> expr | block | <literal>

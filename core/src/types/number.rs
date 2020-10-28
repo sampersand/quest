@@ -1190,6 +1190,7 @@ mod tests {
 	use rand::random;
 
 	#[test]
+	#[allow(clippy::eq_op)]
 	fn clone_and_copy() {
 		let x = Number::new(12);
 		assert_eq!(x, x.clone());
