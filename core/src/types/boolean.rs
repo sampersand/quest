@@ -763,6 +763,7 @@ mod tests {
 	}
 
 	#[test]
+	#[allow(clippy::eq_op)]
 	fn eql() {
 		assert_eq!(Boolean::TRUE, Boolean::TRUE);
 		assert_eq!(Boolean::FALSE, Boolean::FALSE);
