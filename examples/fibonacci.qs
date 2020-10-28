@@ -14,12 +14,12 @@ Number.$fibonacci = {
 	# This is the "actual" fibonacci function that will be run when `fibonacci
 	# is called. We still have access to the enclosing scope, which allows us to
 	# hide the `memo` object so no one else can interact with it.
-	{
-		if(memo.$__has_attr__(_0), {
-			memo._0
+	$n -> {
+		if(memo.$__has_attr__(n), {
+			memo.n
 		}, {
-			disp("memoizing:", _0);
-			memo._0 = (_0 - 1).$fibonacci() + (_0 - 2).$fibonacci()
+			disp("memoizing:", n);
+			memo.n = (n - 1).$fibonacci() + (n - 2).$fibonacci()
 		})
 	}
 }(); # <-- we call the block here

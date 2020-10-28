@@ -1,16 +1,3 @@
-Number.$upto = {
-	$arr = [];
-	$start = _0.$clone();
-	$stop = _1;
-
-	while({ start <= stop }, {
-		arr.$push(start.$clone());
-		start += 1;
-	});
-
-	arr
-};
-
 Number.$divides = { (_1 % _0) == 0 };
 
 $fizzbuzz = $max -> {

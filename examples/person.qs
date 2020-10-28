@@ -3,24 +3,18 @@
 # identical to "FOO"---it's just syntactic sugar)
 $Person = {
 
-	# Define what it means to "call" a Person (ie `Person(...)`)
-	$() = {
-
+	# Define what it means to "call" a Person (ie `Person(...)`).
+	# Because `() -> {...}` syntax already defines the arguments in the body
+	# of the function, we don't need to set them ourselves. 
+	$() = ($class, $first, $last) -> {
 		# Set the current object's parents to `Person` so we can have access to
 		# its `@text` method.
-		$__parents__ = [Person];
-		
-		# Assign first name to the first argument and last name to the second.
-		$first = _1;
-		$last = _2;
-
+		$__parents__ = [class];
 		:0 # Return the current object, which we just created in this method.
 	};
 
-	# Define the conversion function to text
-	$@text = {
-		_0.$first + ' ' + _0.$last
-	};
+	# Define the conversion function to text.
+	$@text = $person -> { person.$first + ' ' + person.$last };
 
 	# As this is a class, we return `:0` at the end...
 	:0

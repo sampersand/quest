@@ -4,16 +4,12 @@
 $Person = {
 	__parents__.$push(Comparable);
 	
-	$() = {
-		$__parents__ = [Person];
-
-		$name = _1;
-		$age = _2;
-
+	$() = ($class, $name, $age) -> {
+		$__parents__ = [class];
 		:0
 	};
 
-	$<=> = { _0.$age <=> _1.$age };
+	$<=> = ($lhs, $rhs) -> { lhs.$age <=> rhs.$age };
 
 	:0
 }();
@@ -21,8 +17,8 @@ $Person = {
 $john = Person("john doe", 20);
 $jane = Person("jane doe", 22);
 
-disp(if(john > jane, $john, $jane).$name, "is older");
+disp(if(john > jane, { john }, { jane }).$name, "is older");
 
 # Tests
 assert(john < jane);
-assert("jane doe is older" == if(john > jane, $john, $jane).$name + " is older");
+assert("jane doe is older" == if(john > jane, { john }, { jane }).$name + " is older");

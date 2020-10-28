@@ -6,8 +6,8 @@ $where = "world";
 disp("Hello, " + where + "!");
 
 # Using a function
-$greet = {
-	disp("Hello, " + _0 + "!");
+$greet = $where -> {
+	disp("Hello, " + where + "!");
 };
 
 greet("world");

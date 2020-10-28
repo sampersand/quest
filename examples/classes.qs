@@ -1,6 +1,6 @@
 # This is how you would represent classical "classes" within Quest by having
 # the "class" be its own object too.
-
+#
 # Like in other examples, a "class" is really just an executed block of code
 # which returns the local scope.
 $Person = {
@@ -12,27 +12,18 @@ $Person = {
 	# operator (i.e. `()`) is used to construct a class (by modifying the scope
 	# of the function and returning `:0` (which means `self`/`this` in other
 	# languages) at the end), but this is just a convention.
-	$() = {
+	$() = ($class, $first, $last) -> {
 		# Since we're within a scope, `__parents__` defaults to `Scope`. We want to
-		# change that so our parents is just `Person`. Note that `_0` is the object
-		# that owns this method when it was called: This'll be `Parent`, or any
-		# children subclassing it.
-		$__parents__ = [_0.$instance_methods];
-
-		# Assign local variables
-		$first = _1;
-		$last = _2;
+		# change that so our parents is just `Person`'s instance methods.
+		$__parents__ = [class.$instance_methods];
 
 		# We return the current scope, as it's the current object.
 		:0
 	};
 
 	$instance_methods = {
-		# set parent to the calling stackframe
-		$class = :1;
-
-		$@text = {
-			_0.$first + " " + _0.$last
+		$@text = $person -> {
+			person.$first + " " + person.$last
 		};
 
 		:0

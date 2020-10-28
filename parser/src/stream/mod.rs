@@ -13,7 +13,7 @@ use crate::Result;
 pub trait Stream : Seek + Contexted + Iterator<Item=Result<char>> {
 	/// Checks if the stream starts with the given string.
 	///
-	/// This is used as a more efficient alternative than checking each byte invidiually, and then
+	/// This is used as a more efficient alternative than checking each byte individually, and then
 	/// seeking back if it doesn't.
 	fn starts_with(&mut self, s: &str) -> Result<bool>;
 

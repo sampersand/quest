@@ -4,35 +4,20 @@ if(!:0.$__has_attr__($Thread), {
 		$x = spawn({});
 		$tmp = x.$__parents__.$get(0);
 		x.$join();
+		tmp.$spawn = Kernel::$spawn;
 		tmp
 	}();
 });
 
-# Creates an array from `_1` to `_2` and fills it with those numbers.
-Number.$upto = {
-	$arr = [];
-	$start = _0.$clone();
-	$stop = _1;
-
-	while({ start <= stop }, {
-		arr.$push(start.$clone());
-		start += 1;
-	});
-
-	arr
-};
-
-$sieve = {
-	$max = _0;
+$sieve = $max -> {
 	$array = 2.$upto(max);
 
 	2.$upto(max.$sqrt())
-		.$map({
-			$i = _0;
+		.$map($i -> {
+			
+			array.$get(i - 2).$else(return);
 
-			array.$get(i - 2).$or(:0.$return);
-
-			spawn({
+			Thread::$spawn({
 				$j = 0;
 				while({ (:1.$k = i**2 + j*i) <= max }, {
 					array.$set(k - 2, false);

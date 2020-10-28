@@ -473,7 +473,7 @@ impl List {
 		let block = args.try_arg(0)?.clone();
 
 		Ok(crate::types::RustClosure::new(move |args| {
-			crate::Binding::new_stackframe(None, args.clone(), |binding| {
+			crate::Binding::new_stackframe(Some(block.clone()), args.clone(), |binding| {
 				for (i, arg) in this.iter().enumerate() {
 					binding.set_attr(arg.clone(), args.arg(i).cloned().unwrap_or_default())?;
 				}
