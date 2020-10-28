@@ -469,7 +469,18 @@ impl List {
 
 	#[instrument(name="List::->", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_arrow(this: &Object, args: Args) -> crate::Result<Object> {
-		unimplemented!()
+		let this = this.try_downcast::<Self>()?.clone();
+		let block = args.try_arg(0)?.clone();
+
+		Ok(crate::types::RustClosure::new(move |args| {
+			crate::Binding::new_stackframe(None, args.clone(), |binding| {
+				for (i, arg) in this.iter().enumerate() {
+					binding.set_attr(arg.clone(), args.arg(i).cloned().unwrap_or_default())?;
+				}
+
+				block.call_attr_lit("call_noscope", &[])
+			})
+		}).into())
 	}
 
 	#[instrument(name="List::each", level="trace", skip(this, args), fields(self=?this, ?args))]
