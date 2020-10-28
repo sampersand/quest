@@ -141,9 +141,9 @@ $make_dinner = {
 	$the_magic_word = prompt("what's the magic word? ");
 	if(the_magic_word != "please", {
 		disp("You didn't say 'please'!");
-		# `:0` is the current stackframe, `:1` is the stackframe above this one
-		# in this case, that's the `$make_dinner` stackframe. return `false` from
-		# that stackframe.
+		# `:0` is the current stackframe, `:1` is the stackframe above this
+		# one in this case, that's the `$make_dinner` stackframe. return `false`
+		# from that stackframe.
 		return(false, :1);
 	});
 
@@ -256,8 +256,6 @@ There's also some stuff I've written up in the `docs` that goes more into depth.
 ## TODO
 I should probably add more discussion of Quest's features.
 
-
-
 # Misc
 ## Formal syntax Specification
 ```
@@ -269,8 +267,3 @@ block := '(' block_inner ')' | '[' block_inner ']' | '{' block_inner '}'
 block_inner := (line;)* (line)?
 line := (expr,)* (expr)?
 ```
-
-
-
-
-
