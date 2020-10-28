@@ -1,4 +1,4 @@
-use crate::{Args, Object, Error, Literal};
+use crate::{Args, Object, Error, Literal, Binding};
 use crate::types::{Boolean, Text, Null, Number};
 use tracing::instrument;
 
@@ -186,9 +186,11 @@ impl Kernel {
 	}
 
 	#[instrument(name="Kernel::return", level="trace")]
-	pub fn qs_return(to: &Object, args: Args) -> crate::Result<Object> {
-		let to = crate::Binding::from(to.clone());
+	pub fn qs_return(args: Args) -> crate::Result<Object> {
 		let obj = args.arg(0).map(Object::clone).unwrap_or_default();
+		let to = args.arg(1).cloned()
+			.map(Binding::from)
+			.unwrap_or_else(Binding::instance);
 
 		Err(Error::Return { to, obj })
 	}
@@ -259,7 +261,7 @@ for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pris
 	"loop" => method Self::qs_loop,
 	"sleep" => function Self::qs_sleep,
 	"open" => method Self::qs_open,
-	"return" => method Self::qs_return,
+	"return" => function Self::qs_return,
 	"assert" => method Self::qs_assert,
 	"spawn" => method |block, _| {
 		use std::thread::{self, JoinHandle};

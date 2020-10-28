@@ -194,7 +194,18 @@ impl Basic {
 		Ok(this.clone())
 	}
 
-	// methods to update:
+	#[instrument(name="Basic::instance_exec", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_instance_exec(this: &Object, args: Args) -> Result<Object> {
+		let to_exec = args.try_arg(0)?;
+
+		crate::Binding::run_stackframe(this.clone().into(), |_| {
+			if to_exec.has_attr_lit("call_noscope")? {
+				to_exec.call_attr_lit("call_noscope", &[])
+			} else {
+				to_exec.call_attr_lit(&Literal::CALL, &[])
+			} 
+		})
+	}
 }
 
 impl_object_type!{
@@ -207,17 +218,19 @@ for Basic [(parents super::Pristine)]:
 	"clone" => method Self::qs_clone,
 	"hash" => method Self::qs_hash,
 	"itself" => method Self::qs_itself,
+	"instance_exec" => method Self::qs_instance_exec,
 
 	// TODO: move these out of kernel
 	"if" => method super::Kernel::qs_if, 
-	"and" => method super::Kernel::qs_if, 
-	"or" => method super::Kernel::qs_unless, 
 	"disp" => function super::Kernel::qs_disp,
 	"dispn" => function super::Kernel::qs_dispn,
 	"while" => method super::Kernel::qs_while,
 	"loop" => method super::Kernel::qs_loop,
-	"return" => method super::Kernel::qs_return,
+	"return" => function super::Kernel::qs_return,
 	"assert" => method super::Kernel::qs_assert,
+
+	"then" => method super::Kernel::qs_if, 
+	"else" => method super::Kernel::qs_unless, 
 	// "||"    => Self::or,
 	// "&&"    => Self::and,
 }

@@ -100,6 +100,35 @@ impl Binding {
 		})
 	}
 
+
+	pub fn run_stackframe<F>(binding: Binding, func: F) -> crate::Result<Object>
+	where
+		F: FnOnce(&Binding) -> crate::Result<Object>
+	{
+		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
+		impl Drop for StackGuard<'_> {
+			#[inline]
+			fn drop(&mut self) {
+				self.0.write().pop();
+			}
+		}
+
+		Self::with_stack(|stack| {
+			{
+				let mut stack = stack.write();
+				stack.push(binding.clone());
+			};
+
+			let _guard = StackGuard(stack, &binding);
+ 			
+			match func(&binding) {
+				Err(crate::Error::Return { to, obj }) if to.as_ref().eq_obj(binding.as_ref())?
+					=> Ok(obj),
+				other => other
+			}
+		})
+	}
+
 	#[inline]
 	pub fn with_stack<F: FnOnce(&RwLock<Stack>) -> R, R>(func: F) -> R {
 		thread_local!(

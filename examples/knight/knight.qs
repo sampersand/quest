@@ -10,26 +10,21 @@ Text.$take_while = {
 
 
 Text.$next_ident = {
-
-if(/^[a-z_]/.$match(_0), {
-	_0.$take_while(/^[a-z\d_]/.$match)
-})
-
-	/^[a-z_]/.$match(_0).$and(_0.$take_while << /^[a-z\d_]/.$match)
+	/^[a-z_]/.$match(_0).$then(_0.$take_while << /^[a-z\d_]/.$match)
 };
 
 Text.$next_cmd = {
-	/^[A-Z]/.$match(_0).$and(_0.$take_while << /^[A-Z_\d]/.$match)
+	/^[A-Z]/.$match(_0).$then(_0.$take_while << /^[A-Z_\d]/.$match)
 };
 
 Text.$next_num = {
-	/^\d/.$match(_0).$and({ _0.$take_while(/^\d/.$match).$@num() })
+	/^\d/.$match(_0).$then({ _0.$take_while(/^\d/.$match).$@num() })
 };
 
 Text.$next_text = {
-	/^['"]/.$match(_0).$and({
+	/^['"]/.$match(_0).$then({
 		$quote = _0.$shift();
-		$l = _0.$take_while({ _0.$and({ _0.$get(0) != quote }) });
+		$l = _0.$take_while({ _0.$then({ _0.$get(0) != quote }) });
 		_0.$shift();
 		l
 	})
@@ -104,19 +99,21 @@ Text.$next_expr = {
 		_0.$replace(_0.$strip());
 	});
 
-	_0.$or(:0.$return);
+	_0.$else(return);
 
-	(null != ($ident = _0.$next_ident())).$and(:0.$return << ident.$itself);
-	(null != ($num = _0.$next_num()).$and(:0.$return << num.$itself);
-	(null != ($text = _0.$next_text()).$and(:0.$return << txt.$itself);
+	(null != ($ident = _0.$next_ident())).$then(ident.$return);
+	(null != ($num = _0.$next_num())).$then(num.$return);
+	(null != ($text = _0.$next_text())).$then(text.$return);
 
-	$cmd = _0.$next_cmd().$or(_0.$shift);
+	$cmd = _0.$next_cmd().$else(_0.$shift);
 
 	(functions::cmd)(_0)
 };
 
 Kernel.$env = { :0.null = null; :0 }();
 
+knight('O 319 1 12');
+quit();
 if(:0.$__has_attr__($_1), {
 	if(_1 == '-e', {
 		knight(_2)

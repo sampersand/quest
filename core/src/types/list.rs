@@ -467,6 +467,11 @@ impl List {
 		Ok(Boolean::from(&*this).into())
 	}
 
+	#[instrument(name="List::->", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_arrow(this: &Object, args: Args) -> crate::Result<Object> {
+		unimplemented!()
+	}
+
 	#[instrument(name="List::each", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?;
@@ -1024,6 +1029,7 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"@bool" => method Self::qs_at_bool,
 	"@list" => method Self::qs_at_list,
 
+	"->"   => method Self::qs_arrow,
 	"each" => method Self::qs_each,
 
 	"clear" => method Self::qs_clear,

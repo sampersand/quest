@@ -254,12 +254,18 @@ impl Block {
 	pub fn qs_at_text(this: &Object, _: Args) -> quest_core::Result<Object> {
 		Ok(this.try_downcast::<Self>()?.to_string().into())
 	}
+
+	#[inline]
+	pub fn qs_call_noscope(this: &Object, _: Args) -> quest_core::Result<Object> {
+		this.try_downcast::<Self>()?.run_block_to_object()
+	}
 }
 
 impl_object_type!{
 for Block [(parents quest_core::types::Function)]:
 	"@text" => method Block::qs_at_text,
-	"()" => method Block::qs_call
+	"()" => method Block::qs_call,
+	"call_noscope" => method Block::qs_call_noscope
 }
 
 #[cfg(test)]

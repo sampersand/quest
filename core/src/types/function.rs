@@ -1,5 +1,7 @@
-use crate::{Object, Result, Args, Literal, types::RustClosure};
+use crate::{Object, Result, Args, Literal};
 use std::sync::Arc;
+use crate::types::{RustClosure, List};
+
 use std::fmt::{self, Debug, Formatter};
 use tracing::instrument;
 
@@ -58,12 +60,21 @@ impl Function {
 
 		Ok(Self::curry(rhs, this))
 	}
+
+	#[instrument(name="Function::apply", level="trace", skip(this, args), fields(self=?this, args=?args))]
+	pub fn qs_apply(this: &Object, args: Args) -> Result<Object> {
+		let this = this.clone();
+		let args = args.try_arg(0)?.call_downcast::<List>()?;
+
+		this.call_attr_lit(&Literal::CALL, args.iter().collect::<Args>())
+	}
 }
 
 impl_object_type!{
 for Function [(parents super::Basic)]:
 	"<<" => method Self::qs_lsh,
 	">>" => method Self::qs_rsh,
+	"apply" => method Self::qs_apply
 }
 
 mod tests {

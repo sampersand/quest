@@ -310,11 +310,12 @@ impl Text {
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
 
-		// if this.downcast::<Self>().map(|this| Literal::__THIS__ == this.as_ref()).unwrap_or(false) {
-		// 	return Ok(Binding::set_binding(rhs).into())
-		// }
-
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
+	}
+
+	#[instrument(name="Text::->", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_arrow(this: &Object, args: Args) -> crate::Result<Object> {
+		Object::from(vec![this.clone()]).call_attr_lit("->", args.shorten())
 	}
 
 	#[instrument(name="Text::==", level="trace", skip(this, args), fields(self=?this, ?args))]
@@ -580,6 +581,7 @@ for Text
 	"()"      => method Text::qs_call,
 
 	"="       => method Text::qs_assign,
+	"->"      => method Text::qs_arrow,
 	"<=>"     => method Text::qs_cmp,
 	"=="      => method Text::qs_eql,
 	"+"       => method Text::qs_add,

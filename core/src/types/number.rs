@@ -1112,6 +1112,46 @@ impl Number {
 
 		Ok(FloatType::from(*this).sqrt().into())
 	}
+
+	/// Returns an array starting at `this` and ending at the first argument, with an optional step.
+	#[instrument(name="Number::upto", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_upto(this: &Object, args: Args) -> crate::Result<Object> {
+		let mut start = *this.try_downcast::<Self>()?;
+		let stop = *args.try_arg(0)?.call_downcast::<Self>()?;
+		let step = args.arg(1)
+			.map(Object::try_downcast::<Self>)
+			.transpose()?
+			.map(|x| *x)
+			.unwrap_or(Number::ONE);
+
+		let mut v = Vec::new();
+		while start < stop {
+			v.push(start.into());
+			start += step;
+		}
+
+		Ok(v.into())
+	}
+
+	/// Returns an array starting at `this` and ending at the first argument, with an optional step.
+	#[instrument(name="Number::downto", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_downto(this: &Object, args: Args) -> crate::Result<Object> {
+		let mut start = *this.try_downcast::<Self>()?;
+		let stop = *args.try_arg(0)?.call_downcast::<Self>()?;
+		let step = args.arg(1)
+			.map(Object::try_downcast::<Self>)
+			.transpose()?
+			.map(|x| *x)
+			.unwrap_or(Number::ONE);
+
+		let mut v = Vec::new();
+		while start > stop {
+			v.push(start.into());
+			start -= step;
+		}
+
+		Ok(v.into())
+	}
 }
 
 impl Convertible for Number {
@@ -1178,6 +1218,8 @@ impl_object_type!{
 	"ceil"  => method Self::qs_ceil,
 	"floor" => method Self::qs_floor,
 	"sqrt"  => method Self::qs_sqrt,
+	"upto"  => method Self::qs_upto,
+	"downto"  => method Self::qs_downto,
 	"chr" => method |this, _| {
 		Ok((u8::try_from(this.try_downcast::<Self>()?.floor()).unwrap() as char)
 			.to_string().into())
