@@ -309,7 +309,6 @@ impl Text {
 	#[instrument(name="Text::=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
-
 		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
 	}
 

@@ -121,6 +121,8 @@ fn build_op<C>(oper: Operator, ctor: &mut C, mut this: Expression) -> Result<Exp
 where
 	C: Iterator<Item=Result<Token>> + PutBack + Contexted
 {
+	use crate::token::Primitive;
+
 	let rhs = Expression::try_construct_precedence(ctor, Some(oper))?
 		.ok_or_else(|| parse_error!(ctor, ExpectedExpression))?;
 
@@ -130,6 +132,29 @@ where
 		args: Box::new(OperArgs::Binary(rhs))
 	}.into();
 
+	// A hack to convert a raw identifier into a piece of text.
+	this =
+		match this {
+			Expression::Operator(BoundOperator { this, args, oper: Operator::Assign }) |
+				Expression::Operator(BoundOperator { this, args, oper: Operator::Arrow }) =>
+				Expression::Operator(BoundOperator { args, oper, this: 
+					match *this {
+						Expression::Primitive(Primitive::Variable(var)) =>
+							Expression::Primitive(Primitive::Text(var.into())).into(),
+						other => other.into()
+					}}),
+			Expression::Operator(BoundOperator { this, args, oper: Operator::Dot }) |
+				Expression::Operator(BoundOperator { this, args, oper: Operator::Scoped })
+			=>
+				Expression::Operator(BoundOperator { this, oper, args: 
+					match *args {
+						OperArgs::Binary(Expression::Primitive(Primitive::Variable(var))) =>
+							OperArgs::Binary(Expression::Primitive(Primitive::Text(var.into()))).into(),
+						other => other.into()
+					}}),
+			other => other
+		};
+
 	match ctor.next().transpose()? {
 		Some(Token::Operator(Operator::Assign)) if oper == Operator::Dot => 
 			this = build_op(Operator::DotAssign, ctor, this)?,
@@ -137,7 +162,6 @@ where
 		Some(tkn) => ctor.put_back(Ok(tkn)),
 		None => {}
 	}
-
 
 	if oper == Operator::DotAssign {
 		// a hack to convert the lhs and rhs into ternary values.
@@ -158,7 +182,9 @@ where
 			},
 			_ => unreachable!("bad this: {:?}", this)
 		};
-	} else if oper == Operator::Call {
+	}
+
+	if oper == Operator::Call {
 		// a hack to convert to function call.
 		this = match this {
 			Expression::Operator(BoundOperator { args, this, oper }) =>
@@ -210,4 +236,4 @@ impl BoundOperator {
 			None => Ok(lhs),
 		}
 	}
-	}
+}

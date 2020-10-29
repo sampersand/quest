@@ -20,6 +20,13 @@ impl Executable for Variable {
 	}
 }
 
+impl From<Variable> for quest_core::types::Text {
+	#[inline]
+	fn from(val: Variable) -> Self {
+		val.0
+	}
+}
+
 #[inline]
 fn is_variable_start(c: char) -> bool {
 	!c.is_ascii() || c.is_ascii_alphabetic() || c == '_' || c == '@'
