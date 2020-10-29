@@ -1,16 +1,16 @@
-Number.$divides = { (_1 % _0) == 0 };
+Number.divides = { (_1 % _0) == 0 };
 
-$fizzbuzz = $max -> {
-	1.$upto(max)
-		.$map($n -> {
-			15.$divides(n).$then('FizzBuzz'.$return);
-			3.$divides(n).$then('Fizz'.$return);
-			5.$divides(n).$then('Buzz'.$return);
+fizzbuzz = max -> {
+	1.upto(max)
+		.map(n -> {
+			15.divides(n).then('FizzBuzz'.return);
+			3.divides(n).then('Fizz'.return);
+			5.divides(n).then('Buzz'.return);
 			n
 		})
 };
 
-fizzbuzz(100).$each(disp);
+fizzbuzz(100).each(disp);
 
 # Tests
 assert([

@@ -1,37 +1,37 @@
 # A Hack until I get thread in the Kernel properly.
-if(!:0.$__has_attr__($Thread), {
-	Kernel.$Thread = {
-		$x = spawn({});
-		$tmp = x.$__parents__.$get(0);
-		x.$join();
-		tmp.$spawn = Kernel::$spawn;
+if(!:0.__has_attr__('Thread'), {
+	Kernel.Thread = {
+		x = spawn({});
+		tmp = x.__parents__.get(0);
+		x.join();
+		tmp.spawn = Kernel::spawn;
 		tmp
 	}();
 });
 
-$sieve = $max -> {
-	$array = 2.$upto(max);
+sieve = max -> {
+	array = 2.upto(max);
 
-	2.$upto(max.$sqrt())
-		.$map($i -> {
+	2.upto(max.sqrt())
+		.map(i -> {
 			
-			array.$get(i - 2).$else(return);
+			array.get(i - 2).else(return);
 
-			Thread::$spawn({
-				$j = 0;
-				while({ (:1.$k = i**2 + j*i) <= max }, {
-					array.$set(k - 2, false);
+			Thread::spawn({
+				j = 0;
+				while({ (:1.k = i**2 + j*i) <= max }, {
+					array.set(k - 2, false);
 					j += 1;
 				})
 			})
 		})
-		.$select(Number::$itself)
-		.$each(Thread::$join);
+		.select(Number::itself)
+		.each(Thread::join);
 
-	array.$select(Number::$itself)
+	array.select(Number::itself)
 };
 
-$primes_upto_15 = sieve(15);
+primes_upto_15 = sieve(15);
 disp(primes_upto_15);
 
 # Tests

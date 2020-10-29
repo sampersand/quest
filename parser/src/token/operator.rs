@@ -79,7 +79,7 @@ operator_enum!{
 	AddAssign("+=" 16 RightToLeft) SubAssign("-=" 16 RightToLeft) MulAssign("*=" 16 RightToLeft)
 	DivAssign("/=" 16 RightToLeft) ModAssign("%=" 16 RightToLeft) BAndAssign("&=" 16 RightToLeft)
 	BOrAssign("|=" 16 RightToLeft) BXorAssign("^=" 16 RightToLeft)
-	Arrow("->" 0)
+	Arrow("->" 16 RightToLeft)
 	Or("||" 15) And("&&" 14) Eql("==" 12) Neq("!=" 12) Leq("<=" 11) Geq(">=" 11) Lsh("<<" 7) Rsh(">>" 7)
 	Pow("**" 3 RightToLeft) Scoped("::" 0)
 

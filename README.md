@@ -31,7 +31,7 @@ See the `examples` folder for some examples of what Quest can do! Most of them e
 ## Basic Examples
 ```php
 # Text can either be single or double quotes: they're identical (like python).
-$where = "world";
+where = "world";
 disp("Hello, " + where + "!"); # => Hello, world!
 ```
 
@@ -52,19 +52,19 @@ disp("4 squared is:", { _0 ** 2 }(4)); # => 4 squared is: 16
 
 # You can assign anonymous functions to variables too. The `->` syntax
 # can be used to name parameters.
-$square = $n -> { n ** 2 };
+square = n -> { n ** 2 };
 disp("4 squared is:", square(4)); # => 4 squared is: 16
 
 # You can even just straight-up add them to builtin classes:
 # The `_0` argument is the the object that this method was called on, akin to
 # `self` or `this` in other languages.
-Number.$square = $n -> { n ** 2 };
-disp("4 squared is:", 4.$square());
+Number.square = n -> { n ** 2 };
+disp("4 squared is:", 4.square());
 ```
 
 Maps are created by simply returning the result of an executed block of code:
 ```php
-$traffic_lights = {
+traffic_lights = {
 	# A blank scope is created whenever a block is called. Again, `:0` is the
 	# same as `this` / `self` in other languages. 
 	:0."red" = 'stop';
@@ -79,16 +79,14 @@ disp("Green means", traffic_lights."green"); # => Green means go
 
 **Classes are actually just objects too**: They're just a group of methods which are available for any object which makes the "class" its parent. There is no intrinsic concept of a "constructor" either, and is generally implemented by overloading the "call" (`()`) function and returning the new scope.
 ```php
-$Person = {
-	# `$xxx` is identical to `"xxx"`. So the following could be written as `"()" = { ... };`
-
+Person = {
 	# Whenever something is called, the `()` attribute is run.
 	# "Constructors" are really just defining a `()` attribute that overwrites `__parents__` and
 	# returns `:0` as the last value.
-	$() = ($class, $first, $last) -> {
+	'()' = (class, first, last) -> {
 		# You can have multiple parents (to allow for multiple inheritance and mixins).
 		# However, here we don't need to have multiple parents.
-		$__parents__ = [class];
+		__parents__ = [class];
 
 		# The `first` and `last` variables are already defined in the current scope, so we don't
 		# need to assign them!
@@ -97,12 +95,12 @@ $Person = {
 	};
 
 	# Define the conversion to a text object
-	$@text = $self -> { self.$first + " " + self.$last };
+	@text = self -> { self.first + " " + self.last };
 
 	:0 # like in `traffic_lights`, we return the current scope.
 }();
 
-$person = Person("John", "Doe");
+person = Person("John", "Doe");
 disp(person); # => "John Doe"
 ```
 
@@ -110,7 +108,7 @@ disp(person); # => "John Doe"
 Sticking to the theme of extensibility and freedom, there aren't traditional "keywords." Traditional control-flow keywords (such as `if`, `while`, and `return`) are simply attributes defined on the `Kernel` object (which most objects inherit from). And traditional "definition" keywords (such as `class` and function-declaration keywords) aren't relevant.
 
 ```php
-$factorial = $n -> {
+factorial = n -> {
 	# The if function executes whichever branch is chosen
 	if(n <= 1, {
 		1
@@ -120,7 +118,7 @@ $factorial = $n -> {
 };
 disp("10! =", factorial(10)); # => 10! = 3628800
 
-$i = 0;
+i = 0;
 while({ i < 5 }, {
 	i += 1;
 	disp("i =", i);
@@ -137,21 +135,22 @@ The `return` keyword is a bit different than other languages. Because there is n
 
 
 ```php
-$make_dinner = {
-	$the_magic_word = prompt("what's the magic word? ");
+make_dinner = {
+	the_magic_word = prompt("what's the magic word? ");
 	if(the_magic_word != "please", {
 		disp("You didn't say 'please'!");
 		# `:0` is the current stackframe, `:1` is the stackframe above this
-		# one in this case, that's the `$make_dinner` stackframe. return `false`
+		# one in this case, that's the `make_dinner` stackframe. return `false`
 		# from that stackframe.
 		return(false, :1);
 	});
 
-	# Alternatively, you can use the shorthand of `false.$return`:
-	if(the_magic_word != "please", false.$return);
+	# Alternatively, you can use the shorthand of `false.return`, which returns
+	# only a single level up.
+	if(the_magic_word != "please", false.return);
 
 	# Or even
-	(the_magic_word == "please").$else(false.$return);
+	(the_magic_word == "please").else(false.return);
 
 	collect_ingredients();
 	prepare_stove();
@@ -168,7 +167,7 @@ disp(if(make_dinner(), { "time to eat!" }, { "aww" }));
 
 This also removes the need for `continue` and `break` keywords that so many other languages have:
 ```php
-$i = 0;
+i = 0;
 while({ i < 100 }, {
 	i += 1;
 
@@ -207,27 +206,26 @@ Because there's no separate concept of an "identifier" in Quest (as all identifi
 
 Unlike most languages, `=` is actually an _operator_. Only `Text` has it defined by default (but like any other operator, anything can overload it.):
 ```php
-# remember `$xxx` is identical to `'xxx'`
-$x = 5; # call the `Text::=` function implicitly
-$y.$=(6); # call the `Text::=` function explicitly
+x = 5; # call the `Text::=` function implicitly
+y.'='(6); # call the `Text::=` function explicitly
 
-disp(:0.$x, :0.$y); # => 5 6
+disp(:0.x, :0.y); # => 5 6
 
 # now you can assign numbers.
 # however, you can only access them via `:0.XXX`.
-Number.$= = Text::$=;
+Number.'=' = Text::'=';
 
 3 = 4;
 disp(:0.3) # => 4
 ```
 
-(Minor note: `a.b = c` doesn't actually use the `=` operator; it's syntactic sugar for the `.=` operator—`a.$.=(b,c)`—and is accessible on every object that inherits from `Pristine` (which is everything, by default).)
+(Minor note: `a.b = c` doesn't actually use the `=` operator; it's syntactic sugar for the `.=` operator—`a.'.='(b,c)`—and is accessible on every object that inherits from `Pristine` (which is everything, by default).)
 
-`Text` also has the `()` method defined, where it simply looks up its value in the current scope: (Bare variables, eg `foo`, were added so `$foo()` wouldn't be necessary.)
+`Text` also has the `()` method defined, where it simply looks up its value in the current scope: (Bare variables, eg `foo`, were added so `'foo'()` wouldn't be necessary.)
 
 ```php
-$x = 5;
-disp(x, $x(), 'x'(), :0.'x', :0.$x); # => 5 5 5 5 5
+'x' = 5;
+disp(x, 'x'(), :0.'x'); # => 5 5 5
 ```
 
 ## Everything is fair game
@@ -235,17 +233,17 @@ Most runtime languages support some form of instance variables that can be added
 
 ```php
 # define the `square` method on Numbers in general.
-Number.$square = $self -> { self ** 2 };
+Number.square = self -> { self ** 2 };
 
-$twelve = 12;
-disp(twelve.$square()); # => 144
+twelve = 12;
+disp(twelve.square()); # => 144
 
 # define the `cube` method on this instance of 12.
-twelve.$cube = $self -> { self ** 3 };
-disp(twelve.$cube); # => 1728
+twelve.cube = self -> { self ** 3 };
+disp(twelve.cube); # => 1728
 
 # no other `12` in the program has access to the `cube` method.
-disp(12.$__has_attr__($cube)); # => false
+disp(12.__has_attr__('cube')); # => false
 ```
 
 ## More

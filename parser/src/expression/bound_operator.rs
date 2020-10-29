@@ -136,11 +136,14 @@ where
 	this =
 		match this {
 			Expression::Operator(BoundOperator { this, args, oper: Operator::Assign }) |
-				Expression::Operator(BoundOperator { this, args, oper: Operator::Arrow }) =>
+				Expression::Operator(BoundOperator { this, args, oper: Operator::Arrow })
+			=>
 				Expression::Operator(BoundOperator { args, oper, this: 
 					match *this {
 						Expression::Primitive(Primitive::Variable(var)) =>
 							Expression::Primitive(Primitive::Text(var.into())).into(),
+						Expression::Block(block) if block.paren_type() == ParenType::Round =>
+							Expression::Block(block.convert_to_parameters()).into(),
 						other => other.into()
 					}}),
 			Expression::Operator(BoundOperator { this, args, oper: Operator::Dot }) |

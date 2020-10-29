@@ -2,11 +2,11 @@
 disp("Hello, world!");
 
 # Using variables
-$where = "world";
+where = "world";
 disp("Hello, " + where + "!");
 
 # Using a function
-$greet = $where -> {
+greet = where -> {
 	disp("Hello, " + where + "!");
 };
 

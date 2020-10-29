@@ -20,6 +20,28 @@ pub struct Block {
 	context: Context,
 }
 
+impl Block {
+	pub(crate) fn convert_to_parameters(self) -> Self {
+		use crate::token::Primitive;
+		Self {
+			context: self.context,
+			paren_type: self.paren_type,
+			lines:
+				self.lines.into_iter()
+					.map(|line| match line {
+						Line::Single(Expression::Primitive(Primitive::Variable(var))) => 
+							Line::Single(Expression::Primitive(Primitive::Text(var.into()))),
+						Line::Single(other) => Line::Single(other),
+						Line::Multiple(lines) => Line::Multiple(lines.into_iter().map(|line| 
+							match line {
+								Expression::Primitive(Primitive::Variable(var)) => 
+									Expression::Primitive(Primitive::Text(var.into())),
+								other => other
+							}).collect())
+					}).collect()
+		}
+	}
+}
 impl Debug for Block {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		if f.alternate() {
