@@ -1125,7 +1125,7 @@ impl Number {
 			.unwrap_or(Number::ONE);
 
 		let mut v = Vec::new();
-		while start < stop {
+		while start <= stop {
 			v.push(start.into());
 			start += step;
 		}
@@ -1145,7 +1145,7 @@ impl Number {
 			.unwrap_or(Number::ONE);
 
 		let mut v = Vec::new();
-		while start > stop {
+		while start >= stop {
 			v.push(start.into());
 			start -= step;
 		}

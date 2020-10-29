@@ -467,6 +467,7 @@ dependencies = [
  "quest-core",
  "regex",
  "tempfile",
+ "tracing",
 ]
 
 [[package]]

@@ -160,6 +160,7 @@ impl Block {
 		self.paren_type
 	}
 
+	#[tracing::instrument(name="Block::run_block")]
 	pub(super) fn run_block(&self) -> quest_core::Result<Option<LineResult>> {
 		if let Some((last, rest)) = self.lines.split_last() {
 			for line in rest {

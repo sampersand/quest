@@ -43,6 +43,7 @@ impl Binding {
 	}
 
 
+	#[tracing::instrument(name="Binding::new_stackframe", level="debug", skip(func))]
 	pub fn new_stackframe<F>(parent: Option<Object>, args: Args, func: F) -> crate::Result<Object>
 	where
 		F: FnOnce(&Binding) -> crate::Result<Object>,
