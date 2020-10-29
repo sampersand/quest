@@ -31,9 +31,9 @@ use tracing::instrument;
 /// attributes that aren't considered to be a part of any particular object: `__this__` and
 /// `__stack__`
 ///    - `__stack__` returns a list of all the stackframes so far, with `0` being the current one.
-///    - `__this__` is the same as `__stack__.$get(0)`. Currently, it's only defined for scopes, but
+///    - `__this__` is the same as `__stack__.get(0)`. Currently, it's only defined for scopes, but
 ///      this may be changed in the future.
-/// 2. Any attributes directly defined for the object. (e.g. `foo.$bar = 3;`).
+/// 2. Any attributes directly defined for the object. (e.g. `foo.bar = 3;`).
 /// 3. If `__attr_missing__` is defined, it is called; if a non-[`Null`] response is given, then
 ///    that value is returned. (In the future there may be a way to mark `null` as a valid response,
 ///    possibly with something like the `undefined` of javascript?)
@@ -47,7 +47,7 @@ use tracing::instrument;
 /// ## `:#`
 /// 
 /// Stack frame literal references have bene added to Quest: `:#` is identical to
-/// `__stack__.$get(#)`, but allows for shorter mannerisms such as `return(:1)`.
+/// `__stack__.get(#)`, but allows for shorter mannerisms such as `return(:1)`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pristine;
 
@@ -62,9 +62,9 @@ impl Pristine {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(1.$inspect() == "1");
-	/// assert(2.$inspect() == '"2"');
-	/// assert(["2", 3].$inspect() == '["2", 3]');
+	/// assert(1.inspect() == "1");
+	/// assert(2.inspect() == '"2"');
+	/// assert(["2", 3].inspect() == '["2", 3]');
 	/// ```
 	///
 	/// [`Text`]: crate::types::Text
@@ -76,8 +76,8 @@ impl Pristine {
 
 	/// Calls a given attribtue for this object
 	///
-	/// This is generally the same as getting an attribute and calling it (i.e. `foo.$bar(3,4)` is
-	/// generally the same as `foo.$__call_attr__($bar, 3, 4)`, unless something has been manually
+	/// This is generally the same as getting an attribute and calling it (i.e. `foo.bar(3,4)` is
+	/// generally the same as `foo.__call_attr__('bar', 3, 4)`, unless something has been manually
 	/// overwritten).
 	///
 	/// # Arguments
@@ -87,8 +87,8 @@ impl Pristine {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert( 12.$__call_attr__($+, 4) == 16 )
-	/// assert( "foobar".$__call_attr__($get, 0, 2) == "foobar")
+	/// assert( 12.__call_attr__('+', 4) == 16 )
+	/// assert( "foobar".__call_attr__('get', 0, 2) == "foobar")
 	/// ```
 	#[instrument(name="Pristine::__call_attr__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___call_attr__<'a>(this: &'a Object, args: Args<'_, 'a>) -> crate::Result<Object> {
@@ -101,7 +101,7 @@ impl Pristine {
 	/// Retrieves an attribute from the object or one of its parents.
 	///
 	/// The `__get_attr__` method and the `::` infix operator are identical, but each has their own
-	/// advantage: `__get_attr__` doesn't require specifying `__this__` (e.g. `__get_attr__($foo)`),
+	/// advantage: `__get_attr__` doesn't require specifying `__this__` (e.g. `__get_attr__('foo')`),
 	/// whereas `::` is shorter and generally more idiomatic of other languages.
 	///
 	/// The `__get_attr__` method is useful when trying to reference a function without automatically
@@ -113,11 +113,11 @@ impl Pristine {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $print_fruit = {
+	/// print_fruit = {
 	///     disp("I love to eat", _0);
 	/// };
 	///
-	/// ["bananas", "oranges", "melons"].$each(__this__::$greet);
+	/// ["bananas", "oranges", "melons"].each(print_fruit);
 	/// # => I love to eat bananas
 	/// # => I love to eat oranges
 	/// # => I love to eat melons

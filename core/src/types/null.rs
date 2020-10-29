@@ -91,7 +91,7 @@ impl Null {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(null.$inspect() == "null");
+	/// assert(null.inspect() == "null");
 	/// ```
 	///
 	/// # See Also
@@ -125,7 +125,7 @@ impl Null {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(null.$@bool() == false);
+	/// assert(null.@bool() == false);
 	/// ```
 	#[instrument(name="Null::@bool", level="trace")]
 	pub fn qs_at_bool(_: &Object, _: Args) -> Result<Object> {
@@ -156,7 +156,7 @@ impl Null {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(null.$@list() == []);
+	/// assert(null.@list() == []);
 	/// ```
 	#[instrument(name="Null::@list", level="trace")]
 	pub fn qs_at_list(_: &Object, _: Args) -> Result<Object> {
@@ -187,7 +187,7 @@ impl Null {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(null.$@num() == 0);
+	/// assert(null.@num() == 0);
 	/// ```
 	#[instrument(name="Null::@num", level="trace")]
 	pub fn qs_at_num(_: &Object, _: Args) -> Result<Object> {
@@ -218,7 +218,7 @@ impl Null {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(null.$@text() == "null");
+	/// assert(null.@text() == "null");
 	/// ```
 	///
 	/// # See Also

@@ -44,7 +44,7 @@ impl Basic {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(Basic.$@bool() == true);
+	/// assert(Basic.@bool() == true);
 	/// ```
 	#[instrument(name="Basic::@bool", level="trace", skip(_this), fields(self=?_this))]
 	pub fn qs_at_bool(_this: &Object, _: Args) -> Result<Object> {
@@ -87,7 +87,7 @@ impl Basic {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(Basic.$@text() == Basic.$inspect());
+	/// assert(Basic.@text() == Basic.inspect());
 	/// ```
 	#[instrument(name="Basic::@text", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_at_text<'o>(this: &'o Object, args: Args<'_, 'o>) -> Result<Object> {

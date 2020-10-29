@@ -261,8 +261,8 @@ impl Boolean {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(true.$inspect() == "true");
-	/// assert(false.$inspect() == "false");
+	/// assert(true.inspect() == "true");
+	/// assert(false.inspect() == "false");
 	/// ```
 	///
 	/// # See Also
@@ -369,10 +369,10 @@ impl Boolean {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $obj = true;
-	/// $dup = obj.$clone();
+	/// obj = true;
+	/// dup = obj.clone();
 	/// assert(obj == dup);
-	/// assert(obj.$__id__ == dup.$__id__);
+	/// assert(obj.__id__ == dup.__id__);
 	/// ```
 	#[instrument(name="Boolean::@bool", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {

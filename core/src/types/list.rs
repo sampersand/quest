@@ -9,7 +9,7 @@ use tracing::instrument;
 /// A List in Quest.
 ///
 /// Lists are what you'd expect from other languages: They start at 0, you can index
-/// from the end (eg `list.(-1)` is the same as `list.(list.$len() - 1))`), etc.
+/// from the end (eg `list.(-1)` is the same as `list.(list.len() - 1))`), etc.
 #[derive(Clone, Default)]
 pub struct List(Vec<Object>);
 
@@ -406,12 +406,12 @@ impl List {
 	/// # Quest Examples
 	///
 	/// ```quest
-	/// $list = [1, 2, 3];
-	/// $list2 = list.$@list();
+	/// list = [1, 2, 3];
+	/// list2 = list.@list();
 	///
-	/// assert(list.$__id__ == list2.$__id__);
+	/// assert(list.__id__ == list2.__id__);
 	///
-	/// list.$push(4);
+	/// list.push(4);
 	///
 	/// assert(clone == list);
 	/// ```
@@ -427,9 +427,9 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, "a", true];
+	/// list = [1, "a", true];
 	///
-	/// assert(list.$@text() == '[1, "a", true]')
+	/// assert(list.@text() == '[1, "a", true]')
 	/// ```
 	#[instrument(name="List::@text", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_text(this: &Object, _: Args) -> crate::Result<Object> {
@@ -442,9 +442,9 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, "a", true];
+	/// list = [1, "a", true];
 	///
-	/// assert(list.$inspect() == '[1, "a", true]')
+	/// assert(list.inspect() == '[1, "a", true]')
 	/// ```
 	#[instrument(name="List::inspect", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_inspect(this: &Object, args: Args) -> crate::Result<Object> {
@@ -514,10 +514,10 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, true, 3.5, "a"];
+	/// list = [1, true, 3.5, "a"];
 	///
-	/// assert(list.$index(3.5) == 2);
-	/// assert(list.$index("dog") == null);
+	/// assert(list.index(3.5) == 2);
+	/// assert(list.index("dog") == null);
 	/// ```
 	#[instrument(name="List::index", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_index(this: &Object, args: Args) -> crate::Result<Object> {
@@ -533,10 +533,10 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, 2, 3];
+	/// list = [1, 2, 3];
 	///
 	/// assert(list);
-	/// list.$clear();
+	/// list.clear();
 	/// assert(!list);
 	/// ```
 	#[instrument(name="List::clear", level="trace", skip(this), fields(self=?this))]
@@ -550,10 +550,10 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = ["foo", "bar", "baz"];
+	/// list = ["foo", "bar", "baz"];
 	///
-	/// assert(list.$len() == 3);
-	/// assert([].$len() == 0);
+	/// assert(list.len() == 3);
+	/// assert([].len() == 0);
 	#[instrument(name="List::len", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_len(this: &Object, _: Args) -> crate::Result<Object> {
 		Ok(this.try_downcast::<Self>()?
@@ -577,13 +577,13 @@ impl List {
 	/// # Quest Examples
 	///
 	/// ```quest
-	/// $list = ['a', 2, 3, false];
+	/// list = ['a', 2, 3, false];
 	/// 
-	/// assert(list.$get(0) == 'a');
-	/// assert(list.$get(5) == null);
-	/// assert(list.$get(-1) == false);
-	/// assert(list.$get(1, 2) == [2, 3]);
-	/// assert(list.$get(1, Number::$INF) == [2, 3, false]);
+	/// assert(list.get(0) == 'a');
+	/// assert(list.get(5) == null);
+	/// assert(list.get(-1) == false);
+	/// assert(list.get(1, 2) == [2, 3]);
+	/// assert(list.get(1, Number::INF) == [2, 3, false]);
 	/// ```
 	#[instrument(name="List::get", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_get(this: &Object, args: Args) -> crate::Result<Object> {
@@ -658,8 +658,8 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// assert(["foo", 123, true].$join() == "foo123true");
-	/// assert(["foo", 123, true].$join(" ") == "foo 123 true");
+	/// assert(["foo", 123, true].join() == "foo123true");
+	/// assert(["foo", 123, true].join(" ") == "foo 123 true");
 	/// ```
 	#[instrument(name="List::join", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_join(this: &Object, args: Args) -> crate::Result<Object> {
@@ -723,9 +723,9 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, 2];
+	/// list = [1, 2];
 	///
-	/// list.$push(3).$push(4);
+	/// list.push(3).push(4);
 	///
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
@@ -741,11 +741,11 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = ["a", "b"];
+	/// list = ["a", "b"];
 	///
-	/// assert(list.$pop() == "b");
-	/// assert(list.$pop() == "a");
-	/// assert(list.$pop() == null);
+	/// assert(list.pop() == "b");
+	/// assert(list.pop() == "a");
+	/// assert(list.pop() == null);
 	/// assert(!list);
 	/// ```
 	#[instrument(name="List::pop", level="trace", skip(this), fields(self=?this))]
@@ -763,9 +763,9 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [3, 4];
+	/// list = [3, 4];
 	///
-	/// list.$unshift(2).$unshift(1);
+	/// list.unshift(2).unshift(1);
 	///
 	/// assert(list == [1, 2, 3, 4])
 	/// ```
@@ -781,11 +781,11 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = ["a", "b"];
+	/// list = ["a", "b"];
 	///
-	/// assert(list.$shift() == "a");
-	/// assert(list.$shift() == "b");
-	/// assert(list.$shift() == null);
+	/// assert(list.shift() == "a");
+	/// assert(list.shift() == "b");
+	/// assert(list.shift() == null);
 	/// assert(!list);
 	/// ```
 	#[instrument(name="List::shift", level="trace", skip(this), fields(self=?this))]
@@ -818,7 +818,7 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, 2];
+	/// list = [1, 2];
 	///
 	/// assert(list == [1, 2]);
 	/// list += [3, 4];
@@ -862,11 +862,11 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, 2, 3, "A", 2] 
+	/// list = [1, 2, 3, "A", 2] 
 	/// list -= [1, 2];
 	/// assert(list == [3, "A"]);
 	///
-	/// $list = ["1", "b", "c"];
+	/// list = ["1", "b", "c"];
 	/// list -= [1, "c", "c", "e"];
 	/// assert(list == ["1", "b"]);
 	/// ```
@@ -911,7 +911,7 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, 2, "a", 4];
+	/// list = [1, 2, "a", 4];
 	///
 	/// list &= [1, 2, 3];
 	/// assert(list == [1, 2]);
@@ -959,7 +959,7 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, 2, "a", 4];
+	/// list = [1, 2, "a", 4];
 	///
 	/// list |= [1, 2, 3];
 	/// assert(list == [1, 2, "a", 4, 3]);
@@ -1008,7 +1008,7 @@ impl List {
 	///
 	/// # Quest Examples
 	/// ```quest
-	/// $list = [1, 2, "a", 4];
+	/// list = [1, 2, "a", 4];
 	///
 	/// list ^= [1, 2, 3];
 	/// assert(list == ["a", 4, 3]);
