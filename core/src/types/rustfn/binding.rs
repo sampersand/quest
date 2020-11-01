@@ -48,6 +48,14 @@ impl Binding {
 	where
 		F: FnOnce(&Binding) -> crate::Result<Object>,
 	{
+		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
+		impl Drop for StackGuard<'_> {
+			#[inline]
+			fn drop(&mut self) {
+				self.0.write().pop();
+			}
+		}
+
 		let span = 
 			if let Some(ref parent) = parent {
 				tracing::trace_span!("stackframe", id=%parent.id())
@@ -56,13 +64,6 @@ impl Binding {
 			};
 		let _guard = span.enter();
 
-		struct StackGuard<'a>(&'a RwLock<Stack>, &'a Binding);
-		impl Drop for StackGuard<'_> {
-			#[inline]
-			fn drop(&mut self) {
-				self.0.write().pop();
-			}
-		}
 
 		Binding::with_stack(|stack| {
 			let binding = {

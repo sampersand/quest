@@ -4,10 +4,7 @@
 Person = {
 	__parents__.push(Comparable);
 	
-	'()' = (class, name, age) -> {
-		__parents__ = [class];
-		:0
-	};
+	'()' = (class, name, age) -> {__parents__ = [class]; :0 };
 
 	'<=>' = (lhs, rhs) -> { lhs.age <=> rhs.age };
 

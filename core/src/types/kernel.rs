@@ -111,7 +111,7 @@ impl Kernel {
 			if let Some(code) = args.arg(0) {
 				i32::try_from(*code.call_downcast::<Number>()?)?
 			} else {
-				1
+				0
 			};
 
 		if let Some(msg) = args.arg(1) {
@@ -227,7 +227,7 @@ impl Kernel {
 }
 
 impl_object_type!{
-for Kernel [(parents super::Pristine)]: // todo: do i want its parent to be pristine?
+for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristine?
 	"true" => const Boolean::new(true),
 	"false" => const Boolean::new(false),
 	"null" => const Null::new(),

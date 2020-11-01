@@ -97,10 +97,6 @@ Text.next_expr = self -> {
 		self.replace(self.strip());
 	});
 
-if (!self) {
-	return;
-}
-
 	self.else(return);
 
 	(null != (ident = self.next_ident())).then({ env.(ident) }.return);

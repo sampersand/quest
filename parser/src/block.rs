@@ -264,7 +264,8 @@ impl Block {
 	#[inline]
 	pub fn qs_call(this: &Object, args: Args) -> quest_core::Result<Object> {
 		let this_cloned = this.try_downcast::<Self>()?;
-		Binding::new_stackframe(Some(this.clone()), args, move |_| {
+		Binding::new_stackframe(Some(this.clone()), args, move |binding| {
+			binding.as_ref().set_attr_lit("source_location", format!("{:?}", this_cloned.context).into())?;
 			/*match */this_cloned.run_block_to_object()/* {
 				Ok(v) => Ok(v),
 				Err(err @ quest_core::Error::Return { .. }) => Err(err),

@@ -57,6 +57,7 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+
 		match self {
 			Self::Messaged(err) => Display::fmt(&err, f),
 			Self::KeyError(err) => Display::fmt(&err, f),

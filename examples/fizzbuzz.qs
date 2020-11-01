@@ -1,4 +1,4 @@
-Number.divides = { (_1 % _0) == 0 };
+Number.divides = (self, rhs) -> { (rhs % self) == 0 };
 
 fizzbuzz = max -> {
 	1.upto(max)

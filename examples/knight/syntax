@@ -1,23 +1,40 @@
+PROGRAM := <expr>;
 expr
-	:= primary
-	| unary expr
-	| binary expr expr
-	| ternary expr expr expr
+ := <literal>
+  | NULLARY_FN
+  | UNARY_FN <expr>
+  | BINARY_FN <expr> <expr>
+  | TERNARY_FN <expr> <expr> <expr>
+ ;
 
-primary
-	:= `null`
-	| `true` | `false`
-	| [a-z_][a-z_0-9]*
-	| [0-9]+
-	| `'` [^']* `'`
+literal
+ := [a-z_][a-z_0-9]*               # identifier
+  | [0-9]+                         # integer
+  | '"' ('\' [nrtf"'] | [^"])* '"' # string
+ ;
 
-unary
-	:= `OUTPUT` | `PROMPT` | `!`
+NULLARY_FN
+ := 'P' | 'PROMPT'
+  | 'N' | 'NULL'
+  | 'T' | 'TRUE'
+  | 'F' | 'FALSE'
+ ;
 
-binary
-	:= `WHILE` | `;` | `=`
-	| `+` | `-` | `*` | `/` | `^` | '%'
-	| `<` | `>` | `&` | `|`
+UNARY_FN
+ := 'B' | 'BLOCK'
+  | 'C' | 'CALL'
+  | 'O' | 'OUTPUT'
+  | 'P' | 'PROMPT'
+  | 'Q' | 'QUIT'
+  | 'E' | 'EVAL'
+  | 'S' | 'SYSTEM'
+  | '!'
+ ;
 
-ternary
-	:= `IF`
+BINARY_FN
+ := 'R' | 'RAND'
+  | 'W' | 'WHILE'
+  | [-+*/^<>&|;=]
+ ;
+
+TERNARY_FN := 'I' | 'IF';

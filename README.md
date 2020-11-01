@@ -255,13 +255,23 @@ There's also some stuff I've written up in the `docs` that goes more into depth.
 I should probably add more discussion of Quest's features.
 
 # Misc
-## Formal syntax Specification
+## EBNF
 ```
-code := (expr;)* expr
-expr := primary | expr <binary-op> expr | function_call
-primary := <unary-op> expr | block | <literal>
-function_call := expr block
-block := '(' block_inner ')' | '[' block_inner ']' | '{' block_inner '}'
-block_inner := (line;)* (line)?
-line := (expr,)* (expr)?
-```
+PROGRAM := <block-inner>
+
+expr
+ := <primary>
+  | UNARY_OP <expr>
+  | <expr> BINARY_OP <expr>
+  | <expr> <block> # Function call
+ ;
+
+primary := <block> | <literal>;
+block := '(' <block-inner> ')' | '[' <block-inner> ']' | '{' <block-inner> '}';
+block-inner := (<line>;)* <line>?;
+line := (<expr>,)* <expr>?;
+
+literal := <ident> | <number> | <string>
+ident := ...;
+number := ...;
+string := ...;

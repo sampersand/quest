@@ -20,13 +20,13 @@ Person = {
 }(); # ... and immediately execute the block so as to create the class.
 
 # Assign me as a new human.
-sam = Person('Sam', 'W');
+sam = Person('Samp', 'Eersand');
 
 # And greet me...
 disp("Hello, " + sam);
 
 
 # Tests
-assert(sam.first == "Sam");
-assert(sam.last == "W");
-assert(sam.@text() == "Sam W");
+assert(sam.first == 'Samp');
+assert(sam.last == 'Eersand');
+assert(sam.@text() == 'Samp Eersand');

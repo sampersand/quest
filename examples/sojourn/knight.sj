@@ -1,0 +1,133 @@
+func nonEmptyAnd(string, fn) {
+	(string != null) && fn(string)
+}
+
+func isNewline(chr) {
+	chr == '
+'
+}
+
+func isWhitespace(chr) {
+	(chr == ' ') || (chr == '	') || isNewline(chr)
+}
+
+func isLower(chr) {
+	((chr >= 'a') && (chr <= 'z')) || (chr == '_')
+}
+
+func isUpper(chr) {
+	(chr >= 'A') && (chr <= 'Z')
+}
+
+func isDigit(chr) {
+	(chr >= '0') && (chr <= '9')
+}
+
+func nextIdent(input) {
+	if nonEmptyAnd(input.get(0), isLower) {
+		ident = ''
+		while nonEmptyAnd(input.get(0), func(chr) { isLower(chr) || isDigit(chr) }) {
+			ident += input.shift()
+		}
+		ident
+	}
+}
+
+func nextInteger(input) {
+	if nonEmptyAnd(input.get(0), isDigit) {
+		integer = '';
+		while nonEmptyAnd(input.get(0), isDigit) {
+			integer += input.shift()
+		}
+		0 + integer
+	}
+}
+
+func nextText(input) {
+	if nonEmptyAnd(input.get(0), func(chr) { chr == '"' }) {
+		text = ''
+
+		input.shift() # delete leading "
+		while nonEmptyAnd(input.get(0), func(chr) { chr != '"' }) {
+			text += input.shift()
+		}
+		input.shift() # delete trailing "
+
+		Text
+	}
+}
+
+func nextCommand(input) {
+	if nonEmptyAnd(input.get(0), isUpper) {
+		cmd = ''
+
+		while nonEmptyAnd(input.get(0), isUpper) {
+			cmd += input.shift()
+		}
+
+		cmd
+	}
+}
+
+func strip(input) {
+	while nonEmptyAnd(input.get(0), func(x) { isWhitespace(x) || (x == '#') }) {
+		if input.get(0) == '#' {
+			while (input != '') && !isNewline(input.shift()) {}
+		} else {
+			input.shift()
+		}
+	}
+}
+
+func nextExpr(input) {
+	strip(input)
+
+#	if input != ' {
+#		next = 
+#		return
+#	}
+
+	print(input)
+}
+__END__
+func knight(input) {
+	nextExpr(input)		
+
+	self.else(return);
+
+	(null != (ident = self.next_ident())).then({ env.(ident) }.return);
+	(null != (num = self.next_num())).then(num.itself.return);
+	(null != (text = self.next_text())).then(text.itself.return);
+
+	cmd = self.next_cmd().else(self.shift);
+
+	(functions::(cmd))(self)
+}
+
+knight('  
+ foo')
+
+__END__
+
+Text.next_expr = self -> {
+	self.replace(self.strip());
+
+	while(/^#/.match << self, {
+		self.take_while(/^\n/.match);
+		self.replace(self.strip());
+	});
+
+if (!self) {
+	return;
+}
+
+	self.else(return);
+
+	(null != (ident = self.next_ident())).then({ env.(ident) }.return);
+	(null != (num = self.next_num())).then(num.itself.return);
+	(null != (text = self.next_text())).then(text.itself.return);
+
+	cmd = self.next_cmd().else(self.shift);
+
+	(functions::(cmd))(self)
+};
