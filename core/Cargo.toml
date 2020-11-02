@@ -8,6 +8,7 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/sampersand/quest"
 readme = "../README.md"
 
+
 [dependencies]
 rand = "0.7"
 lazy_static = "1.4"

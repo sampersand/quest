@@ -4,6 +4,7 @@ use std::ops::Deref;
 use parking_lot::RwLock;
 
 type Stack = Vec<Binding>;
+pub type StackTrace = Vec<String>;
 
 #[derive(Debug, Clone)]
 pub struct Binding(Object);
@@ -22,6 +23,10 @@ impl Binding {
 				.expect("we should always have a stackframe")
 				.clone()
 		})
+	}
+
+	pub fn stacktrace() -> StackTrace {
+		vec!["<todo>".to_string()]
 	}
 
 	pub fn set_binding(new: Object) -> Binding {
@@ -67,7 +72,7 @@ impl Binding {
 
 		Binding::with_stack(|stack| {
 			let binding = {
-				let binding = Object::from(Scope);
+				let binding = Object::from(Scope::new(format!("{:?}", parent)));
 
 				if let Some(parent) = parent {
 					binding.add_parent(parent)?;
@@ -135,7 +140,7 @@ impl Binding {
 	pub fn with_stack<F: FnOnce(&RwLock<Stack>) -> R, R>(func: F) -> R {
 		thread_local!(
 			// static STACK: RwLock<Stack> = RwLock::new(vec![]);
-			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(Scope))]);
+			static STACK: RwLock<Stack> = RwLock::new(vec![Binding(Object::new(Scope::new("<none>".to_string())))]);
 		);
 
 		STACK.with(func)

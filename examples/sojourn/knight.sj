@@ -1,27 +1,10 @@
-func nonEmptyAnd(string, fn) {
-	(string != null) && fn(string)
-}
-
-func isNewline(chr) {
-	chr == '
-'
-}
-
-func isWhitespace(chr) {
-	(chr == ' ') || (chr == '	') || isNewline(chr)
-}
-
-func isLower(chr) {
-	((chr >= 'a') && (chr <= 'z')) || (chr == '_')
-}
-
-func isUpper(chr) {
-	(chr >= 'A') && (chr <= 'Z')
-}
-
-func isDigit(chr) {
-	(chr >= '0') && (chr <= '9')
-}
+func nonEmptyAnd(string, fn) { (string != null) && fn(string) }
+func isNewline(chr) { chr == '
+' }
+func isWhitespace(chr) { (chr == ' ') || (chr == '	') || isNewline(chr) }
+func isLower(chr) { ((chr >= 'a') && (chr <= 'z')) || (chr == '_') }
+func isUpper(chr) { (chr >= 'A') && (chr <= 'Z') }
+func isDigit(chr) { (chr >= '0') && (chr <= '9') }
 
 func nextIdent(input) {
 	if nonEmptyAnd(input.get(0), isLower) {
@@ -53,7 +36,7 @@ func nextText(input) {
 		}
 		input.shift() # delete trailing "
 
-		Text
+		text
 	}
 }
 
@@ -66,6 +49,8 @@ func nextCommand(input) {
 		}
 
 		cmd
+	} else {
+		input.shift()
 	}
 }
 
@@ -82,13 +67,16 @@ func strip(input) {
 func nextExpr(input) {
 	strip(input)
 
-#	if input != ' {
-#		next = 
-#		return
-#	}
-
-	print(input)
+	if input == "" {
+		null
+	} else {
+		nextIdent(input) || nextInteger(input) || nextText(input) || nextCommand(input)
+	}
 }
+
+
+print(nextExpr(';'))
+
 __END__
 func knight(input) {
 	nextExpr(input)		

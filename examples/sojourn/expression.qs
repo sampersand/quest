@@ -15,6 +15,7 @@ Environment = {
 		};
 
 		print = (args, env) -> { disp(args.get(0)); Types::convert(null) };
+		printn = (args, env) -> { dispn(args.get(0)); Types::convert(null) };
 		print.__parents__.get(0).call = print::'()';
 		:0
 	}();

@@ -1,10 +1,10 @@
 mod args;
-mod binding;
 mod closure;
+mod binding;
 
 pub use closure::RustClosure;
 pub use args::Args;
-pub use binding::Binding;
+pub use binding::{Binding, StackTrace};
 
 use crate::Object;
 use crate::types::Text;

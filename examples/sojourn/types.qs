@@ -34,7 +34,7 @@ Types.Function = {
 
 	@text = inspect = self -> { 'func(' + self.name.@text() + ')' };
 
-	FRAME = 0;
+	FRAME_NUMBER = 0;
 
 	call = (self, args, env) -> {
 		new_env = Environment(env.globals);
@@ -42,10 +42,9 @@ Types.Function = {
 			new_env.locals.(self.args.get(_0)) = args.get(_0);
 		});
 
-		if((Types.Function.FRAME += 1) % 40, {
+		if((Types.Function.FRAME_NUMBER += 1) % 40, {
 			self.body.exec(new_env)
 		}, {
-			disp("Spawning", Types.Function.FRAME);
 			spawn(self.body.exec << new_env).join()
 		})
 	};
@@ -98,7 +97,8 @@ Types.Integer = {
 		'+@' = self -> { Types::convert(+self.value) };
 		'+ - * / % ** & | ^ << >> < > <= >= == !='.split(' ').each(op -> {
 			:1.(op) = (self, rhs) -> {
-				Types::convert(self.value.(op)(rhs.value))
+				
+				self.value.(op)(rhs.value))
 			};
 		});
 		:0
