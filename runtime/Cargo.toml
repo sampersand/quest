@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 quest-core = { path = "../core" }
+bitflags = "1.2"
+static_assertions = "1.1.0"

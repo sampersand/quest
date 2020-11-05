@@ -5,7 +5,7 @@ pub type Boolean = bool;
 
 impl Value {
 	/// Creates a boolean [`Value`].
-	pub fn new_bool(value: Boolean) -> Self {
+	pub const fn new_bool(value: Boolean) -> Self {
 		if value {
 			Self::TRUE
 		} else {

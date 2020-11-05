@@ -9,7 +9,7 @@ impl Value {
 		if float.is_nan() {
 			Self::NAN
 		} else {
-			Self(ValueInner { float }, Default::default())
+			Self(ValueInner { float }, std::marker::PhantomData)
 		}
 	}
 

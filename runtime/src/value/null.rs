@@ -8,7 +8,7 @@ pub struct Null;
 /// Methods relating to [`Null`].
 impl Value {
 	/// Creates a null [`Value`].
-	pub fn new_null() -> Self {
+	pub const fn new_null() -> Self {
 		Self::NULL
 	}
 

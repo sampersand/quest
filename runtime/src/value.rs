@@ -54,23 +54,23 @@ impl Tag {
 	const CLONE_MASK: u16 = 0b11111111_11111000;
 	const COPY_MASK:  u16 = 0b01111111_11111000;
 
-	const FLOAT64: Self  = Self(0); // Technically, its tag is anything other than these.
-	const OBJECT: Self   = Self(Self::CLONE_MASK | 0b000);
-	const TEXT: Self     = Self(Self::CLONE_MASK | 0b001);
-	const REGEX: Self    = Self(Self::CLONE_MASK | 0b010);
-	const BLOCK: Self    = Self(Self::CLONE_MASK | 0b011);
-	const LIST: Self     = Self(Self::CLONE_MASK | 0b100);
-	const MAP: Self      = Self(Self::CLONE_MASK | 0b101);
-	const SCOPE: Self    = Self(Self::CLONE_MASK | 0b110);
-	// _                 = Self(Self::CLONE_MASK | 0b111);
-	const CONSTS: Self   = Self(Self::COPY_MASK  | 0b000); // see the `impl` block for definitions
-	const INT48: Self    = Self(Self::COPY_MASK  | 0b001);
-	const RUSTFN: Self   = Self(Self::COPY_MASK  | 0b010);
-	const ZST: Self      = Self(Self::COPY_MASK  | 0b011); // eg `Iterable`, `Kernel`, `Pristine`, etc.
-	const LITERAL: Self  = Self(Self::COPY_MASK  | 0b100);
-	// _                 = Self(Self::COPY_MASK  | 0b101); */
-	// _                 = Self(Self::COPY_MASK  | 0b110); */
-	// _                 = Self(Self::COPY_MASK  | 0b111); */
+	const FLOAT: Self   = Self(0); // Technically, its tag is anything other than these.
+	const OBJECT: Self  = Self(Self::CLONE_MASK | 0b000);
+	const TEXT: Self    = Self(Self::CLONE_MASK | 0b001);
+	const REGEX: Self   = Self(Self::CLONE_MASK | 0b010);
+	const BLOCK: Self   = Self(Self::CLONE_MASK | 0b011);
+	const LIST: Self    = Self(Self::CLONE_MASK | 0b100);
+	const MAP: Self     = Self(Self::CLONE_MASK | 0b101);
+	const SCOPE: Self   = Self(Self::CLONE_MASK | 0b110);
+	// _                = Self(Self::CLONE_MASK | 0b111);
+	const CONSTS: Self  = Self(Self::COPY_MASK  | 0b000); // see the `impl` block for definitions
+	const INT: Self     = Self(Self::COPY_MASK  | 0b001);
+	const RUSTFN: Self  = Self(Self::COPY_MASK  | 0b010);
+	const ZST: Self     = Self(Self::COPY_MASK  | 0b011); // eg `Iterable`, `Kernel`, `Pristine`, etc.
+	const LITERAL: Self = Self(Self::COPY_MASK  | 0b100);
+	// _                = Self(Self::COPY_MASK  | 0b101); */
+	// _                = Self(Self::COPY_MASK  | 0b110); */
+	// _                = Self(Self::COPY_MASK  | 0b111); */
 
 	const fn is_clone(&self) -> bool {
 		(self.0 & Self::CLONE_MASK) == Self::CLONE_MASK
@@ -98,7 +98,7 @@ impl Display for Tag {
 			Self::MAP => write!(f, "Map"),
 			Self::SCOPE => write!(f, "Scope"),
 			Self::CONSTS => write!(f, "Consts"),
-			Self::INT48 => write!(f, "Int48"),
+			Self::INT => write!(f, "Int48"),
 			Self::RUSTFN => write!(f, "RustFn"),
 			Self::ZST => write!(f, "Zst"),
 			Self::LITERAL => write!(f, "Literal"),
@@ -215,7 +215,7 @@ impl Debug for Value {
 					unreachable!("unknown constant encountered: {:x}", self.masked_data())
 				}
 			},
-			Tag::INT48 => write!(f, "Int48({})", self.masked_data()),
+			Tag::INT => write!(f, "Int48({})", self.masked_data()),
 			Tag::ZST => write!(f, "ZST({:x})", self.masked_data()),
 			Tag::LITERAL => write!(f, "Literal({:x})", self.masked_data()),
 			tag if tag.is_data_pointer() => write!(f, "{}({:p})", tag, self.as_ptr()),

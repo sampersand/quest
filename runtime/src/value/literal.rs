@@ -6,6 +6,8 @@ use super::{Value, Tag};
 pub struct Literal(u32);
 
 impl Literal {
+	pub const NOT: Self = Self(0);
+
 	pub fn new(literal: &'static str) -> Self {
 		todo!()
 	}
