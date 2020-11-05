@@ -11,9 +11,6 @@ func greet(person) {
 samp = person("samp", "green")
 greet(samp)
 
-
-
-
 func fizzBuzz (max) {
 	i = 1;
 

@@ -46,6 +46,11 @@ mod list;
 
 mod tcp;
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Map {
+	
+}
+
 pub use function::BoundRustFn;
 
 #[doc(inline)]

@@ -1,5 +1,5 @@
 # Create a person class. Classes are created by executing a block that returns
-# `:0` (which is the same as `self`/`this in other languages).
+# `:0` (which is the same as `self`/`this` in other languages).
 
 Person = {
 	# Define what it means to "call" a Person (ie `Person(...)`).
