@@ -1,10 +1,14 @@
 [package]
-name = "bytecode"
+name = "quest-runtime"
 version = "0.1.0"
 authors = ["Sam Westerman <sam@sampersand.me>"]
 edition = "2018"
 
+[features]
+nanbox = ["bitflags"]
+default = ["nanbox"]
+
 [dependencies]
 quest-core = { path = "../core" }
-bitflags = "1.2"
+bitflags = { version = "1.2", optional = true }
 static_assertions = "1.1.0"
