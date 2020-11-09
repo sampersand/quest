@@ -231,8 +231,26 @@ for Basic [(parents super::Pristine)]:
 
 	"then" => method super::Kernel::qs_if, 
 	"else" => method super::Kernel::qs_unless, 
-	// "||"    => Self::or,
-	// "&&"    => Self::and,
+	"or" => method |this, args| {
+		let if_false = args.try_arg(0)?;
+		let is_truthy = this.call_downcast::<super::Boolean>()?.into_inner();
+
+		if is_truthy {
+			Ok(this.clone())
+		} else {
+			Ok(if_false.clone())
+		}
+	},
+	"and" => method |this, args| {
+		let if_true = args.try_arg(0)?;
+		let is_truthy = this.call_downcast::<super::Boolean>()?.into_inner();
+
+		if is_truthy {
+			Ok(if_true.clone())
+		} else {
+			Ok(this.clone())
+		}
+	}
 }
 
 
