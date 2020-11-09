@@ -1,10 +1,7 @@
 # Implementing the idea of inheritance in quest.
 # this is done through manipulations of the the `__parents__` variable.
 Person = {
-	'()' = (class, first, last) -> {
-		__parents__ = [class];
-		:0
-	};
+	'()' = (class, first, last) -> { __parents__ = [class]; :0 };
 
 	SAYS_WHAT = 'hi';
 

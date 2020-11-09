@@ -1,4 +1,4 @@
-Text.take_while = (self, fn) -> {
+	Text.take_while = (self, fn) -> {
 	acc = '';
 
 	while(fn << self, {

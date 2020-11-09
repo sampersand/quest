@@ -3,6 +3,7 @@
 
 ; = get FNDEF                             # def get():
    EVAL (+ '__arr_' i)                    #    return __arr_[i]
+
 ; = i 1                                   # i = 1
 ; WHILE (< i 9)                           # while i < 9:
    ; = n ^ i 2                            #    n = i ** 2

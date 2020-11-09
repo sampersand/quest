@@ -121,14 +121,14 @@ pub enum LineResult {
 	Multiple(Vec<quest_core::Object>)
 }
 
-impl LineResult {
-	fn force_multiple(self) -> Self {
-		match self {
-			Self::Single(obj) => Self::Multiple(vec![obj]),
-			multiple => multiple
-		}
-	}
-}
+// impl LineResult {
+// 	fn force_multiple(self) -> Self {
+// 		match self {
+// 			Self::Single(obj) => Self::Multiple(vec![obj]),
+// 			multiple => multiple
+// 		}
+// 	}
+// }
 
 impl From<LineResult> for quest_core::Object {
 	fn from(lr: LineResult) -> Self {
@@ -167,15 +167,15 @@ impl Block {
 				line.execute()?;
 			}
 
-			let mut ret = last.execute()?;
+			let /*mut*/ ret = last.execute()?;
 
-			if self.paren_type == ParenType::Square {
-				ret = ret.force_multiple();
-			}
+			// if self.paren_type == ParenType::Square {
+			// 	ret = ret.force_multiple();
+			// }
 
 			Ok(Some(ret))
-		} else if self.paren_type == ParenType::Square {
-			Ok(Some(LineResult::Multiple(vec![])))
+		// } else if self.paren_type == ParenType::Square {
+			// Ok(Some(LineResult::Multiple(vec![])))
 		} else {
 			Ok(None)
 		}
@@ -192,6 +192,10 @@ impl Executable for Block {
 	fn execute(&self) -> quest_core::Result<quest_core::Object> {
 
 		if self.paren_type == ParenType::Curly {
+			let block = Object::from(self.clone());
+			block.add_parent(Binding::instance().as_ref().clone())?;
+			Ok(block)
+		} else if self.paren_type == ParenType::Square {
 			let block = Object::from(self.clone());
 			block.add_parent(Binding::instance().as_ref().clone())?;
 			Ok(block)
@@ -264,14 +268,14 @@ impl Block {
 	#[inline]
 	pub fn qs_call(this: &Object, args: Args) -> quest_core::Result<Object> {
 		let this_cloned = this.try_downcast::<Self>()?;
-		Binding::new_stackframe(Some(this.clone()), args, move |binding| {
-			binding.as_ref().set_attr_lit("source_location", format!("{:?}", this_cloned.context).into())?;
-			/*match */this_cloned.run_block_to_object()/* {
-				Ok(v) => Ok(v),
-				Err(err @ quest_core::Error::Return { .. }) => Err(err),
-				Err(err) => Err(err)
-			}*/
-		})
+		if this_cloned.paren_type == ParenType::Curly {
+			Binding::new_stackframe(Some(this.clone()), args, move |binding| {
+				binding.as_ref().set_attr_lit("source_location", format!("{:?}", this_cloned.context).into())?;
+				this_cloned.run_block_to_object()
+			})
+		} else {
+			this_cloned.run_block_to_object()
+		}
 	}
 
 	#[inline]

@@ -1,4 +1,4 @@
-//! The [`Number`] type in Quest.
+	//! The [`Number`] type in Quest.
 
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display, Formatter};
