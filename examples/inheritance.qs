@@ -26,18 +26,18 @@ Child = {
 
 	@text = child -> {
 		# This is a hack until I get the `super` function implemented.
-		parent_ims = child.__parents__.get(0).__parents__.$get(0);
-		"Baby '" + parent_ims::$@text(child) + "'"
+		parent_ims = child.__parents__.get(0).__parents__.get(0);
+		"Baby '" + parent_ims::@text(child) + "'"
 	};
 
 	:0
 }();
 
-$sam = Person('Sam', 'W');
-$child = Child('Sammie', 'Boy');
+sam = Person('Sam', 'W');
+child = Child('Sammie', 'Boy');
 
-sam.$speak(); # Sam W says: hi
-child.$speak(); # Baby 'Sammie Boy' says: Waa! I want food!
+sam.speak(); # Sam W says: hi
+child.speak(); # Baby 'Sammie Boy' says: Waa! I want food!
 
 # Tests
 assert(sam.@text() == "Sam W");

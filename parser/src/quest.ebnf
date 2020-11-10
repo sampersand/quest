@@ -1,0 +1,40 @@
+TOP: <statement>+
+
+statement := <expr> (';' | '\n')?
+expr
+ :=
+ | <assignment>
+ | <function-call>
+ | <terminal>
+
+function-call := <expr> '(' <function-args> ')' <lambda>?
+assignment := (<expr> '.')* IDENT '=' <expr>
+
+terminal
+ := <literal>
+  | UNARY_OP <expr>
+  | '(' <statement>+ ')'
+  | '[' (<expr> ',')* <expr> ']'
+
+literal: IDENT | NUMBER | STRING | <lambda>
+
+lambda := '{' ('|' <lamdba-args> '|')? <statement>+ '}'
+
+UNARY_OP := '+' | '-' | '~' | '!'
+
+IDENT := [a-zA-Z_] [a-zA-Z0-9_]
+
+NUMBER
+ := [0-9] [0-9_]*
+  | [0-9] [0-9_]*  ('.' [0-9] [0-9_]* )? ([eE][-+] [0-9] [0-9_]*)?
+  | '0' [xX] [a-fA-F0-9] [a-fA-F0-9_]*
+  | '0' [oO] [0-7] [0-7_]*
+  | '0' [bB] [01] [01]*
+  | '0' [dD] [0-9] [0-9_]*
+
+STRING
+ :=
+  | `'` (`\` ['\] | [^'])* `'`
+  | `"` (<STRING-ESCAPES> | [^"]) `"`
+  | <HEREDOC>
+

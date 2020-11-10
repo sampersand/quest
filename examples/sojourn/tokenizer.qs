@@ -3,7 +3,7 @@ Basic.and_then = (self, func) -> { self.then(func.'()' << self) };
 Text.shift_re = (self, regex) -> {
 	match = regex.match(self).else(return).get(0);
 	unless(self.get(0, match.len() - 1) == match, return);
-	self.replace(self.get(match.len(), -1).else({ '' }));
+	self.replace(self.get(match.len(), -1).or(''));
 	match
 };
 
@@ -137,7 +137,7 @@ Tokenizer = {
 	};
 
 	strip_comments_and_whitespace = self -> {
-		while(self.source.shift_re << /\A(?:\s+|#.*\n)/, {});
+		while(self.source.shift_re << /\A(?:\s+|#.*\n)/, { /* do nothing */ });
 	};
 
 	keyword = self -> {

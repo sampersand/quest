@@ -53,6 +53,20 @@ impl Kernel {
 		}
 	}
 
+	#[instrument(name="Kernel::ifl", level="trace")]
+	pub fn qs_ifl(cond: &Object, args: Args) -> crate::Result<Object> {
+		let if_true = args.try_arg(0)?;
+		let is_truthy = is_object_truthy(cond)?;
+
+		tracing::debug!(?cond, %is_truthy);
+
+		if is_truthy {
+			Ok(if_true.clone())
+		} else {
+			Ok(args.arg(1).cloned().unwrap_or_else(|| cond.clone()))
+		}
+	}
+
 	#[instrument(name="Kernel::unless", level="trace")]
 	pub fn qs_unless(cond: &Object, args: Args) -> crate::Result<Object> {
 		let if_true = args.try_arg(0)?;
@@ -68,6 +82,21 @@ impl Kernel {
 			Ok(cond.clone())
 		}
 	}
+
+	#[instrument(name="Kernel::unlessl", level="trace")]
+	pub fn qs_unlessl(cond: &Object, args: Args) -> crate::Result<Object> {
+		let if_true = args.try_arg(0)?;
+		let is_truthy = is_object_truthy(cond)?;
+
+		tracing::debug!(?cond, %is_truthy);
+
+		if !is_truthy {
+			Ok(if_true.clone())
+		} else {
+			Ok(args.arg(1).cloned().unwrap_or_else(|| cond.clone()))
+		}
+	}
+
 
 
 	#[instrument(name="Kernel::disp", level="trace")]
@@ -249,8 +278,10 @@ for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristin
 	"Comparable" => const super::Comparable::mapping().clone(),
 	"Iterable" => const super::Iterable::mapping().clone(),
 
-	"if" => method Self::qs_if, 
-	"unless" => method Self::qs_unless, 
+	"if" => method Self::qs_if,
+	"ifl" => method Self::qs_ifl,
+	"unless" => method Self::qs_unless,
+	"unlessl" => method Self::qs_unlessl,
 	"disp" => function Self::qs_disp,
 	"dispn" => function Self::qs_dispn,
 	"quit" => function Self::qs_quit,

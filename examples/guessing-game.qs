@@ -23,7 +23,7 @@ loop({
 		disp("perfect!\nit took you", guesses, "guesses");
 		quit(0);
 	}, {
-		# use `if` as a "terninary operator"
-		disp("too ", if(guess > secret, { "high" }, { "low" }));
+		# use `ifl`, which is the ternary operator for literal values.
+		disp("too ", ifl(guess > secret, "high", "low");
 	})
 })
