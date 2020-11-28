@@ -2,6 +2,7 @@
 members = [
 	"core",
 	"parser",
+	"parser2",
 	"bin",
 	"runtime"
 ]

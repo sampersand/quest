@@ -38,9 +38,10 @@ pub enum ByteCode {
 	Pow(RegisterIndex, RegisterIndex),
 
 	// Bitwise
-	Not(RegisterIndex),
-	And(RegisterIndex, RegisterIndex),
-	 Or(RegisterIndex, RegisterIndex),
+	LNot(RegisterIndex),
+	BNot(RegisterIndex),
+	BAnd(RegisterIndex, RegisterIndex),
+	BOr(RegisterIndex, RegisterIndex),
 	Xor(RegisterIndex, RegisterIndex),
 	Shl(RegisterIndex, RegisterIndex),
 	Shr(RegisterIndex, RegisterIndex),
@@ -135,9 +136,10 @@ impl ByteCode {
 			Self::Pow(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::POW),
 
 			// Bitwise
-			Self::Not(reg) => Self::CallAttrL(reg, Literal::NOT, 0).run(vm),
-			Self::And(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::BAND),
-			Self::Or(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::BOR),
+			Self::LNot(reg) => Self::CallAttrL(reg, Literal::NOT, 0).run(vm),
+			Self::BNot(reg) => Self::CallAttrL(reg, Literal::BNOT, 0).run(vm),
+			Self::BAnd(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::BAND),
+			Self::BOr(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::BOR),
 			Self::Xor(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::BXOR),
 			Self::Shl(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::SHL),
 			Self::Shr(lhs, rhs) => callbinary!(vm, lhs, rhs, Literal::SHR),
@@ -229,9 +231,10 @@ impl Display for ByteCode{
 			Self::Pow(lhs, rhs) => write!(f, "pow {}, {}", lhs, rhs),
 
 			// Bitwise
-			Self::Not(reg) => write!(f, "not {}", reg),
-			Self::And(lhs, rhs) => write!(f, "and {}, {}", lhs, rhs),
-			Self::Or(lhs, rhs) => write!(f, "or {}, {}", lhs, rhs),
+			Self::LNot(reg) => write!(f, "lnot {}", reg),
+			Self::BNot(reg) => write!(f, "bnot {}", reg),
+			Self::BAnd(lhs, rhs) => write!(f, "band {}, {}", lhs, rhs),
+			Self::BOr(lhs, rhs) => write!(f, "bor {}, {}", lhs, rhs),
 			Self::Xor(lhs, rhs) => write!(f, "xor {}, {}", lhs, rhs),
 			Self::Shl(lhs, rhs) => write!(f, "shl {}, {}", lhs, rhs),
 			Self::Shr(lhs, rhs) => write!(f, "shr {}, {}", lhs, rhs),

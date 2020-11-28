@@ -365,6 +365,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "parser2"
+version = "0.2.0"
+dependencies = [
+ "lazy_static",
+ "quest-core",
+ "regex",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

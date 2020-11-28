@@ -1,0 +1,42 @@
+# NOTE: `{}`: 0+, `[]`: 0 or 1`, `()` = grouping
+TOP := statements ;
+
+statements := { statement } [expression [ endline ]] ;
+statement := [ expression ] endline ;
+endline := ';' | '\n' ;
+
+expression
+ := terminal
+  | assignment
+  | function-call
+  | expression BINARY_OP expression
+  ;
+
+assignment := { expression '.' } ident-or-paren ASSIGNMENT_OP expression ;
+ident-or-paren := IDENTIFIER | paren-phrase ;
+
+function-call := expression '(' [function-call-args] ')' ;
+function-call-args := list [',' [map]] | map [','] ;
+
+terminal
+ := literal
+  | paren-phrase
+  | bracket-literal
+  | lambda
+  | UNARY_OP expression
+  ;
+
+literal := TEXT | NUMBER | IDENTIFIER | REGEX | STACKFRAME ;
+paren-phrase := '(' statements ')' ;
+
+bracket-literal := '[' [ (list | map) [','] ] ']' ;
+list := ['*'] expression [',' list] ;
+map := ( ['**'] expression | ident-or-paren ':' [expression] ) [',' map] ;
+
+lambda := '{' ['|' lambda-args '|'] statements '}' ;
+lambda-args := [lambda-required] ;
+lambda-required := IDENTIFIER [',' lambda-required] | lambda-optional ;
+lambda-optional := IDENTIFIER '=' expression [',' lambda-optional] | lambda-rest ;
+lambda-rest := '*' IDENTIFIER [',' lambda-keyword] | lambda-keyword ;
+lambda-keyword := IDENTIFIER ':' [expression] [',' lambda-keyword] | lambda-keyword-rest ;
+lambda-keyword-rest := '**' IDENTIFIER ;
