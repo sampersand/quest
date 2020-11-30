@@ -8,16 +8,16 @@ use crate::expression::{Constructable, Expression, PutBack, Executable};
 use std::fmt::{self, Debug, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum Line {
+pub(crate) enum Line {
 	Single(Expression),
 	Multiple(Vec<Expression>)
 }
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Block {
-	lines: Vec<Line>,
-	paren_type: ParenType,
-	context: Context,
+	pub(crate) lines: Vec<Line>,
+	pub(crate) paren_type: ParenType,
+	pub(crate) context: Context,
 }
 
 impl Block {

@@ -174,6 +174,19 @@ impl Pristine {
 			.collect::<Vec<_>>()
 			.into())
 	}
+
+	#[instrument(name="Pristine::instance_exec", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_instance_exec(this: &Object, args: Args) -> crate::Result<Object> {
+		let to_exec = args.try_arg(0)?;
+
+		crate::Binding::run_stackframe(this.clone().into(), |_| {
+			if to_exec.has_attr_lit("call_noscope")? {
+				to_exec.call_attr_lit("call_noscope", &[])
+			} else {
+				to_exec.call_attr_lit(&crate::Literal::CALL, &[])
+			} 
+		})
+	}
 }
 
 impl_object_type!{
@@ -188,6 +201,8 @@ for Pristine [(init_parent) (parents Pristine)]:
 	"::" => method Self::qs___get_attr__,
 	".=" => method Self::qs___set_attr__,
 	"." => method Self::qs_dot_get_attr,
+	"instance_exec" => method Self::qs_instance_exec,
+
 	// this is mildly deprecated
 	"::@" => method |this, _| {
 		crate::Binding::with_stack(|stack| {

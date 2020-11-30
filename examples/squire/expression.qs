@@ -1,9 +1,9 @@
+Io::File('class.qs').read().eval();
 Io::File('tokenizer.qs').read().eval();
 Io::File('types.qs').read().eval();
 
-Environment = {
-	DEFAULT_GLOBALS = {
-		__parents__ =  [Pristine];
+Environment = class() {
+	DEFAULT_GLOBALS = class(Basic) {
 		fread = (args, env) -> {
 			filename = args.get(0).value;
 			read_what = args.get(1).then({ _0.value }).else({ "\n" });
@@ -14,47 +14,54 @@ Environment = {
 			Io.File(args.get(0).value, 'w').write(args.get(1).value)
 		};
 
-		print = (args, env) -> { disp(args.get(0)); Types::convert(null) };
+		print = (args, env) -> {
+			dispn(args.get(0).value);
+			Type::convert(null)
+		};
+
 		print.__parents__.get(0).call = print::'()';
-		:0
-	}();
+	};
 
 	'()' = (class, globals) -> {
 		__parents__ = [class];
-		globals = if(null == globals, { Environment::DEFAULT_GLOBALS }, { globals });
-		locals = { __parents__ = [Pristine]; :0 }();
+		globals = ifl (null == globals, DEFAULT_GLOBALS, globals);
+		locals = Pristine::class();
 		:0
 	};
-	:0
-}();
+};
 
 take_while = fn -> {
 	list = [];
-	{loop({
+	{loop() {
 		x = fn();
-		if(x == null, { return(null, :2) });
+
+		(x == null).then(null.return << :1);
+
 		list.push(x);
-	})}();
+	}}();
 	list
 };
 
-Expression = { :0 }();
-Expression.Assignment = {
+Expression = class();
+
+Expression.Assignment = class() {
 	'()' = (class, ident, op, value) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'Assignment(' + self.ident + ', ' + self.op + ', ' + self.value.inspect() + ')'
 	};
 
-	@text = self -> { self.ident + ' ' + self.op + ' ' + self.value.@text() };
+	@text = self -> {
+		self.ident + ' ' + self.op + ' ' + self.value.@text()
+	};
 
 	parse = (class, parser) -> {
 		ident = parser.next_if_type('IDENTIFIER').else(return);
 
-		op = parser.next_if_type('OPERATOR_ASSIGN').else({
+		op = parser.next_if_type('OPERATOR_ASSIGN').else() {
 			parser.put_back(ident);
 			return(null, :1);
-		});
+		};
 
 		value = parser.expr().assert('missing RHS of assignment');
 
@@ -64,16 +71,16 @@ Expression.Assignment = {
 	exec = (self, env) -> {
 		rhs = self.value.exec(env);
 
-		if(self.op != '=', {
+		if (self.op != '=') {
 			lhs = env.locals.(self.ident);
 			:1.rhs = env.locals.(self.ident).operator(self.op.get(0,-2), rhs);
-		});
+		};
+
 		env.locals.(self.ident) = rhs
 	};
-	:0
-}();
+};
 
-Expression.If = {
+Expression.If = class() {
 	'()' = (class, cond, if_true, if_false) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -84,9 +91,11 @@ Expression.If = {
 
 	@text = self -> {
 		base = 'if ' + self.cond.@text() + self.if_true.@text();
-		self.if_false.then({
+
+		if (self.if_false) {
 			base += ' else ' + self.if_false.@text();
-		});
+		};
+
 		base
 	};
 
@@ -96,9 +105,9 @@ Expression.If = {
 		if_true = Expression::Block.parse(parser).assert('missing if_true block');
 		if_false = null;
 
-		parser.next_if_token(Token::ELSE).then({
+		if (parser.next_if_token(Token::ELSE)) {
 			:1.if_false = Expression::Block.parse(parser).assert('missing if_false block');
-		});
+		};
 
 		class(cond, if_true, if_false)
 	};
@@ -108,11 +117,9 @@ Expression.If = {
 			self.if_false.then({ self.if_false.exec(env) })
 		})
 	};
+};
 
-	:0
-}();
-
-Expression.While = {
+Expression.While = class() {
 	'()' = (class, cond, body) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -133,15 +140,11 @@ Expression.While = {
 	};
 
 	exec = (self, env) -> {
-		while({ self.cond.exec(env).value }, {
-			self.body.exec(env)
-		})
+		while({ self.cond.exec(env).value }, self.body.exec << env);
 	};
+};
 
-	:0
-}();
-
-Expression.Return = {
+Expression.Return = class()  {
 	'()' = (class, value) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -161,11 +164,9 @@ Expression.Return = {
 	};
 
 	exec = (self, env) -> { quit(1, 'todo: return'); };
+};
 
-	:0
-}();
-
-Expression.Continue = {
+Expression.Continue = class() {
 	'()' = (class) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> { 'Continue()' };
@@ -176,11 +177,9 @@ Expression.Continue = {
 	};
 
 	exec = (self, env) -> { quit(1, 'todo: continue'); };
+};
 
-	:0
-}();
-
-Expression.Break = {
+Expression.Break = class() {
 	'()' = (class) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> { 'Break()' };
@@ -191,11 +190,9 @@ Expression.Break = {
 	};
 
 	exec = (self, env) -> { quit(1, 'todo: break'); };
+};
 
-	:0
-}();
-
-Expression.FuncDecl = {
+Expression.FuncDecl = class() {
 	'()' = (class, name, args, body) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -225,24 +222,26 @@ Expression.FuncDecl = {
 	};
 
 	exec = (self, env) -> {
-		type = Types::Function(self.name, self.args, self.body);
+		type = Type::Function(self.name, self.args, self.body);
 
-		if(self.name, { env.globals.(self.name) = type });
+		if (self.name) {
+			env.globals.(self.name) = type
+		};
 
 		type
 	};
+};
 
-	:0
-}();
-
-Expression.StructDecl = {
+Expression.StructDecl = class() {
 	'()' = (class, name, fields) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'StructDecl(' + self.name + ', ' + self.fields.inspect() + ')'
 	};
 
-	@text = self -> { 'struct ' + self.name + ' { ' + self.fields.join(', ') + ' }' };
+	@text = self -> {
+		'struct ' + self.name + ' { ' + self.fields.join(', ') + ' }'
+	};
 
 	parse = (class, parser) -> {
 		parser.next_if_token(Token::STRUCT).else(return);
@@ -262,13 +261,11 @@ Expression.StructDecl = {
 	};
 
 	exec = (self, env) -> {
-		env.globals.(self.name) = Types::Struct(self.name, self.fields)
+		env.globals.(self.name) = Type::Struct(self.name, self.fields)
 	};
+};
 
-	:0
-}();
-
-Expression.FuncCall = {
+Expression.FuncCall = class() {
 	'()' = (class, func, args) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -298,18 +295,18 @@ Expression.FuncCall = {
 
 		func.call(args, env)
 	};
+};
 
-	:0
-}();
-
-Expression.Integer = {
+Expression.Integer = class() {
 	'()' = (class, value) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'Integer(' + self.value.inspect() + ')'
 	};
 
-	@text = self -> { self.value.@text() };
+	@text = self -> {
+		self.value.@text()
+	};
 
 	parse = (class, parser) -> {
 		token = parser.next_if_type('INTEGER').else(return);
@@ -317,19 +314,21 @@ Expression.Integer = {
 		class(token.value.@num())
 	};
 
-	exec = (self, _) -> { Types::Integer(self.value) };
+	exec = (self, _) -> {
+		Type::Integer(self.value)
+	};
+};
 
-	:0
-}();
-
-Expression.Identifier = {
+Expression.Identifier = class() {
 	'()' = (class, value) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'Identifier(' + self.value.inspect() + ')'
 	};
 
-	@text = self -> { self.value.@text() };
+	@text = self -> {
+		self.value.@text()
+	};
 
 	parse = (class, parser) -> {
 		token = parser.next_if_type('IDENTIFIER').else(return);
@@ -338,24 +337,21 @@ Expression.Identifier = {
 	};
 
 	exec = (self, env) -> {
-		if(env.locals.__has_attr__(self.value), {
-			env.locals::(self.value)
-		}, {
-			env.globals::(self.value)
-		})
+		which = ifl(env.locals.__has_attr__(self.value), env.locals, env.globals);
+		which::(self.value)
 	};
+};
 
-	:0
-}();
-
-Expression.Boolean = {
+Expression.Boolean = class() {
 	'()' = (class, value) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'Boolean(' + self.value.inspect() + ')'
 	};
 
-	@text = self -> { self.value.@text() };
+	@text = self -> {
+		self.value.@text()
+	};
 
 	parse = (class, parser) -> {
 		token = parser.next_if_type('BOOLEAN').else(return);
@@ -365,19 +361,21 @@ Expression.Boolean = {
 		class(token.value == 'true')
 	};
 
-	exec = (self, _) -> { Types::Boolean(self.value) };
+	exec = (self, _) -> {
+		Type::Boolean(self.value)
+	};
+};
 
-	:0
-}();
-
-Expression.String = {
+Expression.String = class() {
 	'()' = (class, value) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'String(' + self.value.inspect() + ')'
 	};
 
-	@text = self -> { self.value.inspect() };
+	@text = self -> {
+		self.value.inspect()
+	};
 
 	parse = (class, parser) -> {
 		token = parser.next_if_type('STRING').else(return);
@@ -385,34 +383,41 @@ Expression.String = {
 		class(token.value)
 	};
 
-	exec = (self, _) -> { Types::String(self.value) };
-	:0
-}();
+	exec = (self, _) -> {
+		Type::String(self.value)
+	};
+};
 
-Expression.Null = {
+Expression.Null = class() {
 	'()' = class -> { __parents__ = [class]; value = null; :0 };
 
-	inspect = self -> { 'Null()' };
+	inspect = self -> {
+		'Null()'
+	};
 
-	@text = self -> { self.value.@text() };
+	@text = self -> {
+		"null"
+	};
 
 	parse = (class, parser) -> {
 		parser.next_if_token(Token::NULL).then(class)
 	};
 
-	exec = (self, _) -> { Types::Null() };
+	exec = (self, _) -> {
+		Type::Null()
+	};
+};
 
-	:0
-}();
-
-Expression.UnaryOp = {
+Expression.UnaryOp = class() {
 	'()' = (class, op, arg) -> { __parents__ = [class]; op += '@'; :0 };
 
 	inspect = self -> {
 		'UnaryOp(' + self.op + ', ' + self.arg.inspect() + ')'
 	};
 
-	@text = self -> { self.op.@text() + '(' + self.arg.@text() + ')' };
+	@text = self -> {
+		self.op.@text() + '(' + self.arg.@text() + ')'
+	};
 
 	parse = (class, parser) -> {
 		op = parser.next_if({ 
@@ -426,11 +431,9 @@ Expression.UnaryOp = {
 	exec = (self, env) -> {
 		self.arg.exec(env).operator(self.op)
 	};
+};
 
-	:0
-}();
-
-Expression.StructIndexAssign = {
+Expression.StructIndexAssign = class() {
 	'()' = (class, struct, field, oper, value) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -440,34 +443,35 @@ Expression.StructIndexAssign = {
 			+ ', ' + self.value.inspect() + ')'
 	};
 
-	@text = self -> { self.struct.@text() + '.' + self.field + ' = ' + self.vale.@text() };
+	@text = self -> {
+		self.struct.@text() + '.' + self.field + ' = ' + self.vale.@text()
+	};
 
 	exec = (self, env) -> {
 		(self.struct.exec(env)).(self.field) = self.value.exec(env)
 	};
+};
 
-	:0
-}();
-
-Expression.StructIndex = {
+Expression.StructIndex = class() {
 	'()' = (class, struct, field) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'StructIndex(' + self.struct.inspect() + ', ' + self.field + ')'
 	};
 
-	@text = self -> { self.struct.@text() + '.' + self.field };
+	@text = self -> {
+		self.struct.@text() + '.' + self.field
+	};
 
 	parse = (class, parser, lhs) -> {
 		parser.next_if_token(Token::DOT).else(return);
 		field = parser.next_if_type('IDENTIFIER').assert('missing fieldname for struct index').value;
-		oper = self.next_if_type('OPERATOR_ASSIGN');
 
-		oper.then({
+		if (oper = self.next_if_type('OPERATOR_ASSIGN')) {
 			value = parser.expr().assert('no rhs for struct index assign');
 
 			return(Expression.StructIndexAssign(lhs, field, oper.value, value), :2);
-		});
+		};
 
 		class(lhs, field)
 	};
@@ -475,11 +479,9 @@ Expression.StructIndex = {
 	exec = (self, env) -> {
 		(self.struct.exec(env)).(self.field)
 	};
+};
 
-	:0
-}();
-
-Expression.BinaryOp = {
+Expression.BinaryOp = class() {
 	'()' = (class, op, lhs, rhs) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -500,12 +502,9 @@ Expression.BinaryOp = {
 	exec = (self, env) -> {
 		self.lhs.exec(env).operator(self.op, self.rhs.exec(env))
 	};
+};
 
-	:0
-}();
-
-
-Expression.ShortCircuitOp = {
+Expression.ShortCircuitOp = class() {
 	'()' = (class, op, lhs, rhs) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -531,11 +530,9 @@ Expression.ShortCircuitOp = {
 			if(lhs.value, self.rhs.exec << env, lhs.itself)
 		})
 	};
+};
 
-	:0
-}();
-
-Expression.Block = {
+Expression.Block = class() {
 	'()' = (class, body) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
@@ -560,11 +557,9 @@ Expression.Block = {
 	exec = (self, env) -> {
 		self.body.map({ _0.exec(env) }).get(-1)
 	};
+};
 
-	:0
-}();
-
-Parser = {
+Parser = class() {
 	'()' = (class, source) -> {
 		__parents__ = [class];
 		peeked = [];
@@ -573,9 +568,17 @@ Parser = {
 		:0
 	};
 
-	next_if = (self, fn) -> { self.peek_token().and_then(fn).then(self.next_token) };
-	next_if_token = (self, token) -> { self.next_if(token.'==') };
-	next_if_type = (self, type) -> { self.next_if({ _0.type == type }) };
+	next_if = (self, fn) -> {
+		self.peek_token().and_then(fn).then(self.next_token)
+	};
+
+	next_if_token = (self, token) -> {
+		self.next_if(token.'==')
+	};
+
+	next_if_type = (self, type) -> {
+		self.next_if({ _0.type == type })
+	};
 
 	put_back = (self, value) -> {
 		self.peeked.push(value);
@@ -586,17 +589,19 @@ Parser = {
 	};
 
 	peek_token = self -> {
-		unless(self.peeked, {
+		unless (self.peeked) {
 			self.put_back(self.next_token());
-		});
+		};
 
 		self.peeked.get(-1)
 	};
 
-	inspect = self -> { 'Parser(' + self.peeked.inspect() + ', ' + self.tokenizer.inspect() + ')' };
+	inspect = self -> {
+		'Parser(' + self.peeked.inspect() + ', ' + self.tokenizer.inspect() + ')'
+	};
 
 	@bool = self -> {
-		self.peeked.else(self.tokenizer.itself).@bool()
+		self.peeked.or(self.tokenizer).@bool()
 	};
 
 	@list = self -> {
@@ -639,7 +644,6 @@ Parser = {
 	};
 
 	kw_expr = self -> {
-
 		Expression::If.parse(self)
 			.else(Expression::While.parse << self)
 			.else(Expression::Return.parse << self)
@@ -668,6 +672,4 @@ Parser = {
 	run = (self, env) -> {
 		self.@list().each({ _0.exec(env) })
 	};
-
-	:0
-}();
+};

@@ -469,18 +469,35 @@ impl List {
 
 	#[instrument(name="List::->", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_arrow(this: &Object, args: Args) -> crate::Result<Object> {
-		let this = this.try_downcast::<Self>()?.clone();
+		let this_list = this.try_downcast::<Self>()?.clone();
+		let this_list_dup = this_list.clone();
 		let block = args.try_arg(0)?.clone();
+		let block_dup = block.clone();
 
-		Ok(crate::types::RustClosure::new(move |args| {
+		let closure = Object::from(crate::types::RustClosure::new(move |args| {
 			crate::Binding::new_stackframe(Some(block.clone()), args.clone(), |binding| {
-				for (i, arg) in this.iter().enumerate() {
+				for (i, arg) in this_list.iter().enumerate() {
 					binding.set_attr(arg.clone(), args.arg(i).cloned().unwrap_or_default())?;
 				}
 
 				block.call_attr_lit("call_noscope", &[])
 			})
-		}).into())
+		}));
+
+		let block = block_dup.clone();
+
+		closure.set_attr_lit("call_noscope", crate::types::RustClosure::new(move |args| {
+			for (i, arg) in this_list_dup.iter().enumerate() {
+				crate::Binding::instance()
+					.set_attr(arg.clone(), args.arg(i).cloned().unwrap_or_default())?;
+			}
+
+			block.call_attr_lit("call_noscope", &[])
+		}).into())?;
+
+		closure.set_attr_lit("args", this.clone())?;
+		closure.set_attr_lit("block", block_dup)?;
+		Ok(closure)
 	}
 
 	#[instrument(name="List::each", level="trace", skip(this, args), fields(self=?this, ?args))]

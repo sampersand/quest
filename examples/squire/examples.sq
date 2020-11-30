@@ -1,17 +1,15 @@
 struct person { name, favcolor }
 
 func greet(person) {
-	print("Hello, " + person.name + "!")
+	print("Hello, " + person.name + "!\n")
 
 	if person.favcolor == "green" {
-		print("I like green too!")
+		print("I like green too!\n")
 	}
 }
 
 samp = person("samp", "green")
 greet(samp)
-
-
 
 
 func fizzBuzz (max) {

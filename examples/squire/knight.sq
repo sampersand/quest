@@ -3,8 +3,7 @@ func nonEmptyAnd(string, fn) {
 }
 
 func isNewline(chr) {
-	chr == '
-'
+	chr == "\n"
 }
 
 func isWhitespace(chr) {
@@ -82,13 +81,10 @@ func strip(input) {
 func nextExpr(input) {
 	strip(input)
 
-#	if input != ' {
-#		next = 
-#		return
-#	}
-
 	print(input)
 }
+
+print(nextExpr("O 3"))
 __END__
 func knight(input) {
 	nextExpr(input)		
@@ -131,3 +127,4 @@ if (!self) {
 
 	(functions::(cmd))(self)
 };
+

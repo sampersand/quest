@@ -1,17 +1,19 @@
-Basic.and_then = (self, func) -> { self.then(func.'()' << self) };
+Basic.and_then = (self, func) -> {
+	self.then(func.'()' << self)
+};
 
 Text.shift_re = (self, regex) -> {
 	match = regex.match(self).else(return).get(0);
+
 	unless(self.get(0, match.len() - 1) == match, return);
+
 	self.replace(self.get(match.len(), -1).or(''));
+
 	match
 };
 
-Token = {
-	'()' = (class, type, value) -> {
-		__parents__ = [class];
-		:0
-	};
+Token = class() {
+	'()' = (class, type, value) -> { __parents__ = [class]; :0 };
 
 	@text = self -> {
 		self.value.@text()
@@ -67,6 +69,7 @@ Token = {
 	OR = :0('SHORT_CIRCUIT', '||');
 	DOT = :0('MISC', '.');
 
+	# Look Ma, currying!
 	Identifier = :0.'()' << 'IDENTIFIER';
 	Integer    = :0.'()' << 'INTEGER';
 	String     = :0.'()' << 'STRING';
@@ -96,14 +99,10 @@ Token = {
 
 		dot
 	}();
-	:0
-}();
+};
 
-Tokenizer = {
-	'()' = (class, source) -> {
-		__parents__ = [class];
-		:0
-	};
+Tokenizer = class() {
+	'()' = (class, source) -> { __parents__ = [class]; :0 };
 
 	inspect = self -> {
 		'Tokenizer(' + self.source.inspect() + ')'
@@ -114,9 +113,9 @@ Tokenizer = {
 	};
 
 	next = self -> {
-		/\A\s*__END__\n/m.match(self.source).then(return);
-
 		self.strip_comments_and_whitespace();
+
+		/\A\s*__END__\n/m.match(self.source).then(return);
 		self.else(return);
 
 		self.misc()
@@ -130,14 +129,18 @@ Tokenizer = {
 
 	@list = self -> {
 		x=[];
-		while({ :1.v = self.next() }, {
+
+		while ({ :1.v = self.next() }) {
 			x.push(v)
-		});
+		};
+
 		x
 	};
 
 	strip_comments_and_whitespace = self -> {
-		while(self.source.shift_re << /\A(?:\s+|#.*\n)/, { /* do nothing */ });
+		while (self.source.shift_re << /\A(?:\s+|#.*\n)/) {
+			# do nothing
+		};
 	};
 
 	keyword = self -> {
@@ -167,11 +170,10 @@ Tokenizer = {
 	string = self -> {
 		ret = self.source
 			.shift_re(/\A"(?:\\\\x[a-fA-F0-9]{2}|\\[nrtf'"\\\\0]|[^"])*"/)
-			.else({ self.source.shift_re(/\A'(?:\\\\x[a-fA-F0-9]{2}|\\[nrtf'"\\\\0]|[^'])*'/) })
+			.else(self.source.shift_re << /\A'(?:\\\\x[a-fA-F0-9]{2}|\\[nrtf'"\\\\0]|[^'])*'/)
 			.else(return);
-		ret.shift();
-		ret.pop();
-		Token::String(ret)
+		x = ret.eval(); # eval's a hacky way to interpolate escapes correctly.
+		Token::String(ret.eval()) # eval's a hacky way to interpolate escapes correctly.
 	};
 
 	operator = self -> {
@@ -183,17 +185,14 @@ Tokenizer = {
 				[!~] 								  # remaining unary operators
 			/x)
 			.and_then(Token::Operator)
-				# (?:\|\||\&\&)|        # logical short circuiting
 	};
 
 	misc = self -> {
 		self.source.shift_re(/\A[(){}\[\]]/).and_then({ return(Token::Paren(_0), :2) });
-		self.source.shift_re(/\A,/).then({ return(Token::COMMA, :2) });
-		self.source.shift_re(/\A;/).then({ return(Token::SEMICOLON, :2) });
-		self.source.shift_re(/\A\./).then({ return(Token::DOT, :2) });
-		self.source.shift_re(/\A\|\|/).then({ return(Token::AND, :2) });
-		self.source.shift_re(/\A\&\&/).then({ return(Token::OR, :2) });
+		self.source.shift_re(/\A,/).then(Token::COMMA.return << :1);
+		self.source.shift_re(/\A;/).then(Token::SEMICOLON.return << :1);
+		self.source.shift_re(/\A\./).then(Token::DOT.return << :1);
+		self.source.shift_re(/\A\|\|/).then(Token::AND.return << :1);
+		self.source.shift_re(/\A\&\&/).then(Token::OR.return << :1);
 	};
-
-	:0
-}();
+};

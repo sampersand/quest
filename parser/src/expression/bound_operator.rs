@@ -189,18 +189,41 @@ where
 
 	if oper == Operator::Call {
 		// a hack to convert to function call.
+
 		this = match this {
 			Expression::Operator(BoundOperator { args, this, oper }) =>
 				match *args {
-					OperArgs::Binary(rhs) =>
-						match rhs {
-							Expression::Block(block) => Expression::FunctionCall(this, block),
-							_ =>
-								Expression::Operator(BoundOperator { this, oper,
-									args: Box::new(OperArgs::Binary(rhs)) })
-						},
-					args => Expression::Operator(BoundOperator { this, oper, args: Box::new(args) })
+					OperArgs::Binary(Expression::Block(block)) => Expression::FunctionCall(this, block),
+					args => Expression::Operator(BoundOperator { this, oper, args: Box::new(args) }),
 				},
+			other => other
+		};
+
+		this = match this {
+			Expression::FunctionCall(lhs, block) if block.paren_type() == ParenType::Curly => match *lhs {
+				Expression::Operator(BoundOperator { oper: Operator::Call, this, mut args }) => {
+					if let OperArgs::Binary(Expression::Block(ref mut bn)) = &mut *args {
+						let block = Expression::Block(block);
+						if let Some(last) = bn.lines.last_mut() {
+							match last {
+								crate::block::Line::Single(expr) => *last = crate::block::Line::Multiple(vec![expr.clone(), block]),
+								crate::block::Line::Multiple(vec) => vec.push(block)
+							}
+						} else {
+							bn.lines.push(crate::block::Line::Single(block));
+						}
+					}
+					Expression::Operator(BoundOperator { oper: Operator::Call, this, args })
+
+				},
+				lhs @ Expression::Operator(BoundOperator { .. }) =>
+					Expression::FunctionCall(Box::new(lhs), crate::block::Block { 
+						context: block.context.clone(),
+						paren_type: ParenType::Round,
+						lines: vec![crate::block::Line::Single(Expression::Block(block))],
+					}),
+				lhs => Expression::FunctionCall(Box::new(lhs), block)
+			},
 			other => other
 		};
 	}
