@@ -715,6 +715,14 @@ impl Number {
 		Ok(Boolean::from(*this).into())
 	}
 
+	/// Checks to see if `self`'s one,.
+	#[instrument(name="Number::one?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_one_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Boolean::from(*this == Self::ONE).into())
+	}
+
 	/// Calling a number is simply an alias for [multiplication](#qs_mul).
 	#[instrument(name="Number::()", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
@@ -1204,6 +1212,8 @@ impl_object_type!{
 	"@num" => method Self::qs_at_num,
 	"@bool" => method Self::qs_at_bool,
 	"hash" => method Self::qs_hash,
+	"zero?" => method Self::qs_at_bool,
+	"one?" => method Self::qs_one_q,
 
 	"+"  => method Self::qs_add,    "+="  => method Self::qs_add_assign,
 	"-"  => method Self::qs_sub,    "-="  => method Self::qs_sub_assign,

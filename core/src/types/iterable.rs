@@ -52,6 +52,16 @@ impl Iterable {
 		})
 	}
 
+
+	#[instrument(name="Iterable::count", level="trace", skip(this, args), fields(self = ?this, ?args))]
+	pub fn qs_count(this: &Object, args: Args) -> crate::Result<Object> {
+		Ok(Self::qs_select(this, args)?
+			.downcast::<crate::types::List>()
+			.unwrap()
+			.len()
+			.into())
+	}
+
 	#[instrument(name="Iterable::select", level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_select(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?.clone();
@@ -68,6 +78,23 @@ impl Iterable {
 			Ok(should_keep) // or should it be `obj`?
 		})
 	}
+
+	#[instrument(name="Iterable::reject", level="trace", skip(this, args), fields(self = ?this, ?args))]
+	pub fn qs_reject(this: &Object, args: Args) -> crate::Result<Object> {
+		let block = args.try_arg(0)?.clone();
+
+		foreach(this, move |args, list| {
+			let obj = args.try_arg(0)?.clone();
+
+			let should_keep = block.call_attr_lit("()", args.shorten())?;
+
+			if !should_keep.call_downcast::<Boolean>()?.into_inner() {
+				list.push(obj);
+			}
+
+			Ok(should_keep) // or should it be `obj`?
+		})
+	}
 }
 
 impl_object_type!{
@@ -75,6 +102,8 @@ for Iterable [(parents super::Basic)]:
 	"map" => method Self::qs_map,
 	"enumerate" => method Self::qs_enumerate,
 	"select" => method Self::qs_select,
+	"reject" => method Self::qs_reject,
+	"count" => method Self::qs_count,
 }
 
 

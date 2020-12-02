@@ -194,6 +194,14 @@ impl Basic {
 		Ok(this.clone())
 	}
 
+	/// Calls the given function with `self`.
+	#[instrument(name="Basic::tap", level="trace", skip(this, args), fields(self=?this, args))]
+	pub fn qs_tap(this: &Object, args: Args) -> Result<Object> {
+		let func = args.try_arg(0)?;
+
+		func.call_attr_lit("()", &[this])
+	}
+
 }
 
 impl_object_type!{
@@ -206,6 +214,7 @@ for Basic [(parents super::Pristine)]:
 	"clone" => method Self::qs_clone,
 	"hash" => method Self::qs_hash,
 	"itself" => method Self::qs_itself,
+	"tap" => method Self::qs_tap,
 
 	// TODO: move these out of kernel
 	"if" => method super::Kernel::qs_if, 

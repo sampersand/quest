@@ -10,7 +10,7 @@ fn display(args: &[&Object], newline: bool) -> crate::Result<()> {
 		args.iter()
 			.map(|x| object_to_string(*x))
 			.collect::<crate::Result<Vec<_>>>()?
-			.join(" ")
+			.join("")
 	);
 
 	if newline {

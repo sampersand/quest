@@ -178,7 +178,7 @@ impl Regex {
 					m.map(|m| Object::from(m.as_str().to_string())).unwrap_or_default()
 				}).collect::<Vec<_>>()
 				.into()
-			).unwrap_or_default())
+			).unwrap_or_else(|| vec![].into()))
 	}
 
 

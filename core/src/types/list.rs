@@ -121,6 +121,16 @@ impl List {
 		}
 	}
 
+	/// Deletes a single element in a list
+	#[must_use="it's possible for the index to be out of bounds."]
+	pub fn delete(&mut self, index: isize) -> Option<Object> {
+		if let Ok(index) = correct_index(index, self.len()) {
+			Some(self.0.remove(index))
+		} else {
+			None
+		}
+	}
+
 	/// Sets a range of elements within the list.
 	///
 	/// This can be used to delete sections of the list (set them to an empty list), and also
@@ -467,6 +477,13 @@ impl List {
 		Ok(Boolean::from(&*this).into())
 	}
 
+	#[instrument(name="List::empty?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_empty_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Boolean::from(this.as_ref().is_empty()).into())
+	}
+
 	#[instrument(name="List::->", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_arrow(this: &Object, args: Args) -> crate::Result<Object> {
 		let this_list = this.try_downcast::<Self>()?.clone();
@@ -664,6 +681,15 @@ impl List {
 				Ok(Default::default())
 			}
 		}
+	}
+
+	#[instrument(name="List::delete", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_delete(this: &Object, args: Args) -> crate::Result<Object> {
+		let idx: isize = args.try_arg(0)?.call_downcast::<Number>().map(|n| *n)?.try_into()?;
+
+		let mut this = this.try_downcast_mut::<Self>()?;
+
+		Ok(this.delete(idx).unwrap_or_default())
 	}
 
 	/// Combine all elements into a [`Text`], optionally separated by a deliminator.
@@ -1057,6 +1083,8 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"@bool" => method Self::qs_at_bool,
 	"@list" => method Self::qs_at_list,
 
+	"empty?" => method Self::qs_empty_q,
+
 	"->"   => method Self::qs_arrow,
 	"each" => method Self::qs_each,
 
@@ -1064,6 +1092,7 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"index" => method Self::qs_index,
 	"len"   => method Self::qs_len,
 
+	"delete" => method Self::qs_delete,
 	"get"  => method Self::qs_get,
 	"set"  => method Self::qs_set,
 	"join" => method Self::qs_join,
