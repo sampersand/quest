@@ -506,6 +506,14 @@ impl Text {
 		Ok(this.strip().into())
 	}
 
+	#[instrument(name="Text::count", level="trace", skip(this, args), fields(self=?this, args))]
+	pub fn qs_count(this: &Object, args: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+		let what = args.try_arg(0)?.call_downcast::<Self>()?;
+
+		Ok(this.as_ref().matches(what.as_ref()).count().into())
+	}
+
 	#[instrument(name="Text::replace", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_replace(this: &Object, args: Args) -> crate::Result<Object> {
 		let arg = args.try_arg(0)?;
@@ -600,7 +608,9 @@ for Text
 	"strip"   => method Text::qs_strip,
 	"replace" => method Text::qs_replace,
 
-	"includes" => method |this, args| {
+	"count" => method Text::qs_count,
+
+	"includes?" => method |this, args| {
 		let this = this.try_downcast::<Self>()?;
 		let rhs = args.try_arg(0)?.call_downcast::<Self>()?;
 

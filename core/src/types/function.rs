@@ -74,7 +74,8 @@ impl_object_type!{
 for Function [(parents super::Basic)]:
 	"<<" => method Self::qs_lsh,
 	">>" => method Self::qs_rsh,
-	"apply" => method Self::qs_apply
+	"apply" => method Self::qs_apply,
+	"__should_be_bound__" => const true
 }
 
 mod tests {

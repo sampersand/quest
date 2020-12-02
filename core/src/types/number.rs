@@ -1113,6 +1113,17 @@ impl Number {
 		Ok(FloatType::from(*this).sqrt().into())
 	}
 
+	/// Checks to see if `this` is between the first and second arguments, inclusive.
+	#[instrument(name="Number::between?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_between_q(this: &Object, args: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+
+		let min = *args.try_arg(0)?.call_downcast::<Self>()?;
+		let max = *args.try_arg(1)?.call_downcast::<Self>()?;
+
+		Ok((min <= this && this <= max).into())
+	}
+
 	/// Returns an array starting at `this` and ending at the first argument, with an optional step.
 	#[instrument(name="Number::upto", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_upto(this: &Object, args: Args) -> crate::Result<Object> {
@@ -1220,6 +1231,7 @@ impl_object_type!{
 	"sqrt"  => method Self::qs_sqrt,
 	"upto"  => method Self::qs_upto,
 	"downto"  => method Self::qs_downto,
+	"between?" => method Self::qs_between_q,
 	"chr" => method |this, _| {
 		Ok((u8::try_from(this.try_downcast::<Self>()?.floor()).unwrap() as char)
 			.to_string().into())

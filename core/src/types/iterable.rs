@@ -38,6 +38,20 @@ impl Iterable {
 		})
 	}
 
+	#[instrument(name="Iterable::enumerate", level="trace", skip(this, args), fields(self = ?this, ?args))]
+	pub fn qs_enumerate(this: &Object, args: Args) -> crate::Result<Object> {
+		let block = args.try_arg(0)?.clone();
+
+		foreach(this, move |args, list| {
+			let mut args = args.shorten();
+			let len = Object::from(list.len());
+			args.push(&len);
+			let mapped = block.call_attr_lit("()", args)?;
+			list.push(mapped.clone());
+			Ok(mapped)
+		})
+	}
+
 	#[instrument(name="Iterable::select", level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_select(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?.clone();
@@ -59,6 +73,7 @@ impl Iterable {
 impl_object_type!{
 for Iterable [(parents super::Basic)]:
 	"map" => method Self::qs_map,
+	"enumerate" => method Self::qs_enumerate,
 	"select" => method Self::qs_select,
 }
 

@@ -36,6 +36,27 @@ jobs:
       - name: Run doctests
         run: cargo test --workspace --doc --verbose
 
+  # install flamegraph
+  flamegraph:
+    name: FlameGraph
+
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Install flamegraph
+        run: |
+          flamegraph -o quest0.svg ./quest test0
+          flamegraph -o quest0.svg ./quest test1
+
+
   # Ensure clippy doesn't complain.
   clippy:
     name: Clippy
@@ -56,4 +77,4 @@ jobs:
           components: clippy
 
       - name: Lint with clippy
-        run: cargo clippy --all-targets --workspace --verbose -- -D warnings
+        run: cargo clippy --all-targets --workspace --verbose # -- -D warnings <-- freaking 

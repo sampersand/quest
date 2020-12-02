@@ -81,6 +81,10 @@ impl<'s, 'o> Args<'s, 'o> {
 		self.as_mut().insert(0, ele);
 	}
 
+	pub fn push(&mut self, ele: &'o Object) {
+		self.as_mut().push(ele);
+	}
+
 	pub fn iter<'a>(&'a self) -> impl Iterator<Item=&'o Object> + 'a {
 		struct Iter<'s, 'o>(std::slice::Iter<'s, &'o Object>);
 

@@ -19,11 +19,11 @@ loop({
 	# print "> " out, prompt for a value, and then convert that value to a number.
 	guess = prompt("> ").@num();
 
-	if(guess == secret, {
+	if (guess == secret) {
 		disp("perfect!\nit took you", guesses, "guesses");
 		quit(0);
-	}, {
-		# use `ifl`, which is the ternary operator for literal values.
-		disp("too ", ifl(guess > secret, "high", "low");
-	})
-})
+	};
+
+	# use `ifl`, which is the ternary operator for literal values.
+	disp("too ", ifl(guess > secret, "high", "low");
+});

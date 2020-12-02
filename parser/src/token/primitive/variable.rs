@@ -52,6 +52,9 @@ impl Tokenizable for Variable {
 		while let Some(chr) = stream.next().transpose()? { 
 			if is_variable_body(chr) {
 				variable.push(chr)
+			} else if chr == '?' {
+				variable.push(chr);
+				break
 			} else if chr == '\\' {
 				if let Some(nxt) = stream.next().transpose()? {
 					variable.push(nxt);
