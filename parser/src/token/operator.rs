@@ -84,14 +84,19 @@ operator_enum!{
 	Pow("**" 3 RightToLeft) Scoped("::" 0)
 
 	// 1 Character
+	Colon(":" 16 RightToLeft)
 	Assign("=" 16 RightToLeft) Lth("<" 11) Gth(">" 11) BXor("^" 10) BOr("|" 9) BAnd("&" 8) Add("+" 6) Sub("-" 6)
-	Mul("*" 5) Div("/" 5) Mod("%" 5) Not("!" 2 UnaryOperOnLeft 1) BNot("~" 2 UnaryOperOnLeft 1) Dot("." 0)
+	Mul("*" 5) Div("/" 5) Mod("%" 5) Not("!" 2 UnaryOperOnLeft 1) BNot("~" 2 UnaryOperOnLeft 1)
+	DotQuestion(".?" 0) Dot("." 0)
 
 	// Unrepresentable
 	Neg("-@" () 4 UnaryOperOnLeft 1)
 	Pos("+@" () 2 UnaryOperOnLeft 1) 
+	SplatSplat("**@" () 2 UnaryOperOnLeft 1) 
+	Splat("*@" () 2 UnaryOperOnLeft 1) 
 	RootScope("::@" () 0 UnaryOperOnLeft 1) 
 	DotAssign(".=" () 16)
+	IndexAssign("[]=" () 16)
 	Call("()" () 0)
 	Index("[]" () 1)
 	WithBlock("{}" () 1)

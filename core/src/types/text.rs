@@ -277,6 +277,13 @@ impl Text {
 		Ok(Boolean::from(&*this).into())
 	}
 
+	#[instrument(name="Text::empty?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_empty_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(Boolean::from(this.is_empty()).into())
+	}
+
 	#[instrument(name="Text::@num", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_num(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
@@ -309,7 +316,12 @@ impl Text {
 	#[instrument(name="Text::=", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_assign(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.clone();
-		Binding::instance().set_attr(this.clone(), rhs.clone()).and(Ok(rhs))
+
+		if let Some(object) = args.arg(1) {
+			object.set_attr(this.clone(), rhs.clone())
+		} else {
+			Binding::instance().set_attr(this.clone(), rhs.clone())
+		}.and(Ok(rhs))
 	}
 
 	#[instrument(name="Text::->", level="trace", skip(this, args), fields(self=?this, ?args))]
@@ -596,6 +608,13 @@ for Text
 
 	"len"     => method Self::qs_len,
 	"get"     => method Self::qs_get,
+	"[]"      => method Self::qs_get,
+	"[]="  => method |this, args| {
+		let mut arg = args.try_arg(0)?.downcast_mut::<crate::types::List>().expect("`[]=` called without List.");
+		arg.push(args.try_arg(1)?.clone());
+
+		Self::qs_set(this, arg.as_ref().iter().collect())
+	},
 	"set"     => method Self::qs_set,
 	"push"    => method Self::qs_push,
 	"pop"     => method Self::qs_pop,
@@ -609,7 +628,7 @@ for Text
 	"replace" => method Self::qs_replace,
 
 	"count" => method Self::qs_count,
-	"empty?" => method Self::qs_at_bool,
+	"empty?" => method Self::qs_empty_q,
 
 	"includes?" => method |this, args| {
 		let this = this.try_downcast::<Self>()?;

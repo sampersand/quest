@@ -5,7 +5,7 @@ use crate::Result;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum OperArgs {
+pub(crate) enum OperArgs {
 	Unary,
 	Binary(Expression),
 	Ternary(Expression, Expression)
@@ -13,9 +13,9 @@ enum OperArgs {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundOperator {
-	oper: Operator,
-	this: Box<Expression>,
-	args: Box<OperArgs>
+	pub(crate) oper: Operator,
+	pub(crate) this: Box<Expression>,
+	pub(crate) args: Box<OperArgs>
 }
 
 impl Display for BoundOperator {
@@ -34,6 +34,8 @@ impl Display for BoundOperator {
 				write!(f, "{} {} {}", self.this, self.oper, rhs),
 			OperArgs::Ternary(mid, rhs) if self.oper == Operator::DotAssign =>
 				write!(f, "{}.{} = {}", self.this, mid, rhs),
+			OperArgs::Ternary(mid, rhs) if self.oper == Operator::IndexAssign =>
+				write!(f, "{}[{}] = {}", self.this, mid, rhs),
 			OperArgs::Ternary(mid, rhs) =>
 				write!(f, "{}{}({}, {})", self.this, self.oper, mid, rhs)
 		}
@@ -71,16 +73,6 @@ impl Executable for BoundOperator {
 			OperArgs::Ternary(mid, rhs) =>
 				this.call_attr_lit(oper, &[&mid.execute()?, &rhs.execute()?])
 		}
-
-		// let args_vec: Vec<quest_core::Object> =  {
-		// 	OperArgs::Unary => vec![],
-		// 	OperArgs::Binary(rhs) => vec![rhs.execute()?],
-		// 	OperArgs::Ternary(mid, rhs) => vec![mid.execute()?, rhs.execute()?],
-		// };
-
-		// let args_vec: Vec<&quest_core::Object> = args_vec.iter().collect();
-
-		// this.call_attr_lit(self.oper.into(), args_vec)
 	}
 }
 
@@ -110,6 +102,9 @@ impl Constructable for BoundOperator {
 			Some(Token::Operator(Operator::Scoped)) => make_unary(Operator::RootScope, ctor),
 			Some(Token::Operator(Operator::Add)) => make_unary(Operator::Pos, ctor),
 			Some(Token::Operator(Operator::Sub)) => make_unary(Operator::Neg, ctor),
+			Some(Token::Operator(Operator::Mul)) => make_unary(Operator::Splat, ctor),
+			Some(Token::Operator(Operator::Pow)) => make_unary(Operator::SplatSplat, ctor),
+
 			Some(tkn) => { ctor.put_back(Ok(tkn)); Ok(None) }
 			None => Ok(None),
 		}
@@ -136,17 +131,18 @@ where
 	this =
 		match this {
 			Expression::Operator(BoundOperator { this, args, oper: Operator::Assign }) |
+				Expression::Operator(BoundOperator { this, args, oper: Operator::Colon }) |
 				Expression::Operator(BoundOperator { this, args, oper: Operator::Arrow })
 			=>
 				Expression::Operator(BoundOperator { args, oper, this: 
 					match *this {
 						Expression::Primitive(Primitive::Variable(var)) =>
 							Expression::Primitive(Primitive::Text(var.into())).into(),
-						Expression::Block(block) if block.paren_type() == ParenType::Round =>
-							Expression::Block(block.convert_to_parameters()).into(),
+						Expression::Block(block) => Expression::Block(block.convert_to_parameters()).into(),
 						other => other.into()
 					}}),
 			Expression::Operator(BoundOperator { this, args, oper: Operator::Dot }) |
+				Expression::Operator(BoundOperator { this, args, oper: Operator::DotQuestion }) |
 				Expression::Operator(BoundOperator { this, args, oper: Operator::Scoped })
 			=>
 				Expression::Operator(BoundOperator { this, oper, args: 
@@ -161,12 +157,14 @@ where
 	match ctor.next().transpose()? {
 		Some(Token::Operator(Operator::Assign)) if oper == Operator::Dot => 
 			this = build_op(Operator::DotAssign, ctor, this)?,
+		Some(Token::Operator(Operator::Assign)) if oper == Operator::Call => 
+			this = build_op(Operator::IndexAssign, ctor, this)?,
 		Some(Token::Operator(next_op)) => this = build_op(next_op, ctor, this)?,
 		Some(tkn) => ctor.put_back(Ok(tkn)),
 		None => {}
 	}
 
-	if oper == Operator::DotAssign {
+	if oper == Operator::DotAssign || oper == Operator::IndexAssign {
 		// a hack to convert the lhs and rhs into ternary values.
 		this = match this {
 			Expression::Operator(BoundOperator { args, this, .. }) => match *args {
@@ -239,13 +237,15 @@ impl BoundOperator {
 	{
 
 		match ctor.next().transpose()? {
+			// This endline thing is a failed experiment...
+			// Some(Token::Endline(false)) if parent_op.is_some() && parent_op != Some(Operator::Call) => return Self::construct_operator(ctor, lhs, parent_op),
 			Some(Token::Operator(oper)) if parent_op
 				.map(|parent_op| oper < parent_op || 
 						oper <= parent_op && oper.assoc() == crate::token::operator::Associativity::RightToLeft
 				).unwrap_or(true)
 				=> build_op(oper, ctor, lhs),
 			Some(t @ Token::Operator(_))
-				| Some(t @ Token::Endline)
+				| Some(t @ Token::Endline(_))
 				| Some(t @ Token::Comma)
 				| Some(t @ Token::Right(_)) => { ctor.put_back(Ok(t)); Ok(lhs) },
 			Some(tkn) => {

@@ -15,17 +15,20 @@ Number.fibonacci = {
 	# is called. We still have access to the enclosing scope, which allows us to
 	# hide the `memo` object so no one else can interact with it.
 	n -> {
-		if(memo.__has_attr__(n), {
-			memo.(n)
-		}, {
-			disp("memoizing:", n);
+		# if `n` is zero, then just return 0.
+		(n == 0).then(n.return);
+
+		# Get the `n` attribute from memo, or `null` if it doesn't exist.
+		# if it doesn't exist, then execute the block.
+		memo.?(n).else({
+			print("memoizing:", n);
 			memo.(n) = (n - 1).fibonacci() + (n - 2).fibonacci()
 		})
 	}
 }(); # <-- we call the block here
 
-disp(5.fibonacci());
-disp(10.fibonacci());
+print(5.fibonacci());
+print(10.fibonacci());
 
 /* => 
 memoizing: 5

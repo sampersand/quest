@@ -388,6 +388,10 @@ for File [(parents super::Io)]:
 	"()" => method Self::qs_call,
 	"@text" => method |_, _| panic!(),
 	"read" => method Self::qs_read,
+	"lines" => method |this, args| {
+		Self::qs_read(this, args)?
+			.call_attr_lit("split", &[&Text::from("\n").into()])
+	},
 	"write" => method Self::qs_write,
 	"close" => method Self::qs_close,
 	// "close" => method Self::qs_close

@@ -17,22 +17,21 @@ sieve = max -> {
 			
 			array.get(i - 2).else(return);
 
-			Thread::spawn({
+			Thread::spawn {
 				j = 0;
-				while({ (:1.k = i**2 + j*i) <= max }, {
-					array.set(k - 2, false);
+				while ({ (:1.k = i**2 + j*i) <= max }) {
+					array[k - 2] = false;
 					j += 1;
-				})
-			})
+				}
+			}
 		})
-		.select(Number::itself)
 		.each(Thread::join);
 
 	array.select(Number::itself)
 };
 
 primes_upto_15 = sieve(15);
-disp(primes_upto_15);
+print(primes_upto_15);
 
 # Tests
 assert(primes_upto_15 == [2, 3, 5, 7, 11, 13]);

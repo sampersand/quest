@@ -1,13 +1,13 @@
 # Simply printing it
-disp("Hello, world!");
+print("Hello, world!");
 
 # Using variables
 where = "world";
-disp("Hello, " + where + "!");
+print("Hello, " + where + "!");
 
 # Using a function
 greet = where -> {
-	disp("Hello, " + where + "!");
+	print("Hello, " + where + "!");
 };
 
 greet("world");

@@ -14,7 +14,7 @@ Person = {
 john = Person("john doe", 20);
 jane = Person("jane doe", 22);
 
-disp(ifl(john > jane, john, jane).name, "is older");
+print(ifl(john > jane, john, jane).name, "is older");
 
 # Tests
 assert(john < jane);

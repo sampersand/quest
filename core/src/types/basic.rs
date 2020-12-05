@@ -194,9 +194,18 @@ impl Basic {
 		Ok(this.clone())
 	}
 
-	/// Calls the given function with `self`.
+	/// Calls the given function with `self`, returning `self`.
 	#[instrument(name="Basic::tap", level="trace", skip(this, args), fields(self=?this, args))]
 	pub fn qs_tap(this: &Object, args: Args) -> Result<Object> {
+		let func = args.try_arg(0)?;
+
+		func.call_attr_lit("()", &[this])?;
+		Ok(this.clone())
+	}
+
+	/// Calls the given function with `self`, returning the function's result
+	#[instrument(name="Basic::tap_into", level="trace", skip(this, args), fields(self=?this, args))]
+	pub fn qs_tap_into(this: &Object, args: Args) -> Result<Object> {
 		let func = args.try_arg(0)?;
 
 		func.call_attr_lit("()", &[this])
@@ -215,6 +224,7 @@ for Basic [(parents super::Pristine)]:
 	"hash" => method Self::qs_hash,
 	"itself" => method Self::qs_itself,
 	"tap" => method Self::qs_tap,
+	"tap_into" => method Self::qs_tap_into,
 
 	// TODO: move these out of kernel
 	"if" => method super::Kernel::qs_if, 
@@ -231,6 +241,22 @@ for Basic [(parents super::Pristine)]:
 
 	"then" => method super::Kernel::qs_if, 
 	"else" => method super::Kernel::qs_unless, 
+	"then_into" => method |this, args| {
+		let func = args.try_arg(0)?;
+		if this.call_downcast::<super::Boolean>()?.into_inner() {
+			func.call_attr_lit("()", &[this])
+		} else {
+			Ok(this.clone())
+		}
+	},
+	"else_into" => method |this, args| {
+		let func = args.try_arg(0)?;
+		if !this.call_downcast::<super::Boolean>()?.into_inner() {
+			func.call_attr_lit("()", &[this])
+		} else {
+			Ok(this.clone())
+		}
+	},
 	"or" => method |this, args| {
 		let if_false = args.try_arg(0)?;
 		let is_truthy = this.call_downcast::<super::Boolean>()?.into_inner();

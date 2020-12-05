@@ -1,4 +1,5 @@
 Number.divides = (self, rhs) -> { (rhs % self) == 0 };
+Number.divides = (factor, number) -> { (number % factor) == 0 };	
 
 fizzbuzz = max -> {
 	1.upto(max)
@@ -10,7 +11,7 @@ fizzbuzz = max -> {
 		})
 };
 
-fizzbuzz(100).each(disp);
+fizzbuzz(100).each(print);
 
 # Tests
 assert([

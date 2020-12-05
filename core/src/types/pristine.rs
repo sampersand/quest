@@ -159,6 +159,17 @@ impl Pristine {
 		this.dot_get_attr(attr)
 	}
 
+	#[instrument(name="Pristine::.?", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_dot_get_attr_q(this: &Object, args: Args) -> crate::Result<Object> {
+		let attr = args.try_arg(0)?;
+
+		if this.has_attr(attr)? {
+			this.get_attr(attr)
+		} else {
+			Ok(Object::default())
+		}
+	}
+
 	#[instrument(name="Pristine::__keys__", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs___keys__(this: &Object, args: Args) -> crate::Result<Object> {
 		let include_parents =
@@ -201,6 +212,7 @@ for Pristine [(init_parent) (parents Pristine)]:
 	"::" => method Self::qs___get_attr__,
 	".=" => method Self::qs___set_attr__,
 	"." => method Self::qs_dot_get_attr,
+	".?" => method Self::qs_dot_get_attr_q,
 	"instance_exec" => method Self::qs_instance_exec,
 
 	// this is mildly deprecated

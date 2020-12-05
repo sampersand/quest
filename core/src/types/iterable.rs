@@ -38,6 +38,18 @@ impl Iterable {
 		})
 	}
 
+	#[instrument(name="Iterable::zip", level="trace", skip(this, args), fields(self = ?this, ?args))]
+	pub fn qs_zip(this: &Object, args: Args) -> crate::Result<Object> {
+		// TODO: actually call `each` on the RHS, as rn it makes the rhs into a list, which fails with infinite iterators.
+		let rhs = Mutex::new(args.try_arg(0)?.call_downcast::<crate::types::List>()?.clone().into_iter());
+
+		foreach(this, move |args, list| {
+			let val: Object = vec![args.try_arg(0)?.clone(), rhs.lock().next().map(|x| x.clone()).unwrap_or_default()].into();
+			list.push(val.clone());
+			Ok(val)
+		})
+	}
+
 	#[instrument(name="Iterable::enumerate", level="trace", skip(this, args), fields(self = ?this, ?args))]
 	pub fn qs_enumerate(this: &Object, args: Args) -> crate::Result<Object> {
 		let block = args.try_arg(0)?.clone();
@@ -95,6 +107,25 @@ impl Iterable {
 			Ok(should_keep) // or should it be `obj`?
 		})
 	}
+
+	#[instrument(name="Iterable::chunk_while", level="trace", skip(this, args), fields(self = ?this, ?args))]
+	pub fn qs_chunk_while(this: &Object, args: Args) -> crate::Result<Object> {
+		let block = args.try_arg(0)?.clone();
+
+		foreach(this, move |args, list| {
+			let obj = args.try_arg(0)?.clone();
+
+			let chunked = block.call_attr_lit("()", args.shorten())?;
+
+			if list.is_empty() || !chunked.call_downcast::<Boolean>()?.into_inner() {
+				list.push(Vec::new().into());
+			}
+
+			list.last().unwrap().call_attr_lit("push", &[&obj])?;
+
+			Ok(chunked) // or should it be `obj`?
+		})
+	}
 }
 
 impl_object_type!{
@@ -102,9 +133,11 @@ for Iterable [(parents super::Basic)]:
 	"map" => method Self::qs_map,
 	"enumerate" => method Self::qs_enumerate,
 	"select" => method Self::qs_select,
+	// "reduce" => method Self::qs_reduce,
 	"reject" => method Self::qs_reject,
 	"count" => method Self::qs_count,
+	"zip" => method Self::qs_zip,
+	"chunk_while" => method Self::qs_chunk_while,
+	// "all" => method Self::qs_all,
+	// "any" => method Self::qs_any,
 }
-
-
- // => [:each_slice, :each_cons, :each_with_object, :zip, :take, :take_while, :drop, :drop_while, :cycle, :chunk, :slice_before, :slice_after, :slice_when, :chunk_while, :sum, :uniq, :chain, :lazy, :to_set, :to_h, :include?, :max, :min, :to_a, :find, :entries, :sort, :sort_by, :grep, :grep_v, :count, :detect, :find_index, :find_all, :select, :filter, :filter_map, :reject, :collect, :map, :flat_map, :collect_concat, :inject, :reduce, :partition, :group_by, :tally, :first, :all?, :any?, :one?, :none?, :minmax, :min_by, :max_by, :minmax_by, :member?, :each_with_index, :reverse_each, :each_entry] 

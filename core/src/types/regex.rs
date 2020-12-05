@@ -185,8 +185,8 @@ impl Regex {
 	/// Checks to see if the first argument matches.
 	///
 	/// The first argument is converted to a [`Text`] before matching.
-	#[instrument(name="Regex::does_match", level="trace", skip(this, args), fields(self=?this, ?args))]
-	pub fn qs_does_match(this: &Object, args: Args) -> crate::Result<Object> {
+	#[instrument(name="Regex::match?", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_match_q(this: &Object, args: Args) -> crate::Result<Object> {
 		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
 
@@ -198,7 +198,7 @@ impl_object_type!{
 for Regex [(parents super::Basic) (convert "@regex")]:
 	"inspect" => method Self::qs_inspect,
 	"==" => method Self::qs_eql,
-	"does_match" => method Self::qs_does_match,
+	"match?" => method Self::qs_match_q,
 	"match" => method Self::qs_match,
 	"scan" => method Self::qs_scan,
 }

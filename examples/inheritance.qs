@@ -13,7 +13,7 @@ Person = {
 	};
 
 	speak = person -> {
-		disp(person, 'says:', person.SAYS_WHAT);
+		print(person, 'says:', person.SAYS_WHAT);
 	};
 
 	:0

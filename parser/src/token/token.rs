@@ -9,7 +9,7 @@ pub enum Token {
 	Operator(Operator),
 	Left(ParenType),
 	Right(ParenType),
-	Endline,
+	Endline(bool), // whether or not it's a hard endline
 	Comma
 }
 
@@ -20,27 +20,29 @@ impl Display for Token {
 			Self::Operator(o) => Display::fmt(o, f),
 			Self::Left(t) => Display::fmt(&t.left(), f),
 			Self::Right(t) => Display::fmt(&t.right(), f),
-			Self::Endline => Display::fmt(&';', f),
+			Self::Endline(true) => Display::fmt(&';', f),
+			Self::Endline(false) => Display::fmt(&"\\n", f),
 			Self::Comma => Display::fmt(&',', f),
 		}		
 	}
 }
 
 /// parse whitespace that's not relevant.
-fn parse_whitespace<S: Stream>(stream: &mut S) -> Result<()> {
+fn parse_whitespace<S: Stream>(stream: &mut S) -> Result<bool> {
 	match stream.next().transpose()? {
+		// Some('\n') => return Ok(true),
 		Some(chr) if chr.is_whitespace() =>
 			while let Some(chr) = stream.next().transpose()? {
 				if !chr.is_whitespace() {
 					unseek_char!(stream; chr);
-					return Ok(());
+					return Ok(false);
 				}
 			},
 		Some(chr) => unseek_char!(stream; chr),
 		None => {}
 	}
 
-	Ok(())
+	Ok(false)
 }
 
 enum CommentResult {
@@ -89,7 +91,10 @@ fn parse_comment<S: Stream>(stream: &mut S) -> Result<CommentResult> {
 
 impl Token {
 	pub fn try_parse<S: Stream>(stream: &mut S) -> Result<Option<Self>> {
-		parse_whitespace(stream)?;
+		if parse_whitespace(stream)? {
+			// do nothing
+			// return Ok(Some(Self::Endline(false)));
+		}
 
 		match parse_comment(stream)? {
 			CommentResult::StopParsing => return Ok(None),
@@ -105,7 +110,7 @@ impl Token {
 
 
 		match stream.next().transpose()? {
-			Some(';') => Ok(Some(Self::Endline)),
+			Some(';') => Ok(Some(Self::Endline(true))),
 			Some(',') => Ok(Some(Self::Comma)),
 			Some('(') => Ok(Some(Self::Left(ParenType::Round))),
 			Some(')') => Ok(Some(Self::Right(ParenType::Round))),

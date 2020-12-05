@@ -125,6 +125,18 @@ impl Kernel {
 		Ok(result.unwrap_or_default())
 	}
 
+	#[instrument(name="Kernel::until", level="trace")]
+	pub fn qs_until(cond: &Object, args: Args) -> crate::Result<Object> {
+		let body = args.try_arg(0)?;
+		let mut result = None;
+
+		while !is_object_truthy(&cond.call_attr_lit(&Literal::CALL, &[])?)? {
+			result = Some(body.call_attr_lit(&Literal::CALL, &[])?);
+		}
+
+		Ok(result.unwrap_or_default())
+	}
+
 	#[instrument(name="Kernel::loop", level="trace")]
 	pub fn qs_loop(body: &Object, _: Args) -> crate::Result<Object> {
 		loop {
@@ -289,11 +301,13 @@ for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristin
 	"rand" => function Self::qs_rand,
 	"prompt" => function Self::qs_prompt,
 	"while" => method Self::qs_while,
+	"until" => method Self::qs_until,
 	"loop" => method Self::qs_loop,
 	"sleep" => function Self::qs_sleep,
 	"open" => method Self::qs_open,
 	"return" => function Self::qs_return,
 	"assert" => method Self::qs_assert,
+
 	"spawn" => method |block, _| {
 		use std::thread::{self, JoinHandle};
 		use std::sync::Arc;

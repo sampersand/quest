@@ -2,9 +2,9 @@
 
 # If an argument was supplied to this executable, use that as the maximum value.
 # otherwise, default to 100.
-MAX = if(:0.__has_attr__('_1'), { _1.@num() }, { 100 });
+MAX = __args__.get(1).or(100).@num();
 
-disp('Guessing game! Guess from 1-' + MAX);
+print('Guessing game! Guess from 1-' + MAX);
 
 # Because `rand` returns a non-whole number, we need to convert it to one.
 secret = rand(1, MAX + 1).floor();
@@ -12,7 +12,9 @@ secret = rand(1, MAX + 1).floor();
 guesses = 0;
 
 # `loop` is a synonym for `while true`
-loop({
+quit(0, "hi");
+
+loop {
 	# Add one to the amount of guesses.
 	guesses += 1;
 
@@ -20,10 +22,9 @@ loop({
 	guess = prompt("> ").@num();
 
 	if (guess == secret) {
-		disp("perfect!\nit took you", guesses, "guesses");
-		quit(0);
+		quit(0, "perfect!\nit took you" + guesses + "guesses");
 	};
 
 	# use `ifl`, which is the ternary operator for literal values.
-	disp("too ", ifl(guess > secret, "high", "low");
-});
+	print("too ", ifl(guess > secret, "high", "low"));
+}

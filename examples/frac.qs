@@ -2,7 +2,7 @@ Frac = {
 	__parents__.push(Comparable);
 
 	'()' = (class, numer, denom) -> {
-		if(denom == 0, return); # return `null` if the denom is zero.
+		denom.else(return);
 
 		__parents__ = [class];
 		:0

@@ -400,11 +400,11 @@ impl Object {
 		let result = self.get_attr(attr)?;
 
 		// remove this hack? lol
-		assert_eq!(
-			result.has_attr_lit("__should_be_bound__")?,
-			result.is_a::<types::RustFn>() || result.is_a::<types::RustClosure>() || 
-				format!("{:?}", result).starts_with("Object(Block") ||
-				result.is_a::<types::BoundFunction>(), "{:#?}", result);
+		// assert_eq!(
+		// 	result.has_attr_lit("__should_be_bound__")?,
+		// 	result.is_a::<types::RustFn>() || result.is_a::<types::RustClosure>() || 
+		// 		format!("{:?}", result).starts_with("Object(Block") ||
+		// 		result.is_a::<types::BoundFunction>(), "{:#?}", result);
 		if result.is_a::<types::RustFn>() || result.is_a::<types::RustClosure>() || 
 				format!("{:?}", result).starts_with("Object(Block") ||
 				result.is_a::<types::BoundFunction>() {

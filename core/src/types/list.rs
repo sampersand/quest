@@ -494,7 +494,9 @@ impl List {
 		let closure = Object::from(crate::types::RustClosure::new(move |args| {
 			crate::Binding::new_stackframe(Some(block.clone()), args.clone(), |binding| {
 				for (i, arg) in this_list.iter().enumerate() {
-					binding.set_attr(arg.clone(), args.arg(i).cloned().unwrap_or_default())?;
+					arg.call_attr_lit("=", 
+						&[&args.arg(i).cloned().unwrap_or_default(), binding.as_ref()])?;
+					// binding.set_attr(arg.clone(), args.arg(i).cloned().unwrap_or_default())?;
 				}
 
 				block.call_attr_lit("call_noscope", &[])
@@ -639,6 +641,26 @@ impl List {
 		} else {
 			Ok(this.get(start).cloned().unwrap_or_default())
 		}
+	}
+
+	#[instrument(name="List::first", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_first(this: &Object, _: Args) -> crate::Result<Object> {
+		Ok(this.try_downcast::<Self>()?.get(0).cloned().unwrap_or_default())
+	}
+
+	#[instrument(name="List::second", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_second(this: &Object, _: Args) -> crate::Result<Object> {
+		Ok(this.try_downcast::<Self>()?.get(1).cloned().unwrap_or_default())
+	}
+
+	#[instrument(name="List::last", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_last(this: &Object, _: Args) -> crate::Result<Object> {
+		Ok(this.try_downcast::<Self>()?.get(-1).cloned().unwrap_or_default())
+	}
+
+	#[instrument(name="List::penult", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_penult(this: &Object, _: Args) -> crate::Result<Object> {
+		Ok(this.try_downcast::<Self>()?.get(-2).cloned().unwrap_or_default())
 	}
 
 	/// Sets an element or range of the list to an element or list.
@@ -1092,13 +1114,24 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"index" => method Self::qs_index,
 	"len"   => method Self::qs_len,
 
-	"delete" => method Self::qs_delete,
 	"get"  => method Self::qs_get,
 	"set"  => method Self::qs_set,
+	"[]"  => method Self::qs_get,
+	"[]="  => method |this, args| {
+		let mut arg = args.try_arg(0)?.downcast_mut::<Self>().expect("`[]=` called without List.");
+		arg.push(args.try_arg(1)?.clone());
+
+		Self::qs_set(this, arg.as_ref().iter().collect())
+	},
+	"delete" => method Self::qs_delete,
+	"first" => method Self::qs_first,
+	"second" => method Self::qs_second,
+	"last" => method Self::qs_last,
+	"penult" => method Self::qs_penult,
+
 	"join" => method Self::qs_join,
 	"*"    => method Self::qs_mul,
 	"*="   => method Self::qs_mul_assign,
-
 	"<<"      => method Self::qs_push,
 	"push"    => method Self::qs_push,
 	"pop"     => method Self::qs_pop,

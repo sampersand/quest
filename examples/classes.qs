@@ -34,9 +34,9 @@ Person = {
 
 sam = Person("Sam", "W");
 
-disp(Person); # => Person
-disp(sam); # => Sam W
-disp(sam.class == Person); # => true
+print(Person); # => Person
+print(sam); # => Sam W
+print(sam.class == Person); # => true
 
 # Tests
 assert(Person.@text() == "Person");

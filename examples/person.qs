@@ -23,7 +23,7 @@ Person = {
 sam = Person('Samp', 'Eersand');
 
 # And greet me...
-disp("Hello, " + sam);
+print("Hello, " + sam);
 
 
 # Tests

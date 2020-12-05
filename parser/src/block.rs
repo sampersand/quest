@@ -22,23 +22,37 @@ pub struct Block {
 
 impl Block {
 	pub(crate) fn convert_to_parameters(self) -> Self {
-		use crate::token::Primitive;
+		use crate::token::{Operator::*, Primitive::*};
+		use crate::expression::BoundOperator;
+		use Expression::{Primitive, Operator as ExprOper, Block as ExprBlock};
+		use Line::*;
+
+		fn fix_line(line: Line) -> Line {
+			match line {
+				Single(expr) => Single(fix_expr(expr)),
+				Multiple(exprs) => Multiple(exprs.into_iter().map(fix_expr).collect())
+			}
+		}
+
+		fn fix_expr(expr: Expression) -> Expression {
+			match expr {
+				Primitive(Variable(var)) => Primitive(Text(var.into())),
+				ExprBlock(Block { lines, paren_type, context })
+					if paren_type != ParenType::Curly =>
+					ExprBlock(Block {
+						lines: lines.into_iter().map(fix_line).collect(),
+						paren_type,
+						context }),
+				ExprOper(BoundOperator { oper, this, args }) if oper == Splat || oper == SplatSplat
+					=> ExprOper(BoundOperator { oper, this: Box::new(fix_expr(*this)), args }),
+				other => other
+			}
+		}
+
 		Self {
 			context: self.context,
 			paren_type: self.paren_type,
-			lines:
-				self.lines.into_iter()
-					.map(|line| match line {
-						Line::Single(Expression::Primitive(Primitive::Variable(var))) => 
-							Line::Single(Expression::Primitive(Primitive::Text(var.into()))),
-						Line::Single(other) => Line::Single(other),
-						Line::Multiple(lines) => Line::Multiple(lines.into_iter().map(|line| 
-							match line {
-								Expression::Primitive(Primitive::Variable(var)) => 
-									Expression::Primitive(Primitive::Text(var.into())),
-								other => other
-							}).collect())
-					}).collect()
+			lines: self.lines.into_iter().map(fix_line).collect()
 		}
 	}
 }
@@ -232,7 +246,7 @@ impl Constructable for Block {
 				},
 
 				rparen @ Token::Right(..) => return Err(parse_error!(ctor, UnexpectedToken(rparen))),
-				Token::Endline => 
+				Token::Endline(_) => 
 					if let Some(curr_line) = curr_line.take() {
 						block.lines.push(curr_line);
 					},

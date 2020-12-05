@@ -28,10 +28,16 @@ fn call_function(this: &Expression, block: &Block) -> quest_core::Result<Object>
 	use crate::block::LineResult;
 	let this = this.execute()?;
 
+	let call_op = 
+		match block.paren_type() {
+			ParenType::Square => "[]",
+			_ => "()",
+		};
+
 	match block.run_block()? {
-		Some(LineResult::Single(s)) => this.call_attr_lit("()", &[&s]),
-		Some(LineResult::Multiple(m)) => this.call_attr_lit("()", m.iter().collect::<Args>()),
-		None => this.call_attr_lit("()", &[])
+		Some(LineResult::Single(s)) => this.call_attr_lit(call_op, &[&s]),
+		Some(LineResult::Multiple(m)) => this.call_attr_lit(call_op, m.iter().collect::<Args>()),
+		None => this.call_attr_lit(call_op, &[])
 	}
 }
 
