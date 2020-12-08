@@ -399,16 +399,16 @@ impl Object {
 	pub(crate) fn dot_get_attr(&self, attr: &Self) -> crate::Result<Self> {
 		let result = self.get_attr(attr)?;
 
-		// remove this hack? lol
 		// assert_eq!(
-		// 	result.has_attr_lit("__should_be_bound__")?,
 		// 	result.is_a::<types::RustFn>() || result.is_a::<types::RustClosure>() || 
-		// 		format!("{:?}", result).starts_with("Object(Block") ||
-		// 		result.is_a::<types::BoundFunction>(), "{:#?}", result);
+		// 		result.is_a::<types::BoundFunction>() ||
+		// 		format!("{:?}", result).starts_with("Object(Block"),
+		// 	result.is_a::<types::RustFn>() || result.is_a::<types::RustClosure>() || 
+		// 		result.is_a::<types::BoundFunction>() ||
+		// 		result.typename().contains("::Block"));
 		if result.is_a::<types::RustFn>() || result.is_a::<types::RustClosure>() || 
-				format!("{:?}", result).starts_with("Object(Block") ||
-				result.is_a::<types::BoundFunction>() {
-		// if result.has_attr_lit("__should_be_bound__")? {
+				result.is_a::<types::BoundFunction>() ||
+				result.typename().contains("::Block") {
 			let bound_res = Self::new(crate::types::BoundFunction);
 			bound_res.set_attr_lit("__bound_object_owner__", self.clone())?;
 			bound_res.add_parent(result.clone())?;

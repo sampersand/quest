@@ -270,6 +270,15 @@ impl Text {
 		Ok(List::from(&*this).into())
 	}
 
+	#[instrument(name="Text::@iter", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_at_iter(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?;
+
+		Ok(crate::types::Iter::new(
+			this.as_ref().chars().collect::<Vec<_>>().into_iter().
+				map(From::from).map(Ok)).into())
+	}
+
 	#[instrument(name="Text::@bool", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_bool(this: &Object, _: Args) -> crate::Result<Object> {
 		let this = this.try_downcast::<Self>()?;
@@ -539,26 +548,39 @@ impl Text {
 		Ok(this.clone())
 	}
 
-	#[instrument(name="Text::each", level="trace", skip(this, args), fields(self=?this, ?args))]
-	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
-		let block = args.try_arg(0)?;
+	#[instrument(name="Text::sub", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_sub(this: &Object, args: Args) -> crate::Result<Object> {
+		let text = this.call_downcast::<Self>()?;
+		let pat = args.try_arg(0)?;
+		let repl = args.try_arg(1)?.call_downcast::<Text>()?;
 
-		for idx in 0.. {
-			// so as to not lock the object, we check the index each and every time.
-			// this allows it to be modified during the `each` invocation.
-			let obj = {
-				let this = this.try_downcast::<Self>()?;
-				if let Some(c) = this.as_ref().chars().nth(idx) {
-					c.into()
-				} else {
-					break
-				}
-			};
-
-			block.call_attr_lit(&Literal::CALL, &[&obj])?;
+		if let Some(rxp) = pat.downcast::<Regex>() {
+			Ok(rxp.sub(text.as_ref(), repl.as_ref()).to_string().into())
+		} else {
+			Ok(text.0.replacen(pat.call_downcast::<Text>()?.as_ref(), repl.as_ref(), 1).into())
 		}
+	}
 
-		Ok(this.clone())
+	#[instrument(name="Text::gsub", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_gsub(this: &Object, args: Args) -> crate::Result<Object> {
+		let text = this.call_downcast::<Self>()?;
+		let pat = args.try_arg(0)?;
+		let repl = args.try_arg(1)?.call_downcast::<Text>()?;
+
+		if let Some(rxp) = pat.downcast::<Regex>() {
+			Ok(rxp.gsub(text.as_ref(), repl.as_ref()).to_string().into())
+		} else {
+			Ok(text.0.replace(pat.call_downcast::<Text>()?.as_ref(), repl.as_ref()).into())
+		}
+	}
+
+	#[instrument(name="Text::~", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_bitnot(this: &Object, args: Args) -> crate::Result<Object> {
+		let this = this.clone();
+
+		Ok(crate::types::RustClosure::new(move |args| {
+			args.try_arg(0)?.call_attr(&this, &args.as_ref()[1..])
+		}).into())
 	}
 }
 
@@ -597,8 +619,10 @@ for Text
 	"@num"    => method Self::qs_at_num,
 	"@list"   => method Self::qs_at_list,
 	"@bool"   => method Self::qs_at_bool,
+	"@iter"   => method Self::qs_at_iter,
 	"()"      => method Self::qs_call,
 
+	"~"       => method Self::qs_bitnot,
 	"="       => method Self::qs_assign,
 	"->"      => method Self::qs_arrow,
 	"<=>"     => method Self::qs_cmp,
@@ -622,10 +646,11 @@ for Text
 	"shift"   => method Self::qs_shift,
 	"clear"   => method Self::qs_clear,
 	"split"   => method Self::qs_split,
-	"reverse" => method Self::qs_reverse,
-	"each"    => method Self::qs_each,
+	"reverse" => method Self::qs_reverse, 
 	"strip"   => method Self::qs_strip,
 	"replace" => method Self::qs_replace,
+	"sub" => method Self::qs_sub,
+	"gsub" => method Self::qs_gsub,
 
 	"count" => method Self::qs_count,
 	"empty?" => method Self::qs_empty_q,

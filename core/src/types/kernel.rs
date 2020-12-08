@@ -287,8 +287,11 @@ for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristin
 	"RustFn" => const super::RustFn::mapping().clone(),
 	"Scope" => const super::Scope::mapping().clone(),
 	"Text" => const super::Text::mapping().clone(),
+	"Regex" => const super::Regex::mapping().clone(),
 	"Comparable" => const super::Comparable::mapping().clone(),
 	"Iterable" => const super::Iterable::mapping().clone(),
+	"Iter" => const super::Iter::mapping().clone(),
+	"StopIteration" => const super::StopIteration::mapping().clone(),
 
 	"if" => method Self::qs_if,
 	"ifl" => method Self::qs_ifl,

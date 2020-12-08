@@ -715,14 +715,6 @@ impl Number {
 		Ok(Boolean::from(*this).into())
 	}
 
-	/// Checks to see if `self`'s one,.
-	#[instrument(name="Number::one?", level="trace", skip(this), fields(self=?this))]
-	pub fn qs_one_q(this: &Object, _: Args) -> crate::Result<Object> {
-		let this = this.try_downcast::<Self>()?;
-
-		Ok(Boolean::from(*this == Self::ONE).into())
-	}
-
 	/// Calling a number is simply an alias for [multiplication](#qs_mul).
 	#[instrument(name="Number::()", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_call(this: &Object, args: Args) -> crate::Result<Object> {
@@ -1122,7 +1114,7 @@ impl Number {
 	}
 
 	/// Checks to see if `this` is between the first and second arguments, inclusive.
-	#[instrument(name="Number::between?", level="trace", skip(this), fields(self=?this))]
+	#[instrument(name="Number::between?", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_between_q(this: &Object, args: Args) -> crate::Result<Object> {
 		let this = *this.try_downcast::<Self>()?;
 
@@ -1130,6 +1122,54 @@ impl Number {
 		let max = *args.try_arg(1)?.call_downcast::<Self>()?;
 
 		Ok((min <= this && this <= max).into())
+	}
+
+	/// Checks to see if `this` is zero.
+	#[instrument(name="Number::zero?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_zero_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+
+		Ok((this == Self::ZERO).into())
+	}
+
+	/// Checks to see if `this` is one.
+	#[instrument(name="Number::one?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_one_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+
+		Ok((this == Self::ONE).into())
+	}
+
+	/// Checks to see if `this` is one.
+	#[instrument(name="Number::positive?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_positive_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+
+		Ok((this > Self::ZERO).into())
+	}
+
+	/// Checks to see if `this` is one.
+	#[instrument(name="Number::negative?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_negative_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+
+		Ok((this < Self::ZERO).into())
+	}
+
+	/// Checks to see if `this` is even.
+	#[instrument(name="Number::even?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_even_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+
+		Ok((IntegerType::try_from(this).map_or(false, |x| x % 2 == 0)).into())
+	}
+
+	/// Checks to see if `this` is odd.
+	#[instrument(name="Number::odd?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_odd_q(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+
+		Ok((IntegerType::try_from(this).map_or(false, |x| x % 2 != 0)).into())
 	}
 
 	/// Returns an array starting at `this` and ending at the first argument, with an optional step.
@@ -1212,8 +1252,6 @@ impl_object_type!{
 	"@num" => method Self::qs_at_num,
 	"@bool" => method Self::qs_at_bool,
 	"hash" => method Self::qs_hash,
-	"zero?" => method Self::qs_at_bool,
-	"one?" => method Self::qs_one_q,
 
 	"+"  => method Self::qs_add,    "+="  => method Self::qs_add_assign,
 	"-"  => method Self::qs_sub,    "-="  => method Self::qs_sub_assign,
@@ -1241,7 +1279,15 @@ impl_object_type!{
 	"sqrt"  => method Self::qs_sqrt,
 	"upto"  => method Self::qs_upto,
 	"downto"  => method Self::qs_downto,
+
 	"between?" => method Self::qs_between_q,
+	"even?" => method Self::qs_even_q,
+	"odd?" => method Self::qs_odd_q,
+	"one?" => method Self::qs_one_q,
+	"zero?" => method Self::qs_one_q,
+	"positive?" => method Self::qs_positive_q,
+	"negative?" => method Self::qs_negative_q,
+
 	"chr" => method |this, _| {
 		Ok((u8::try_from(this.try_downcast::<Self>()?.floor()).unwrap() as char)
 			.to_string().into())

@@ -4,7 +4,9 @@ use std::fmt::{self, Display, Formatter};
 #[derive(Debug, Clone)]
 pub enum ArgumentError {
 	/// When a more specific error isn't available
-	InvalidLength { given: usize, expected: usize }
+	InvalidLength { given: usize, expected: usize },
+
+	Messaged(String),
 }
 
 impl From<ArgumentError> for super::Error {
@@ -19,7 +21,8 @@ impl Display for ArgumentError {
 		write!(f, "argument error: ")?;
 		match self {
 			ArgumentError::InvalidLength { given, expected }
-				=> write!(f, "wrong number of arguments (given {}, expected {})", given, expected)
+				=> write!(f, "wrong number of arguments (given {}, expected {})", given, expected),
+			ArgumentError::Messaged(string) => write!(f, "{}", string)
 		}
 	}
 }

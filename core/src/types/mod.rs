@@ -29,7 +29,8 @@ mod kernel;
 mod basic;
 
 mod function;
-mod iterable;
+mod iterable_old;
+pub mod iterable;
 mod comparable;
 mod bound_function;
 mod scope;
@@ -79,7 +80,7 @@ pub use bound_function::BoundFunction;
 pub use function::Function;
 
 #[doc(inline)]
-pub use iterable::Iterable;
+pub use iterable::{Iterable, Iter, StopIteration};
 
 #[doc(inline)]
 pub use rustfn::{RustFn, RustClosure};

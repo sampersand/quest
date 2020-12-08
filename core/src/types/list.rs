@@ -430,6 +430,13 @@ impl List {
 		Ok(this.clone())
 	}
 
+	#[instrument(name="List::@iter", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_at_iter(this: &Object, _: Args) -> crate::Result<Object> {
+		let this = this.try_downcast::<Self>()?.clone();
+
+		Ok(crate::types::Iter::new(this.0.into_iter().map(Ok)).into())
+	}
+
 	/// Attempts to convert this into a [`Text`].
 	///
 	/// This method calls the `@text` attribute of each element; if any of those attributes cause
@@ -517,27 +524,6 @@ impl List {
 		closure.set_attr_lit("args", this.clone())?;
 		closure.set_attr_lit("block", block_dup)?;
 		Ok(closure)
-	}
-
-	#[instrument(name="List::each", level="trace", skip(this, args), fields(self=?this, ?args))]
-	pub fn qs_each(this: &Object, args: Args) -> crate::Result<Object> {
-		let block = args.try_arg(0)?;
-
-		for idx in 0.. {
-			// so as to not lock the object, we check the index each and every time.
-			// this allows it to be modified during the `each` invocation.
-			let obj = {
-				let this = this.try_downcast::<Self>()?;
-				if idx >= this.len() {
-					break;
-				}
-				this.0[idx].clone()
-			};
-
-			block.call_attr_lit(&Literal::CALL, &[&obj])?;
-		}
-
-		Ok(this.clone())
 	}
 
 	/// Finds an object within the list, returning its index.
@@ -643,25 +629,25 @@ impl List {
 		}
 	}
 
-	#[instrument(name="List::first", level="trace", skip(this), fields(self=?this))]
-	pub fn qs_first(this: &Object, _: Args) -> crate::Result<Object> {
-		Ok(this.try_downcast::<Self>()?.get(0).cloned().unwrap_or_default())
-	}
+	// #[instrument(name="List::first", level="trace", skip(this), fields(self=?this))]
+	// pub fn qs_first(this: &Object, _: Args) -> crate::Result<Object> {
+	// 	Ok(this.try_downcast::<Self>()?.get(0).cloned().unwrap_or_default())
+	// }
 
-	#[instrument(name="List::second", level="trace", skip(this), fields(self=?this))]
-	pub fn qs_second(this: &Object, _: Args) -> crate::Result<Object> {
-		Ok(this.try_downcast::<Self>()?.get(1).cloned().unwrap_or_default())
-	}
+	// #[instrument(name="List::second", level="trace", skip(this), fields(self=?this))]
+	// pub fn qs_second(this: &Object, _: Args) -> crate::Result<Object> {
+	// 	Ok(this.try_downcast::<Self>()?.get(1).cloned().unwrap_or_default())
+	// }
 
-	#[instrument(name="List::last", level="trace", skip(this), fields(self=?this))]
-	pub fn qs_last(this: &Object, _: Args) -> crate::Result<Object> {
-		Ok(this.try_downcast::<Self>()?.get(-1).cloned().unwrap_or_default())
-	}
+	// #[instrument(name="List::last", level="trace", skip(this), fields(self=?this))]
+	// pub fn qs_last(this: &Object, _: Args) -> crate::Result<Object> {
+	// 	Ok(this.try_downcast::<Self>()?.get(-1).cloned().unwrap_or_default())
+	// }
 
-	#[instrument(name="List::penult", level="trace", skip(this), fields(self=?this))]
-	pub fn qs_penult(this: &Object, _: Args) -> crate::Result<Object> {
-		Ok(this.try_downcast::<Self>()?.get(-2).cloned().unwrap_or_default())
-	}
+	// #[instrument(name="List::penult", level="trace", skip(this), fields(self=?this))]
+	// pub fn qs_penult(this: &Object, _: Args) -> crate::Result<Object> {
+	// 	Ok(this.try_downcast::<Self>()?.get(-2).cloned().unwrap_or_default())
+	// }
 
 	/// Sets an element or range of the list to an element or list.
 	///
@@ -1104,11 +1090,11 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 	"@text" => method Self::qs_at_text,
 	"@bool" => method Self::qs_at_bool,
 	"@list" => method Self::qs_at_list,
+	"@iter" => method Self::qs_at_iter,
 
 	"empty?" => method Self::qs_empty_q,
 
 	"->"   => method Self::qs_arrow,
-	"each" => method Self::qs_each,
 
 	"clear" => method Self::qs_clear,
 	"index" => method Self::qs_index,
@@ -1124,10 +1110,10 @@ for List [(init_parent super::Basic super::Iterable) (parents super::Basic)]:
 		Self::qs_set(this, arg.as_ref().iter().collect())
 	},
 	"delete" => method Self::qs_delete,
-	"first" => method Self::qs_first,
-	"second" => method Self::qs_second,
-	"last" => method Self::qs_last,
-	"penult" => method Self::qs_penult,
+	// "first" => method Self::qs_first,
+	// "second" => method Self::qs_second,
+	// "last" => method Self::qs_last,
+	// "penult" => method Self::qs_penult,
 
 	"join" => method Self::qs_join,
 	"*"    => method Self::qs_mul,

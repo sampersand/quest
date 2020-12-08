@@ -303,7 +303,8 @@ impl_object_type!{
 for Block [(parents quest_core::types::Function)]:
 	"@text" => method Block::qs_at_text,
 	"()" => method Block::qs_call,
-	"call_noscope" => method Block::qs_call_noscope
+	"call_noscope" => method Block::qs_call_noscope,
+	"__should_be_bound__" => const true
 }
 
 #[cfg(test)]

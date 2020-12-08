@@ -95,6 +95,14 @@ impl Regex {
 		flags.set_options(&mut builder);
 		Ok(Self(builder.build()?, flags))
 	}
+
+	pub fn sub<'t>(&self, text: &'t str, repl: &str) -> std::borrow::Cow<'t, str> {
+		self.0.replace(text, repl)
+	}
+
+	pub fn gsub<'t>(&self, text: &'t str, repl: &str) -> std::borrow::Cow<'t, str> {
+		self.0.replace_all(text, repl)
+	}
 }
 
 impl AsRef<regex::Regex> for Regex {
@@ -187,10 +195,28 @@ impl Regex {
 	/// The first argument is converted to a [`Text`] before matching.
 	#[instrument(name="Regex::match?", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_match_q(this: &Object, args: Args) -> crate::Result<Object> {
-		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 		let this = this.try_downcast::<Self>()?;
+		let rhs = args.try_arg(0)?.call_downcast::<Text>()?;
 
 		Ok(this.0.is_match(rhs.as_ref()).into())
+	}
+
+	#[instrument(name="Regex::sub", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_sub(this: &Object, args: Args) -> crate::Result<Object> {
+		let pat = this.call_downcast::<Self>()?;
+		let text = args.try_arg(0)?.call_downcast::<Text>()?;
+		let repl = args.try_arg(1)?.call_downcast::<Text>()?;
+
+		Ok(pat.sub(text.as_ref(), repl.as_ref()).to_string().into())
+	}
+
+	#[instrument(name="Regex::gsub", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_gsub(this: &Object, args: Args) -> crate::Result<Object> {
+		let pat = this.call_downcast::<Self>()?;
+		let text = args.try_arg(0)?.call_downcast::<Text>()?;
+		let repl = args.try_arg(1)?.call_downcast::<Text>()?;
+
+		Ok(pat.gsub(text.as_ref(), repl.as_ref()).to_string().into())
 	}
 }
 
@@ -201,4 +227,6 @@ for Regex [(parents super::Basic) (convert "@regex")]:
 	"match?" => method Self::qs_match_q,
 	"match" => method Self::qs_match,
 	"scan" => method Self::qs_scan,
+	"sub" => method Self::qs_sub,
+	"gsub" => method Self::qs_gsub,
 }
