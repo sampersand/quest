@@ -10,7 +10,7 @@ use clap::Clap;
 #[clap(version = "0.1", author = "Sam Westerman <sam@sampersand.me>")]
 struct Opts {
 	/// Define the file to run. If `-` is supplied, STDIN is read.
-	#[clap(short="f", long, conflicts_with="eval")]
+	#[clap(short='f', long, conflicts_with="eval")]
 	file: Option<std::path::PathBuf>,
 
 	/// Evaluate a passed command as quest code. Omit `file`.
