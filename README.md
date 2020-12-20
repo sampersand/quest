@@ -122,7 +122,7 @@ while({ i < 5 }, {
 ```
 
 ### The `return` function
-The `return` keyword is a bit different than other languages. Because there is no concept of "functions vs blocks", you must return to a specific scope:
+The `return` function is a bit different than other languages. Because there is no concept of "functions vs blocks", you must return to a specific scope:
 
 
 ```php
