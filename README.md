@@ -5,7 +5,7 @@
 A language based around extensibility and freedom
 
 # What's Quest
-Quest is an "non-typed" language that is designed to allow for efficient code reuse. Similar to dynamically-typed languages in that types aren't relevant, Quest takes this a step further: There _are_ no types (just key-value pairs).
+Quest is a "non-typed" language that is designed to allow for efficient code reuse. Similar to dynamically-typed languages in that types aren't relevant, Quest takes this a step further: There _are_ no types (just key-value pairs).
 
 # Features
 Quest supports everything you'd expect from a programming language and more!
