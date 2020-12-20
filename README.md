@@ -4,9 +4,6 @@
 
 A language based around extensibility and freedom
 
-# What's Quest
-Quest is a "non-typed" language that is designed to allow for efficient code reuse. Similar to dynamically-typed languages in that types aren't relevant, Quest takes this a step further: There _are_ no types (just key-value pairs).
-
 # Features
 Quest supports everything you'd expect from a programming language and more!
 - Simple, but powerful keyword-less syntax.
@@ -15,14 +12,8 @@ Quest supports everything you'd expect from a programming language and more!
 - Attributes and methods can be added to anything (including primitives!).
 - _Everything_ is fair game, including methods defined on primitives.
 
-# Installation
-1. Clone the repo
-2. If you haven't already, [install Rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-3. Run `$ cargo build` to create the project
-4. `./quest [-h] [-f file] [-e script] [-- [args to pass to the quest program]]`
-	- Command-line arguments are passed in the `__args__` method in the base script object.
-
-If all arguments are omitted a REPL instance will be launched.
+# What's Quest
+Quest is a "non-typed" language that is designed to allow for efficient code reuse. Similar to dynamically-typed languages in that types aren't relevant, Quest takes this a step further: There _are_ no types (just key-value pairs).
 
 # Examples
 
@@ -250,6 +241,17 @@ disp(12.__has_attr__('cube')); # => false
 See the `examples` folder for more examples of what Quest can do!
 
 There's also some stuff I've written up in the `docs` that goes more into depth.
+
+
+# Installation
+1. Clone the repo
+2. If you haven't already, [install Rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+3. Run `$ cargo build` to create the project
+4. `./quest [-h] [-f file] [-e script] [-- [args to pass to the quest program]]`
+	- Command-line arguments are passed in the `__args__` method in the base script object.
+
+If all arguments are omitted a REPL instance will be launched.
+
 
 ## TODO
 I should probably add more discussion of Quest's features.
