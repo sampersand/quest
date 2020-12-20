@@ -15,7 +15,7 @@ struct MyClass {
 }
 
 struct MyObject {
-	object_id := int
+	object_id := int # defined by the VM, not modifiable by Quest programs.
 	object_type := Class # (= MyClass)
 	instance_variables := Map<String, Object>
 }
@@ -31,7 +31,6 @@ MyClass = {
 }
 
 MyObject = {
-	"object_id": 12345,
 	"instance_variables": { "name": "Sam", "age": 22 }
 }
 ```
@@ -48,18 +47,16 @@ MyClassWithParents = {
 
 MyObjectWithParents = {
 	"__parents__": [MyClassWithParents],
-	"object_id": 12345,
 	"instance_variables": { "name": "Sam", "age": 22 }
 }
 ```
-Now, whenever you call `my_object.greet()`, it first checks to see if `MyObjectWithParents` "responds" to it (more on this later). If it doesn't (in this case, it'd only respond to `object_id`, `name`, and `age`), it traverses each parent in order, checking to see if that parent responds to it. If `my_obejct.__parents__` contains `MyClassWithParents`, we'll eventually call `MyClassWithParents`'s `greet` function.
+Now, whenever you call `my_object.greet()`, it first checks to see if `MyObjectWithParents` "responds" to it (more on this later). If it doesn't (in this case, it'd only respond to `name`, and `age`), it traverses each parent in order, checking to see if that parent responds to it. If `my_obejct.__parents__` contains `MyClassWithParents`, we'll eventually call `MyClassWithParents`'s `greet` function.
 
 ## Method Resolution
 A quick detour over to method resolution. The way I've laid out the examples above conforms to how many traditional programming languages divide up their classes. But you don't access constants via `MyClass.constants.GREETING` or get instance variables via `MyObject.instance_variables.name`---that'd be horrendous! Quest doesn't make the distinction between constants, instance variables, or even methods. Instead, they're all a part of every object's intrinsic map:
 ```
 MyClassQuestVersion = {
 	"__parents__": [<mixin1>, <mixin2>, ..., <parent class>],
-	"__id__": <int>, # Classes in Quest also have ids.
 	"GREETING": "Hello, world.",
 	"()": <function>, # In quest, the constructor's a function named `()`
 	"greet": <function>
@@ -67,7 +64,6 @@ MyClassQuestVersion = {
 
 MyObjectQuestVersion = {
 	"__parents__": [MyClassQuestVersion],
-	"__id__": 12345, # Quest uses `__id__` instead of `object_id`.
 	"name": "Sam",
 	"age": 22
 }
@@ -75,7 +71,7 @@ MyObjectQuestVersion = {
 (Whenever you attempt to get a value, first every value within the object's checked, after which each parent within `__parents__` is checked.)
 
 ## Objects, Classes, and Mixins are the same concept
-If you look at the example within the `Method Resolution` section, you'll notice that both `MyClassQuestVersion` and `MyObjectQuestVersion` are laid out in the exact same way: `__parents__`, `__id__`, and any other relevant information. This is not a coincidence, as objects and classes are identical in Quest! By abstracting away a lot of OOP concepts, we realize that the mechanism that is used to check for parent classes is the exact same one that's used to check for mixins/interfaces.
+If you look at the example within the `Method Resolution` section, you'll notice that both `MyClassQuestVersion` and `MyObjectQuestVersion` are laid out in the exact same way: `__parents__`, and any other relevant information. This is not a coincidence, as objects and classes are identical in Quest! By abstracting away a lot of OOP concepts, we realize that the mechanism that is used to check for parent classes is the exact same one that's used to check for mixins/interfaces.
 
 Because of this, there's _not a `Map` type in Quest_. (I know, I lied a little.) Since every object _already_ has key-value pairs associated with them, every object can be thought of as a map. (In practice, an empty `Scope` is usually used.)
 
