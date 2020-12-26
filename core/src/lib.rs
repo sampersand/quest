@@ -9,6 +9,7 @@
 //! - [`quest-bin`](#TODO) the quest executable
 #![allow(clippy::pub_enum_variant_names, clippy::tabs_in_doc_comments, clippy::needless_lifetimes)]
 // #![warn(missing_docs)]
+
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
