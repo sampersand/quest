@@ -480,6 +480,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "qvm"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "libc",
+ "static_assertions",
+ "try-traits",
+]
+
+[[package]]
 name = "rand"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -973,6 +983,12 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "try-traits"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9373e3d7b53927daabbec34ebd9cfda454cc0888939e5e3e929c324e0645c1f8"
 
 [[package]]
 name = "unicode-bidi"
