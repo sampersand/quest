@@ -1,8 +1,8 @@
 use try_traits::clone::TryClone;
-use crate::{Value, LMap};
+use crate::{Value, Literal, LMap};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
-use crate::value::allocated::AllocatedType;
+use crate::value::allocated::{Allocated, AllocatedType};
 
 pub struct Object {
 	parents: Vec<Value>,
@@ -125,6 +125,30 @@ impl Object {
 		}
 	}
 
+	pub fn has_attr(&self, attr: Literal) -> bool {
+		self.attrs.has(attr)
+	}
+
+	pub fn call_attr(&self, attr: Literal, args: &[&Value]) -> Value {
+		todo!()
+	}
+
+	pub fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		self.attrs.get(attr)
+	}
+
+	pub fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		self.attrs.get_mut(attr)
+	}
+
+	pub fn set_attr(&mut self, attr: Literal, value: Value) {
+		self.attrs.set(attr, value);
+	}
+
+	pub fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		self.attrs.del(attr)
+	}
+
 	pub fn is_a<T: 'static>(&self) -> bool {
 		TypeId::of::<T>() == self.vtable.type_id()
 	}
@@ -132,13 +156,14 @@ impl Object {
 	pub fn try_into<T: 'static>(self) -> Result<T, Self> {
 		if self.is_a::<T>() {
 			// SAFETY: We just verified `self` is a `T`.
-			Ok(unsafe { self.try_into_unchecked() })
+			Ok(unsafe { self.into_unchecked() })
 		} else {
 			Err(self)
 		}
 	}
 
-	pub unsafe fn try_into_unchecked<T: 'static>(self) -> T {
+	#[inline]
+	pub unsafe fn into_unchecked<T: 'static>(self) -> T {
 		debug_assert!(self.is_a::<T>(), "invalid value given: {:?}", self);
 
 		// SAFETY: it's up to the caller to ensure that `ptr` is a valid `T`.
@@ -154,13 +179,14 @@ impl Object {
 	pub fn try_as_ref<T: QuestObject>(&self) -> Option<&T> {
 		if self.is_a::<T>() {
 			// SAFETY: We just verified `self` is a `T`.
-			Some(unsafe { self.try_as_ref_unchecked() })
+			Some(unsafe { self.as_ref_unchecked() })
 		} else {
 			None
 		}
 	}
 
-	pub unsafe fn try_as_ref_unchecked<T: QuestObject>(&self) -> &T {
+	#[inline]
+	pub unsafe fn as_ref_unchecked<T: QuestObject>(&self) -> &T {
 		debug_assert!(self.is_a::<T>(), "invalid value given: {:?}", self);
 
 		&*(self.data as *const T)
@@ -169,15 +195,87 @@ impl Object {
 	pub fn try_as_mut<T: QuestObject>(&mut self) -> Option<&mut T> {
 		if self.is_a::<T>() {
 			// SAFETY: We just verified `self` is a `T`.
-			Some(unsafe { self.try_as_mut_unchecked() })
+			Some(unsafe { self.as_mut_unchecked() })
 		} else {
 			None
 		}
 	}
 
-	pub unsafe fn try_as_mut_unchecked<T: QuestObject>(&mut self) -> &mut T {
+	#[inline]
+	pub unsafe fn as_mut_unchecked<T: QuestObject>(&mut self) -> &mut T {
 		debug_assert!(self.is_a::<T>(), "invalid value given: {:?}", self);
 
 		&mut *(self.data as *mut T)
+	}
+}
+
+
+const OBJECT_TAG: u64 = 0b00000000;
+// const OBJECT_MASK: u64 = 
+unsafe impl AllocatedType for Object {
+	fn into_alloc(self) -> Allocated {
+		// Allocated::new(Object::new(self))
+		todo!()
+	}
+
+	fn is_alloc_a(alloc: &Allocated) -> bool {
+		todo!()
+	/*
+		Object::try_alloc_as_ref(alloc).map_or(false, Object::is_a::<Self>)
+	*/}
+
+	unsafe fn alloc_into_unchecked(alloc: Allocated) -> Self {
+		todo!()
+	/*
+		debug_assert!(Self::is_alloc_a(&alloc), "invalid value given: {:#?}", alloc);
+		
+		Object::alloc_into_unchecked(alloc).into_unchecked()
+	*/}
+
+	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
+		todo!()
+	/*
+		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
+		
+		Object::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
+	*/}
+
+	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
+		todo!()
+	/*
+		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
+		
+		Object::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
+	*/}
+}
+
+unsafe impl<T: QuestObject> AllocatedType for T {
+	fn into_alloc(self) -> Allocated {
+		Allocated::new(Object::new(self))
+	}
+
+	fn is_alloc_a(alloc: &Allocated) -> bool {
+		Object::try_alloc_as_ref(alloc).map_or(false, Object::is_a::<Self>)
+	}
+
+	#[inline]
+	unsafe fn alloc_into_unchecked(alloc: Allocated) -> Self {
+		debug_assert!(Self::is_alloc_a(&alloc), "invalid value given: {:#?}", alloc);
+		
+		Object::alloc_into_unchecked(alloc).into_unchecked()
+	}
+
+	#[inline]
+	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
+		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
+		
+		Object::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
+	}
+
+	#[inline]
+	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
+		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
+		
+		Object::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
 	}
 }

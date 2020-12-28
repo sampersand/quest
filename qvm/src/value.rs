@@ -10,9 +10,17 @@ pub use smallint::*;
 pub use boolean::*;
 pub use allocated::*;
 
+use crate::Literal;
 use std::fmt::{self, Debug, Formatter};
 
 /// A type that represents any value in Quest.
+// 000...000000 = FALSE (so it can be converted to `false` easily)
+// XXX...XXXXX1 = i64
+// 000...000010 = TRUE
+// 000...000100 = NULL
+// XXX...XXX000 = pointer
+// 000...X10100 = f32
+//
 #[repr(transparent)]
 pub struct Value(u64);
 
@@ -34,7 +42,7 @@ pub struct Value(u64);
 pub unsafe trait QuestValue : Debug + Sized {
 	/// Convert `self` into a [`Value`].
 	fn into_value(self) -> Value {
-		Allocated::new(self).into()
+		Allocated::new(self).into_value()
 	}
 
 	/// Checks to see if a [`Value`] is a `self`.
@@ -63,6 +71,30 @@ pub unsafe trait QuestValue : Debug + Sized {
 		debug_assert!(Self::is_value_a(&value), "invalid value given to `value_into_unchecked`: {:?}", value);
 
 		Allocated::value_into_unchecked(value).into_unchecked()
+	}
+
+	/// Checks to see if the value, or one of its parents, has the given attribute.
+	///
+	/// The default implementation simply checks to see if `get_attr` returns `Some`.
+	fn has_attr(&self, attr: Literal) -> bool {
+		self.get_attr(attr).is_some()
+	}
+
+	/// Returns a reference the value associated with `attr`, defined either on `self` itself, or one of its parents.
+	fn get_attr(&self, attr: Literal) -> Option<&Value>;
+
+	/// Returns a mutable reference the value associated with `attr`, defined either on `self` itself, or one of its
+	/// parents.
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value>;
+
+	/// Deletes the given `attr` on `self`, returning the value associated with it, if it existed.
+	fn del_attr(&mut self, attr: Literal) -> Option<Value>;
+
+	fn set_attr(&mut self, attr: Literal, value: Value);
+
+	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
+		self.get_attr(attr).expect("todo: return value error")
+			.call_attr(Literal::OP_CALL, args)
 	}
 }
 
@@ -96,7 +128,7 @@ pub unsafe trait QuestValueImmediate : QuestValue + Copy {
 	unsafe fn value_copy_unchecked(value: &Value) -> Self {
 		debug_assert!(Self::is_value_a(&value), "invalid value given to `value_copy_unchecked`: {:?}", value);
 
-		// Destructoring it like this is valid because `value` must be a `Self`, per the contract, and 
+		// Destructuring it like this is valid because `value` must be a `Self`, per the contract, and 
 		// `Self` must be `Copy`.
 		Self::value_into_unchecked(Value(value.0))
 	}
@@ -133,11 +165,7 @@ pub unsafe trait QuestValueRef : QuestValue {
 	///
 	/// # Safety
 	/// The `value` must be a valid `Self`.
-	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
-		debug_assert!(Self::is_value_a(value), "invalid value given to `value_as_ref_unchecked`: {:?}", value);
-
-		todo!()
-	}
+	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self;
 
 	/// Tries to convert a mutable reference to a [`Value`] into one for `Self`, returning `None` if the value's not the
 	/// right type.
@@ -157,29 +185,18 @@ pub unsafe trait QuestValueRef : QuestValue {
 	///
 	/// # Safety
 	/// The `value` must be a valid `Self`.
-	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
-		debug_assert!(Self::is_value_a(value), "invalid value given to `value_as_mut_unchecked`: {:?}", value);
-		todo!()
-	}
+	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self;
 }
-
-impl<T: QuestValue> From<T> for Value {
-	#[inline]
-	fn from(data: T) -> Self {
-		data.into_value()
-	}
-}
-
 
 impl Value {
 	/// Creates a new [`Value`] for the given built-in type `T`.
-	pub fn new<T: Into<Self>>(data: T) -> Self {
-		data.into()
+	pub fn new<T: QuestValue>(data: T) -> Self {
+		data.into_value()
 	}
 
 	/// Creates a new [`Value`] for the given `T` by heap allocating it.
 	pub fn new_custom<T>(data: T) -> Self {
-		Allocated::new(data).into()
+		Allocated::new(data).into_value()
 	}
 
 	/// Get the bits of the [`Value`].
@@ -238,7 +255,7 @@ impl Drop for Value {
 impl Value {
 	pub fn try_clone(&self) -> crate::Result<Self> {
 		if let Some(alloc) = self.try_as_ref::<Allocated>() {
-			alloc.try_clone().map(From::from)
+			alloc.try_clone().map(Self::new)
 		} else {
 			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
 			unsafe {
@@ -274,5 +291,85 @@ impl Debug for Value {
 		} else {
 			unreachable!("invalid value given: {:?}", self)
 		}
+	}
+}
+
+enum ValueEnum<'a> {
+	Null,
+	Boolean(bool),
+	SmallInt(SmallInt),
+	Float(Float),
+	Allocated(*const (), std::marker::PhantomData<&'a ()>)
+}
+
+unsafe impl QuestValue for Value {
+	#[inline]
+	fn into_value(self) -> Value {
+		self
+	}
+
+	#[inline]
+	fn is_value_a(value: &Value) -> bool {
+		true
+	}
+
+	#[inline]
+	fn try_value_into(value: Value) -> Result<Self, Value>  {
+		Ok(value)
+	}
+
+	unsafe fn value_into_unchecked(value: Value) -> Self {
+		value
+	}
+
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		unsafe {
+			match self.0 {
+				null::NULL_BITS => Null.get_attr(attr),
+				boolean::TRUE_BITS => true.get_attr(attr),
+				boolean::FALSE_BITS => false.get_attr(attr),
+				_ => todo!()
+			}
+		}
+	}
+
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		todo!()
+	}
+
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		todo!()
+	}
+
+	fn set_attr(&mut self, attr: Literal, value: Value) {
+		todo!()
+	}
+
+	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
+		todo!()
+	}
+}
+
+
+
+unsafe impl QuestValueRef for Value {
+	#[inline]
+	fn try_value_as_ref(value: &Value) -> Option<&Self>  {
+		Some(value)
+	}
+
+	#[inline]
+	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
+		value
+	}
+
+	#[inline]
+	fn try_value_as_mut(value: &mut Value) -> Option<&mut Self> {
+		Some(value)
+	}
+
+	#[inline]
+	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
+		value
 	}
 }

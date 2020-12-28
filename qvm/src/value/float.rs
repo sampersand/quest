@@ -1,4 +1,4 @@
-use crate::value::{Value, QuestValue};
+use crate::value::{Value, Literal, QuestValue};
 
 pub type Float = f32;
 
@@ -25,5 +25,22 @@ unsafe impl QuestValue for Float {
 		debug_assert_eq!(0, (value.bits() >> FLOAT_SHIFT) & !(u32::MAX as u64));
 
 		Self::from_bits((value.bits() >> FLOAT_SHIFT) as u32)
+	}
+
+
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		todo!()
+	}
+
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		todo!()
+	}
+
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		todo!()
+	}
+
+	fn set_attr(&mut self, attr: Literal, value: Value) {
+		todo!()
 	}
 }

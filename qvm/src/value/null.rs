@@ -1,9 +1,9 @@
-use crate::value::{Value, QuestValue};
+use crate::value::{Value, QuestValue, Literal};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Null;
 
-const NULL_BITS: u64 = 0b00100;
+pub(super) const NULL_BITS: u64 = 0b00100;
 
 unsafe impl QuestValue for Null {
 	#[inline]
@@ -24,5 +24,21 @@ unsafe impl QuestValue for Null {
 		debug_assert!(value.is_a::<Self>());
 
 		Self
+	}
+
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		todo!()
+	}
+
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		todo!()
+	}
+
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		todo!()
+	}
+
+	fn set_attr(&mut self, attr: Literal, value: Value) {
+		todo!()
 	}
 }

@@ -1,10 +1,10 @@
-use crate::value::{Value, QuestValue};
+use crate::value::{Value, QuestValue, Literal};
 
 pub type Boolean = bool;
 
 // Note: It's defined as `0` so it can easily be cast to false in Rust.
-const FALSE_BITS: u64 = 0b00;
-const TRUE_BITS: u64 =  0b10;
+pub(super) const FALSE_BITS: u64 = 0b00;
+pub(super) const TRUE_BITS: u64 =  0b10;
 
 unsafe impl QuestValue for Boolean {
 	#[inline]
@@ -30,6 +30,22 @@ unsafe impl QuestValue for Boolean {
 		debug_assert!(value.is_a::<Self>());
 
 		value.bits() != FALSE_BITS
+	}
+
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		todo!()
+	}
+
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		todo!()
+	}
+
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		todo!()
+	}
+
+	fn set_attr(&mut self, attr: Literal, value: Value) {
+		todo!()
 	}
 }
 

@@ -1,4 +1,4 @@
-use crate::value::{Value, QuestValue};
+use crate::value::{Value, QuestValue, Literal};
 use std::fmt::{self, Display, Formatter};
 
 /// A small number in Quest, ie fittable within a [`Value`].
@@ -52,8 +52,8 @@ impl SmallInt {
 
 }
 
-impl From<i32> for Value {
-	fn from(num: i32) -> Self {
+impl Value {
+	pub fn new_smallint(num: i32) -> Self {
 		// SAFETY: All `i32`s are valid `i63`s trivially.
 		Self::new(unsafe { SmallInt::new_unchecked(num as i64) })
 	}
@@ -87,6 +87,22 @@ unsafe impl QuestValue for SmallInt {
 		unsafe {
 			Self::new_unchecked((value.bits() as i64) >> SMALLINT_SHIFT)
 		}
+	}
+
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		todo!()
+	}
+
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		todo!()
+	}
+
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		todo!()
+	}
+
+	fn set_attr(&mut self, attr: Literal, value: Value) {
+		todo!()
 	}
 }
 
