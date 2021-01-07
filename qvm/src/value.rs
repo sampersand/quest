@@ -15,7 +15,7 @@ use std::fmt::{self, Debug, Formatter};
 
 /// A type that represents any value in Quest.
 // 000...000000 = FALSE (so it can be converted to `false` easily)
-// XXX...XXXXX1 = i64
+// XXX...XXXXX1 = i63
 // 000...000010 = TRUE
 // 000...000100 = NULL
 // XXX...XXX000 = pointer
