@@ -1,13 +1,15 @@
-mod float;
+	mod float;
 mod boolean;
 mod smallint;
 mod null;
+mod rustfn;
 mod allocated;
 
 pub use null::*;
 pub use float::*;
 pub use smallint::*;
 pub use boolean::*;
+pub use rustfn::RustFn;
 pub use allocated::*;
 
 use crate::Literal;
@@ -18,7 +20,8 @@ use std::fmt::{self, Debug, Formatter};
 // XXX...XXXXX1 = i64
 // 000...000010 = TRUE
 // 000...000100 = NULL
-// XXX...XXX000 = pointer
+// XXX...XXX110 = rustfn
+// XXX...XXX000 = allocated
 // 000...X10100 = f32
 //
 #[repr(transparent)]
@@ -47,7 +50,7 @@ pub unsafe trait QuestValue : Debug + Sized {
 
 	/// Checks to see if a [`Value`] is a `self`.
 	fn is_value_a(value: &Value) -> bool {
-		value.try_as_ref::<Allocated>().map_or(false, Allocated::is_alloc_a::<Self>)
+		value.downcast::<Allocated>().map_or(false, Allocated::is_alloc_a::<Self>)
 	}
 
 	/// Tries to unpack `value` into `Self`, returning `Err(Value)` if the value's not the right type
@@ -188,6 +191,10 @@ pub unsafe trait QuestValueRef : QuestValue {
 	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self;
 }
 
+pub trait QuestConvertible : QuestValue {
+	const CONVERT_FUNCTION: Literal;
+}
+
 impl Value {
 	/// Creates a new [`Value`] for the given built-in type `T`.
 	pub fn new<T: QuestValue>(data: T) -> Self {
@@ -220,29 +227,41 @@ impl Value {
 	}
 
 	#[inline]
-	pub fn try_into<T: QuestValue>(self) -> Result<T, Self> {
-		T::try_value_into(self)
-	}
-
-	#[inline]
-	pub fn try_copy<T: QuestValueImmediate>(&self) -> Option<T> {
-		T::try_value_copy(self)
-	}
-
-	#[inline]
-	pub fn try_as_ref<T: QuestValueRef>(&self) -> Option<&T> {
+	pub fn downcast<T: QuestValueRef>(&self) -> Option<&T> {
 		T::try_value_as_ref(self)
 	}
 
 	#[inline]
-	pub fn try_as_mut<T: QuestValueRef>(&mut self) -> Option<&mut T> {
+	pub fn downcast_mut<T: QuestValueRef>(&mut self) -> Option<&mut T> {
 		T::try_value_as_mut(self)
+	}
+
+	#[inline]
+	pub fn downcast_into<T: QuestValue>(self) -> Result<T, Self> {
+		T::try_value_into(self)
+	}
+
+	#[inline]
+	pub fn downcast_copy<T: QuestValueImmediate>(&self) -> Option<T> {
+		T::try_value_copy(self)
+	}
+
+	#[inline]
+	pub fn downcast_call<T: QuestValue>(self) -> crate::Result<T> {
+		if self.is_a::<T>() {
+			// safety: we just verified it was a `T`.
+			unsafe {
+				Ok(T::value_into_unchecked(self))
+			}
+		} else {
+			todo!()
+		}
 	}
 }
 
 impl Drop for Value {
 	fn drop(&mut self) {
-		if let Some(alloc_ref_mut) = self.try_as_mut::<Allocated>() {
+		if let Some(alloc_ref_mut) = self.downcast_mut::<Allocated>() {
 			// SAFETY: since we're in `drop`, we know we won't be used again, and 
 			// we know `Value`s always house valid pointers.
 			unsafe {
@@ -254,7 +273,7 @@ impl Drop for Value {
 
 impl Value {
 	pub fn try_clone(&self) -> crate::Result<Self> {
-		if let Some(alloc) = self.try_as_ref::<Allocated>() {
+		if let Some(alloc) = self.downcast::<Allocated>() {
 			alloc.try_clone().map(Self::new)
 		} else {
 			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
@@ -280,26 +299,18 @@ impl Debug for Value {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		if self.is_a::<Null>() {
 			Debug::fmt(&Null, f)
-		} else if let Some(boolean) = self.try_copy::<Boolean>() {
+		} else if let Some(boolean) = self.downcast_copy::<Boolean>() {
 			Debug::fmt(&boolean, f)
-		} else if let Some(integer) = self.try_copy::<SmallInt>() {
+		} else if let Some(integer) = self.downcast_copy::<SmallInt>() {
 			Debug::fmt(&integer, f)
-		} else if let Some(float) = self.try_copy::<Float>() {
+		} else if let Some(float) = self.downcast_copy::<Float>() {
 			Debug::fmt(&float, f)
-		} else if let Some(alloc) = self.try_as_ref::<Allocated>() {
+		} else if let Some(alloc) = self.downcast::<Allocated>() {
 			Debug::fmt(alloc, f)
 		} else {
 			unreachable!("invalid value given: {:?}", self)
 		}
 	}
-}
-
-enum ValueEnum<'a> {
-	Null,
-	Boolean(bool),
-	SmallInt(SmallInt),
-	Float(Float),
-	Allocated(*const (), std::marker::PhantomData<&'a ()>)
 }
 
 unsafe impl QuestValue for Value {
@@ -323,14 +334,21 @@ unsafe impl QuestValue for Value {
 	}
 
 	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		unsafe {
-			match self.0 {
-				null::NULL_BITS => Null.get_attr(attr),
-				boolean::TRUE_BITS => true.get_attr(attr),
-				boolean::FALSE_BITS => false.get_attr(attr),
-				_ => todo!()
-			}
-		}
+		todo!()
+		// if let Some(allocated) = self.downcast::<Allocated>()  {
+		// 	allocated.get_attr(attr)
+		// } else if let Some(smallint) = self.downcast_copy::<SmallInt>() {
+		// 	S
+		// }
+		// unsafe {
+		// 	match self.0 {
+		// 		null::NULL_BITS => Null.get_attr(attr),
+		// 		boolean::TRUE_BITS => true.get_attr(attr),
+		// 		boolean::FALSE_BITS => false.get_attr(attr),
+		// 		bits if Number::
+		// 		_ => todo!()
+		// 	}
+		// }
 	}
 
 	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {

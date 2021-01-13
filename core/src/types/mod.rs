@@ -29,7 +29,6 @@ mod kernel;
 mod basic;
 
 mod function;
-mod iterable_old;
 pub mod iterable;
 mod comparable;
 mod bound_function;

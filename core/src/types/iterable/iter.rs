@@ -253,6 +253,29 @@ impl Iter {
 		})
 	}
 
+	/// Yields arrays of size `amount`.
+	pub fn windows(mut self, amount: usize) -> Self {
+		use std::collections::VecDeque;
+
+		let mut window = VecDeque::with_capacity(amount);
+
+		Self::from_fn(move || {
+			while window.len() < amount {
+				match self.next() {
+					Some(Ok(object)) => window.push_back(object),
+					Some(Err(err)) => return Some(Err(err)),
+					None => return None
+				}
+			}
+
+			let ret = Object::from(window.iter().cloned().collect::<Vec<_>>());
+
+			window.pop_front();
+
+			Some(Ok(ret))
+		})
+	}
+
 	/// Cycles either `n` times, or forever if `None` is passed.
 	pub fn cycle(self, amount: Option<usize>) -> Self {
 		match amount {

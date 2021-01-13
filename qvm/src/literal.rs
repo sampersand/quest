@@ -1,7 +1,6 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Literal(u32);
 
-
 macro_rules! declare_literals {
 	($($name:ident($string:literal))+) => {
 		impl Literal {
@@ -29,6 +28,9 @@ macro_rules! declare_literals {
 }
 
 declare_literals! {
+	AT_BOOL("@bool") AT_NUM("@num") AT_TEXT("@text")
+	AT_LIST("@list") AT_MAP("@map")
+
 	// Operators
 	OP_POS("+@") OP_NEG("-@")
 	OP_ADD("+") OP_ADD_EQ("+=") OP_SUB("-") OP_SUB_EQ("-=") OP_MUL("*")  OP_MUL_EQ("*=")

@@ -1,4 +1,4 @@
-# I currently haven't implemented a "read file" functionality yet...
+# I currently haven't implemented a true "import" functionality et
 Io.File("./frac.qs").read().eval();
 half = Frac(1, 2);
 

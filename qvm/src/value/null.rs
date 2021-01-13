@@ -20,6 +20,15 @@ unsafe impl QuestValue for Null {
 	}
 
 	#[inline]
+	fn try_value_into(value: Value) -> Result<Self, Value>  {
+		if Self::is_value_a(&value) {
+			Ok(Self)
+		} else {
+			Err(value)
+		}
+	}
+
+	#[inline]
 	unsafe fn value_into_unchecked(value: Value) -> Self {
 		debug_assert!(value.is_a::<Self>());
 

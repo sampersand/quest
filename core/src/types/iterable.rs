@@ -244,6 +244,17 @@ impl Iterable {
 		}).into())
 	}
 
+	#[instrument(name="Iterable::windows", level="trace", skip(this, args), fields(self=?this, ?args))]
+	pub fn qs_windows(this: &Object, args: Args) -> crate::Result<Object> {
+		let this = this.call_downcast::<Iter>()?.clone();
+		let amnt = args.try_arg(0)?.call_downcast::<Number>()?.truncate();
+
+		if amnt <= 0 {
+			Err(ArgumentError::Messaged(format!("nonpositive number given to windows: '{}'", amnt)).into())
+		} else {
+			Ok(this.windows(amnt as usize).into())
+		}
+	}
 
 	#[instrument(name="Iterable::cycle", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_cycle(this: &Object, args: Args) -> crate::Result<Object> {
@@ -283,7 +294,6 @@ impl Iterable {
 	pub fn qs_find_first(this: &Object, args: Args) -> crate::Result<Object> {
 		todo!();
 	}
-
 
 
 	#[instrument(name="Iterable::sum", level="trace", skip(this), fields(self=?this))]
@@ -337,7 +347,12 @@ impl Iterable {
 
 	#[instrument(name="Iterable::min", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_min(this: &Object, args: Args) -> crate::Result<Object> {
-		todo!();
+		let this = this.call_downcast::<Iter>()?.clone();
+
+		let min =
+			if let Some(start) = args.arg(0).cloned().or_else(|| this.next());
+
+		panic!();
 	}
 
 	#[instrument(name="Iterable::max", level="trace", skip(this, args), fields(self=?this, ?args))]
@@ -520,6 +535,7 @@ impl_object_type! { for Iterable [(parents super::Class)]:
 	"chunk"       => method Self::qs_chunk,
 	"chunk_while" => method Self::qs_chunk_while,
 	"chunk_until" => method Self::qs_chunk_until,
+	"windows"     => method Self::qs_windows,
 	"sum"         => method Self::qs_sum,
 	"prod"        => method Self::qs_prod,
 	"unique"      => method Self::qs_unique,

@@ -194,6 +194,14 @@ impl Basic {
 		Ok(this.clone())
 	}
 
+	/// Simply returns the first argument given.
+	#[instrument(name="Basic::;", level="trace", skip(this, args), fields(self=?this, args))]
+	pub fn qs_semicolon(this: &Object, args: Args) -> Result<Object> {
+		let _ = this;
+
+		Ok(args.try_arg(0)?.clone())
+	}
+
 	/// Calls the given function with `self`, returning `self`.
 	#[instrument(name="Basic::tap", level="trace", skip(this, args), fields(self=?this, args))]
 	pub fn qs_tap(this: &Object, args: Args) -> Result<Object> {
@@ -225,6 +233,7 @@ for Basic [(parents super::Pristine)]:
 	"itself" => method Self::qs_itself,
 	"tap" => method Self::qs_tap,
 	"tap_into" => method Self::qs_tap_into,
+	";" => method Self::qs_semicolon,
 
 	// TODO: move these out of kernel
 	"if" => method super::Kernel::qs_if, 

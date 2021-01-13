@@ -192,6 +192,7 @@ macro_rules! impl_object_type {
 				const INIT: bool = true;
 				static INITIALIZE: AtomicBool = AtomicBool::new(UNINIT);
 
+				#[allow(deprecated)]
 				if INITIALIZE.compare_and_swap(UNINIT, INIT, Ordering::SeqCst) == INIT {
 					return Ok(());
 				}
