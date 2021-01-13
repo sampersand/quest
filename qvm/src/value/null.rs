@@ -6,6 +6,8 @@ pub struct Null;
 pub(super) const NULL_BITS: u64 = 0b00100;
 
 unsafe impl QuestValue for Null {
+	const TYPENAME: &'static str = "qvm::Null";
+
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.

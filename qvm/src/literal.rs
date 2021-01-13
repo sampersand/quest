@@ -1,6 +1,13 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Literal(u32);
 
+impl Literal {
+	pub fn new(word: &'static str) -> Self {
+		let _ = word;
+		todo!();
+	}
+}
+
 macro_rules! declare_literals {
 	($($name:ident($string:literal))+) => {
 		impl Literal {

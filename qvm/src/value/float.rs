@@ -7,6 +7,8 @@ const FLOAT_SHIFT: u64 = 0b00010000;
 const FLOAT_MASK: u64  = 0b00011111;
 
 unsafe impl QuestValue for Float {
+	const TYPENAME: &'static str = "qvm::Float";
+
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.

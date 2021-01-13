@@ -16,6 +16,8 @@ impl Boolean {
 }
 
 unsafe impl QuestValue for Boolean {
+	const TYPENAME: &'static str = "qvm::Boolean";
+
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid boolean.
@@ -68,12 +70,6 @@ impl Boolean {
 		Ok(Value::new(*self))
 	}
 
-	pub fn bar() -> crate::value::RustFn {
-		// rustfn_method!(Boolean, "@bool", )
-		// RustFn::new("", |a, b| {
-		// 	a.downcast::<Boolean>
-		// })
-	}
 }
 // mod fns {
 // 	use super::*;

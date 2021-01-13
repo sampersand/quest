@@ -54,6 +54,8 @@ const RUSTFN_SHIFT: u64 = 0b00000100;
 const RUSTFN_MASK: u64  = 0b00000111;
 
 unsafe impl QuestValue for RustFn {
+	const TYPENAME: &'static str = "qvm::RustFn";
+
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.

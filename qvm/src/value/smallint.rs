@@ -68,6 +68,8 @@ const SMALLINT_SHIFT: u64 = 1;
 // This works because all of the allocated objects are pointers, which haven an alignment of 8, and thus cannot have a
 // least-significant-bit of `1`. No other types are defined to have odd values.
 unsafe impl QuestValue for SmallInt {
+	const TYPENAME: &'static str = "qvm::SmallInt";
+
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: We are defining what it means to be a valid smallint here.

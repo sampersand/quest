@@ -149,6 +149,10 @@ impl Allocated {
 	pub unsafe fn into_unchecked<T>(self) -> T {
 		todo!()
 	}
+
+	pub fn typename(&self) -> &'static str {
+		todo!()
+	}
 }
 
 const ALLOC_MASK: u64  = 0b00000111;
@@ -156,6 +160,8 @@ const ALLOC_TAG: u64   = 0b00000000;
 const ALLOC_SHIFT: u64 = 0b00000000;
 
 unsafe impl QuestValue for Allocated {
+	const TYPENAME: &'static str = "qvm::Allocated";
+
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid pointer.
 		unsafe {
@@ -232,5 +238,11 @@ impl Allocated {
 impl Drop for Allocated {
 	fn drop(&mut self) {
 		todo!();
+	}
+}
+
+impl Clone for Allocated {
+	fn clone(&self) -> Self {
+		todo!()
 	}
 }

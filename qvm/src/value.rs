@@ -1,4 +1,4 @@
-	mod float;
+mod float;
 mod boolean;
 mod smallint;
 mod null;
@@ -43,6 +43,9 @@ pub struct Value(u64);
 ///
 /// If left unchanged, the default implementation of [`QuestValue`] does all this correctly.
 pub unsafe trait QuestValue : Debug + Sized {
+	/// Gets the name of this type.
+	const TYPENAME: &'static str;
+
 	/// Convert `self` into a [`Value`].
 	fn into_value(self) -> Value {
 		Allocated::new(self).into_value()
@@ -220,6 +223,39 @@ impl Value {
 		Self(bits)
 	}
 
+	pub fn id(&self) -> usize {
+		self.0 as usize
+	}
+
+	pub fn typename(&self) -> &'static str {
+		if self.is_a::<Null>() {
+			Null::TYPENAME
+		} else if self.is_a::<Boolean>() {
+			Boolean::TYPENAME
+		} else if self.is_a::<SmallInt>() {
+			SmallInt::TYPENAME
+		} else if self.is_a::<Float>() {
+			Float::TYPENAME
+		} else if let Some(alloc) = self.downcast::<Allocated>() {
+			alloc.typename()
+		} else {
+			unreachable!("invalid value given: {:?}", self)
+		}
+	}
+
+	/// Copies the actual data of the object.
+	///
+	/// When you [`clone()`] a [`Value`], you're actually just creating another reference to the
+	/// same object in memory. This actually creates another distinct object.
+	pub fn deep_clone(&self) -> Self {
+		if let Some(alloc) = self.downcast::<Allocated>() {
+			// alloc.deep_clone().into_value()
+			todo!()
+		} else {
+			Self(self.0)
+		}
+	}
+
 	/// Checks to see if `self` is a `T`.
 	#[inline]
 	pub fn is_a<T: QuestValue>(&self) -> bool {
@@ -314,6 +350,8 @@ impl Debug for Value {
 }
 
 unsafe impl QuestValue for Value {
+	const TYPENAME: &'static str = "qvm::Value";
+
 	#[inline]
 	fn into_value(self) -> Value {
 		self
@@ -368,8 +406,6 @@ unsafe impl QuestValue for Value {
 	}
 }
 
-
-
 unsafe impl QuestValueRef for Value {
 	#[inline]
 	fn try_value_as_ref(value: &Value) -> Option<&Self>  {
@@ -389,5 +425,15 @@ unsafe impl QuestValueRef for Value {
 	#[inline]
 	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
 		value
+	}
+}
+
+impl Clone for Value {
+	fn clone(&self) -> Self {
+		if let Some(alloc) = self.downcast::<Allocated>() {
+			alloc.clone().into_value()
+		} else {
+			Self(self.0)
+		}
 	}
 }
