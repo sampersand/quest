@@ -28,7 +28,7 @@ use std::fmt::{self, Debug, Formatter};
 pub struct Value(u64);
 
 #[cfg(test)]
-mod tests {
+mod basic {
 	use super::*;
 
 	#[test]
@@ -515,3 +515,49 @@ impl Clone for Value {
 		}
 	}
 }
+
+#[cfg(test)]
+mod name {
+	use super::*;
+
+	#[derive(Debug, PartialEq, Eq)]
+	struct Custom(u64);
+
+	#[test]
+	fn all_16_bit_reprs_are_valid() {
+		crate::literal::initialize();
+		for i in 0..0xffffu64 {
+			let value = Value(i);
+
+			// we are intentionally ignoring stuff
+			let _ = Literal::intern(i.to_string());
+
+			assert_eq!(i == 0b000, value.downcast_copy() == Some(Boolean::new(false)));
+			// assert_eq!(i & 0b111 == 0, value.downcast::<Allocated>().is_some());
+			assert_eq!(i & 1 == 1, value.downcast_copy() == Some(SmallInt::new((i >> 1) as i64).unwrap()));
+			assert_eq!(i == 0b010, value.downcast_copy() == Some(Boolean::new(true)));
+			assert_eq!(i == 0b100, value.downcast_copy() == Some(Null));
+
+
+			assert_eq!(
+				i & 0b111 == 0b010 && i != 0b010,
+				value.downcast_copy::<Literal>().map(|l| l.bits() as u64) == Some(i),
+				"{:b} {:?}", i, 3
+			);
+
+			assert_eq!(
+				i & 0b111 == 0b100 && i != 0b100,
+				value.downcast_copy::<BuiltinFn>().is_some(), "bad i: {:?}", i
+			);
+
+			assert_eq!(
+				i & 0b111 == 0b110 && i != 0b110,
+				value.downcast_copy::<f32>().map(f32::to_bits) == Some(i as u32),
+			);
+
+			std::mem::forget(value);
+		}
+	}
+}
+
+

@@ -109,7 +109,7 @@ unsafe impl QuestValue for BuiltinFn {
 
 	#[inline]
 	fn is_value_a(value: &Value) -> bool {
-		(value.bits() & BUILTINFN_MASK) == BUILTINFN_TAG
+		(value.bits() & BUILTINFN_MASK) == BUILTINFN_TAG && value.bits() != BUILTINFN_TAG
 	}
 
 	/// Note the value has to have been a valid builtinfn.

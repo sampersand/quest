@@ -17,10 +17,10 @@ pub fn initialize() {
 	static ONCE: Once = Once::new();
 
 	ONCE.call_once(|| {
-		let mut map = LITERAL_TO_STR.write();
+		let mut map = STR_TO_LITERAL.write();
 
-		for (lit, repr) in BUILTIN_REPRS.iter().enumerate().skip(1) {
-			map.insert(Literal(lit as u32), repr);
+		for (lit, repr) in BUILTIN_REPRS.iter().enumerate() {
+			map.insert(repr, Literal(lit as u32 + 1));
 		}
 	})
 }
@@ -35,6 +35,7 @@ impl Literal {
 	}
 
 	pub fn new(repr: &'static str) -> Self {
+		dbg!(Self::ONE_PAST_MAX_BUILTIN);
 		match STR_TO_LITERAL.write().entry(repr) {
 			Entry::Occupied(entry) => *entry.get(),
 			Entry::Vacant(entry) => {
@@ -46,14 +47,27 @@ impl Literal {
 		}
 	}
 
+	/// Creates a new `Literal` from its bits, without checking to make sure those bits are valid.
+	///
+	/// # Safety
+	/// The caller must ensure that the bits are valid.
+	pub unsafe fn from_bits_unchecked(bits: u32) -> Self {
+		let literal = Self(bits);
+
+		debug_assert!(LITERAL_TO_STR.read().contains_key(&literal));
+
+		literal
+	}
+
+	#[must_use="this will leak memory if not used."]
 	pub fn intern(repr: impl AsRef<str>) -> Self {
 		let repr = repr.as_ref();
 
 		if let Some(literal) = STR_TO_LITERAL.read().get(repr) {
-			*literal
-		} else {
-			Self::new(Box::leak(repr.to_string().into_boxed_str()))
+			return *literal;
 		}
+
+		Self::new(Box::leak(repr.to_string().into_boxed_str()))
 	}
 
 	pub fn repr(self) -> &'static str {
@@ -66,6 +80,9 @@ impl Literal {
 				.expect("somehow got an unmapped literal?")
 		}
 	}
+
+	#[cfg(test)]
+	pub(crate) fn bits(&self) -> u32 { self.0 }
 }
 
 
@@ -93,7 +110,9 @@ unsafe impl QuestValue for Literal {
 	}
 
 	fn is_value_a(value: &Value) -> bool {
-		(value.bits() & LITERAL_MASK) == LITERAL_TAG && (value.bits() >> LITERAL_SHIFT != 0)
+		dbg!(value.bits());
+		dbg!((value.bits() & LITERAL_MASK) == LITERAL_TAG, value.bits() != LITERAL_TAG);
+		(value.bits() & LITERAL_MASK) == LITERAL_TAG && value.bits() != LITERAL_TAG
 	}
 
 	unsafe fn value_into_unchecked(value: Value) -> Self {
