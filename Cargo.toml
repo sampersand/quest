@@ -3,7 +3,7 @@ members = [
 	"core",
 	"parser",
 	"bin",
-	# "qvm"
+	"qvm"
 ]
 
 

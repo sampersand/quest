@@ -2,9 +2,9 @@ use crate::value::{Value, Literal, QuestValue};
 
 pub type Float = f32;
 
-const FLOAT_TAG: u64   = 0b00010100;
-const FLOAT_SHIFT: u64 = 0b00010000;
-const FLOAT_MASK: u64  = 0b00011111;
+const FLOAT_TAG: u64   = 0b0110;
+const FLOAT_SHIFT: u64 = 0b0100;
+const FLOAT_MASK: u64  = 0b0111;
 
 unsafe impl QuestValue for Float {
 	const TYPENAME: &'static str = "qvm::Float";

@@ -15,7 +15,6 @@ mod alloc;
 mod eval;
 pub mod value;
 
-
 pub use value::{Value, QuestValue};
 pub use lmap::LMap;
 pub use literal::Literal;
@@ -25,3 +24,7 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+pub fn initialize() {
+	literal::initialize();
+}

@@ -155,9 +155,9 @@ impl Allocated {
 	}
 }
 
-const ALLOC_MASK: u64  = 0b00000111;
-const ALLOC_TAG: u64   = 0b00000000;
-const ALLOC_SHIFT: u64 = 0b00000000;
+const ALLOC_MASK: u64  = 0b0111;
+const ALLOC_TAG: u64   = 0b0000;
+const ALLOC_SHIFT: u64 = 0b0000;
 
 unsafe impl QuestValue for Allocated {
 	const TYPENAME: &'static str = "qvm::Allocated";

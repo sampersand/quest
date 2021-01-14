@@ -1,27 +1,140 @@
+use crate::{QuestValue, Value};
+use std::fmt::{self, Display, Formatter};
+use std::collections::hash_map::{HashMap, Entry};
+use parking_lot::RwLock;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Once;
+
+lazy_static::lazy_static! {
+	static ref STR_TO_LITERAL: RwLock<HashMap<&'static str, Literal>> = RwLock::new(HashMap::new());
+	static ref LITERAL_TO_STR: RwLock<HashMap<Literal, &'static str>> =
+		RwLock::new(HashMap::with_capacity(Literal::ONE_PAST_MAX_BUILTIN as usize));
+}
+
+static NEXT_ID: AtomicU32 = AtomicU32::new(Literal::ONE_PAST_MAX_BUILTIN);
+
+pub fn initialize() {
+	static ONCE: Once = Once::new();
+
+	ONCE.call_once(|| {
+		let mut map = LITERAL_TO_STR.write();
+
+		for (lit, repr) in BUILTIN_REPRS.iter().enumerate().skip(1) {
+			map.insert(Literal(lit as u32), repr);
+		}
+	})
+}
+
+/// NOTE: Literals must start at one; a literal with id 0 is actually a different type's representation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Literal(u32);
 
 impl Literal {
-	pub fn new(word: &'static str) -> Self {
-		let _ = word;
-		todo!();
+	const fn is_builtin(self) -> bool {
+		self.0 < Self::ONE_PAST_MAX_BUILTIN
+	}
+
+	pub fn new(repr: &'static str) -> Self {
+		match STR_TO_LITERAL.write().entry(repr) {
+			Entry::Occupied(entry) => *entry.get(),
+			Entry::Vacant(entry) => {
+				let literal = Self(NEXT_ID.fetch_add(1, Ordering::Relaxed));
+				entry.insert(literal);
+				LITERAL_TO_STR.write().insert(literal, repr);
+				literal
+			}
+		}
+	}
+
+	pub fn intern(repr: impl AsRef<str>) -> Self {
+		let repr = repr.as_ref();
+
+		if let Some(literal) = STR_TO_LITERAL.read().get(repr) {
+			*literal
+		} else {
+			Self::new(Box::leak(repr.to_string().into_boxed_str()))
+		}
+	}
+
+	pub fn repr(self) -> &'static str {
+		if self.is_builtin() {
+			BUILTIN_REPRS[self.0 as usize]
+		} else {
+			LITERAL_TO_STR
+				.read()
+				.get(&self)
+				.expect("somehow got an unmapped literal?")
+		}
+	}
+}
+
+
+impl Display for Literal {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		Display::fmt(&self.repr(), f)
+	}
+}
+
+
+
+const LITERAL_MASK: u64  = 0b0111;
+const LITERAL_TAG: u64   = 0b0010;
+const LITERAL_SHIFT: u64 = 0b0100;
+
+unsafe impl QuestValue for Literal {
+	const TYPENAME: &'static str = "qvm::Literal";
+
+	fn into_value(self) -> Value {
+		debug_assert_ne!(self.0, 0);
+		// SAFETY: we're defining what it means to be a literal here.
+		unsafe {
+			Value::from_bits_unchecked(((self.0 as u64) << LITERAL_SHIFT) | LITERAL_TAG)
+		}
+	}
+
+	fn is_value_a(value: &Value) -> bool {
+		(value.bits() & LITERAL_MASK) == LITERAL_TAG && (value.bits() >> LITERAL_SHIFT != 0)
+	}
+
+	unsafe fn value_into_unchecked(value: Value) -> Self {
+		debug_assert!(Self::is_value_a(&value), "invalid value given to `value_into_unchecked`: {:?}", value);
+
+		let literal_bits = value.bits() >> LITERAL_SHIFT;
+		debug_assert_eq!(literal_bits as u32 as u64, literal_bits); // ie it's only the bottom 32 bits.
+
+		Self(literal_bits as u32)
+	}
+
+	fn has_attr(&self, attr: Literal) -> bool {
+		todo!()
+	}
+
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		todo!()
+	}
+
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		todo!()
+	}
+
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		todo!()
+	}
+
+	fn set_attr(&mut self, attr: Literal, value: Value) {
+		todo!()
 	}
 }
 
 macro_rules! declare_literals {
 	($($name:ident($string:literal))+) => {
+		static BUILTIN_REPRS: [&'static str; Literal::ONE_PAST_MAX_BUILTIN as usize] = ["", $($string),*];
+
+
 		impl Literal {
-			declare_literals!(0,$($name)+);
+			const __DONTUSE: Self = Self(0);
 
-			pub fn repr(self) -> &'static str {
-				const BUILTIN_REPRS: [&'static str; Literal::ONE_PAST_MAX_BUILTIN as usize] = [$($string),*];
-
-				if self.0 < Self::ONE_PAST_MAX_BUILTIN {
-					BUILTIN_REPRS[self.0 as usize]
-				} else {
-					todo!()
-				}
-			}
+			declare_literals!(1, $($name)+);
 		}
 	};
 	($num:expr, $name:ident $($rest:ident)*) => {
@@ -59,3 +172,4 @@ declare_literals! {
 	// Class Names
 	// CL_OBJECT("Object") CL_
 }
+

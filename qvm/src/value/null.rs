@@ -3,7 +3,7 @@ use crate::value::{Value, QuestValue, Literal};
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Null;
 
-pub(super) const NULL_BITS: u64 = 0b00100;
+pub(super) const NULL_BITS: u64 = 0b0100;
 
 unsafe impl QuestValue for Null {
 	const TYPENAME: &'static str = "qvm::Null";

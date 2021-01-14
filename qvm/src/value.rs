@@ -2,30 +2,108 @@ mod float;
 mod boolean;
 mod smallint;
 mod null;
-mod rustfn;
+mod builtinfn;
 mod allocated;
 
 pub use null::*;
 pub use float::*;
 pub use smallint::*;
 pub use boolean::*;
-pub use rustfn::RustFn;
+pub use builtinfn::BuiltinFn;
 pub use allocated::*;
 
 use crate::Literal;
 use std::fmt::{self, Debug, Formatter};
 
 /// A type that represents any value in Quest.
-// 000...000000 = FALSE (so it can be converted to `false` easily)
-// XXX...XXXXX1 = i63
-// 000...000010 = TRUE
-// 000...000100 = NULL
-// XXX...XXX110 = rustfn
-// XXX...XXX000 = allocated
-// 000...X10100 = f32
-//
+// 000...000 0000 = FALSE (so it can be converted to `false` easily)
+// XXX...XXX X000 = allocated
+// XXX...XXX XXX1 = i63
+// 000...000 0010 = TRUE
+// 000...XXX X010 = literal (X=32 bits; nonzero.)
+// 000...000 0100 = NULL
+// XXX...XXX X100 = builtinfn
+// 000...XXX X110 = f32 (X=32 bits)
 #[repr(transparent)]
 pub struct Value(u64);
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn false_is_zero() {
+		let value = Value::new(Boolean::new(false));
+
+		assert_eq!(value.0, 0);
+		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(false)));
+	}
+
+	#[test]
+	fn allocated_has_lower_3_bits_zero() {
+		#[derive(Debug, PartialEq, Eq)]
+		struct Custom(u64);
+
+		let allocated = Value::new_custom::<Custom>(Custom(123));
+		assert_eq!(allocated.0 & 0b111, 0b000);
+		// todo: downcast
+		// assert_eq!(allocated.downcast::<Custom>(), Some(&Custom(123)));
+	}
+
+	#[test]
+	fn i63_starts_with_one() {
+		let value = Value::new(SmallInt::new(123).unwrap());
+
+		assert_eq!(value.0 & 1, 1);
+		assert_eq!(value.downcast_copy::<SmallInt>().unwrap(), SmallInt::new(123).unwrap());
+	}
+
+	#[test]
+	fn true_is_two() {
+		let value = Value::new(Boolean::new(true));
+
+		assert_eq!(value.0, 2);
+		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(true)));
+	}
+
+	#[test]
+	fn literal_starts_with_two() {
+		let add = Value::new(Literal::OP_ADD);
+
+		assert_eq!(add.0 & 0b111, 0b010);
+		assert_eq!(add.downcast_copy::<Literal>(), Some(Literal::OP_ADD));
+		assert_eq!(Value::new(Boolean::new(true)).downcast_copy::<Literal>(), None);
+	}
+
+	#[test]
+	fn null_is_four() {
+		let value = Value::new(Null);
+
+		assert_eq!(value.0, 0b100);
+		assert_eq!(value.downcast_copy::<Null>(), Some(Null));
+	}
+
+	#[test]
+	fn builtinfn_starts_with_four() {
+		let builtinfn = BuiltinFn::new(
+			Literal::new(concat!(file!(), "-", stringify!(line!()), "-", stringify!(column!()))),
+			|_, _| panic!()
+		);
+
+		let value = Value::new(builtinfn);
+
+		assert_eq!(value.0 & 0b111, 0b100);
+		assert_eq!(value.downcast_copy::<BuiltinFn>(), Some(builtinfn));
+	}
+
+	#[test]
+	fn f32_starts_with_six() {
+		let value = Value::new(12.34);
+
+		assert_eq!(value.0 & 0b111, 0b110);
+		assert_eq!(value.downcast_copy::<f32>(), Some(12.34));
+	}
+}
 
 /// A trait representing any value within Quest.
 ///
@@ -211,7 +289,7 @@ impl Value {
 
 	/// Get the bits of the [`Value`].
 	#[inline]
-	const fn bits(&self) -> u64 {
+	pub(crate) const fn bits(&self) -> u64 {
 		self.0
 	}
 
@@ -219,7 +297,7 @@ impl Value {
 	///
 	/// # Safety
 	/// The caller must ensure that `bits` is a valid [`Value`].
-	const unsafe fn from_bits_unchecked(bits: u64) -> Self {
+	pub(crate) const unsafe fn from_bits_unchecked(bits: u64) -> Self {
 		Self(bits)
 	}
 

@@ -12,4 +12,6 @@ default=["strict_arguments"]
 static_assertions = "1.1.0"
 bitflags = "1.2.1"
 libc = "0.2.81"
+lazy_static = "1.4.0"
+parking_lot = "0.11.1"
 try-traits = "0.1.1"

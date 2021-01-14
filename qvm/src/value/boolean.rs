@@ -11,8 +11,8 @@ impl Boolean {
 	}
 
 	// Note: It's defined as `0` so it can easily be cast to false in Rust.
-	pub(super) const FALSE_BITS: u64 = 0b00;
-	pub(super) const TRUE_BITS: u64 =  0b10;
+	pub(super) const FALSE_BITS: u64 = 0b0000;
+	pub(super) const TRUE_BITS: u64 =  0b0010;
 }
 
 unsafe impl QuestValue for Boolean {
