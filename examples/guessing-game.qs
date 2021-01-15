@@ -12,8 +12,6 @@ secret = rand(1, MAX + 1).floor();
 guesses = 0;
 
 # `loop` is a synonym for `while true`
-quit(0, "hi");
-
 loop {
 	# Add one to the amount of guesses.
 	guesses += 1;

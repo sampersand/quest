@@ -555,7 +555,7 @@ Expression.Block = class() {
 	};
 
 	exec = (self, env) -> {
-		self.body.map({ _0.exec(env) }).get(-1)
+		self.body.map({ _0.exec(env) }).@list().get(-1)
 	};
 };
 

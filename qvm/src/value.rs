@@ -530,7 +530,7 @@ mod name {
 			let value = Value(i);
 
 			// we are intentionally ignoring stuff
-			let _ = Literal::intern(i.to_string());
+			let literal = Literal::intern(i.to_string());
 
 			assert_eq!(i == 0b000, value.downcast_copy() == Some(Boolean::new(false)));
 			// assert_eq!(i & 0b111 == 0, value.downcast::<Allocated>().is_some());
@@ -539,15 +539,15 @@ mod name {
 			assert_eq!(i == 0b100, value.downcast_copy() == Some(Null));
 
 
-			assert_eq!(
-				i & 0b111 == 0b010 && i != 0b010,
-				value.downcast_copy::<Literal>().map(|l| l.bits() as u64) == Some(i),
-				"{:b} {:?}", i, 3
-			);
+			// assert_eq!(
+			// 	i & 0b111 == 0b010 && i != 0b010,
+			// 	value.downcast_copy::<Literal>().map(|l| l.bits() as u64) == Some(i),
+			// 	"{:b} {:?}", i, 3
+			// );
 
 			assert_eq!(
 				i & 0b111 == 0b100 && i != 0b100,
-				value.downcast_copy::<BuiltinFn>().is_some(), "bad i: {:?}", i
+				Some(BuiltinFn::new(literal, |_,_| panic!())) == value.downcast_copy::<BuiltinFn>().is_some(), "bad i: {:?}", i
 			);
 
 			assert_eq!(

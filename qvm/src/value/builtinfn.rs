@@ -93,7 +93,7 @@ impl PartialEq for BuiltinFn {
 }
 
 const BUILTINFN_TAG: u64   = 0b0100;
-const BUILTINFN_SHIFT: u64 = 0b0100;
+const BUILTINFN_SHIFT: u64 = 3;
 const BUILTINFN_MASK: u64  = 0b0111;
 
 unsafe impl QuestValue for BuiltinFn {
