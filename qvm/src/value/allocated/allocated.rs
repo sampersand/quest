@@ -1,4 +1,4 @@
-use super::{Class, List, Object};
+use super::*;
 use crate::Literal;
 use crate::value::{Value, QuestValue, QuestValueRef};
 use std::fmt::{self, Debug, Display, Formatter};
@@ -68,7 +68,7 @@ impl From<Object> for Allocated {
 
 // TODO: allocate pages, and use those, instead of allocating individual pointers.
 impl Allocated {
-	pub fn new<T: super::AllocatedType>(data: T) -> Self {
+	pub fn new<T: AllocatedType>(data: T) -> Self {
 		data.into_alloc()
 	}
 

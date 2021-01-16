@@ -1,10 +1,10 @@
-mod r#impl;
+mod allocated;
 mod text;
 mod list;
 mod object;
 mod class;
 
-pub use r#impl::Allocated;
+pub(crate) use allocated::Allocated;
 pub use class::Class;
 pub use text::*;
 pub use list::*;
@@ -72,7 +72,6 @@ pub unsafe trait AllocatedType : Debug + Sized {
 	/// # Safety
 	/// The caller must ensure that `alloc` is a valid `Self`. See [`try_alloc_as_ref`] for a safe version.
 	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self;
-
 
 	/// Tries to convert a mutable `alloc` reference to a mutable `Self` reference, returning `None` if `alloc` isn't a
 	/// `Self`.
