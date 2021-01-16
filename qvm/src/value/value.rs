@@ -40,10 +40,12 @@ impl Value {
 		Self(bits)
 	}
 
+	/// Gets a unique ID associated with this object.
 	pub fn id(&self) -> usize {
 		self.0 as usize
 	}
 
+	/// Returns a type name associated with the current object.
 	pub fn typename(&self) -> &'static str {
 		if self.is_a::<Null>() {
 			Null::TYPENAME
@@ -79,28 +81,42 @@ impl Value {
 		T::is_value_a(self)
 	}
 
+	/// Attempts to cast a reference `self` to a reference to `T`.
+	///
+	/// This will return `None` if `self` isn't a `T`.
 	#[inline]
 	pub fn downcast<T: QuestValueRef>(&self) -> Option<&T> {
 		T::try_value_as_ref(self)
 	}
 
+	/// Attempts to cast a mutable reference `self` to a mutable reference to `T`.
+	///
+	/// This will return `None` if `self` isn't a `T`.
 	#[inline]
 	pub fn downcast_mut<T: QuestValueRef>(&mut self) -> Option<&mut T> {
 		T::try_value_as_mut(self)
 	}
 
+	/// Attempts to cast `self` to a `T`.
+	///
+	/// This will return `Err(self)` if `self` isn't a `T`.
 	#[inline]
 	pub fn downcast_into<T: QuestValue>(self) -> Result<T, Self> {
 		T::try_value_into(self)
 	}
 
+	/// Attempts to cast `self` to a `T`, where `T` is a [`Copy`] type.
+	///
+	/// This will return `None` if `self` isn't a `T`.
 	#[inline]
 	pub fn downcast_copy<T: QuestValueImmediate>(&self) -> Option<T> {
 		T::try_value_copy(self)
 	}
 
+	/// Attempts to cast `self` to a `T`, calling `self`'s implementation of the conversion func on `T` if it doesn't
+	/// exist.
 	#[inline]
-	pub fn downcast_call<T: QuestValue>(self) -> crate::Result<T> {
+	pub fn downcast_call<T: QuestValue + QuestConvertible>(self) -> crate::Result<T> {
 		if self.is_a::<T>() {
 			// safety: we just verified it was a `T`.
 			unsafe {
