@@ -27,84 +27,6 @@ use std::fmt::{self, Debug, Formatter};
 #[repr(transparent)]
 pub struct Value(u64);
 
-#[cfg(test)]
-mod basic {
-	use super::*;
-
-	#[test]
-	fn false_is_zero() {
-		let value = Value::new(Boolean::new(false));
-
-		assert_eq!(value.0, 0);
-		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(false)));
-	}
-
-	#[test]
-	fn allocated_has_lower_3_bits_zero() {
-		#[derive(Debug, PartialEq, Eq)]
-		struct Custom(u64);
-
-		let allocated = Value::new_custom::<Custom>(Custom(123));
-		assert_eq!(allocated.0 & 0b111, 0b000);
-		// todo: downcast
-		// assert_eq!(allocated.downcast::<Custom>(), Some(&Custom(123)));
-	}
-
-	#[test]
-	fn i63_starts_with_one() {
-		let value = Value::new(SmallInt::new(123).unwrap());
-
-		assert_eq!(value.0 & 1, 1);
-		assert_eq!(value.downcast_copy::<SmallInt>().unwrap(), SmallInt::new(123).unwrap());
-	}
-
-	#[test]
-	fn true_is_two() {
-		let value = Value::new(Boolean::new(true));
-
-		assert_eq!(value.0, 2);
-		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(true)));
-	}
-
-	#[test]
-	fn literal_starts_with_two() {
-		let add = Value::new(Literal::OP_ADD);
-
-		assert_eq!(add.0 & 0b111, 0b010);
-		assert_eq!(add.downcast_copy::<Literal>(), Some(Literal::OP_ADD));
-		assert_eq!(Value::new(Boolean::new(true)).downcast_copy::<Literal>(), None);
-	}
-
-	#[test]
-	fn null_is_four() {
-		let value = Value::new(Null);
-
-		assert_eq!(value.0, 0b100);
-		assert_eq!(value.downcast_copy::<Null>(), Some(Null));
-	}
-
-	#[test]
-	fn builtinfn_starts_with_four() {
-		let builtinfn = BuiltinFn::new(
-			Literal::new(concat!(file!(), "-", stringify!(line!()), "-", stringify!(column!()))),
-			|_, _| panic!()
-		);
-
-		let value = Value::new(builtinfn);
-
-		assert_eq!(value.0 & 0b111, 0b100);
-		assert_eq!(value.downcast_copy::<BuiltinFn>(), Some(builtinfn));
-	}
-
-	#[test]
-	fn f32_starts_with_six() {
-		let value = Value::new(12.34);
-
-		assert_eq!(value.0 & 0b111, 0b110);
-		assert_eq!(value.downcast_copy::<f32>(), Some(12.34));
-	}
-}
-
 /// A trait representing any value within Quest.
 ///
 /// # Implementing
@@ -526,37 +448,134 @@ mod name {
 	#[test]
 	fn all_16_bit_reprs_are_valid() {
 		crate::literal::initialize();
+
 		for i in 0..0xffffu64 {
 			let value = Value(i);
 
-			// we are intentionally ignoring stuff
+
+			if i == 0b000 {
+				assert_eq!(value.downcast_copy(), Some(Boolean::new(false)));
+			} else if i == 0b010 {
+				assert_eq!(value.downcast_copy(), Some(Boolean::new(true)));
+			} else {
+				assert_eq!(value.downcast_copy::<Boolean>(), None);
+			}
+
+			if i & 0b111 == 0 && i != 0b000 {
+				assert!(value.downcast::<Allocated>().is_some());
+			} else {
+				assert!(value.downcast::<Allocated>().is_none());
+			}
+
+			if i & 1 == 1 {
+				assert_eq!(value.downcast_copy(), Some(SmallInt::new(i as i64 >> 1).unwrap()));
+			} else {
+				assert_eq!(value.downcast_copy::<SmallInt>(), None);
+			}
+
+			if i == 0b100 {
+				assert_eq!(value.downcast_copy(), Some(Null));
+			} else {
+				assert_eq!(value.downcast_copy::<Null>(), None);
+			}
+
 			let literal = Literal::intern(i.to_string());
+			if i & 0b111 == 0b010 && i != 0b010 {
+				// SAFETY: we're creating a new `literal` every iteration, so we're guaranteed that `i` will
+				// be a valid literal.
+				assert_eq!(value.downcast_copy(), Some(unsafe { Literal::from_bits_unchecked(i as u32 >> 3) }));
+				// value.downcast_copy::<Literal>().map(|l| l.bits() as u64) == Some(i),
+			} else {
+				assert_eq!(value.downcast_copy::<Literal>(), None);
+			}
 
-			assert_eq!(i == 0b000, value.downcast_copy() == Some(Boolean::new(false)));
-			// assert_eq!(i & 0b111 == 0, value.downcast::<Allocated>().is_some());
-			assert_eq!(i & 1 == 1, value.downcast_copy() == Some(SmallInt::new((i >> 1) as i64).unwrap()));
-			assert_eq!(i == 0b010, value.downcast_copy() == Some(Boolean::new(true)));
-			assert_eq!(i == 0b100, value.downcast_copy() == Some(Null));
+			if i & 0b111 == 0b100 && i != 0b100 {
+				let builtin = BuiltinFn::new(literal, unsafe { std::mem::transmute::<usize, _>(i as usize >> 3) });
+				assert_eq!(value.downcast_copy(), Some(builtin));
+			} else {
+				assert!(value.downcast_copy::<BuiltinFn>().is_none());
+			}
 
+			if i & 0b111 == 0b110 {
+				assert_eq!(value.downcast_copy(), Some(f32::from_bits(i as u32 >> 3)));
+			} else {
+				assert_eq!(value.downcast_copy::<f32>(), None);
+			}
 
-			// assert_eq!(
-			// 	i & 0b111 == 0b010 && i != 0b010,
-			// 	value.downcast_copy::<Literal>().map(|l| l.bits() as u64) == Some(i),
-			// 	"{:b} {:?}", i, 3
-			// );
-
-			assert_eq!(
-				i & 0b111 == 0b100 && i != 0b100,
-				Some(BuiltinFn::new(literal, |_,_| panic!())) == value.downcast_copy::<BuiltinFn>().is_some(), "bad i: {:?}", i
-			);
-
-			assert_eq!(
-				i & 0b111 == 0b110 && i != 0b110,
-				value.downcast_copy::<f32>().map(f32::to_bits) == Some(i as u32),
-			);
-
-			std::mem::forget(value);
+			std::mem::forget(value); // in case its allocated.
 		}
+	}
+
+
+
+	#[test]
+	fn false_is_zero() {
+		let value = Value::new(Boolean::new(false));
+
+		assert_eq!(value.0, 0);
+		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(false)));
+	}
+
+	#[test]
+	fn allocated_has_lower_3_bits_zero() {
+		#[derive(Debug, PartialEq, Eq)]
+		struct Custom(u64);
+
+		let allocated = Value::new_custom::<Custom>(Custom(123));
+		assert_eq!(allocated.0 & 0b111, 0b000);
+		// todo: downcast
+		// assert_eq!(allocated.downcast::<Custom>(), Some(&Custom(123)));
+	}
+
+	#[test]
+	fn i63_starts_with_one() {
+		let value = Value::new(SmallInt::new(123).unwrap());
+
+		assert_eq!(value.0 & 1, 1);
+		assert_eq!(value.downcast_copy::<SmallInt>().unwrap(), SmallInt::new(123).unwrap());
+	}
+
+	#[test]
+	fn true_is_two() {
+		let value = Value::new(Boolean::new(true));
+
+		assert_eq!(value.0, 2);
+		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(true)));
+	}
+
+	#[test]
+	fn literal_starts_with_two() {
+		let add = Value::new(Literal::OP_ADD);
+
+		assert_eq!(add.0 & 0b111, 0b010);
+		assert_eq!(add.downcast_copy::<Literal>(), Some(Literal::OP_ADD));
+		assert_eq!(Value::new(Boolean::new(true)).downcast_copy::<Literal>(), None);
+	}
+
+	#[test]
+	fn null_is_four() {
+		let value = Value::new(Null);
+
+		assert_eq!(value.0, 0b100);
+		assert_eq!(value.downcast_copy::<Null>(), Some(Null));
+	}
+
+	#[test]
+	fn builtinfn_starts_with_four() {
+		let builtinfn = BuiltinFn::new(Literal::new(concat!(file!(), "-", line!(), "-", column!())), |_, _| panic!());
+
+		let value = Value::new(builtinfn);
+
+		assert_eq!(value.0 & 0b111, 0b100);
+		assert_eq!(value.downcast_copy::<BuiltinFn>(), Some(builtinfn));
+	}
+
+	#[test]
+	fn f32_starts_with_six() {
+		let value = Value::new(12.34);
+
+		assert_eq!(value.0 & 0b111, 0b110);
+		assert_eq!(value.downcast_copy::<f32>(), Some(12.34));
 	}
 }
 

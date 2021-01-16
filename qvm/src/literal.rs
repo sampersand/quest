@@ -35,7 +35,6 @@ impl Literal {
 	}
 
 	pub fn new(repr: &'static str) -> Self {
-		dbg!(Self::ONE_PAST_MAX_BUILTIN);
 		match STR_TO_LITERAL.write().entry(repr) {
 			Entry::Occupied(entry) => *entry.get(),
 			Entry::Vacant(entry) => {
@@ -54,7 +53,8 @@ impl Literal {
 	pub unsafe fn from_bits_unchecked(bits: u32) -> Self {
 		let literal = Self(bits);
 
-		debug_assert!(LITERAL_TO_STR.read().contains_key(&literal));
+		debug_assert!(literal.is_builtin() || LITERAL_TO_STR.read().contains_key(&literal),
+			"invalid unchecked bits: {:?}", bits);
 
 		literal
 	}
@@ -94,9 +94,9 @@ impl Display for Literal {
 
 
 
-const LITERAL_MASK: u64  = 0b0111;
 const LITERAL_TAG: u64   = 0b0010;
-const LITERAL_SHIFT: u64 = 0b0100;
+const LITERAL_MASK: u64  = 0b0111;
+const LITERAL_SHIFT: u64 = 3;
 
 unsafe impl QuestValue for Literal {
 	const TYPENAME: &'static str = "qvm::Literal";
@@ -110,8 +110,8 @@ unsafe impl QuestValue for Literal {
 	}
 
 	fn is_value_a(value: &Value) -> bool {
-		dbg!(value.bits());
-		dbg!((value.bits() & LITERAL_MASK) == LITERAL_TAG, value.bits() != LITERAL_TAG);
+		// dbg!(value.bits());
+		// dbg!((value.bits() & LITERAL_MASK) == LITERAL_TAG, value.bits() != LITERAL_TAG);
 		(value.bits() & LITERAL_MASK) == LITERAL_TAG && value.bits() != LITERAL_TAG
 	}
 

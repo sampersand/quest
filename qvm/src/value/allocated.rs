@@ -120,8 +120,8 @@ pub unsafe trait AllocatedType : Debug + Sized {
 
 // TODO: allocate pages, and use those, instead of allocating individual pointers.
 impl Allocated {
-	pub fn new<T>(data: T) -> Self {
-		todo!()
+	pub fn new<T: AllocatedType>(data: T) -> Self {
+		data.into_alloc()
 	}
 
 	pub fn into_ptr(self) -> *mut () {
@@ -155,9 +155,9 @@ impl Allocated {
 	}
 }
 
-const ALLOC_MASK: u64  = 0b0111;
 const ALLOC_TAG: u64   = 0b0000;
-const ALLOC_SHIFT: u64 = 0b0000;
+const ALLOC_MASK: u64  = 0b0111;
+const ALLOC_SHIFT: u64 = 0;
 
 unsafe impl QuestValue for Allocated {
 	const TYPENAME: &'static str = "qvm::Allocated";

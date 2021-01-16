@@ -29,8 +29,6 @@ impl BuiltinFn {
 	/// # Panics
 	/// Panics if the name was registered before.
 	pub fn new(name: Literal, func: Func) -> Self {
-		debug_assert_eq!(func as usize & 0b111, 0, "function wasn't 8-bit aligned?");
-
 		let builtinfn = Self(func);
 
 		if FUNCTIONS.read().values().find(|&&x| x == name).is_some() {
@@ -93,8 +91,8 @@ impl PartialEq for BuiltinFn {
 }
 
 const BUILTINFN_TAG: u64   = 0b0100;
-const BUILTINFN_SHIFT: u64 = 3;
 const BUILTINFN_MASK: u64  = 0b0111;
+const BUILTINFN_SHIFT: u64 = 3; // temporary until i can ensure functions are 8-bit aligned.
 
 unsafe impl QuestValue for BuiltinFn {
 	const TYPENAME: &'static str = "qvm::BuiltinFn";

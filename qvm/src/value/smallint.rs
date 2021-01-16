@@ -59,10 +59,9 @@ impl Value {
 	}
 }
 
-const SMALLINT_MASK:  u64 = 0b0001;
 const SMALLINT_TAG:   u64 = 0b0001;
-const SMALLINT_SHIFT: u64 = 0b0001;
-
+const SMALLINT_MASK:  u64 = 0b0001;
+const SMALLINT_SHIFT: u64 = 1;
 
 // SAFETY: The way this is stored internally is by shifting the `i64` one left and `OR`ing it with `1`.
 // This works because all of the allocated objects are pointers, which haven an alignment of 8, and thus cannot have a
