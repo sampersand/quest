@@ -1,7 +1,7 @@
-use try_traits::clone::TryClone;
-use crate::{Value, Literal, LMap};
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
+use try_traits::clone::TryClone;
+use crate::{Value, Literal, LMap};
 use crate::value::allocated::{Allocated, AllocatedType};
 
 pub struct Object {
@@ -32,11 +32,31 @@ fn allocate<T>(data: T) -> *mut () {
 
 /// A heap allocated object.
 pub trait QuestObject : Debug + TryClone<Error=crate::Error> + Any {
-	/// The parents associated with some value.
-	fn parents(&self) -> Vec<Value>;
+	/// The name of this object; defaults to the rust typename of it (or will...)
+	const TYPENAME: &'static str = "<how long til typename const :(>"; // std::any::type_name::<Self>()";
+
+	/// The initial parents associated with some value.
+	fn parents() -> Vec<Value> {
+		use std::mem::MaybeUninit;
+		use std::sync::Once;
+
+		static mut PARENTS: MaybeUninit<Value> = MaybeUninit::uninit();
+		static ONCE: Once = Once::new();
+
+		// SAFETY: Since we only call this once, we can be guaranteed that (a) we won't have leaks and (b) we won't won't 
+		// initialize it twice. Additionally, we know the pointer returned from `PARENTS.as_mut_ptr` is always valid.
+		ONCE.call_once(|| unsafe {
+			PARENTS.as_mut_ptr().write(Value::new(super::Class::new(Self::TYPENAME)));
+		});
+
+		// SAFETY: We know that it's initialized, as the `call_once` was run before we get here.
+		unsafe {
+			vec![(*PARENTS.as_ptr()).clone()]
+		}
+	}
 
 	#[doc(hidden)]
-	const VTABLE: &'static VTable = {
+	const _VTABLE: &'static VTable = {
 		// SAFETY: pointers passed to this must be valid `T`.
 		unsafe fn _drop<T>(ptr: *mut ()) {
 			std::ptr::drop_in_place(ptr as *mut T)
@@ -118,10 +138,10 @@ impl Drop for Object {
 impl Object {
 	pub fn new<T: QuestObject>(data: T) -> Self {
 		Self {
-			parents: data.parents(),
+			parents: T::parents(),
 			attrs: LMap::default(),
 			data: allocate(data),
-			vtable: T::VTABLE
+			vtable: T::_VTABLE
 		}
 	}
 
@@ -130,6 +150,7 @@ impl Object {
 	}
 
 	pub fn call_attr(&self, attr: Literal, args: &[&Value]) -> Value {
+
 		todo!()
 	}
 
@@ -210,10 +231,9 @@ impl Object {
 }
 
 
-const OBJECT_TAG: u64 = 0b00000000;
-// const OBJECT_MASK: u64 = 
 unsafe impl AllocatedType for Object {
 	fn into_alloc(self) -> Allocated {
+		// FLAG_INSTANCE_OBJECT
 		// Allocated::new(Object::new(self))
 		todo!()
 	}

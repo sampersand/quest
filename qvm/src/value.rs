@@ -47,20 +47,16 @@ pub unsafe trait QuestValue : Debug + Sized {
 	const TYPENAME: &'static str;
 
 	/// Convert `self` into a [`Value`].
-	fn into_value(self) -> Value {
-		Allocated::new(self).into_value()
-	}
+	fn into_value(self) -> Value;
 
 	/// Checks to see if a [`Value`] is a `self`.
-	fn is_value_a(value: &Value) -> bool {
-		value.downcast::<Allocated>().map_or(false, Allocated::is_alloc_a::<Self>)
-	}
+	fn is_value_a(value: &Value) -> bool;
 
 	/// Tries to unpack `value` into `Self`, returning `Err(Value)` if the value's not the right type
 	///
 	/// Implementations generally won't need to override this, as the default behaviour is in terms of
 	/// [`is_value_a`] and [`value_into_unchecked`].
-	fn try_value_into(value: Value) -> Result<Self, Value>  {
+	fn try_value_into(value: Value) -> Result<Self, Value> {
 		if Self::is_value_a(&value) {
 			// SAFETY: we just checked that `value` is a valid `Self`.
 			Ok(unsafe { Self::value_into_unchecked(value) })
@@ -73,11 +69,7 @@ pub unsafe trait QuestValue : Debug + Sized {
 	///
 	/// # Safety
 	/// The `value` must be a valid `Self`.
-	unsafe fn value_into_unchecked(value: Value) -> Self {
-		debug_assert!(Self::is_value_a(&value), "invalid value given to `value_into_unchecked`: {:?}", value);
-
-		Allocated::value_into_unchecked(value).into_unchecked()
-	}
+	unsafe fn value_into_unchecked(value: Value) -> Self;
 
 	/// Checks to see if the value, or one of its parents, has the given attribute.
 	///
@@ -96,10 +88,13 @@ pub unsafe trait QuestValue : Debug + Sized {
 	/// Deletes the given `attr` on `self`, returning the value associated with it, if it existed.
 	fn del_attr(&mut self, attr: Literal) -> Option<Value>;
 
+	/// Sets the attribute `attr` for `self` to `value`.
 	fn set_attr(&mut self, attr: Literal, value: Value);
 
+	/// Calls the attribute `attr` for `self` with the given `args`.
 	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
-		self.get_attr(attr).expect("todo: return value error")
+		self.get_attr(attr)
+			.expect("todo: return value error")
 			.call_attr(Literal::OP_CALL, args)
 	}
 }
@@ -198,15 +193,16 @@ pub trait QuestConvertible : QuestValue {
 	const CONVERT_FUNCTION: Literal;
 }
 
+// impl<T: QuestValue> From<T> for Value {
+// 	fn from(questvalue: T) -> Self {
+// 		questvalue.into_value()
+// 	}
+// }
+
 impl Value {
 	/// Creates a new [`Value`] for the given built-in type `T`.
 	pub fn new<T: QuestValue>(data: T) -> Self {
 		data.into_value()
-	}
-
-	/// Creates a new [`Value`] for the given `T` by heap allocating it.
-	pub fn new_custom<T>(data: T) -> Self {
-		Allocated::new(data).into_value()
 	}
 
 	/// Get the bits of the [`Value`].
@@ -446,6 +442,7 @@ mod name {
 	struct Custom(u64);
 
 	#[test]
+	#[ignore]
 	fn all_16_bit_reprs_are_valid() {
 		crate::literal::initialize();
 
@@ -521,7 +518,17 @@ mod name {
 		#[derive(Debug, PartialEq, Eq)]
 		struct Custom(u64);
 
-		let allocated = Value::new_custom::<Custom>(Custom(123));
+		impl try_traits::clone::TryClone for Custom {
+			type Error = crate::Error;
+
+			fn try_clone(&self) -> crate::Result<Self> {
+				Ok(Self(self.0))
+			}
+		}
+
+		impl QuestObject for Custom {}
+
+		let allocated = Value::new(Custom(123));
 		assert_eq!(allocated.0 & 0b111, 0b000);
 		// todo: downcast
 		// assert_eq!(allocated.downcast::<Custom>(), Some(&Custom(123)));

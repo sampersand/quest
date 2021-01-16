@@ -1,44 +1,18 @@
+mod r#impl;
 mod text;
 mod list;
 mod object;
+mod class;
 
+pub use r#impl::Allocated;
+pub use class::Class;
 pub use text::*;
 pub use list::*;
 pub use object::*;
 
 use crate::Literal;
-use crate::value::{Value, QuestValue, QuestValueRef};
-use std::fmt::{self, Debug, Display, Formatter};
-use std::mem::ManuallyDrop;
-
-#[repr(C, align(8))]
-pub struct Allocated {
-	flags: u64,
-	data: Data
-}
-
-#[repr(C, align(16))] // 16's an arbitrary number: todo pick a better one
-union Data {
-	raw: [u8; 32],
-	text: (),
-	bignum: (),
-	regex: (),
-	list: ManuallyDrop<List>,
-	map: (),
-	class: (),
-	object: ManuallyDrop<Object>,
-}
-
-const TYPE_FLAG_MASK: u64 = 0b11111111;
-const FLAG_CLASS_MASK: u64 =   0b00111111;
-const FLAG_CLASS_OBJECT: u64 = 0b00000000;
-const FLAG_CLASS_BIGNUM: u64 = 0b00000001;
-const FLAG_CLASS_REGEX: u64 =  0b00000010;
-const FLAG_CLASS_LIST: u64 =   0b00000011;
-const FLAG_CLASS_MAP: u64 =    0b00000100;
-const FLAG_CLASS_TEXT: u64 =   0b00000101;
-const FLAG_CLASS_CLASS: u64 =  0b00000110;
-const FLAG_CLASS_CUSTOM: u64 = 0b00000111;
+use crate::value::{Value, QuestValue};
+use std::fmt::Debug;
 
 /// A trait that represents objects that are allocated on the heap in Quest.
 ///
@@ -118,131 +92,27 @@ pub unsafe trait AllocatedType : Debug + Sized {
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self;
 }
 
-// TODO: allocate pages, and use those, instead of allocating individual pointers.
-impl Allocated {
-	pub fn new<T: AllocatedType>(data: T) -> Self {
-		data.into_alloc()
-	}
-
-	pub fn into_ptr(self) -> *mut () {
-		Box::into_raw(Box::new(self)) as *mut ()
-	}
-
-	pub fn is_alloc_a<T>(&self) -> bool {
-		// T::is_alloc_a(self )
-		// self.inner().
-		false
-	}
-
-	pub unsafe fn from_ptr_ref<'a>(pointer: *const ()) -> &'a Self {
-		&*(pointer as *const Self)
-	}
-
-	pub unsafe fn from_ptr_mut<'a>(pointer: *mut ()) -> &'a mut Self {
-		&mut *(pointer as *mut Self)
-	}
-
-	pub unsafe fn from_ptr(ptr: *mut ()) -> Self {
-		*Box::from_raw(ptr as *mut Self)
-	}
-
-	pub unsafe fn into_unchecked<T>(self) -> T {
-		todo!()
-	}
-
-	pub fn typename(&self) -> &'static str {
-		todo!()
-	}
-}
-
-const ALLOC_TAG: u64   = 0b0000;
-const ALLOC_MASK: u64  = 0b0111;
-const ALLOC_SHIFT: u64 = 0;
-
-unsafe impl QuestValue for Allocated {
-	const TYPENAME: &'static str = "qvm::Allocated";
+unsafe impl<T: AllocatedType> QuestValue for T {
+	const TYPENAME: &'static str = "<TODO>";
 
 	fn into_value(self) -> Value {
-		// SAFETY: This is the definition of a valid pointer.
-		unsafe {
-			Value::from_bits_unchecked(((self.into_ptr() as u64) << ALLOC_SHIFT) | ALLOC_TAG)
-		}
+		Allocated::new(self).into_value()
 	}
 
 	fn is_value_a(value: &Value) -> bool {
-		value.bits() != 0 && (value.bits() & ALLOC_MASK) == ALLOC_TAG
+		value.downcast::<Allocated>().map_or(false, Allocated::is_alloc_a::<Self>)
 	}
 
 	unsafe fn value_into_unchecked(value: Value) -> Self {
-		debug_assert!(value.is_a::<Self>());
+		debug_assert!(Self::is_value_a(&value), "invalid value given to `value_into_unchecked`: {:?}", value);
 
-		Self::from_ptr(value.bits() as *mut ())
+		Allocated::value_into_unchecked(value).into_unchecked()
 	}
 
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
-	}
-}
-
-unsafe impl QuestValueRef for Allocated {
-	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
-		debug_assert!(value.is_a::<Self>());
-
-		Self::from_ptr_ref(value.bits() as *const ())
-	}
-
-	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
-		debug_assert!(value.is_a::<Self>());
-
-		Self::from_ptr_mut(value.bits() as *mut ())
-	}
-}
-
-impl Display for Allocated {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		// std::fmt::Debug::fmt(self, f)
-		todo!()
-	}
-}
-
-impl Debug for Allocated {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		// std::fmt::Debug::fmt(self, f)
-		todo!()
-	}
-}
-
-impl Allocated {
-	pub fn try_clone(&self) -> crate::Result<Self> {
-		todo!()
-	}
-
-	pub fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
-		todo!()
-	}
-}
-
-impl Drop for Allocated {
-	fn drop(&mut self) {
-		todo!();
-	}
-}
-
-impl Clone for Allocated {
-	fn clone(&self) -> Self {
-		todo!()
-	}
+	fn has_attr(&self, _attr: Literal) -> bool { todo!() }
+	fn get_attr(&self, _attr: Literal) -> Option<&Value> { todo!() }
+	fn get_attr_mut(&mut self, _attr: Literal) -> Option<&mut Value> { todo!() }
+	fn del_attr(&mut self, _attr: Literal) -> Option<Value> { todo!() }
+	fn set_attr(&mut self, _attr: Literal, _value: Value) { todo!() }
+	fn call_attr(&self, _attr: Literal, _args: &[&Value]) -> crate::Result<Value> { todo!() }
 }
