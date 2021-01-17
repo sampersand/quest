@@ -14,7 +14,7 @@ fn main() {
 		fn try_clone(&self) -> Result<Self> { Ok(Self(self.0)) }
 	}
 
-	impl QuestObject for Custom {}
+	impl ExternType for Custom {}
 
 	println!("{:?}", Value::new(Custom(34)));
 	// return;

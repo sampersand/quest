@@ -4,11 +4,11 @@ use try_traits::clone::TryClone;
 use crate::{Value, Literal, LMap};
 use crate::value::allocated::{Allocated, AllocatedType};
 
-pub struct Object {
+pub struct ExternData {
 	parents: Vec<Value>,
 	attrs: crate::LMap,
 	data: *mut (),
-	vtable: &'static VTable
+	vtable: *const VTable
 }
 
 #[derive(Clone, Copy)]
@@ -22,6 +22,7 @@ pub struct VTable {
 	// SAFETY: the pointer must be a valid pointer to a type of `type_id`.
 	try_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
 
+	// SAFETY: the pointer must be a valid pointer to a type of `type_id`.
 	debug: for<'b> unsafe fn(*const (), &mut Formatter<'b>) -> fmt::Result
 }
 
@@ -30,9 +31,9 @@ fn allocate<T>(data: T) -> *mut () {
 	Box::into_raw(Box::new(data)) as *mut ()
 }
 
-/// A heap allocated object.
-pub trait QuestObject : Debug + TryClone<Error=crate::Error> + Any {
-	/// The name of this object; defaults to the rust typename of it (or will...)
+/// Data that's supplied by someone else's quest binndings.
+pub trait ExternType : Debug + TryClone<Error=crate::Error> + Any {
+	/// The name of this data; defaults to the rust typename of it (or will...)
 	const TYPENAME: &'static str = "<how long til typename const :(>"; // std::any::type_name::<Self>()";
 
 	/// The initial parents associated with some value.
@@ -81,15 +82,15 @@ pub trait QuestObject : Debug + TryClone<Error=crate::Error> + Any {
 	};
 }
 
-impl Debug for Object {
+impl Debug for ExternData {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		struct DataDebugger<'a>(&'a Object);
+		struct DataDebugger<'a>(&'a ExternData);
 
 		impl<'a> Debug for DataDebugger<'a> {
 			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 				// SAFETY: `data`'s type never changes, so calling this is valid.
 				unsafe {
-					(self.0.vtable.debug)(self.0.data, f)
+					((*self.0.vtable).debug)(self.0.data, f)
 				}
 			}
 		}
@@ -113,9 +114,9 @@ impl Debug for Object {
 		}
 
 		if f.alternate() {
-			f.debug_tuple("Object").field(&DataDebugger(self)).finish()
+			f.debug_tuple("ExternData").field(&DataDebugger(self)).finish()
 		} else {
-			f.debug_struct("Object")
+			f.debug_struct("ExternData")
 				.field("data", &DataDebugger(self))
 				.field("parents", &ParentsDebugger(&self.parents))
 				.field("attrs", &self.attrs)
@@ -124,19 +125,19 @@ impl Debug for Object {
 	}
 }
 
-impl Drop for Object {
+impl Drop for ExternData {
 	fn drop(&mut self) {
 		// SAFETY: `data`'s type never changes, so calling this is valid.
-		if let Some(dropfn) = self.vtable.drop {
-			unsafe {
+		unsafe {
+			if let Some(dropfn) = (*self.vtable).drop {
 				(dropfn)(self.data)
 			}
 		}
 	}
 }
 
-impl Object {
-	pub fn new<T: QuestObject>(data: T) -> Self {
+impl ExternData {
+	pub fn new<T: ExternType>(data: T) -> Self {
 		Self {
 			parents: T::parents(),
 			attrs: LMap::default(),
@@ -197,7 +198,7 @@ impl Object {
 		*data
 	}
 
-	pub fn try_as_ref<T: QuestObject>(&self) -> Option<&T> {
+	pub fn try_as_ref<T: ExternType>(&self) -> Option<&T> {
 		if self.is_a::<T>() {
 			// SAFETY: We just verified `self` is a `T`.
 			Some(unsafe { self.as_ref_unchecked() })
@@ -207,13 +208,13 @@ impl Object {
 	}
 
 	#[inline]
-	pub unsafe fn as_ref_unchecked<T: QuestObject>(&self) -> &T {
+	pub unsafe fn as_ref_unchecked<T: ExternType>(&self) -> &T {
 		debug_assert!(self.is_a::<T>(), "invalid value given: {:?}", self);
 
 		&*(self.data as *const T)
 	}
 
-	pub fn try_as_mut<T: QuestObject>(&mut self) -> Option<&mut T> {
+	pub fn try_as_mut<T: ExternType>(&mut self) -> Option<&mut T> {
 		if self.is_a::<T>() {
 			// SAFETY: We just verified `self` is a `T`.
 			Some(unsafe { self.as_mut_unchecked() })
@@ -223,7 +224,7 @@ impl Object {
 	}
 
 	#[inline]
-	pub unsafe fn as_mut_unchecked<T: QuestObject>(&mut self) -> &mut T {
+	pub unsafe fn as_mut_unchecked<T: ExternType>(&mut self) -> &mut T {
 		debug_assert!(self.is_a::<T>(), "invalid value given: {:?}", self);
 
 		&mut *(self.data as *mut T)
@@ -231,17 +232,17 @@ impl Object {
 }
 
 
-unsafe impl AllocatedType for Object {
+unsafe impl AllocatedType for ExternData {
 	fn into_alloc(self) -> Allocated {
 		// FLAG_INSTANCE_OBJECT
-		// Allocated::new(Object::new(self))
+		// Allocated::new(ExternData::new(self))
 		todo!()
 	}
 
 	fn is_alloc_a(alloc: &Allocated) -> bool {
 		todo!()
 	/*
-		Object::try_alloc_as_ref(alloc).map_or(false, Object::is_a::<Self>)
+		ExternData::try_alloc_as_ref(alloc).map_or(false, ExternData::is_a::<Self>)
 	*/}
 
 	unsafe fn alloc_into_unchecked(alloc: Allocated) -> Self {
@@ -249,7 +250,7 @@ unsafe impl AllocatedType for Object {
 	/*
 		debug_assert!(Self::is_alloc_a(&alloc), "invalid value given: {:#?}", alloc);
 		
-		Object::alloc_into_unchecked(alloc).into_unchecked()
+		ExternData::alloc_into_unchecked(alloc).into_unchecked()
 	*/}
 
 	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
@@ -257,7 +258,7 @@ unsafe impl AllocatedType for Object {
 	/*
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
 		
-		Object::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
+		ExternData::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
 	*/}
 
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
@@ -265,37 +266,37 @@ unsafe impl AllocatedType for Object {
 	/*
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
 		
-		Object::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
+		ExternData::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
 	*/}
 }
 
-unsafe impl<T: QuestObject> AllocatedType for T {
+unsafe impl<T: ExternType> AllocatedType for T {
 	fn into_alloc(self) -> Allocated {
-		Allocated::new(Object::new(self))
+		Allocated::new(ExternData::new(self))
 	}
 
 	fn is_alloc_a(alloc: &Allocated) -> bool {
-		Object::try_alloc_as_ref(alloc).map_or(false, Object::is_a::<Self>)
+		ExternData::try_alloc_as_ref(alloc).map_or(false, ExternData::is_a::<Self>)
 	}
 
 	#[inline]
 	unsafe fn alloc_into_unchecked(alloc: Allocated) -> Self {
 		debug_assert!(Self::is_alloc_a(&alloc), "invalid value given: {:#?}", alloc);
 		
-		Object::alloc_into_unchecked(alloc).into_unchecked()
+		ExternData::alloc_into_unchecked(alloc).into_unchecked()
 	}
 
 	#[inline]
 	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
 		
-		Object::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
+		ExternData::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
 	}
 
 	#[inline]
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
 		
-		Object::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
+		ExternData::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
 	}
 }

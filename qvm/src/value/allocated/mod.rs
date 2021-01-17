@@ -1,14 +1,15 @@
+mod paging;
 mod allocated;
 mod text;
 mod list;
-mod object;
+mod extern_data;
 mod class;
 
 pub(crate) use allocated::Allocated;
 pub use class::Class;
 pub use text::*;
 pub use list::*;
-pub use object::*;
+pub use extern_data::*;
 
 use crate::Literal;
 use crate::value::{Value, QuestValue};

@@ -10,16 +10,15 @@ pub struct Allocated {
 	data: Data
 }
 
-#[repr(C, align(16))] // 16's an arbitrary number: todo pick a better one
+#[repr(C, align(8))]
 union Data {
-	raw: [u8; 32],
 	text: (),
 	bignum: (),
 	regex: (),
 	list: ManuallyDrop<List>,
 	map: (),
 	class: ManuallyDrop<Class>,
-	object: ManuallyDrop<Object>,
+	extern_data: ManuallyDrop<ExternData>,
 }
 
 const FLAG_INSTANCE_MASK: u64 =   0b00111111;
@@ -56,11 +55,11 @@ impl From<List> for Allocated {
 	}
 }
 
-impl From<Object> for Allocated {
-	fn from(list: Object) -> Self {
+impl From<ExternData> for Allocated {
+	fn from(extern_data: ExternData) -> Self {
 		Self {
 			flags: FLAG_INSTANCE_OBJECT,
-			data: Data { object: ManuallyDrop::new(list) }
+			data: Data { extern_data: ManuallyDrop::new(extern_data) }
 		}
 	}
 }

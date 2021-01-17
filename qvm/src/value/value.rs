@@ -363,7 +363,7 @@ mod name {
 			}
 		}
 
-		impl QuestObject for Custom {}
+		impl ExternType for Custom {}
 
 		let allocated = Value::new(Custom(123));
 		assert_eq!(allocated.0 & 0b111, 0b000);

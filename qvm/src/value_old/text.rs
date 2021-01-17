@@ -13,6 +13,7 @@ pub struct Text {
 	data: UnsafeCell<TextData>
 }
 
+// TODO: we can just figure out whether or not its embedded by its length.
 bitflags! {
 	struct Flags : u8 {
 		/// The text is shared.
