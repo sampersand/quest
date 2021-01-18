@@ -1,9 +1,9 @@
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
-use try_traits::clone::TryClone;
+use try_traits::cmp::TryPartialEq;
 use crate::{Value, Literal, ShallowClone, DeepClone};
 use crate::value::NamedType;
-use crate::value::allocated::{Allocated, AllocatedType};
+use crate::value::allocated::{Allocated, AllocatedType, AllocType};
 use crate::lmap::LMap;
 
 // #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
@@ -19,13 +19,10 @@ pub(crate) struct ExternData {
 pub struct VTable {
 	type_id: fn() -> TypeId,
 
-	// SAFETY: the pointer must be a valid pointer to a type of `type_id`.
-	drop: Option<unsafe fn(*mut ())>,
-
-	// SAFETY: the pointer must be a valid pointer to a type of `type_id`.
-	try_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
-
-	// SAFETY: the pointer must be a valid pointer to a type of `type_id`.
+	drop: unsafe fn(*mut ()),
+	shallow_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
+	deep_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
+	try_eq: unsafe fn(*const (), Value) -> crate::Result<bool>,
 	debug: for<'b> unsafe fn(*const (), &mut Formatter<'b>) -> fmt::Result
 }
 
@@ -34,8 +31,13 @@ fn allocate<T>(data: T) -> *mut () {
 	Box::into_raw(Box::new(data)) as *mut ()
 }
 
+#[inline]
+unsafe fn deallocate<T>(data: *mut T){
+	drop(Box::from_raw(data))
+}
+
 /// Data that's supplied by someone else's quest binndings.
-pub trait ExternType : Debug + TryClone<Error=crate::Error> + NamedType + Any {
+pub trait ExternType : Debug + Any + NamedType + ShallowClone + DeepClone + TryPartialEq<Error=crate::Error> {
 	/// The initial parents associated with some value.
 	fn parents() -> Vec<Value> {
 		use std::mem::MaybeUninit;
@@ -51,21 +53,32 @@ pub trait ExternType : Debug + TryClone<Error=crate::Error> + NamedType + Any {
 		});
 
 		// SAFETY: We know that it's initialized, as the `call_once` was run before we get here.
-		unsafe {
-			vec![(*PARENTS.as_ptr()).try_clone().expect("unable to clone parent!")]
-		}
+		unsafe { vec![*PARENTS.as_ptr()] }
 	}
 
 	#[doc(hidden)]
 	const _VTABLE: &'static VTable = {
 		// SAFETY: pointers passed to this must be valid `T`.
 		unsafe fn _drop<T>(ptr: *mut ()) {
-			std::ptr::drop_in_place(ptr as *mut T)
+			std::ptr::drop_in_place(ptr as *mut T);
+			deallocate(ptr);
 		}
 
 		// SAFETY: pointers passed to this must be valid `T`.
-		unsafe fn _try_clone<T: TryClone<Error=crate::Error>>(ptr: *const ()) -> crate::Result<*mut ()> {
-			(&*(ptr as *const T)).try_clone().map(allocate)
+		unsafe fn _shallow_clone<T: ShallowClone>(ptr: *const ()) -> crate::Result<*mut ()> {
+			(&*(ptr as *const T)).shallow_clone().map(allocate)
+		}
+
+		// SAFETY: pointers passed to this must be valid `T`.
+		unsafe fn _deep_clone<T: DeepClone>(ptr: *const ()) -> crate::Result<*mut ()> {
+			(&*(ptr as *const T)).deep_clone().map(allocate)
+		}
+
+		// SAFETY: pointers passed to this must be valid `T`.
+		unsafe fn _try_eq<T: TryPartialEq<Error=crate::Error>>(ptr: *const (), rhs: Value) -> crate::Result<bool> {
+			// (&*(ptr as *const T)).try_eq(&rhs)
+			// (&*(ptr as *const T)).deep_clone().map(allocate)
+			todo!()
 		}
 
 		// SAFETY: pointers passed to this must be valid `T`.
@@ -75,8 +88,10 @@ pub trait ExternType : Debug + TryClone<Error=crate::Error> + NamedType + Any {
 
 		&VTable {
 			type_id: TypeId::of::<Self>, 
-			drop:  if std::mem::needs_drop::<Self>() { Some(_drop::<Self>) } else { None },
-			try_clone: _try_clone::<Self>,
+			drop:  _drop::<Self>,
+			shallow_clone: _shallow_clone::<Self>,
+			deep_clone: _deep_clone::<Self>,
+			try_eq: _try_eq::<Self>,
 			debug: _debug::<Self>
 		}
 	};
@@ -129,9 +144,7 @@ impl Drop for ExternData {
 	fn drop(&mut self) {
 		// SAFETY: `data`'s type never changes, so calling this is valid.
 		unsafe {
-			if let Some(dropfn) = (*self.vtable).drop {
-				(dropfn)(self.data)
-			}
+			((*self.vtable).drop)(self.data);
 		}
 	}
 }
@@ -240,7 +253,7 @@ impl ShallowClone for ExternData {
 		Ok(Self {
 			parents: self.parents.clone(),
 			attrs: self.attrs.clone(), 
-			data: unsafe { ((*self.vtable).try_clone)(self.data)? },
+			data: unsafe { ((*self.vtable).shallow_clone)(self.data)? },
 			vtable: self.vtable
 		})
 	}
@@ -252,7 +265,7 @@ impl DeepClone for ExternData {
 		Ok(Self {
 			parents: self.parents.clone(),
 			attrs: self.attrs.clone(), 
-			data: unsafe { ((*self.vtable).try_clone)(self.data)? },
+			data: unsafe { ((*self.vtable).deep_clone)(self.data)? },
 			vtable: self.vtable
 		})
 	}
@@ -260,23 +273,13 @@ impl DeepClone for ExternData {
 
 unsafe impl AllocatedType for ExternData {
 	fn into_alloc(self) -> Allocated {
-		// FLAG_INSTANCE_OBJECT
-		// Allocated::new(ExternData::new(self))
-		todo!()
+		Allocated::new(AllocType::Extern(self))
 	}
 
 	fn is_alloc_a(alloc: &Allocated) -> bool {
 		todo!()
 	/*
 		ExternData::try_alloc_as_ref(alloc).map_or(false, ExternData::is_a::<Self>)
-	*/}
-
-	unsafe fn alloc_into_unchecked(alloc: Allocated) -> Self {
-		todo!()
-	/*
-		debug_assert!(Self::is_alloc_a(&alloc), "invalid value given: {:#?}", alloc);
-		
-		ExternData::alloc_into_unchecked(alloc).into_unchecked()
 	*/}
 
 	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
@@ -298,18 +301,11 @@ unsafe impl AllocatedType for ExternData {
 
 unsafe impl<T: ExternType> AllocatedType for T {
 	fn into_alloc(self) -> Allocated {
-		Allocated::new(ExternData::new(self))
+		Allocated::new(AllocType::Extern(ExternData::new(self)))
 	}
 
 	fn is_alloc_a(alloc: &Allocated) -> bool {
 		ExternData::try_alloc_as_ref(alloc).map_or(false, ExternData::is_a::<Self>)
-	}
-
-	#[inline]
-	unsafe fn alloc_into_unchecked(alloc: Allocated) -> Self {
-		debug_assert!(Self::is_alloc_a(&alloc), "invalid value given: {:#?}", alloc);
-		
-		ExternData::alloc_into_unchecked(alloc).into_unchecked()
 	}
 
 	#[inline]

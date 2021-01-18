@@ -13,6 +13,7 @@ use std::fmt::{self, Debug, Formatter};
 // XXX...XXX X100 = builtinfn
 // 000...XXX X110 = f32 (X=32 bits)
 #[repr(transparent)]
+#[derive(Clone, Copy)]
 pub struct Value(u64);
 
 impl Value {
@@ -50,7 +51,7 @@ impl Value {
 			SmallInt::typename()
 		} else if  self.is_a::<Float>() {
 			Float::typename()
-		} else if let Some(alloc) = self.downcast::<Allocated>() {
+		} else if let Some(alloc) = self.downcast_copy::<Allocated>() {
 			alloc.typename()
 		} else {
 			unreachable!("invalid value given: {:?}", self)
@@ -110,36 +111,6 @@ impl Value {
 	}
 }
 
-impl Drop for Value {
-	fn drop(&mut self) {
-		if let Some(alloc_ref_mut) = self.downcast_mut::<Allocated>() {
-			// SAFETY: since we're in `drop`, we know we won't be used again, and 
-			// we know `Value`s always house valid pointers.
-			unsafe {
-				std::ptr::drop_in_place(alloc_ref_mut as *mut Allocated)
-			}
-		}
-	}
-}
-
-impl Clone for Value {
-	fn clone(&self) -> Self {
-		if let Some(alloc) = self.downcast::<Allocated>() {
-			alloc.clone().into_value()
-			// unsafe {
-			// 	alloc.clone()
-			// 	todo!()
-			// 	Allocated::new_reference_unchecked(self.bits() as *const ())
-			// }
-		} else {
-			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
-			unsafe {
-				Self::from_bits_unchecked(self.bits())
-			}
-		}
-	}
-}
-
 impl TryPartialEq for Value {
 	type Error = crate::Error;
 
@@ -147,7 +118,7 @@ impl TryPartialEq for Value {
 		if self.is_a::<Allocated>() && rhs.is_a::<Allocated>() {
 			// SAFETY: we literally just checked both of them.
 			unsafe {
-				Allocated::value_as_ref_unchecked(self).try_eq(Allocated::value_as_ref_unchecked(rhs))
+				Allocated::value_into_unchecked(*self).try_eq(&Allocated::value_into_unchecked(*rhs))
 			}
 		} else {
 			Ok(self.bits() == rhs.bits())
@@ -165,8 +136,8 @@ impl Debug for Value {
 			Debug::fmt(&integer, f)
 		} else if let Some(float) = self.downcast_copy::<Float>() {
 			Debug::fmt(&float, f)
-		} else if let Some(alloc) = self.downcast::<Allocated>() {
-			Debug::fmt(alloc, f)
+		} else if let Some(alloc) = self.downcast_copy::<Allocated>() {
+			Debug::fmt(&alloc, f)
 		} else {
 			unreachable!("invalid value given: {:?}", self)
 		}
@@ -175,7 +146,7 @@ impl Debug for Value {
 
 impl ShallowClone for Value {
 	fn shallow_clone(&self) -> crate::Result<Self> {
-		if let Some(alloc) = self.downcast::<Allocated>() {
+		if let Some(alloc) = self.downcast_copy::<Allocated>() {
 			alloc.shallow_clone().map(Self::new)
 		} else {
 			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
@@ -188,10 +159,13 @@ impl ShallowClone for Value {
 
 impl DeepClone for Value {
 	fn deep_clone(&self) -> crate::Result<Self> {
-		if let Some(alloc) = self.downcast::<Allocated>() {
+		if let Some(alloc) = self.downcast_copy::<Allocated>() {
 			alloc.deep_clone().map(Self::new)
 		} else {
-			Ok(Self(self.0))
+			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
+			unsafe {
+				Ok(Self::from_bits_unchecked(self.bits()))
+			}
 		}
 	}
 }
@@ -265,9 +239,9 @@ mod name {
 			}
 
 			if i & 0b111 == 0 && i != 0b000 {
-				assert!(value.downcast::<Allocated>().is_some());
+				assert!(value.downcast_copy::<Allocated>().is_some());
 			} else {
-				assert!(value.downcast::<Allocated>().is_none());
+				assert!(value.downcast_copy::<Allocated>().is_none());
 			}
 
 			if i & 1 == 1 {

@@ -1,4 +1,13 @@
+use super::{AllocData, Allocated};
+use std::ptr::NonNull;
 pub fn initialize() {}
+
+pub(super) fn allocate() -> NonNull<AllocData> {
+	unsafe {
+		NonNull::new(libc::malloc(std::mem::size_of::<AllocData>()) as *mut AllocData).unwrap()
+	}
+}
+
 /*use super::Allocated;
 use parking_lot::RwLock;
 

@@ -9,13 +9,27 @@ fn main() {
 	#[derive(Debug)]
 	struct Custom(u32);
 
-	impl try_traits::clone::TryClone for Custom {
-		type Error = Error;
-		fn try_clone(&self) -> Result<Self> { Ok(Self(self.0)) }
-	}
-
 	impl ExternType for Custom {}
 	impl NamedType for Custom {}
+
+	impl ShallowClone for Custom {
+		fn shallow_clone(&self) -> Result<Self> {
+			Ok(Self(self.0))
+		}
+	}
+
+	impl DeepClone for Custom {
+		fn deep_clone(&self) -> Result<Self> {
+			Ok(Self(self.0))
+		}
+	}
+
+	impl try_traits::cmp::TryPartialEq for Custom {
+		type Error = Error;
+		fn try_eq(&self, rhs: &Self) -> Result<bool> {
+			Ok(self.0 == rhs.0)
+		}
+	}
 
 	println!("{:?}", Value::new(Custom(34)));
 	// return;

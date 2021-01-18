@@ -75,37 +75,6 @@ pub unsafe trait ValueType : std::fmt::Debug + Sized {
 	unsafe fn value_into_unchecked(value: Value) -> Self;
 }
 
-/// A trait that indicates a type has attributes.
-pub trait HasAttrs {
-	/// Checks to see if the value, or one of its parents, has the given attribute.
-	///
-	/// The default implementation simply checks to see if `get_attr` returns `Some`.
-	fn has_attr(&self, attr: Literal) -> bool {
-		self.get_attr(attr).is_some()
-	}
-
-	/// Returns a reference the value associated with `attr`, defined either on `self` itself, or one of its parents.
-	fn get_attr(&self, attr: Literal) -> Option<&Value>;
-
-	/// Returns a mutable reference the value associated with `attr`, defined either on `self` itself, or one of its
-	/// parents.
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value>;
-
-	/// Deletes the given `attr` on `self`, returning the value associated with it, if it existed.
-	fn del_attr(&mut self, attr: Literal) -> Option<Value>;
-
-	/// Sets the attribute `attr` for `self` to `value`.
-	fn set_attr(&mut self, attr: Literal, value: Value);
-
-	/// Calls the attribute `attr` for `self` with the given `args`.
-	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
-		todo!()
-		// self.get_attr(attr)
-		// 	.expect("todo: return value error")
-		// 	.call_attr(Literal::OP_CALL, args)
-	}
-}
-
 /// A trait representing an immediate value within Quest, ie it has `Copy`.
 ///
 /// # Safety
@@ -194,4 +163,35 @@ pub unsafe trait ValueTypeRef : ValueType {
 	/// # Safety
 	/// The `value` must be a valid `Self`.
 	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self;
+}
+
+/// A trait that indicates a type has attributes.
+pub trait HasAttrs {
+	/// Checks to see if the value, or one of its parents, has the given attribute.
+	///
+	/// The default implementation simply checks to see if `get_attr` returns `Some`.
+	fn has_attr(&self, attr: Literal) -> bool {
+		self.get_attr(attr).is_some()
+	}
+
+	/// Returns a reference the value associated with `attr`, defined either on `self` itself, or one of its parents.
+	fn get_attr(&self, attr: Literal) -> Option<&Value>;
+
+	/// Returns a mutable reference the value associated with `attr`, defined either on `self` itself, or one of its
+	/// parents.
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value>;
+
+	/// Deletes the given `attr` on `self`, returning the value associated with it, if it existed.
+	fn del_attr(&mut self, attr: Literal) -> Option<Value>;
+
+	/// Sets the attribute `attr` for `self` to `value`.
+	fn set_attr(&mut self, attr: Literal, value: Value);
+
+	/// Calls the attribute `attr` for `self` with the given `args`.
+	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
+		todo!()
+		// self.get_attr(attr)
+		// 	.expect("todo: return value error")
+		// 	.call_attr(Literal::OP_CALL, args)
+	}
 }
