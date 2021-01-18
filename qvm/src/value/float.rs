@@ -1,14 +1,19 @@
-use crate::value::{Value, Literal, QuestValue};
+use crate::value::{Value, Literal, ValueType, NamedType};
 
 pub type Float = f32;
+
+impl NamedType for Float {
+	#[inline(always)]
+	fn typename() -> &'static str {
+		"Number"
+	}
+}
 
 const FLOAT_TAG: u64   = 0b0110;
 const FLOAT_MASK: u64  = 0b0111;
 const FLOAT_SHIFT: u64 =      3;
 
-unsafe impl QuestValue for Float {
-	const TYPENAME: &'static str = "qvm::Float";
-
+unsafe impl ValueType for Float {
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.
@@ -27,22 +32,5 @@ unsafe impl QuestValue for Float {
 		debug_assert_eq!(0, (value.bits() >> FLOAT_SHIFT) & !(u32::MAX as u64));
 
 		Self::from_bits((value.bits() >> FLOAT_SHIFT) as u32)
-	}
-
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
 	}
 }

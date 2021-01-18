@@ -1,4 +1,4 @@
-use crate::value::{Value, QuestValue, Literal};
+use crate::value::{Value, ValueType, Literal, NamedType};
 use std::fmt::{self, Display, Formatter};
 
 /// A small number in Quest, ie fittable within a [`Value`].
@@ -52,10 +52,10 @@ impl SmallInt {
 
 }
 
-impl Value {
-	pub fn new_smallint(num: i32) -> Self {
-		// SAFETY: All `i32`s are valid `i63`s trivially.
-		Self::new(unsafe { SmallInt::new_unchecked(num as i64) })
+impl NamedType for SmallInt {
+	#[inline(always)]
+	fn typename() -> &'static str {
+		"Number"
 	}
 }
 
@@ -66,9 +66,7 @@ const SMALLINT_SHIFT: u64 = 1;
 // SAFETY: The way this is stored internally is by shifting the `i64` one left and `OR`ing it with `1`.
 // This works because all of the allocated objects are pointers, which haven an alignment of 8, and thus cannot have a
 // least-significant-bit of `1`. No other types are defined to have odd values.
-unsafe impl QuestValue for SmallInt {
-	const TYPENAME: &'static str = "qvm::SmallInt";
-
+unsafe impl ValueType for SmallInt {
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: We are defining what it means to be a valid smallint here.
@@ -88,22 +86,6 @@ unsafe impl QuestValue for SmallInt {
 		unsafe {
 			Self::new_unchecked((value.bits() as i64) >> SMALLINT_SHIFT)
 		}
-	}
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
 	}
 }
 

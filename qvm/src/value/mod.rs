@@ -12,8 +12,23 @@ pub use float::*;
 pub use smallint::*;
 pub use boolean::*;
 pub use builtinfn::*;
-pub use allocated::*;
+use allocated::Allocated;
+pub use allocated::ExternType;
 pub use crate::Literal;
+
+/// A Trait that represents the ability for something to have a name.
+pub trait NamedType {
+	/// The name of this type.
+	#[inline(always)]
+	fn typename() -> &'static str {
+		std::any::type_name::<Self>()
+	}
+}
+
+
+pub trait QuestConvertible : ValueType {
+	const CONVERT_FUNCTION: Literal;
+}
 
 /// A trait representing any value within Quest.
 ///
@@ -29,11 +44,8 @@ pub use crate::Literal;
 ///   return the original [`Value`] if the value isn't a `Self`.
 /// - [`value_into_unchecked()`] must return valid results for any [`Value`] constructed via `Self::into_value`.
 ///
-/// If left unchanged, the default implementation of [`QuestValue`] does all this correctly.
-pub unsafe trait QuestValue : std::fmt::Debug + Sized {
-	/// Gets the name of this type.
-	const TYPENAME: &'static str;
-
+/// If left unchanged, the default implementation of [`ValueType`] does all this correctly.
+pub unsafe trait ValueType : std::fmt::Debug + Sized {
 	/// Convert `self` into a [`Value`].
 	fn into_value(self) -> Value;
 
@@ -58,7 +70,9 @@ pub unsafe trait QuestValue : std::fmt::Debug + Sized {
 	/// # Safety
 	/// The `value` must be a valid `Self`.
 	unsafe fn value_into_unchecked(value: Value) -> Self;
+}
 
+pub trait HasAttrs {
 	/// Checks to see if the value, or one of its parents, has the given attribute.
 	///
 	/// The default implementation simply checks to see if `get_attr` returns `Some`.
@@ -81,9 +95,10 @@ pub unsafe trait QuestValue : std::fmt::Debug + Sized {
 
 	/// Calls the attribute `attr` for `self` with the given `args`.
 	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
-		self.get_attr(attr)
-			.expect("todo: return value error")
-			.call_attr(Literal::OP_CALL, args)
+		todo!()
+		// self.get_attr(attr)
+		// 	.expect("todo: return value error")
+		// 	.call_attr(Literal::OP_CALL, args)
 	}
 }
 
@@ -95,8 +110,8 @@ pub unsafe trait QuestValue : std::fmt::Debug + Sized {
 ///   and `None` otherwise.
 /// - [`value_copy_unchecked()`] must return valid results for any [`Value`] constructed via `Self::into_value`.
 ///
-/// If left unchanged, the default implementation of [`QuestValue`] does all this correctly.
-pub unsafe trait QuestValueImmediate : QuestValue + Copy {
+/// If left unchanged, the default implementation of [`ValueType`] does all this correctly.
+pub unsafe trait ValueTypeImmediate : ValueType + Copy {
 	/// Tries to retrieve `Self` from `value`, returning `None` if the value wasn't a `Self`.
 	///
 	/// Implementations generally won't need to override this, as the default behaviour is in terms of
@@ -123,7 +138,7 @@ pub unsafe trait QuestValueImmediate : QuestValue + Copy {
 	}
 }
 
-unsafe impl<T: QuestValue + Copy> QuestValueImmediate for T {}
+unsafe impl<T: ValueType + Copy> ValueTypeImmediate for T {}
 
 /// A trait representing a heap-allocated type within Quest.
 ///
@@ -134,8 +149,8 @@ unsafe impl<T: QuestValue + Copy> QuestValueImmediate for T {}
 /// - [`value_as_ref_unchecked()`] and [`value_as_mut_unchecked()`] must return valid results for any [`Value`]
 ///   constructed via `Self::into_value`.
 ///
-/// If left unchanged, the default implementation of [`QuestValue`] does all this correctly.
-pub unsafe trait QuestValueRef : QuestValue {
+/// If left unchanged, the default implementation of [`ValueType`] does all this correctly.
+pub unsafe trait ValueTypeRef : ValueType {
 	/// Tries to convert a reference to a [`Value`] into one for `Self`, returning `None` if the value's not the right
 	/// type.
 	///
@@ -177,6 +192,3 @@ pub unsafe trait QuestValueRef : QuestValue {
 	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self;
 }
 
-pub trait QuestConvertible : QuestValue {
-	const CONVERT_FUNCTION: Literal;
-}

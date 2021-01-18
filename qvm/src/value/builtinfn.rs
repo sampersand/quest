@@ -1,4 +1,4 @@
-use crate::value::{Value, Literal, QuestValue};
+use crate::value::{Value, Literal, ValueType, NamedType};
 use std::fmt::{self, Debug, Display, Pointer, Formatter};
 use std::hash::{Hash, Hasher};
 use std::collections::hash_map::{HashMap, Entry};
@@ -90,13 +90,18 @@ impl PartialEq for BuiltinFn {
 	}
 }
 
+impl NamedType for BuiltinFn {
+	#[inline(always)]
+	fn typename() -> &'static str {
+		"BuiltinFn"
+	}
+}
+
 const BUILTINFN_TAG: u64   = 0b0100;
 const BUILTINFN_MASK: u64  = 0b0111;
 const BUILTINFN_SHIFT: u64 = 3; // temporary until i can ensure functions are 8-bit aligned.
 
-unsafe impl QuestValue for BuiltinFn {
-	const TYPENAME: &'static str = "qvm::BuiltinFn";
-
+unsafe impl ValueType for BuiltinFn {
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.
@@ -121,21 +126,5 @@ unsafe impl QuestValue for BuiltinFn {
 		Self::new_unchecked(unsafe {
 			std::mem::transmute::<usize, Func>(bits as usize)
 		})
-	}
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
 	}
 }

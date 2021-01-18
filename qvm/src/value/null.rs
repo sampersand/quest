@@ -1,13 +1,18 @@
-use crate::value::{Value, QuestValue, Literal};
+use crate::value::{Value, ValueType, Literal, NamedType};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Null;
 
+impl NamedType for Null {
+	#[inline(always)]
+	fn typename() -> &'static str {
+		"Null"
+	}
+}
+
 pub(super) const NULL_BITS: u64 = 0b0100;
 
-unsafe impl QuestValue for Null {
-	const TYPENAME: &'static str = "qvm::Null";
-
+unsafe impl ValueType for Null {
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.
@@ -35,21 +40,5 @@ unsafe impl QuestValue for Null {
 		debug_assert!(value.is_a::<Self>());
 
 		Self
-	}
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
 	}
 }

@@ -1,10 +1,12 @@
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
 use try_traits::clone::TryClone;
-use crate::{Value, Literal, LMap};
+use crate::{ShallowClone, Value, Literal, LMap};
+use crate::value::NamedType;
 use crate::value::allocated::{Allocated, AllocatedType};
 
-pub struct ExternData {
+// #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
+pub(crate) struct ExternData {
 	parents: Vec<Value>,
 	attrs: crate::LMap,
 	data: *mut (),
@@ -32,10 +34,7 @@ fn allocate<T>(data: T) -> *mut () {
 }
 
 /// Data that's supplied by someone else's quest binndings.
-pub trait ExternType : Debug + TryClone<Error=crate::Error> + Any {
-	/// The name of this data; defaults to the rust typename of it (or will...)
-	const TYPENAME: &'static str = "<how long til typename const :(>"; // std::any::type_name::<Self>()";
-
+pub trait ExternType : Debug + TryClone<Error=crate::Error> + NamedType + Any {
 	/// The initial parents associated with some value.
 	fn parents() -> Vec<Value> {
 		use std::mem::MaybeUninit;
@@ -47,12 +46,12 @@ pub trait ExternType : Debug + TryClone<Error=crate::Error> + Any {
 		// SAFETY: Since we only call this once, we can be guaranteed that (a) we won't have leaks and (b) we won't won't 
 		// initialize it twice. Additionally, we know the pointer returned from `PARENTS.as_mut_ptr` is always valid.
 		ONCE.call_once(|| unsafe {
-			PARENTS.as_mut_ptr().write(Value::new(super::Class::new(Self::TYPENAME)));
+			PARENTS.as_mut_ptr().write(Value::new(super::Class::new(Self::typename())));
 		});
 
 		// SAFETY: We know that it's initialized, as the `call_once` was run before we get here.
 		unsafe {
-			vec![(*PARENTS.as_ptr()).clone()]
+			vec![(*PARENTS.as_ptr()).try_clone().expect("unable to clone parent!")]
 		}
 	}
 
@@ -136,6 +135,7 @@ impl Drop for ExternData {
 	}
 }
 
+
 impl ExternData {
 	pub fn new<T: ExternType>(data: T) -> Self {
 		Self {
@@ -146,12 +146,15 @@ impl ExternData {
 		}
 	}
 
+	pub fn typename(&self) -> &'static str {
+		todo!()
+	}
+
 	pub fn has_attr(&self, attr: Literal) -> bool {
 		self.attrs.has(attr)
 	}
 
 	pub fn call_attr(&self, attr: Literal, args: &[&Value]) -> Value {
-
 		todo!()
 	}
 
@@ -228,6 +231,17 @@ impl ExternData {
 		debug_assert!(self.is_a::<T>(), "invalid value given: {:?}", self);
 
 		&mut *(self.data as *mut T)
+	}
+}
+
+impl ShallowClone for ExternData {
+	fn shallow_clone(&self) -> crate::Result<Self> {
+		Ok(Self {
+			parents: self.parents.clone(),
+			attrs: self.attrs.clone(), 
+			data: unsafe { ((*self.vtable).try_clone)(self.data)? },
+			vtable: self.vtable
+		})
 	}
 }
 

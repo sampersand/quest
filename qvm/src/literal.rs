@@ -1,4 +1,4 @@
-use crate::{QuestValue, Value};
+use crate::{ValueType, Value, value::NamedType};
 use std::fmt::{self, Display, Formatter};
 use std::collections::hash_map::{HashMap, Entry};
 use parking_lot::RwLock;
@@ -92,15 +92,18 @@ impl Display for Literal {
 	}
 }
 
-
+impl NamedType for Literal {
+	#[inline(always)]
+	fn typename() -> &'static str {
+		"Literal"
+	}
+}
 
 const LITERAL_TAG: u64   = 0b0010;
 const LITERAL_MASK: u64  = 0b0111;
 const LITERAL_SHIFT: u64 = 3;
 
-unsafe impl QuestValue for Literal {
-	const TYPENAME: &'static str = "qvm::Literal";
-
+unsafe impl ValueType for Literal {
 	fn into_value(self) -> Value {
 		debug_assert_ne!(self.0, 0);
 		// SAFETY: we're defining what it means to be a literal here.
@@ -122,26 +125,6 @@ unsafe impl QuestValue for Literal {
 		debug_assert_eq!(literal_bits as u32 as u64, literal_bits); // ie it's only the bottom 32 bits.
 
 		Self(literal_bits as u32)
-	}
-
-	fn has_attr(&self, attr: Literal) -> bool {
-		todo!()
-	}
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
 	}
 }
 

@@ -1,11 +1,12 @@
 use super::*;
-use crate::Literal;
+use crate::{Literal, ShallowClone};
+use try_traits::cmp::TryPartialEq;
 use std::fmt::{self, Debug, Formatter};
 
 /// A type that represents any value in Quest.
-// 000...000 0000 = FALSE (so it can be converted to `false` easily)
-// XXX...XXX X000 = allocated
-// XXX...XXX XXX1 = i63
+// 000...000 0000 = false (so it can be converted to `false` easily)
+// XXX...XXX X000 = Allocated
+// XXX...XXX XXX1 = SmallInt
 // 000...000 0010 = TRUE
 // 000...XXX X010 = literal (X=32 bits; nonzero.)
 // 000...000 0100 = NULL
@@ -14,15 +15,9 @@ use std::fmt::{self, Debug, Formatter};
 #[repr(transparent)]
 pub struct Value(u64);
 
-// impl<T: QuestValue> From<T> for Value {
-// 	fn from(questvalue: T) -> Self {
-// 		questvalue.into_value()
-// 	}
-// }
-
 impl Value {
 	/// Creates a new [`Value`] for the given built-in type `T`.
-	pub fn new<T: QuestValue>(data: T) -> Self {
+	pub fn new<T: ValueType>(data: T) -> Self {
 		data.into_value()
 	}
 
@@ -48,13 +43,13 @@ impl Value {
 	/// Returns a type name associated with the current object.
 	pub fn typename(&self) -> &'static str {
 		if self.is_a::<Null>() {
-			Null::TYPENAME
-		} else if self.is_a::<Boolean>() {
-			Boolean::TYPENAME
-		} else if self.is_a::<SmallInt>() {
-			SmallInt::TYPENAME
-		} else if self.is_a::<Float>() {
-			Float::TYPENAME
+			Null::typename()
+		} else if  self.is_a::<Boolean>() {
+			Boolean::typename()
+		} else if  self.is_a::<SmallInt>() {
+			SmallInt::typename()
+		} else if  self.is_a::<Float>() {
+			Float::typename()
 		} else if let Some(alloc) = self.downcast::<Allocated>() {
 			alloc.typename()
 		} else {
@@ -77,7 +72,7 @@ impl Value {
 
 	/// Checks to see if `self` is a `T`.
 	#[inline]
-	pub fn is_a<T: QuestValue>(&self) -> bool {
+	pub fn is_a<T: ValueType>(&self) -> bool {
 		T::is_value_a(self)
 	}
 
@@ -85,7 +80,7 @@ impl Value {
 	///
 	/// This will return `None` if `self` isn't a `T`.
 	#[inline]
-	pub fn downcast<T: QuestValueRef>(&self) -> Option<&T> {
+	pub fn downcast<T: ValueTypeRef>(&self) -> Option<&T> {
 		T::try_value_as_ref(self)
 	}
 
@@ -93,7 +88,7 @@ impl Value {
 	///
 	/// This will return `None` if `self` isn't a `T`.
 	#[inline]
-	pub fn downcast_mut<T: QuestValueRef>(&mut self) -> Option<&mut T> {
+	pub fn downcast_mut<T: ValueTypeRef>(&mut self) -> Option<&mut T> {
 		T::try_value_as_mut(self)
 	}
 
@@ -101,7 +96,7 @@ impl Value {
 	///
 	/// This will return `Err(self)` if `self` isn't a `T`.
 	#[inline]
-	pub fn downcast_into<T: QuestValue>(self) -> Result<T, Self> {
+	pub fn downcast_into<T: ValueType>(self) -> Result<T, Self> {
 		T::try_value_into(self)
 	}
 
@@ -109,14 +104,14 @@ impl Value {
 	///
 	/// This will return `None` if `self` isn't a `T`.
 	#[inline]
-	pub fn downcast_copy<T: QuestValueImmediate>(&self) -> Option<T> {
+	pub fn downcast_copy<T: ValueTypeImmediate>(&self) -> Option<T> {
 		T::try_value_copy(self)
 	}
 
 	/// Attempts to cast `self` to a `T`, calling `self`'s implementation of the conversion func on `T` if it doesn't
 	/// exist.
 	#[inline]
-	pub fn downcast_call<T: QuestValue + QuestConvertible>(self) -> crate::Result<T> {
+	pub fn downcast_call<T: ValueType + QuestConvertible>(self) -> crate::Result<T> {
 		if self.is_a::<T>() {
 			// safety: we just verified it was a `T`.
 			unsafe {
@@ -140,19 +135,26 @@ impl Drop for Value {
 	}
 }
 
-impl Value {
-	pub fn try_clone(&self) -> crate::Result<Self> {
-		if let Some(alloc) = self.downcast::<Allocated>() {
-			alloc.try_clone().map(Self::new)
+impl Clone for Value {
+	fn clone(&self) -> Self {
+		if self.is_a::<Allocated>() {
+			unsafe {
+				todo!()
+				// Allocated::new_reference_unchecked(self.bits() as *const ())
+			}
 		} else {
 			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
 			unsafe {
-				Ok(Self::from_bits_unchecked(self.bits()))
+				Self::from_bits_unchecked(self.bits())
 			}
 		}
 	}
+}
 
-	pub fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
+impl TryPartialEq for Value {
+	type Error = crate::Error;
+
+	fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
 		if self.is_a::<Allocated>() && rhs.is_a::<Allocated>() {
 			// SAFETY: we literally just checked both of them.
 			unsafe {
@@ -182,9 +184,20 @@ impl Debug for Value {
 	}
 }
 
-unsafe impl QuestValue for Value {
-	const TYPENAME: &'static str = "qvm::Value";
+impl ShallowClone for Value {
+	fn shallow_clone(&self) -> crate::Result<Self> {
+		if let Some(alloc) = self.downcast::<Allocated>() {
+			alloc.shallow_clone().map(Self::new)
+		} else {
+			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
+			unsafe {
+				Ok(Self::from_bits_unchecked(self.bits()))
+			}
+		}
+	}
+}
 
+unsafe impl ValueType for Value {
 	#[inline]
 	fn into_value(self) -> Value {
 		self
@@ -203,43 +216,9 @@ unsafe impl QuestValue for Value {
 	unsafe fn value_into_unchecked(value: Value) -> Self {
 		value
 	}
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-		// if let Some(allocated) = self.downcast::<Allocated>()  {
-		// 	allocated.get_attr(attr)
-		// } else if let Some(smallint) = self.downcast_copy::<SmallInt>() {
-		// 	S
-		// }
-		// unsafe {
-		// 	match self.0 {
-		// 		null::NULL_BITS => Null.get_attr(attr),
-		// 		boolean::TRUE_BITS => true.get_attr(attr),
-		// 		boolean::FALSE_BITS => false.get_attr(attr),
-		// 		bits if Number::
-		// 		_ => todo!()
-		// 	}
-		// }
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
-	}
-
-	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
-		todo!()
-	}
 }
 
-unsafe impl QuestValueRef for Value {
+unsafe impl ValueTypeRef for Value {
 	#[inline]
 	fn try_value_as_ref(value: &Value) -> Option<&Self>  {
 		Some(value)
@@ -258,16 +237,6 @@ unsafe impl QuestValueRef for Value {
 	#[inline]
 	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
 		value
-	}
-}
-
-impl Clone for Value {
-	fn clone(&self) -> Self {
-		if let Some(alloc) = self.downcast::<Allocated>() {
-			alloc.clone().into_value()
-		} else {
-			Self(self.0)
-		}
 	}
 }
 
@@ -350,6 +319,7 @@ mod name {
 		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(false)));
 	}
 
+/*
 	#[test]
 	fn allocated_has_lower_3_bits_zero() {
 		#[derive(Debug, PartialEq, Eq)]
@@ -370,6 +340,7 @@ mod name {
 		// todo: downcast
 		// assert_eq!(allocated.downcast::<Custom>(), Some(&Custom(123)));
 	}
+*/
 
 	#[test]
 	fn i63_starts_with_one() {
@@ -422,5 +393,4 @@ mod name {
 		assert_eq!(value.downcast_copy::<f32>(), Some(12.34));
 	}
 }
-
 

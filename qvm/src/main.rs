@@ -15,6 +15,7 @@ fn main() {
 	}
 
 	impl ExternType for Custom {}
+	impl NamedType for Custom {}
 
 	println!("{:?}", Value::new(Custom(34)));
 	// return;

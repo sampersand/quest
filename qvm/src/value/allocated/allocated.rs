@@ -1,84 +1,59 @@
 use super::*;
-use crate::Literal;
-use crate::value::{Value, QuestValue, QuestValueRef};
+use crate::{Literal, ShallowClone};
+use crate::value::{Value, ValueType, ValueTypeRef, NamedType};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::mem::ManuallyDrop;
+use std::sync::Arc;
+use try_traits::cmp::TryPartialEq;
 
-#[repr(C, align(8))]
-pub struct Allocated {
-	flags: u64,
-	data: Data
+#[repr(transparent)]
+pub/*(in crate::value)*/ struct Allocated(Arc<Inner>);
+
+// pub struct AllocatedRef()
+
+#[repr(align(8))]
+struct Inner {
+	flags: u8,
+	data: AllocType
 }
 
-#[repr(C, align(8))]
-union Data {
-	text: (),
-	bignum: (),
-	regex: (),
-	list: ManuallyDrop<List>,
-	map: (),
-	class: ManuallyDrop<Class>,
-	extern_data: ManuallyDrop<ExternData>,
+#[repr(u8)]
+enum AllocType {
+	Text(Text),
+	BigNum(BigNum),
+	Regex(Regex),
+	List(List),
+	Map(Map),
+	Class(Class),
+	ExternData(ExternData)
 }
-
-const FLAG_INSTANCE_MASK: u64 =   0b00111111;
-const FLAG_INSTANCE_OBJECT: u64 = 0b00000000;
-const FLAG_INSTANCE_BIGNUM: u64 = 0b00000001;
-const FLAG_INSTANCE_REGEX: u64 =  0b00000010;
-const FLAG_INSTANCE_LIST: u64 =   0b00000011;
-const FLAG_INSTANCE_MAP: u64 =    0b00000100;
-const FLAG_INSTANCE_TEXT: u64 =   0b00000101;
-const FLAG_INSTANCE_CLASS: u64 =  0b00000110;
-const FLAG_INSTANCE_CUSTOM: u64 = 0b00000111;
-
-macro_rules! impl_from {
-	($($flag:ident $data:ty),*) => {
-		$(
-			impl From<$data> for Allocated {
-				fn from(data: $data) -> Self {
-					Self {
-						flags: $flag,
-
-					}
-				}
-			}
-		)*
-	};
-}
-
-impl From<List> for Allocated {
-	fn from(list: List) -> Self {
-		Self {
-			flags: FLAG_INSTANCE_LIST,
-			data: Data { list: ManuallyDrop::new(list) }
-		}
-	}
-}
-
-impl From<ExternData> for Allocated {
-	fn from(extern_data: ExternData) -> Self {
-		Self {
-			flags: FLAG_INSTANCE_OBJECT,
-			data: Data { extern_data: ManuallyDrop::new(extern_data) }
-		}
-	}
-}
-
 
 // TODO: allocate pages, and use those, instead of allocating individual pointers.
 impl Allocated {
-	pub fn new<T: AllocatedType>(data: T) -> Self {
+	pub(super) fn new<T: AllocatedType>(data: T) -> Self {
 		data.into_alloc()
 	}
 
+	pub fn typename(&self) -> &'static str {
+		match self.0.data {
+			AllocType::Text(_) => Text::typename(),
+			AllocType::BigNum(_) => BigNum::typename(),
+			AllocType::Regex(_) => Regex::typename(),
+			AllocType::List(_) => List::typename(),
+			AllocType::Map(_) => Map::typename(),
+			AllocType::Class(_) => Class::typename(),
+			AllocType::ExternData(ref externdata) => externdata.typename()
+		}
+	}
+}
+
+impl Allocated {
 	pub fn into_ptr(self) -> *mut () {
-		Box::into_raw(Box::new(self)) as *mut ()
+		Arc::into_raw(self.0) as *mut ()
 	}
 
-	pub fn is_alloc_a<T>(&self) -> bool {
-		// T::is_alloc_a(self )
-		// self.inner().
-		false
+	pub(super) fn is_alloc_a<T: AllocatedType>(&self) -> bool {
+		T::is_alloc_a(self)
 	}
 
 	pub unsafe fn from_ptr_ref<'a>(pointer: *const ()) -> &'a Self {
@@ -90,29 +65,26 @@ impl Allocated {
 	}
 
 	pub unsafe fn from_ptr(ptr: *mut ()) -> Self {
-		*Box::from_raw(ptr as *mut Self)
+		// *Arc::from_raw(ptr as *mut Self)
+		todo!()
 	}
 
 	pub unsafe fn into_unchecked<T>(self) -> T {
 		todo!()
 	}
 
-	pub fn typename(&self) -> &'static str {
-		todo!()
-	}
 }
+
 
 const ALLOC_TAG: u64   = 0b0000;
 const ALLOC_MASK: u64  = 0b0111;
 const ALLOC_SHIFT: u64 = 0;
 
-unsafe impl QuestValue for Allocated {
-	const TYPENAME: &'static str = "qvm::Allocated";
-
+unsafe impl ValueType for Allocated {
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid pointer.
 		unsafe {
-			Value::from_bits_unchecked(((self.into_ptr() as u64) << ALLOC_SHIFT) | ALLOC_TAG)
+			Value::from_bits_unchecked(((Arc::into_raw(self.0) as u64) << ALLOC_SHIFT) | ALLOC_TAG)
 		}
 	}
 
@@ -123,28 +95,11 @@ unsafe impl QuestValue for Allocated {
 	unsafe fn value_into_unchecked(value: Value) -> Self {
 		debug_assert!(value.is_a::<Self>());
 
-		Self::from_ptr(value.bits() as *mut ())
-	}
-
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
+		Self(Arc::from_raw(value.bits() as *mut Inner))
 	}
 }
 
-unsafe impl QuestValueRef for Allocated {
+unsafe impl ValueTypeRef for Allocated {
 	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
 		debug_assert!(value.is_a::<Self>());
 
@@ -160,36 +115,57 @@ unsafe impl QuestValueRef for Allocated {
 
 impl Display for Allocated {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		// std::fmt::Debug::fmt(self, f)
-		todo!()
+		// match self.data {
+		// 	AllocType::Text(text) => Display::fmt(&text, f),
+		// 	AllocType::BigNum(bignum) => Display::fmt(&bignum, f),
+		// 	AllocType::Regex(regex) => Display::fmt(&regex, f),
+		// 	AllocType::List(list) => Display::fmt(&list, f),
+		// 	AllocType::Map(map) => Display::fmt(&map, f),
+		// 	AllocType::Class(class) => Display::fmt(&class, f),
+		// 	AllocType::ExternData(externdata) => Display::fmt(&externdata, f)
+		// }
+		todo!();
 	}
 }
 
 impl Debug for Allocated {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		// std::fmt::Debug::fmt(self, f)
-		todo!()
+		match self.0.data {
+			AllocType::Text(ref text) => Debug::fmt(text, f),
+			AllocType::BigNum(ref bignum) => Debug::fmt(bignum, f),
+			AllocType::Regex(ref regex) => Debug::fmt(regex, f),
+			AllocType::List(ref list) => Debug::fmt(list, f),
+			AllocType::Map(ref map) => Debug::fmt(map, f),
+			AllocType::Class(ref class) => Debug::fmt(class, f),
+			AllocType::ExternData(ref externdata) => Debug::fmt(externdata, f)
+		}
 	}
 }
 
-impl Allocated {
-	pub fn try_clone(&self) -> crate::Result<Self> {
-		todo!()
-	}
+impl ShallowClone for Allocated {
+	fn shallow_clone(&self) -> crate::Result<Self> {
+		debug_assert_eq!(self.0.flags, 0, "todo: nonzero flags when cloning");
 
-	pub fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
-		todo!()
+		let data =
+			match self.0.data {
+				AllocType::Text(ref text) => AllocType::Text(text.clone()),
+				AllocType::BigNum(ref bignum) => AllocType::BigNum(bignum.clone()),
+				AllocType::Regex(ref regex) => AllocType::Regex(regex.clone()),
+				AllocType::List(ref list) => AllocType::List(list.shallow_clone()?),
+				AllocType::Map(ref map) => AllocType::Map(map.clone()),
+				AllocType::Class(ref class) => AllocType::Class(class.clone()),
+				AllocType::ExternData(ref externdata) => AllocType::ExternData(externdata.shallow_clone()?),
+			};
+
+		Ok(Self(Arc::new(Inner { flags: 0, data })))
 	}
 }
 
-impl Drop for Allocated {
-	fn drop(&mut self) {
-		todo!();
-	}
-}
+impl TryPartialEq for Allocated {
+	type Error = crate::Error;
 
-impl Clone for Allocated {
-	fn clone(&self) -> Self {
+	fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
+		
 		todo!()
 	}
 }

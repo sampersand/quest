@@ -1,4 +1,4 @@
-use crate::value::{Value, QuestValue, Literal, QuestConvertible};
+use crate::value::{Value, ValueType, Literal, QuestConvertible, NamedType};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -15,9 +15,14 @@ impl Boolean {
 	pub(super) const TRUE_BITS: u64 =  0b0010;
 }
 
-unsafe impl QuestValue for Boolean {
-	const TYPENAME: &'static str = "qvm::Boolean";
+impl NamedType for Boolean {
+	#[inline(always)]
+	fn typename() -> &'static str {
+		"Boolean"
+	}
+}
 
+unsafe impl ValueType for Boolean {
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid boolean.
@@ -41,22 +46,6 @@ unsafe impl QuestValue for Boolean {
 		debug_assert!(value.is_a::<Self>());
 
 		Self(value.bits() != Self::FALSE_BITS)
-	}
-
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		todo!()
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		todo!()
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		todo!()
 	}
 }
 

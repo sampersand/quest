@@ -1,18 +1,23 @@
-mod paging;
 mod allocated;
 mod text;
 mod list;
 mod extern_data;
 mod class;
+mod bignum;
+mod regex;
+mod map;
 
 pub(crate) use allocated::Allocated;
-pub use class::Class;
+pub use class::*;
+pub use bignum::*;
+pub use regex::*;
+pub use map::*;
 pub use text::*;
 pub use list::*;
 pub use extern_data::*;
 
 use crate::Literal;
-use crate::value::{Value, QuestValue};
+use crate::value::{Value, ValueType};
 use std::fmt::Debug;
 
 /// A trait that represents objects that are allocated on the heap in Quest.
@@ -92,15 +97,13 @@ pub unsafe trait AllocatedType : Debug + Sized {
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self;
 }
 
-unsafe impl<T: AllocatedType> QuestValue for T {
-	const TYPENAME: &'static str = "<TODO>";
-
+unsafe impl<T: AllocatedType> ValueType for T {
 	fn into_value(self) -> Value {
-		Allocated::new(self).into_value()
+		self.into_alloc().into_value()
 	}
 
 	fn is_value_a(value: &Value) -> bool {
-		value.downcast::<Allocated>().map_or(false, Allocated::is_alloc_a::<Self>)
+		value.downcast::<Allocated>().map_or(false, Self::is_alloc_a)
 	}
 
 	unsafe fn value_into_unchecked(value: Value) -> Self {
@@ -108,11 +111,4 @@ unsafe impl<T: AllocatedType> QuestValue for T {
 
 		Allocated::value_into_unchecked(value).into_unchecked()
 	}
-
-	fn has_attr(&self, _attr: Literal) -> bool { todo!() }
-	fn get_attr(&self, _attr: Literal) -> Option<&Value> { todo!() }
-	fn get_attr_mut(&mut self, _attr: Literal) -> Option<&mut Value> { todo!() }
-	fn del_attr(&mut self, _attr: Literal) -> Option<Value> { todo!() }
-	fn set_attr(&mut self, _attr: Literal, _value: Value) { todo!() }
-	fn call_attr(&self, _attr: Literal, _args: &[&Value]) -> crate::Result<Value> { todo!() }
 }

@@ -1,17 +1,13 @@
 use crate::value::NamedType;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
-pub struct Text {
-	data: Vec<u8>
+pub struct Regex {
+	// todo
 }
 
-impl NamedType for Text {
+impl NamedType for Regex {
 	#[inline(always)]
 	fn typename() -> &'static str {
-		"Text"
+		"Regex"
 	}
 }
-
-// impl ValueType for Text {
-	
-// }

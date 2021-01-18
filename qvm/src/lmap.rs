@@ -2,7 +2,7 @@ use crate::{Literal, Value};
 use std::collections::HashMap;
 
 /// A [`Literal`] map.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct LMap {
 	map: HashMap<Literal, Value>
 }
@@ -38,5 +38,3 @@ impl LMap {
 		self.map.remove(&key)
 	}
 }
-
-
