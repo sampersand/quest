@@ -8,6 +8,9 @@ extern crate static_assertions;
 extern crate bitflags;
 
 #[macro_use]
+extern crate tracing;
+
+#[macro_use]
 mod macros;
 
 mod literal;
@@ -29,6 +32,7 @@ pub use error::*;
 /// Initializes Quest. This should be run before any other function is called, and may be repeatedly called.
 pub fn initialize() {
 	literal::initialize();
+	value::initialize();
 }
 
 /// Indicates the ability for a type to be shallowly copied

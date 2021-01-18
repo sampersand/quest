@@ -195,4 +195,3 @@ pub unsafe trait ValueTypeRef : ValueType {
 	/// The `value` must be a valid `Self`.
 	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self;
 }
-

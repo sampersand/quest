@@ -6,6 +6,7 @@ mod class;
 mod bignum;
 mod regex;
 mod map;
+mod paging;
 
 pub(crate) use allocated::Allocated;
 pub use class::*;
@@ -15,6 +16,7 @@ pub use map::*;
 pub use text::*;
 pub use list::*;
 pub use extern_data::*;
+pub(crate) use paging::initialize;
 
 use crate::Literal;
 use crate::value::{Value, ValueType};
