@@ -1,10 +1,17 @@
 use crate::{Literal, Value};
 use std::collections::HashMap;
+use std::fmt::{self, Debug, Formatter};
 
 /// A [`Literal`] map.
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct LMap {
 	map: HashMap<Literal, Value>
+}
+
+impl Debug for LMap {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		f.debug_map().entries(&self.map).finish()
+	}
 }
 
 impl LMap {

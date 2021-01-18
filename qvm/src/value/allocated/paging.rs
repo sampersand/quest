@@ -44,7 +44,7 @@ pub fn initialize() {
 
 /// Get a pointer to a place where you can write Allocated data to.
 pub fn allocate() -> *mut Allocated {
-	todo!()
+	...
 }
 
 

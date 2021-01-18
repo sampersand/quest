@@ -63,7 +63,7 @@ unsafe impl<T> ValueConvertable for Allocated<T> {
 		debug_assert!(Self::is_value(&value), "invalid value given: {:#?}", value);
 
 		// value.inner() as 
-		todo!();
+		...
 
 	}
 }

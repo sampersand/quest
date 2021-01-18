@@ -1,11 +1,18 @@
 use super::{AllocatedType, AllocType, Allocated};
 use crate::value::{Literal, Value, ValueType, NamedType};
+use std::fmt::{self, Debug, Formatter};
 
 /// A Class is really just an instance of an object, but with
 /// the data value being `*mut ()`.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Hash)]
 pub struct Class {
 	name: &'static str,
+}
+
+impl Debug for Class {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		f.debug_tuple("Class").field(&self.name).finish()
+	}
 }
 
 impl Class {

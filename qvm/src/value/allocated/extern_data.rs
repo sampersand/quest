@@ -2,12 +2,12 @@ use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
 use try_traits::cmp::TryPartialEq;
 use crate::{Value, Literal, ShallowClone, DeepClone};
-use crate::value::NamedType;
+use crate::value::{NamedType, HasAttrs};
 use crate::value::allocated::{Allocated, AllocatedType, AllocType};
 use crate::lmap::LMap;
 
 // #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
-pub(crate) struct ExternData {
+pub(crate) struct Extern {
 	parents: Vec<Value>,
 	attrs: LMap,
 	data: *mut (),
@@ -19,11 +19,13 @@ pub(crate) struct ExternData {
 pub struct VTable {
 	type_id: fn() -> TypeId,
 
-	drop: unsafe fn(*mut ()),
 	shallow_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
 	deep_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
+
 	try_eq: unsafe fn(*const (), Value) -> crate::Result<bool>,
-	debug: for<'b> unsafe fn(*const (), &mut Formatter<'b>) -> fmt::Result
+	debug: for<'b> unsafe fn(*const (), &mut Formatter<'b>) -> fmt::Result,
+
+	drop: unsafe fn(*mut ()),
 }
 
 #[inline]
@@ -97,9 +99,9 @@ pub trait ExternType : Debug + Any + NamedType + ShallowClone + DeepClone + TryP
 	};
 }
 
-impl Debug for ExternData {
+impl Debug for Extern {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		struct DataDebugger<'a>(&'a ExternData);
+		struct DataDebugger<'a>(&'a Extern);
 
 		impl<'a> Debug for DataDebugger<'a> {
 			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -114,6 +116,7 @@ impl Debug for ExternData {
 
 		impl<'a> Debug for ParentsDebugger<'a> {
 			fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+				// we write it out ourselves b/c we don't want `format` affecting it.
 				write!(f, "[")?;
 
 				if !self.0.is_empty() {
@@ -129,18 +132,18 @@ impl Debug for ExternData {
 		}
 
 		if f.alternate() {
-			f.debug_tuple("ExternData").field(&DataDebugger(self)).finish()
-		} else {
-			f.debug_struct("ExternData")
+			f.debug_struct("Extern")
 				.field("data", &DataDebugger(self))
 				.field("parents", &ParentsDebugger(&self.parents))
 				.field("attrs", &self.attrs)
 				.finish()
+		} else {
+			f.debug_tuple("Extern").field(&DataDebugger(self)).finish()
 		}
 	}
 }
 
-impl Drop for ExternData {
+impl Drop for Extern {
 	fn drop(&mut self) {
 		// SAFETY: `data`'s type never changes, so calling this is valid.
 		unsafe {
@@ -150,7 +153,7 @@ impl Drop for ExternData {
 }
 
 
-impl ExternData {
+impl Extern {
 	pub fn new<T: ExternType>(data: T) -> Self {
 		Self {
 			parents: T::parents(),
@@ -163,31 +166,31 @@ impl ExternData {
 	pub fn typename(&self) -> &'static str {
 		todo!()
 	}
+}
 
-	pub fn has_attr(&self, attr: Literal) -> bool {
+impl HasAttrs for Extern {
+	fn has_attr(&self, attr: Literal) -> bool {
 		self.attrs.has(attr)
 	}
 
-	pub fn call_attr(&self, attr: Literal, args: &[&Value]) -> Value {
-		todo!()
-	}
-
-	pub fn get_attr(&self, attr: Literal) -> Option<&Value> {
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
 		self.attrs.get(attr)
 	}
 
-	pub fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
 		self.attrs.get_mut(attr)
 	}
 
-	pub fn set_attr(&mut self, attr: Literal, value: Value) {
+	fn set_attr(&mut self, attr: Literal, value: Value) {
 		self.attrs.set(attr, value);
 	}
 
-	pub fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
 		self.attrs.del(attr)
 	}
+}
 
+impl Extern {
 	pub fn is_a<T: 'static>(&self) -> bool {
 		TypeId::of::<T>() == self.vtable.type_id()
 	}
@@ -248,7 +251,7 @@ impl ExternData {
 	}
 }
 
-impl ShallowClone for ExternData {
+impl ShallowClone for Extern {
 	fn shallow_clone(&self) -> crate::Result<Self> {
 		Ok(Self {
 			parents: self.parents.clone(),
@@ -259,7 +262,7 @@ impl ShallowClone for ExternData {
 	}
 }
 
-impl DeepClone for ExternData {
+impl DeepClone for Extern {
 	fn deep_clone(&self) -> crate::Result<Self> {
 		// TODO: maybe require a `DeepClone` impl, so I can add it to the vtable?
 		Ok(Self {
@@ -271,54 +274,56 @@ impl DeepClone for ExternData {
 	}
 }
 
-unsafe impl AllocatedType for ExternData {
+unsafe impl AllocatedType for Extern {
 	fn into_alloc(self) -> Allocated {
 		Allocated::new(AllocType::Extern(self))
 	}
 
 	fn is_alloc_a(alloc: &Allocated) -> bool {
-		todo!()
-	/*
-		ExternData::try_alloc_as_ref(alloc).map_or(false, ExternData::is_a::<Self>)
-	*/}
+		matches!(alloc.inner().data, AllocType::Extern(_))
+	}
 
 	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
-		todo!()
-	/*
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
-		
-		ExternData::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
-	*/}
+
+		if let AllocType::Extern(ref externdata) = alloc.inner().data {
+			externdata
+		} else {
+			std::hint::unreachable_unchecked()
+		}
+	}
 
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
-		todo!()
-	/*
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
-		
-		ExternData::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
-	*/}
+
+		if let AllocType::Extern(ref mut externdata) = alloc.inner_mut().data {
+			externdata
+		} else {
+			std::hint::unreachable_unchecked()
+		}
+	}
 }
 
 unsafe impl<T: ExternType> AllocatedType for T {
 	fn into_alloc(self) -> Allocated {
-		Allocated::new(AllocType::Extern(ExternData::new(self)))
+		Allocated::new(AllocType::Extern(Extern::new(self)))
 	}
 
 	fn is_alloc_a(alloc: &Allocated) -> bool {
-		ExternData::try_alloc_as_ref(alloc).map_or(false, ExternData::is_a::<Self>)
+		Extern::try_alloc_as_ref(alloc).map_or(false, Extern::is_a::<Self>)
 	}
 
 	#[inline]
 	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
 		
-		ExternData::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
+		Extern::alloc_as_ref_unchecked(alloc).as_ref_unchecked()
 	}
 
 	#[inline]
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
 		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
 		
-		ExternData::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
+		Extern::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
 	}
 }

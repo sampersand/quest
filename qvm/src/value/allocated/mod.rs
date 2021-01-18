@@ -120,7 +120,7 @@ enum AllocType {
 	List(List),
 	Map(Map),
 	Class(Class),
-	Extern(ExternData)
+	Extern(Extern)
 }
 
 // TODO: allocate pages, and use those, instead of allocating individual pointers.
