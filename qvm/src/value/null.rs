@@ -1,5 +1,6 @@
 use crate::value::{Value, ValueType, Literal, NamedType};
 
+/// The null type.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Null;
 

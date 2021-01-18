@@ -1,3 +1,4 @@
+//! The execution environment for Quest.
 #![allow(unused, deprecated)]
 
 #[macro_use]
@@ -13,19 +14,19 @@ mod literal;
 mod lmap;
 mod alloc;
 mod eval;
+pub mod error;
 pub mod value;
 
-pub use value::{Value, ValueType};
-pub use lmap::LMap;
+
 pub use literal::Literal;
 
-#[derive(Debug)]
-pub enum Error {
-	TypeError(String)
-}
+#[doc(inline)]
+pub use value::{Value, ValueType};
 
-pub type Result<T> = std::result::Result<T, Error>;
+#[doc(inline)]
+pub use error::*;
 
+/// Initializes Quest. This should be run before any other function is called, and may be repeatedly called.
 pub fn initialize() {
 	literal::initialize();
 }
@@ -33,4 +34,13 @@ pub fn initialize() {
 /// Indicates the ability for a type to be shallowly copied
 pub trait ShallowClone : Sized {
 	fn shallow_clone(&self) -> crate::Result<Self>;
+}
+
+/// Indicates the ability for a type to be deeply copied
+pub trait DeepClone : Sized {
+	/// Copies the actual data of the object.
+	///
+	/// When you [`clone()`] a [`Value`], you're actually just creating another reference to the
+	/// same object in memory. This actually creates another distinct object.
+	fn deep_clone(&self) -> crate::Result<Self>;
 }

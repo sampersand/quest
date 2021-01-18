@@ -1,5 +1,5 @@
 use super::*;
-use crate::{Literal, ShallowClone};
+use crate::{Literal, ShallowClone, DeepClone};
 use try_traits::cmp::TryPartialEq;
 use std::fmt::{self, Debug, Formatter};
 
@@ -54,19 +54,6 @@ impl Value {
 			alloc.typename()
 		} else {
 			unreachable!("invalid value given: {:?}", self)
-		}
-	}
-
-	/// Copies the actual data of the object.
-	///
-	/// When you [`clone()`] a [`Value`], you're actually just creating another reference to the
-	/// same object in memory. This actually creates another distinct object.
-	pub fn deep_clone(&self) -> Self {
-		if let Some(alloc) = self.downcast::<Allocated>() {
-			// alloc.deep_clone().into_value()
-			todo!()
-		} else {
-			Self(self.0)
 		}
 	}
 
@@ -137,11 +124,13 @@ impl Drop for Value {
 
 impl Clone for Value {
 	fn clone(&self) -> Self {
-		if self.is_a::<Allocated>() {
-			unsafe {
-				todo!()
-				// Allocated::new_reference_unchecked(self.bits() as *const ())
-			}
+		if let Some(alloc) = self.downcast::<Allocated>() {
+			alloc.clone().into_value()
+			// unsafe {
+			// 	alloc.clone()
+			// 	todo!()
+			// 	Allocated::new_reference_unchecked(self.bits() as *const ())
+			// }
 		} else {
 			// SAFETY: this is literally just us rewrapping `self`, so we know it's safe.
 			unsafe {
@@ -197,6 +186,16 @@ impl ShallowClone for Value {
 	}
 }
 
+impl DeepClone for Value {
+	fn deep_clone(&self) -> crate::Result<Self> {
+		if let Some(alloc) = self.downcast::<Allocated>() {
+			alloc.deep_clone().map(Self::new)
+		} else {
+			Ok(Self(self.0))
+		}
+	}
+}
+
 unsafe impl ValueType for Value {
 	#[inline]
 	fn into_value(self) -> Value {
@@ -213,6 +212,7 @@ unsafe impl ValueType for Value {
 		Ok(value)
 	}
 
+	#[inline]
 	unsafe fn value_into_unchecked(value: Value) -> Self {
 		value
 	}

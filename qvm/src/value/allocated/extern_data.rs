@@ -1,14 +1,15 @@
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
 use try_traits::clone::TryClone;
-use crate::{ShallowClone, Value, Literal, LMap};
+use crate::{Value, Literal, ShallowClone, DeepClone};
 use crate::value::NamedType;
 use crate::value::allocated::{Allocated, AllocatedType};
+use crate::lmap::LMap;
 
 // #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
 pub(crate) struct ExternData {
 	parents: Vec<Value>,
-	attrs: crate::LMap,
+	attrs: LMap,
 	data: *mut (),
 	vtable: *const VTable
 }
@@ -245,6 +246,17 @@ impl ShallowClone for ExternData {
 	}
 }
 
+impl DeepClone for ExternData {
+	fn deep_clone(&self) -> crate::Result<Self> {
+		// TODO: maybe require a `DeepClone` impl, so I can add it to the vtable?
+		Ok(Self {
+			parents: self.parents.clone(),
+			attrs: self.attrs.clone(), 
+			data: unsafe { ((*self.vtable).try_clone)(self.data)? },
+			vtable: self.vtable
+		})
+	}
+}
 
 unsafe impl AllocatedType for ExternData {
 	fn into_alloc(self) -> Allocated {

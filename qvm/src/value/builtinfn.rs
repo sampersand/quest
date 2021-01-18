@@ -6,6 +6,7 @@ use parking_lot::RwLock;
 
 type Func = fn(&Value, &[&Value]) -> crate::Result<Value>;
 
+/// All functions written within rust should be sent through this type.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct BuiltinFn(fn(&Value, &[&Value]) -> crate::Result<Value>);

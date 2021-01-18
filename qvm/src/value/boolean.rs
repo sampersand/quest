@@ -1,5 +1,6 @@
 use crate::value::{Value, ValueType, Literal, QuestConvertible, NamedType};
 
+/// The Boolean type.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct Boolean(pub bool);
@@ -58,8 +59,8 @@ impl Boolean {
 	pub fn at_bool(&self, args: &[&Value]) -> crate::Result<Value> {
 		Ok(Value::new(*self))
 	}
-
 }
+
 // mod fns {
 // 	use super::*;
 

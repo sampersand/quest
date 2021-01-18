@@ -1,3 +1,5 @@
+//! The types that are built in to Quest.
+
 mod value;
 mod float;
 mod boolean;
@@ -12,7 +14,7 @@ pub use float::*;
 pub use smallint::*;
 pub use boolean::*;
 pub use builtinfn::*;
-use allocated::Allocated;
+pub use allocated::*;
 pub use allocated::ExternType;
 pub use crate::Literal;
 
@@ -25,8 +27,9 @@ pub trait NamedType {
 	}
 }
 
-
+/// Indicates the ability for a type to be converted to.
 pub trait QuestConvertible : ValueType {
+	/// The function that's used to convert, eg [`Literal::AT_NUM`].
 	const CONVERT_FUNCTION: Literal;
 }
 
@@ -72,6 +75,7 @@ pub unsafe trait ValueType : std::fmt::Debug + Sized {
 	unsafe fn value_into_unchecked(value: Value) -> Self;
 }
 
+/// A trait that indicates a type has attributes.
 pub trait HasAttrs {
 	/// Checks to see if the value, or one of its parents, has the given attribute.
 	///

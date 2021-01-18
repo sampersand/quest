@@ -1,15 +1,14 @@
 use super::*;
-use crate::{Literal, ShallowClone};
+use crate::{Literal, ShallowClone, DeepClone};
 use crate::value::{Value, ValueType, ValueTypeRef, NamedType};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::mem::ManuallyDrop;
 use std::sync::Arc;
 use try_traits::cmp::TryPartialEq;
 
+#[doc(hidden)]
 #[repr(transparent)]
-pub/*(in crate::value)*/ struct Allocated(Arc<Inner>);
-
-// pub struct AllocatedRef()
+pub struct Allocated(Arc<Inner>);
 
 #[repr(align(8))]
 struct Inner {
@@ -47,11 +46,13 @@ impl Allocated {
 	}
 }
 
-impl Allocated {
-	pub fn into_ptr(self) -> *mut () {
-		Arc::into_raw(self.0) as *mut ()
+impl Clone for Allocated {
+	fn clone(&self) -> Self {
+		todo!()
 	}
+}
 
+impl Allocated {
 	pub(super) fn is_alloc_a<T: AllocatedType>(&self) -> bool {
 		T::is_alloc_a(self)
 	}
@@ -72,9 +73,7 @@ impl Allocated {
 	pub unsafe fn into_unchecked<T>(self) -> T {
 		todo!()
 	}
-
 }
-
 
 const ALLOC_TAG: u64   = 0b0000;
 const ALLOC_MASK: u64  = 0b0111;
@@ -139,6 +138,25 @@ impl Debug for Allocated {
 			AllocType::Class(ref class) => Debug::fmt(class, f),
 			AllocType::ExternData(ref externdata) => Debug::fmt(externdata, f)
 		}
+	}
+}
+
+impl DeepClone for Allocated {
+	fn deep_clone(&self) -> crate::Result<Self> {
+		debug_assert_eq!(self.0.flags, 0, "todo: nonzero flags when cloning");
+
+		let data =
+			match self.0.data {
+				AllocType::Text(ref text) => AllocType::Text(text.clone()),
+				AllocType::BigNum(ref bignum) => AllocType::BigNum(bignum.clone()),
+				AllocType::Regex(ref regex) => AllocType::Regex(regex.clone()),
+				AllocType::List(ref list) => AllocType::List(list.shallow_clone()?),
+				AllocType::Map(ref map) => AllocType::Map(map.clone()),
+				AllocType::Class(ref class) => AllocType::Class(class.clone()),
+				AllocType::ExternData(ref externdata) => AllocType::ExternData(externdata.deep_clone()?),
+			};
+
+		Ok(Self(Arc::new(Inner { flags: 0, data })))
 	}
 }
 

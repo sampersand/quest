@@ -25,7 +25,8 @@ pub fn initialize() {
 	})
 }
 
-/// NOTE: Literals must start at one; a literal with id 0 is actually a different type's representation.
+/// Literals are used to represent identifiers within Quest.
+// NOTE: Literals must start at one; a literal with id 0 is actually a different type's representation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Literal(u32);
 
@@ -34,6 +35,7 @@ impl Literal {
 		self.0 < Self::ONE_PAST_MAX_BUILTIN
 	}
 
+	/// Creates a new [`Literal`] with the given identifier.
 	pub fn new(repr: &'static str) -> Self {
 		match STR_TO_LITERAL.write().entry(repr) {
 			Entry::Occupied(entry) => *entry.get(),
@@ -70,6 +72,7 @@ impl Literal {
 		Self::new(Box::leak(repr.to_string().into_boxed_str()))
 	}
 
+	/// Gets the representation of this literal.
 	pub fn repr(self) -> &'static str {
 		if self.is_builtin() {
 			BUILTIN_REPRS[self.0 as usize]

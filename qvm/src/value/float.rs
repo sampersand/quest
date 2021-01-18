@@ -1,5 +1,7 @@
 use crate::value::{Value, Literal, ValueType, NamedType};
 
+
+/// The floating point type.
 pub type Float = f32;
 
 impl NamedType for Float {

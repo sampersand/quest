@@ -1,6 +1,7 @@
 use crate::value::NamedType;
 use crate::{Value, ShallowClone};
 
+/// A list of [`Values`].
 #[derive(Debug, Clone)]
 pub struct List(Vec<Value>);
 
