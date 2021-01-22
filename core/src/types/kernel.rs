@@ -311,6 +311,11 @@ for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristin
 	"return" => function Self::qs_return,
 	"assert" => method Self::qs_assert,
 
+	"__set_stack__" => method |stack, _| {
+		let stack = stack.call_downcast::<crate::types::List>()?;
+		Ok(crate::Binding::set_stack(stack.iter().map(Object::clone).map(crate::Binding::from).collect())
+			.into_iter().map(Object::from).collect::<Vec<_>>().into())
+	},
 	"spawn" => method |block, _| {
 		use std::thread::{self, JoinHandle};
 		use std::sync::Arc;

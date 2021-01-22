@@ -46,19 +46,33 @@ for Tcp [(parents super::Basic)]:
 				.map_err(|err| crate::Error::Messaged(err.to_string()))
 		})
 	},
-	"read" => method |this, _| -> Result<Object> {
+	"read" => method |this, args| -> Result<Object> {
 		this.try_downcast_mut::<Self>().and_then(|tcp| {
-			use std::io::{BufReader, BufRead};
-			let mut res = Vec::<u8>::with_capacity(5);
-			let tcp = tcp.0.lock().unwrap();
-			let mut bufr = BufReader::new(&*tcp);
-			while bufr.read_until(b'\n', res.as_mut())
-				.map_err(|err| crate::Error::Messaged(err.to_string()))? != 0
-			{
-				if res.ends_with(b"\r\n\r\n") {
-					break;
+			use std::io::{Read, BufReader, BufRead};
+			let mut tcp = tcp.0.lock().unwrap();
+
+			let mut res;
+			if let Some(arg) = args.arg(0) {
+				let arg = arg.call_downcast::<crate::types::Number>()?;
+				res = vec![0; arg.truncate() as usize];
+				dbg!(res.len());
+				tcp.read_exact(&mut res)
+					.map_err(|err| crate::Error::Messaged(err.to_string()))?;
+			} else {
+				res = Vec::<u8>::with_capacity(5);
+				let mut bufr = BufReader::new(&*tcp);
+				while bufr.read_until(b'\n', res.as_mut())
+					.map_err(|err| crate::Error::Messaged(err.to_string()))? != 0
+				{
+					if res.ends_with(b"\r\n\r\n") {
+						break;
+					}
 				}
 			}
+
+
+
+
 
 			Ok(String::from_utf8_lossy(&res).into_owned().into())
 		})

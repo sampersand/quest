@@ -116,6 +116,18 @@ impl Parents {
 		Ok(())
 	}
 
+	/// Add a new parent to the list of parents.
+	pub fn prepend_parent(&mut self, parent: Object) -> Result<()> {
+		let mut inner = self.0.write();
+		match *inner {
+			Inner::None => *inner = Inner::Builtin(vec![parent]),
+			Inner::Builtin(ref mut vec) => vec.insert(0, parent),
+			Inner::Object(ref obj) => { obj.call_attr_lit("unshift", &[&parent])?; },
+		}
+
+		Ok(())
+	}
+
 	/// Converts `self` to an object.
 	pub fn to_object(&self) -> Object {
 		let mut inner = self.0.write();

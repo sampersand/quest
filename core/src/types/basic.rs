@@ -276,7 +276,15 @@ for Basic [(parents super::Pristine)]:
 		} else {
 			Ok(this.clone())
 		}
-	}
+	},
+	"extend" => method |this, args| {
+		this.prepend_parent(args.try_arg(0)?.clone())?;
+		Ok(this.clone())
+	},
+	"inherit" => method |this, args| {
+		this.add_parent(args.try_arg(0)?.clone())?;
+		Ok(this.clone())
+	},
 }
 
 

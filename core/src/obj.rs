@@ -261,6 +261,11 @@ impl Internal {
 	}
 
 	#[inline]
+	fn prepend_parent(&self, val: Object) -> crate::Result<()> {
+		self.attrs.prepend_parent(val)
+	}
+
+	#[inline]
 	fn keys(&self, include_parents: bool) -> crate::Result<Vec<Object>> {
 		self.attrs.keys(include_parents)
 	}
@@ -421,11 +426,19 @@ impl Object {
 
 	/// Dynamically add a new parent.
 	///
-	/// Generally, the [`new_with_parent()`] method is a better idea, as it creates a new obejct with
+	/// Generally, the [`new_with_parent()`] method is a better idea, as it creates a new object with
 	/// parents.
 	#[inline]
 	pub fn add_parent(&self, val: Self) -> crate::Result<()> {
 		self.0.add_parent(val)
+	}
+
+	///
+	/// Generally, the [`new_with_parent()`] method is a better idea, as it creates a new object with
+	/// parents.
+	#[inline]
+	pub fn prepend_parent(&self, val: Self) -> crate::Result<()> {
+		self.0.prepend_parent(val)
 	}
 
 	/// Gets the list of keys corresponding to this object.

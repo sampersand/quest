@@ -69,6 +69,11 @@ impl Attributes {
 		self.data.write().parents.add_parent(parent)
 	}
 
+	/// Add a parent to the list of parents.
+	pub fn prepend_parent(&self, parent: Object) -> Result<()> {
+		self.data.write().parents.prepend_parent(parent)
+	}
+
 	/// Get a list of keys for this class, optionally including all keys defined on parents as well.
 	pub fn keys(&self, include_parents: bool) -> Result<Vec<Object>> {
 		let mut keys = vec![];

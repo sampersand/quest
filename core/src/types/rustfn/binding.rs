@@ -24,6 +24,13 @@ impl Binding {
 		})
 	}
 
+	pub fn set_stack(mut new: Vec<Binding>) -> Vec<Binding> {
+		new.reverse();
+		Self::with_stack(|stack| {
+			std::mem::replace(&mut *stack.write(), new)
+		})
+	}
+
 	pub fn set_binding(new: Object) -> Binding {
 		let new = Binding(new);
 		Binding::with_stack(|stack| {

@@ -20,7 +20,7 @@ Person = {
 }(); # ... and immediately execute the block so as to create the class.
 
 # Assign me as a new human.
-sam = Person('Samp', 'Eersand');
+sam = Person('Samp', 'Ersand');
 
 # And greet me...
 print("Hello, " + sam);
@@ -28,5 +28,5 @@ print("Hello, " + sam);
 
 # Tests
 assert(sam.first == 'Samp');
-assert(sam.last == 'Eersand');
-assert(sam.@text() == 'Samp Eersand');
+assert(sam.last == 'Ersand');
+assert(sam.@text() == 'Samp Ersand');

@@ -2,9 +2,9 @@
 # the `<`, `<=`, `>`, `>=` functions in terms of `<=>`
 
 Person = {
-	__parents__.push(Comparable);
+	:0.extend(Comparable);
 	
-	'()' = (class, name, age) -> {__parents__ = [class]; :0 };
+	'()' = (class, name, age) -> { __parents__ = [class]; :0 };
 
 	'<=>' = (lhs, rhs) -> { lhs.age <=> rhs.age };
 
@@ -14,7 +14,7 @@ Person = {
 john = Person("john doe", 20);
 jane = Person("jane doe", 22);
 
-print(ifl(john > jane, john, jane).name, "is older");
+print(ifl(john > jane, john, jane).name, " is older");
 
 # Tests
 assert(john < jane);
