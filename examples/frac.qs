@@ -1,5 +1,5 @@
 Frac = {
-	__parents__.push(Comparable);
+	:0.extend(Comparable);
 
 	'()' = (class, numer, denom) -> {
 		denom.else(return);
@@ -29,7 +29,9 @@ Frac = {
 	};
 
 	# Convert a Frac to a Number by simply dividing the `numer` by the `denom`.
-	@num = this -> { this.numer / this.denom };
+	@num = this -> {
+		this.numer / this.denom
+	};
 
 	# Convert a Frac to a Text by returning `numer/denom`, omitting `/denom` if
 	# we're a whole number.

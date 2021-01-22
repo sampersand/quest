@@ -22,7 +22,7 @@ loop {
 	guess = prompt("> ").@num();
 
 	if (guess == secret) {
-		quit(0, "perfect!\nit took you" + guesses + "guesses");
+		quit(0, "perfect!\nit took you " + guesses + " guesses");
 	};
 
 	# use `ifl`, which is the ternary operator for literal values.
