@@ -214,6 +214,21 @@ for Pristine [(init_parent) (parents Pristine)]:
 	"." => method Self::qs_dot_get_attr,
 	".?" => method Self::qs_dot_get_attr_q,
 	"instance_exec" => method Self::qs_instance_exec,
+	"instance_jump" => method |this, args| { // we're now into hacky territory. this is why quest2 is being made...
+		let to_exec = args.try_arg(0)?;
+
+		crate::Binding::with_stack(|stack| {
+			stack.write().push(this.clone().into());
+			let res = if to_exec.has_attr_lit("call_noscope")? {
+				to_exec.call_attr_lit("call_noscope", &[])
+			} else {
+				to_exec.call_attr_lit(&crate::Literal::CALL, &[])
+			}?;
+
+			stack.write().push(this.clone().into());
+			Ok(res)
+		})
+	},
 
 	// this is mildly deprecated
 	"::@" => method |this, _| {

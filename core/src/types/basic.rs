@@ -227,15 +227,10 @@ for Basic [(parents super::Pristine)]:
 	"tap_into" => method Self::qs_tap_into,
 
 	// TODO: move these out of kernel
-	"if" => method super::Kernel::qs_if, 
 	"disp" => function super::Kernel::qs_disp,
 	"dispn" => function super::Kernel::qs_dispn,
 	"print" => function super::Kernel::qs_disp,
 	"printn" => function super::Kernel::qs_dispn,
-	"print" => function super::Kernel::qs_disp,
-	"printn" => function super::Kernel::qs_dispn,
-	"while" => method super::Kernel::qs_while,
-	"loop" => method super::Kernel::qs_loop,
 	"return" => function super::Kernel::qs_return,
 	"assert" => method super::Kernel::qs_assert,
 

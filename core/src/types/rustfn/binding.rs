@@ -86,9 +86,9 @@ impl Binding {
 
 				binding.set_attr_lit("__args__", Object::from(List::from(args)))?;
 
-				if let Some(callee) = stack.read().last() {
-					binding.set_attr_lit("__callee__", callee.as_ref().clone())?;
-					binding.add_parent(callee.as_ref().clone())?;
+				if let Some(caller) = stack.read().last() {
+					binding.set_attr_lit("__caller__", caller.as_ref().clone())?;
+					binding.add_parent(caller.as_ref().clone())?;
 				}
 
 				Binding(binding)

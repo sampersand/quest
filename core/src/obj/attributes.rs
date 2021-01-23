@@ -83,6 +83,7 @@ impl Attributes {
 
 		let inner = self.data.write();
 		keys.extend(inner.map.keys());
+
 		if include_parents {
 			keys.extend(inner.parents.keys()?);
 		}

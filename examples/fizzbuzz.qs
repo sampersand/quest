@@ -1,4 +1,3 @@
-Number.divides = (self, rhs) -> { (rhs % self) == 0 };
 Number.divides = (factor, number) -> { (number % factor) == 0 };	
 
 fizzbuzz = max -> {
