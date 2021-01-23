@@ -17,10 +17,7 @@ impl Boolean {
 }
 
 impl NamedType for Boolean {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Boolean"
-	}
+	const TYPENAME: &'static str = "Boolean";
 }
 
 unsafe impl ValueType for Boolean {

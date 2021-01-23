@@ -7,8 +7,5 @@ pub struct BigNum {
 }
 
 impl NamedType for BigNum {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Number"
-	}
+	const TYPENAME: &'static str = "Number";
 }

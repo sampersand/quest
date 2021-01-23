@@ -21,10 +21,9 @@ pub use crate::Literal;
 /// A Trait that represents the ability for something to have a name.
 pub trait NamedType {
 	/// The name of this type.
-	#[inline(always)]
-	fn typename() -> &'static str {
-		std::any::type_name::<Self>()
-	}
+	///
+	/// When [`std::any::type_name`] becomes const-stable, this will have a default value.
+	const TYPENAME: &'static str; /* std::any::type_name::<Self>() */
 }
 
 /// Indicates the ability for a type to be converted to.

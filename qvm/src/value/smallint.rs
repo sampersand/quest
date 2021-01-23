@@ -53,10 +53,7 @@ impl SmallInt {
 }
 
 impl NamedType for SmallInt {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Number"
-	}
+	const TYPENAME: &'static str = "Number";
 }
 
 const SMALLINT_TAG:   u64 = 0b0001;

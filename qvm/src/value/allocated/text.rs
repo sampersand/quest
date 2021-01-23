@@ -9,10 +9,7 @@ pub struct Text {
 }
 
 impl NamedType for Text {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Text"
-	}
+	const TYPENAME: &'static str = "Text";
 }
 
 // impl ValueType for Text {

@@ -23,10 +23,7 @@ impl Class {
 }
 
 impl NamedType for Class {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Class"
-	}
+	const TYPENAME: &'static str = "Class";
 }
 
 unsafe impl AllocatedType for Class {
@@ -60,5 +57,11 @@ unsafe impl AllocatedType for Class {
 		} else {
 			std::hint::unreachable_unchecked()
 		}
+	}
+}
+
+impl crate::ShallowClone for Class {
+	fn shallow_clone(&self) -> crate::Result<Self> {
+		Ok(self.clone())
 	}
 }

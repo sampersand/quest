@@ -7,8 +7,5 @@ pub struct Map {
 }
 
 impl NamedType for Map {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Map"
-	}
+	const TYPENAME: &'static str = "Map";
 }

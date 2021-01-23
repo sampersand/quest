@@ -92,10 +92,7 @@ impl PartialEq for BuiltinFn {
 }
 
 impl NamedType for BuiltinFn {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"BuiltinFn"
-	}
+	const TYPENAME: &'static str = "BuiltinFn";
 }
 
 const BUILTINFN_TAG: u64   = 0b0100;

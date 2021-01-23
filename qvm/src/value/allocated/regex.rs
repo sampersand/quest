@@ -8,8 +8,5 @@ pub struct Regex {
 }
 
 impl NamedType for Regex {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Regex"
-	}
+	const TYPENAME: &'static str = "Regex";
 }

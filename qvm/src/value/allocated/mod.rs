@@ -19,7 +19,6 @@ pub(crate) use paging::initialize;
 use crate::{Literal, ShallowClone, DeepClone};
 use crate::value::{Value, ValueType, ValueTypeRef, NamedType};
 use std::fmt::{self, Debug, Display, Formatter};
-use try_traits::cmp::TryPartialEq;
 use std::ptr::NonNull;
 
 
@@ -84,7 +83,7 @@ pub unsafe trait AllocatedType : Debug + Sized {
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self;
 }
 
-unsafe impl<T: AllocatedType> ValueType for T {
+unsafe impl<T: AllocatedType + ShallowClone> ValueType for T {
 	fn into_value(self) -> Value {
 		self.into_alloc().into_value()
 	}
@@ -96,8 +95,9 @@ unsafe impl<T: AllocatedType> ValueType for T {
 	unsafe fn value_into_unchecked(value: Value) -> Self {
 		debug_assert!(Self::is_value_a(&value), "invalid value given to `value_into_unchecked`: {:?}", value);
 
-		// Allocated::value_into_unchecked(value).clone()
-		todo!()
+		Self::alloc_as_ref_unchecked(&Allocated::value_into_unchecked(value))
+			.shallow_clone()
+			.expect("shallow clone failed!")
 	}
 }
 
@@ -113,6 +113,7 @@ struct AllocData {
 }
 
 #[repr(u8)]
+#[derive(Debug)]
 enum AllocType {
 	Text(Text),
 	BigNum(BigNum),
@@ -137,12 +138,12 @@ impl Allocated {
 
 	pub fn typename(&self) -> &'static str {
 		match self.inner().data {
-			AllocType::Text(_) => Text::typename(),
-			AllocType::BigNum(_) => BigNum::typename(),
-			AllocType::Regex(_) => Regex::typename(),
-			AllocType::List(_) => List::typename(),
-			AllocType::Map(_) => Map::typename(),
-			AllocType::Class(_) => Class::typename(),
+			AllocType::Text(_) => Text::TYPENAME,
+			AllocType::BigNum(_) => BigNum::TYPENAME,
+			AllocType::Regex(_) => Regex::TYPENAME,
+			AllocType::List(_) => List::TYPENAME,
+			AllocType::Map(_) => Map::TYPENAME,
+			AllocType::Class(_) => Class::TYPENAME,
 			AllocType::Extern(ref externdata) => externdata.typename()
 		}
 	}
@@ -257,10 +258,22 @@ impl ShallowClone for Allocated {
 	}
 }
 
-impl TryPartialEq for Allocated {
-	type Error = crate::Error;
-
+impl crate::TryPartialEq for Allocated {
 	fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {	
-		todo!()
+		unsafe {
+			debug_assert_eq!(self.0.as_ref().flags, 0, "todo: how does this affect equality");
+			debug_assert_eq!(rhs.0.as_ref().flags, 0, "todo: how does this affect equality");
+
+			match (&self.0.as_ref().data, &rhs.0.as_ref().data) {
+				(AllocType::Text(l), AllocType::Text(r)) => l.try_eq(&r),
+				(AllocType::BigNum(l), AllocType::BigNum(r)) => l.try_eq(&r),
+				(AllocType::Regex(l), AllocType::Regex(r)) => l.try_eq(&r),
+				(AllocType::List(l), AllocType::List(r)) => l.try_eq(&r),
+				(AllocType::Map(l), AllocType::Map(r)) => l.try_eq(&r),
+				(AllocType::Class(l), AllocType::Class(r)) => l.try_eq(&r),
+				(AllocType::Extern(l), AllocType::Extern(r)) => l.try_eq(&r),
+				_ => Ok(false)
+			}
+		}
 	}
 }

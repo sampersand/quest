@@ -1,8 +1,7 @@
 use std::fmt::{self, Debug, Formatter};
 use std::any::{Any, TypeId};
-use try_traits::cmp::TryPartialEq;
 use crate::{Value, Literal, ShallowClone, DeepClone};
-use crate::value::{NamedType, HasAttrs};
+use crate::value::{NamedType, HasAttrs, ValueType, ValueTypeRef};
 use crate::value::allocated::{Allocated, AllocatedType, AllocType};
 use crate::lmap::LMap;
 
@@ -18,11 +17,12 @@ pub(crate) struct Extern {
 #[doc(hidden)]
 pub struct VTable {
 	type_id: fn() -> TypeId,
+	typename: &'static str,
 
 	shallow_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
 	deep_clone: unsafe fn(*const ()) -> crate::Result<*mut ()>,
 
-	try_eq: unsafe fn(*const (), Value) -> crate::Result<bool>,
+	try_eq: unsafe fn(*const (), *const()) -> crate::Result<bool>,
 	debug: for<'b> unsafe fn(*const (), &mut Formatter<'b>) -> fmt::Result,
 
 	drop: unsafe fn(*mut ()),
@@ -39,7 +39,7 @@ unsafe fn deallocate<T>(data: *mut T){
 }
 
 /// Data that's supplied by someone else's quest binndings.
-pub trait ExternType : Debug + Any + NamedType + ShallowClone + DeepClone + TryPartialEq<Error=crate::Error> {
+pub trait ExternType : Debug + Any + NamedType + ShallowClone + DeepClone + crate::TryPartialEq {
 	/// The initial parents associated with some value.
 	fn parents() -> Vec<Value> {
 		use std::mem::MaybeUninit;
@@ -51,7 +51,7 @@ pub trait ExternType : Debug + Any + NamedType + ShallowClone + DeepClone + TryP
 		// SAFETY: Since we only call this once, we can be guaranteed that (a) we won't have leaks and (b) we won't won't 
 		// initialize it twice. Additionally, we know the pointer returned from `PARENTS.as_mut_ptr` is always valid.
 		ONCE.call_once(|| unsafe {
-			PARENTS.as_mut_ptr().write(Value::new(super::Class::new(Self::typename())));
+			PARENTS.as_mut_ptr().write(Value::new(super::Class::new(Self::TYPENAME)));
 		});
 
 		// SAFETY: We know that it's initialized, as the `call_once` was run before we get here.
@@ -77,10 +77,8 @@ pub trait ExternType : Debug + Any + NamedType + ShallowClone + DeepClone + TryP
 		}
 
 		// SAFETY: pointers passed to this must be valid `T`.
-		unsafe fn _try_eq<T: TryPartialEq<Error=crate::Error>>(ptr: *const (), rhs: Value) -> crate::Result<bool> {
-			// (&*(ptr as *const T)).try_eq(&rhs)
-			// (&*(ptr as *const T)).deep_clone().map(allocate)
-			todo!()
+		unsafe fn _try_eq<T: crate::TryPartialEq + ExternType>(ptr: *const (), rhs: *const ()) -> crate::Result<bool> {
+			(&*(ptr as *const T)).try_eq(&*(rhs as *const T))
 		}
 
 		// SAFETY: pointers passed to this must be valid `T`.
@@ -90,6 +88,7 @@ pub trait ExternType : Debug + Any + NamedType + ShallowClone + DeepClone + TryP
 
 		&VTable {
 			type_id: TypeId::of::<Self>, 
+			typename: Self::TYPENAME,
 			drop:  _drop::<Self>,
 			shallow_clone: _shallow_clone::<Self>,
 			deep_clone: _deep_clone::<Self>,
@@ -152,7 +151,6 @@ impl Drop for Extern {
 	}
 }
 
-
 impl Extern {
 	pub fn new<T: ExternType>(data: T) -> Self {
 		Self {
@@ -164,35 +162,14 @@ impl Extern {
 	}
 
 	pub fn typename(&self) -> &'static str {
-		todo!()
-	}
-}
-
-impl HasAttrs for Extern {
-	fn has_attr(&self, attr: Literal) -> bool {
-		self.attrs.has(attr)
+		unsafe {
+			(*self.vtable).typename
+		}
 	}
 
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		self.attrs.get(attr)
-	}
 
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		self.attrs.get_mut(attr)
-	}
-
-	fn set_attr(&mut self, attr: Literal, value: Value) {
-		self.attrs.set(attr, value);
-	}
-
-	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
-		self.attrs.del(attr)
-	}
-}
-
-impl Extern {
 	pub fn is_a<T: 'static>(&self) -> bool {
-		TypeId::of::<T>() == self.vtable.type_id()
+		dbg!(TypeId::of::<T>()) == (unsafe {  *self.vtable }.type_id)()
 	}
 
 	pub fn try_into<T: 'static>(self) -> Result<T, Self> {
@@ -251,6 +228,28 @@ impl Extern {
 	}
 }
 
+impl HasAttrs for Extern {
+	fn has_attr(&self, attr: Literal) -> bool {
+		self.attrs.has(attr)
+	}
+
+	fn get_attr(&self, attr: Literal) -> Option<&Value> {
+		self.attrs.get(attr)
+	}
+
+	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
+		self.attrs.get_mut(attr)
+	}
+
+	fn set_attr(&mut self, attr: Literal, value: Value) {
+		self.attrs.set(attr, value);
+	}
+
+	fn del_attr(&mut self, attr: Literal) -> Option<Value> {
+		self.attrs.del(attr)
+	}
+}
+
 impl ShallowClone for Extern {
 	fn shallow_clone(&self) -> crate::Result<Self> {
 		Ok(Self {
@@ -271,6 +270,14 @@ impl DeepClone for Extern {
 			data: unsafe { ((*self.vtable).deep_clone)(self.data)? },
 			vtable: self.vtable
 		})
+	}
+}
+
+impl crate::TryPartialEq for Extern {
+	fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {	
+		unsafe {
+			((*self.vtable).try_eq)(self.data, rhs.data)
+		}
 	}
 }
 
@@ -304,6 +311,37 @@ unsafe impl AllocatedType for Extern {
 	}
 }
 
+unsafe impl ValueTypeRef for Extern {
+	#[inline]
+	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
+		debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
+		let mut allocated = Allocated::value_into_unchecked(*value);
+
+		match (*allocated.0.as_ptr()).data {
+			AllocType::Extern(ref externdata) => externdata,
+			#[cfg(debug_assertions)]
+			ref other => unreachable!("`is_a` and `value_into_unchecked` do not match up? {:?}", other),
+			#[cfg(not(debug_assertions))]
+			_ => std::hint::unreachable_unchecked()
+		}
+	}
+
+	#[inline]
+	unsafe fn value_as_mut_unchecked<'a>(value: &'a mut Value) -> &'a mut Self {
+		debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
+		let mut allocated = Allocated::value_into_unchecked(*value);
+
+		match (*allocated.0.as_ptr()).data {
+			AllocType::Extern(ref mut externdata) => externdata,
+			#[cfg(debug_assertions)]
+			ref other => unreachable!("`is_a` and `value_into_unchecked` do not match up? {:?}", other),
+			#[cfg(not(debug_assertions))]
+			_ => std::hint::unreachable_unchecked()
+		}
+	}
+}
+
+
 unsafe impl<T: ExternType> AllocatedType for T {
 	fn into_alloc(self) -> Allocated {
 		Allocated::new(AllocType::Extern(Extern::new(self)))
@@ -326,4 +364,48 @@ unsafe impl<T: ExternType> AllocatedType for T {
 		
 		Extern::alloc_as_mut_unchecked(alloc).as_mut_unchecked()
 	}
+}
+
+unsafe impl<T: ExternType> ValueTypeRef for T {
+	#[inline]
+	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
+		debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
+
+		Extern::value_as_ref_unchecked(value).as_ref_unchecked()
+	}
+
+	#[inline]
+	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
+		debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
+
+		Extern::value_as_mut_unchecked(value).as_mut_unchecked()
+	}
+}
+
+
+
+#[test]
+fn testit() {
+	#[derive(Debug, PartialEq, Eq)]
+	struct Custom(u32);
+
+	impl ExternType for Custom {}
+	impl NamedType for Custom {
+		const TYPENAME: &'static str = "Custom";
+	}
+
+	impl ShallowClone for Custom {
+		fn shallow_clone(&self) -> crate::Result<Self> {
+			Ok(Self(self.0))
+		}
+	}
+
+	impl DeepClone for Custom {
+		fn deep_clone(&self) -> crate::Result<Self> {
+			Ok(Self(self.0))
+		}
+	}
+
+	let allocated = Extern::new(Custom(123));
+	assert!(allocated.is_a::<Custom>());
 }

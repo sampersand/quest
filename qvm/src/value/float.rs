@@ -5,10 +5,7 @@ use crate::value::{Value, Literal, ValueType, NamedType};
 pub type Float = f32;
 
 impl NamedType for Float {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Number"
-	}
+	const TYPENAME: &'static str = "Number";
 }
 
 const FLOAT_TAG: u64   = 0b0110;

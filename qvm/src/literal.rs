@@ -96,10 +96,7 @@ impl Display for Literal {
 }
 
 impl NamedType for Literal {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Literal"
-	}
+	const TYPENAME: &'static str = "Literal";
 }
 
 const LITERAL_TAG: u64   = 0b0010;

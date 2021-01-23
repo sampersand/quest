@@ -48,3 +48,13 @@ pub trait DeepClone : Sized {
 	/// same object in memory. This actually creates another distinct object.
 	fn deep_clone(&self) -> crate::Result<Self>;
 }
+
+pub trait TryPartialEq {
+	fn try_eq(&self, rhs: &Self) -> crate::Result<bool>;
+}
+
+impl<T: PartialEq> TryPartialEq for T {
+	fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
+		Ok(self == rhs)
+	}
+}

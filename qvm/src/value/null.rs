@@ -5,10 +5,7 @@ use crate::value::{Value, ValueType, Literal, NamedType};
 pub struct Null;
 
 impl NamedType for Null {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"Null"
-	}
+	const TYPENAME: &'static str = "Null";
 }
 
 pub(super) const NULL_BITS: u64 = 0b0100;

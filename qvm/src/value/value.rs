@@ -1,6 +1,5 @@
 use super::*;
 use crate::{Literal, ShallowClone, DeepClone};
-use try_traits::cmp::TryPartialEq;
 use std::fmt::{self, Debug, Formatter};
 
 /// A type that represents any value in Quest.
@@ -44,13 +43,13 @@ impl Value {
 	/// Returns a type name associated with the current object.
 	pub fn typename(&self) -> &'static str {
 		if self.is_a::<Null>() {
-			Null::typename()
+			Null::TYPENAME
 		} else if  self.is_a::<Boolean>() {
-			Boolean::typename()
+			Boolean::TYPENAME
 		} else if  self.is_a::<SmallInt>() {
-			SmallInt::typename()
+			SmallInt::TYPENAME
 		} else if  self.is_a::<Float>() {
-			Float::typename()
+			Float::TYPENAME
 		} else if let Some(alloc) = self.downcast_copy::<Allocated>() {
 			alloc.typename()
 		} else {
@@ -106,14 +105,14 @@ impl Value {
 				Ok(T::value_into_unchecked(self))
 			}
 		} else {
-			todo!()
+			self.call_attr(T::CONVERT_FUNCTION, &[])?
+				.downcast_into::<T>()
+				.map_err(|value| panic!("todo: error for call function failure."))
 		}
 	}
 }
 
-impl TryPartialEq for Value {
-	type Error = crate::Error;
-
+impl crate::TryPartialEq for Value {
 	fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
 		if self.is_a::<Allocated>() && rhs.is_a::<Allocated>() {
 			// SAFETY: we literally just checked both of them.
@@ -214,6 +213,24 @@ unsafe impl ValueTypeRef for Value {
 	}
 }
 
+impl HasAttrs for Value {
+	fn get_attr(&self, _: Literal) -> Option<&Value> {
+		todo!()
+	}
+
+	fn get_attr_mut(&mut self, _: Literal) -> Option<&mut Value> {
+		todo!()
+	}
+
+	fn del_attr(&mut self, _: Literal) -> Option<Value> {
+		todo!()
+	}
+
+	fn set_attr(&mut self, _: Literal, _: Value) {
+		todo!()
+	}
+}
+
 #[cfg(test)]
 mod name {
 	use super::*;
@@ -293,28 +310,37 @@ mod name {
 		assert_eq!(value.downcast_copy::<Boolean>(), Some(Boolean::new(false)));
 	}
 
-/*
+
 	#[test]
 	fn allocated_has_lower_3_bits_zero() {
 		#[derive(Debug, PartialEq, Eq)]
-		struct Custom(u64);
+		struct Custom(u32);
 
-		impl try_traits::clone::TryClone for Custom {
-			type Error = crate::Error;
+		impl ExternType for Custom {}
+		impl NamedType for Custom {
+			const TYPENAME: &'static str = "Custom";
+		}
 
-			fn try_clone(&self) -> crate::Result<Self> {
+		impl ShallowClone for Custom {
+			fn shallow_clone(&self) -> crate::Result<Self> {
 				Ok(Self(self.0))
 			}
 		}
 
-		impl ExternType for Custom {}
+		impl DeepClone for Custom {
+			fn deep_clone(&self) -> crate::Result<Self> {
+				Ok(Self(self.0))
+			}
+		}
 
 		let allocated = Value::new(Custom(123));
 		assert_eq!(allocated.0 & 0b111, 0b000);
-		// todo: downcast
-		// assert_eq!(allocated.downcast::<Custom>(), Some(&Custom(123)));
+		dbg!(allocated.is_a::<Extern>());
+		dbg!(std::any::TypeId::of::<Custom>());
+		dbg!(allocated.downcast::<Extern>().unwrap().is_a::<Custom>());
+		assert_eq!(allocated.downcast::<Custom>(), Some(&Custom(123)));
 	}
-*/
+
 
 	#[test]
 	fn i63_starts_with_one() {
@@ -351,7 +377,7 @@ mod name {
 
 	#[test]
 	fn builtinfn_starts_with_four() {
-		let builtinfn = BuiltinFn::new(Literal::new(concat!(file!(), "-", line!(), "-", column!())), |_, _| panic!());
+		let builtinfn = BuiltinFn::new(Literal::new(concat!(file!(), "-", line!(), "-", column!())), |_, _| unreachable!());
 
 		let value = Value::new(builtinfn);
 

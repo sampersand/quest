@@ -15,8 +15,21 @@ impl ShallowClone for List {
 }
 
 impl NamedType for List {
-	#[inline(always)]
-	fn typename() -> &'static str {
-		"List"
+	const TYPENAME: &'static str = "List";
+}
+
+impl crate::TryPartialEq for List {
+	fn try_eq(&self, rhs: &Self) -> crate::Result<bool> {
+		if self.0.len() != rhs.0.len() {
+			return Ok(false);
+		}
+
+		for (l, r) in self.0.iter().zip(rhs.0.iter()) {
+			if !l.try_eq(r)? {
+				return Ok(false);
+			}
+		}
+
+		Ok(true)
 	}
 }

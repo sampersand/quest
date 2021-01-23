@@ -10,7 +10,9 @@ fn main() {
 	struct Custom(u32);
 
 	impl ExternType for Custom {}
-	impl NamedType for Custom {}
+	impl NamedType for Custom {
+		const TYPENAME: &'static str = "1";
+	}
 
 	impl ShallowClone for Custom {
 		fn shallow_clone(&self) -> Result<Self> {
@@ -24,8 +26,7 @@ fn main() {
 		}
 	}
 
-	impl try_traits::cmp::TryPartialEq for Custom {
-		type Error = Error;
+	impl TryPartialEq for Custom {
 		fn try_eq(&self, rhs: &Self) -> Result<bool> {
 			Ok(self.0 == rhs.0)
 		}
