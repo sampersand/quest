@@ -14,7 +14,6 @@ sieve = max -> {
 
 	2.upto(max.sqrt())
 		.map(i -> {
-			
 			array.get(i - 2).else(return);
 
 			Thread::spawn {
@@ -25,9 +24,9 @@ sieve = max -> {
 				}
 			}
 		})
-		.each(Thread::join);
+		.each(~$join);
 
-	array.select(Number::itself)
+	array.select(~$@bool).@list()
 };
 
 primes_upto_15 = sieve(15);
