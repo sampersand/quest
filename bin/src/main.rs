@@ -52,7 +52,7 @@ fn setup_tracing() {
 
 	let loglevel = std::env::var("QUEST_LOGGING");
 	let filter = 
-		match loglevel.as_ref().map(|x| &*x) {
+		match loglevel.as_ref().map(|x| x.as_ref()) {
 			Ok("T") | Ok("TRACE") => LevelFilter::TRACE,
 			Ok("D") | Ok("DEBUG") => LevelFilter::DEBUG,
 			Ok("I") | Ok("INFO") => LevelFilter::INFO,
