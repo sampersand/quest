@@ -1,7 +1,7 @@
 # Create a person class. Classes are created by executing a block that returns
-# `:0` (which is the same as `self`/`this in other languages).
+# `:0` (which is the same as `self`/`this` in other languages).
 
-Person = {
+Person = object() {
 	# Define what it means to "call" a Person (ie `Person(...)`).
 	# Because `() -> {...}` syntax already defines the arguments in the body
 	# of the function, we don't need to set them ourselves. 
@@ -15,10 +15,7 @@ Person = {
 
 	# Define the conversion function to text.
 	@text = person -> { person.first + ' ' + person.last };
-
-	# As this is a class, we return `:0` at the end...
-	:0
-}(); # ... and immediately execute the block so as to create the class.
+};
 
 # Assign me as a new human.
 sam = Person('Samp', 'Ersand');

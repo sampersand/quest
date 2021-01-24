@@ -1,7 +1,6 @@
 trycatch = (try, catch) -> {
 	__try__ = true;
 	value = try();
-
 	if(__try__, { value }, { catch(value) })
 };
 
@@ -22,12 +21,12 @@ handler = block -> {
 	print(trycatch(block) { "Exception: " + _0 });
 };
 
-handler {
-	return("Hello, world!", :0);
+handler({
+	return("Hello, world!");
 	assert(false);
-};
+});
 
-handler {
+handler({
 	throw("Hello, exception!");
 	assert(false);
-};
+});

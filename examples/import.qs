@@ -1,5 +1,5 @@
 # I currently haven't implemented a "read file" functionality yet...
-Io.File("./frac.qs").read().eval();
+Io::File("./frac.qs").read().eval();
 half = Frac(1, 2);
 
 print(half); # => 1/2

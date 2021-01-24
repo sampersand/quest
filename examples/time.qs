@@ -1,5 +1,5 @@
 # Hey look, time literals!
-Time = {
+Time = object() {
 	'()' = (cls, hours, seconds, ampm) -> {
 		ampm = ampm.or('am');
 
@@ -9,7 +9,7 @@ Time = {
 	@text = self -> {
 		('' + self.hours) + ':' + (self.seconds) + ' ' + (self.ampm)
 	};
-:0}();
+};
 
 # Hijack the `:` operator that's used for keyword arguments
 Number.':' = Time;

@@ -1,10 +1,9 @@
 # Implementing the idea of inheritance in quest.
-# this is done through manipulations of the the `__parents__` variable.
-Person = {
-	'()' = (class, first, last) -> {
-		:0.becomes(class);
-		:0
-	};
+# This is done through manipulations of the the `__parents__` variable behind-the-scenes: 
+# The `becomes` method replaces `__parents__`, and `object(Person)` creates a new object with 
+# the parents being `[Person]`.
+Person = object () {
+	'()' = (class, first, last) -> { :0.becomes(class) };
 
 	SAYS_WHAT = 'hi';
 
@@ -15,13 +14,9 @@ Person = {
 	speak = person -> {
 		print(person, ' says: ', person.SAYS_WHAT);
 	};
+};
 
-	:0
-}();
-
-Child = {
-	:0.becomes(Person);
-
+Child = object(Person) {
 	SAYS_WHAT = "Waa! I want food!";
 
 	@text = child -> {
@@ -29,9 +24,7 @@ Child = {
 		parent_ims = child.__parents__.get(0).__parents__.get(0);
 		"Baby '" + parent_ims::@text(child) + "'"
 	};
-
-	:0
-}();
+};
 
 sam = Person('Sam', 'W');
 child = Child('Sammie', 'Boy');

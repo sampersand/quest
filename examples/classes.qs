@@ -3,7 +3,7 @@
 #
 # Like in other examples, a "class" is really just an executed block of code
 # which returns the local scope.
-Person = {
+Person = object() {
 	# For `Scope`s, the `@text` attribute checks to see if a `name` field is set.
 	# If we set one here, whenever we call `Person.@text`, we'll get this name.
 	name = "Person";
@@ -24,16 +24,12 @@ Person = {
 		:0
 	};
 
-	instance_methods = {
+	instance_methods = object() {
 		@text = person -> {
 			person.first + " " + person.last
 		};
-
-		:0
-	}();
-
-	:0
-}();
+	};
+};
 
 sam = Person("Sam", "W");
 

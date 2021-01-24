@@ -4,8 +4,8 @@
 # Note that we immediately call this block after its definition: `fibonacci` is
 # set to the return value of the block.
 Number.fibonacci = {
-	# Initialize memo to a blank object; this is the syntax for empty maps.
-	memo = { :0 }();
+	# Initialize memo to a blank object.
+	memo = object();
 
 	# Then assign some starting, initial values.
 	memo.0 = 0;

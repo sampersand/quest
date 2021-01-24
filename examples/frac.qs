@@ -1,11 +1,10 @@
-Frac = {
+Frac = object() {
 	:0.extend(Comparable);
 
 	'()' = (class, numer, denom) -> {
 		denom.else(return);
 
-		:0.becomes(class);
-		:0
+		:0.becomes(class)
 	};
 
 	# Checks to see if the fraction is a whole number.
@@ -40,9 +39,7 @@ Frac = {
 		this.is_whole().then(numertxt.return);
 		numertxt + '/' + this.denom
 	};
-
-	:0
-}();
+};
 
 # Tests
 assert(Frac(3, 4).@text() == "3/4");
