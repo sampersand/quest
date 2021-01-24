@@ -1,8 +1,9 @@
 # Hey look, time literals!
 Time = {
 	'()' = (cls, hours, seconds, ampm) -> {
-		:0.ampm = ampm.or('am');
-		:0.extend(Time)
+		ampm = ampm.or('am');
+
+		:0.becomes(Time)
 	};
 
 	@text = self -> {
@@ -13,5 +14,5 @@ Time = {
 # Hijack the `:` operator that's used for keyword arguments
 Number.':' = Time;
 
-print((12 : 40) - 34); # => 12:40 am
+print(12 : 40); # => 12:40 am
 

@@ -280,6 +280,11 @@ for Basic [(parents super::Pristine)]:
 		this.add_parent(args.try_arg(0)?.clone())?;
 		Ok(this.clone())
 	},
+	"becomes" => method |this, args| {
+		let parents = Object::from(args.into_iter().cloned().collect::<Vec<_>>());
+		this.set_attr_lit("__parents__", parents)?;
+		Ok(this.clone())
+	},
 }
 
 

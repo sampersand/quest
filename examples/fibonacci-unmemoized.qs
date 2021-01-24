@@ -4,5 +4,5 @@ fibonacci = {
 	})
 };
 
-print(fibonacci(30));
+print(fibonacci(10));
 # print(10.fibonacci());

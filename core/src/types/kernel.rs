@@ -316,6 +316,24 @@ for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristin
 		Ok(crate::Binding::set_stack(stack.iter().map(Object::clone).map(crate::Binding::from).collect())
 			.into_iter().map(Object::from).collect::<Vec<_>>().into())
 	},
+	"object" => function |mut args| {
+		use crate::types::Scope;
+		if args.len() == 0 {
+			return Ok(Object::new(Scope));
+		}
+
+		let body = args.as_mut().pop().unwrap();
+
+		let object = 
+			if args.is_empty() {
+				Object::new(Scope)
+			} else {
+				Object::new_with_parent(Scope, args.to_vec().into_iter().map(Clone::clone).collect::<Vec<_>>())
+			};
+
+		object.call_attr_lit("instance_exec", &[body]).and(Ok(object))
+	},
+
 	"spawn" => method |block, _| {
 		use std::thread::{self, JoinHandle};
 		use std::sync::Arc;

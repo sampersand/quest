@@ -4,7 +4,7 @@ Frac = {
 	'()' = (class, numer, denom) -> {
 		denom.else(return);
 
-		__parents__ = [class];
+		:0.becomes(class);
 		:0
 	};
 

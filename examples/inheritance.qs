@@ -2,7 +2,7 @@
 # this is done through manipulations of the the `__parents__` variable.
 Person = {
 	'()' = (class, first, last) -> {
-		__parents__ = [class];
+		:0.becomes(class);
 		:0
 	};
 
@@ -13,14 +13,14 @@ Person = {
 	};
 
 	speak = person -> {
-		print(person, 'says:', person.SAYS_WHAT);
+		print(person, ' says: ', person.SAYS_WHAT);
 	};
 
 	:0
 }();
 
 Child = {
-	__parents__ = [Person];
+	:0.becomes(Person);
 
 	SAYS_WHAT = "Waa! I want food!";
 

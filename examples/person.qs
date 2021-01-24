@@ -8,7 +8,8 @@ Person = {
 	'()' = (class, first, last) -> {
 		# Set the current object's parents to `Person` so we can have access to
 		# its `@text` method.
-		__parents__ = [class];
+		:0.becomes(class);
+
 		:0 # Return the current object, which we just created in this method.
 	};
 

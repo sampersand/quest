@@ -4,7 +4,7 @@
 Person = {
 	:0.extend(Comparable);
 	
-	'()' = (class, name, age) -> { __parents__ = [class]; :0 };
+	'()' = (class, name, age) -> { :0.becomes(class) };
 
 	'<=>' = (lhs, rhs) -> { lhs.age <=> rhs.age };
 

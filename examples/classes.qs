@@ -17,6 +17,9 @@ Person = {
 		# change that so our parents is just `Person`'s instance methods.
 		__parents__ = [class.instance_methods];
 
+		# Idiomatically, you would use the varidict `becomes` function instead of directly modifying `__parents__`:
+		:0.becomes(class.instance_methods);
+
 		# We return the current scope, as it's the current object.
 		:0
 	};
