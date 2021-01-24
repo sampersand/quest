@@ -22,15 +22,15 @@ See the `examples` folder for some examples of what Quest can do! Most of them e
 ## Basic Examples
 ```php
 # Text can either be single or double quotes: they're identical (like python).
-where = "world";
-disp("Hello, " + where + "!"); # => Hello, world!
+where = 'world';
+print('Hello, ' + where + '!'); # => Hello, world!
 ```
 
 Local variables are actually just string keys on the current object. The following is identical to the previous example:
 ```php
-# `:0` is the same as `this` or `self` in other languages.
-:0."where" = "world";
-disp("Hello, " + :0."where" + "!"); # => Hello, world!
+# `:0` is 'the current scope'.
+:0.'where' = 'world';
+print('Hello, ' + :0.'where' + '!'); # => Hello, world!
 ```
 
 ## Functions, Classes, and Maps
@@ -39,18 +39,18 @@ In Quest, there are no named/anonymous functions—they're both simply `Block`s,
 ```php
 # Arguments are passed via local variables `_0`, `_1`, `_2`, etc.
 # The last statement in a block is implicitly returned.
-disp("4 squared is:", { _0 ** 2 }(4)); # => 4 squared is: 16
+print('4 squared is: ', { _0 ** 2 }(4)); # => 4 squared is: 16
 
 # You can assign anonymous functions to variables too. The `->` syntax
 # can be used to name parameters.
 square = n -> { n ** 2 };
-disp("4 squared is:", square(4)); # => 4 squared is: 16
+print('4 squared is: ', square(4)); # => 4 squared is: 16
 
 # You can even just straight-up add them to builtin classes:
 # The `_0` argument is the the object that this method was called on, akin to
 # `self` or `this` in other languages.
 Number.square = n -> { n ** 2 };
-disp("4 squared is:", 4.square());
+print('4 squared is: ', 4.square());
 ```
 
 Maps are created by simply returning the result of an executed block of code:
@@ -58,26 +58,38 @@ Maps are created by simply returning the result of an executed block of code:
 traffic_lights = {
 	# A blank scope is created whenever a block is called. Again, `:0` is the
 	# same as `this` / `self` in other languages. 
-	:0."red" = 'stop';
-	:0."green" = "go";
-	:0."yellow" = "go, if you can";
+	:0.'red' = 'stop';
+	:0.'green' = 'go';
+	:0.'yellow' = 'go, if you can';
 
 	:0 # Return the current scope
 }();
 
-disp("Green means", traffic_lights."green"); # => Green means go
+print('Green means ', traffic_lights.'green'); # => Green means go
+```
+However, you rarely need to do this directly. The `object` function makes this a lot easier:
+```php
+traffic_lights = object() {
+	'red' = 'stop';
+	'green' = 'go';
+	'yellow' = 'go, if you can';
+};
+
+print('Green means ', traffic_lights.'green'); # => Green means go
 ```
 
 **Classes are actually just objects too**: They're just a group of methods which are available for any object which makes the "class" its parent. There is no intrinsic concept of a "constructor" either, and is generally implemented by overloading the "call" (`()`) function and returning the new scope.
 ```php
-Person = {
+Person = object() {
 	# Whenever something is called, the `()` attribute is run.
 	# "Constructors" are really just defining a `()` attribute that overwrites `__parents__` and
 	# returns `:0` as the last value.
 	'()' = (class, first, last) -> {
-		# You can have multiple parents (to allow for multiple inheritance and mixins).
+		# You can have multiple parents (to allow for multiple inheritance and mixins),
 		# However, here we don't need to have multiple parents.
 		__parents__ = [class];
+
+		:0.becomes(class); # However, this is generally used instead of the previous line as it's simpler.
 
 		# The `first` and `last` variables are already defined in the current scope, so we don't
 		# need to assign them!
@@ -87,12 +99,11 @@ Person = {
 
 	# Define the conversion to a text object
 	@text = self -> { self.first + " " + self.last };
-
-	:0 # like in `traffic_lights`, we return the current scope.
-}();
+};
+();
 
 person = Person("John", "Doe");
-disp(person); # => "John Doe"
+print(person); # => "John Doe"
 ```
 
 ## No Keywords
@@ -107,13 +118,14 @@ factorial = n -> {
 		n * factorial(n - 1)
 	})
 };
-disp("10! =", factorial(10)); # => 10! = 3628800
+
+print("10! =", factorial(10)); # => 10! = 3628800
 
 i = 0;
-while({ i < 5 }, {
+while ({ i < 5 }) {
 	i += 1;
-	disp("i =", i);
-});
+	print("i =", i);
+};
 # => i = 1
 # => i = 2
 # => i = 3
@@ -129,7 +141,7 @@ The `return` function is a bit different than other languages. Because there is 
 make_dinner = {
 	the_magic_word = prompt("what's the magic word? ");
 	if(the_magic_word != "please", {
-		disp("You didn't say 'please'!");
+		print("You didn't say 'please'!");
 		# `:0` is the current stackframe, `:1` is the stackframe above this
 		# one in this case, that's the `make_dinner` stackframe. return `false`
 		# from that stackframe.
@@ -148,38 +160,38 @@ make_dinner = {
 	cook_food();
 	set_table();
 
-	disp("food's ready!");
+	print("food's ready!");
 	true # return `true`
 };
 
 # the `if` function can also be used as a ternary operator.
-disp(if(make_dinner(), { "time to eat!" }, { "aww" }));
+print(if(make_dinner(), { "time to eat!" }, { "aww" }));
 ```
 
 This also removes the need for `continue` and `break` keywords that so many other languages have:
 ```php
 i = 0;
-while({ i < 100 }, {
+while ({ i < 100 }) {
 	i += 1;
 
 	# Quest supports "truthy" values.
-	if(i % 2, {
+	if (i % 2) {
 		# Return from the while loops's body's stackframe.
 		# This is analogous to `continue`.
 		return(:1);
-	});
+	};
 
-	disp("i =", i);
+	print("i =", i);
 
-	if(i == 8, {
-		disp("stopping.");
+	if (i == 8) {
+		print("stopping.");
 		# Return from the while loop's stackframe. 
 		# This is analogous to `break`.
 		return(:2);
-	})
-});
+	};
+};
 
-disp("done");
+print("done");
 
 # => i = 2
 # => i = 4
@@ -200,14 +212,16 @@ Unlike most languages, `=` is actually an _operator_. Only `Text` has it defined
 x = 5; # call the `Text::=` function implicitly
 y.'='(6); # call the `Text::=` function explicitly
 
-disp(:0.x, :0.y); # => 5 6
+print(:0.x, :0.y); # => 5 6
 
 # now you can assign numbers.
 # however, you can only access them via `:0.XXX`.
 Number.'=' = Text::'=';
 
 3 = 4;
-disp(:0.3) # => 4
+print(:0.3) # => 4
+
+# Obviously this isn't that helpful for numbers, but it's how destructoring lists work!
 ```
 
 (Minor note: `a.b = c` doesn't actually use the `=` operator; it's syntactic sugar for the `.=` operator—`a.'.='(b,c)`—and is accessible on every object that inherits from `Pristine` (which is everything, by default).)
@@ -216,7 +230,8 @@ disp(:0.3) # => 4
 
 ```php
 'x' = 5;
-disp(x, 'x'(), :0.'x'); # => 5 5 5
+	
+print(x, 'x'(), :0.'x'); # => 5 5 5
 ```
 
 ## Everything is fair game
@@ -227,14 +242,14 @@ Most runtime languages support some form of instance variables that can be added
 Number.square = self -> { self ** 2 };
 
 twelve = 12;
-disp(twelve.square()); # => 144
+print(twelve.square()); # => 144
 
 # define the `cube` method on this instance of 12.
 twelve.cube = self -> { self ** 3 };
-disp(twelve.cube); # => 1728
+print(twelve.cube); # => 1728
 
 # no other `12` in the program has access to the `cube` method.
-disp(12.__has_attr__('cube')); # => false
+print(12.__has_attr__('cube')); # => false
 ```
 
 ## More

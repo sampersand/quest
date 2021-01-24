@@ -28,6 +28,7 @@ fn try_tokenize_quoted<S: Stream>(stream: &mut S, quote: char) -> Result<Option<
 					| Some(chr @ '\"') => text.push(chr),
 				Some('n') => text.push('\n'),
 				Some('\n') => { /* do nothing */ },
+				Some('\r') => { stream.next_if_starts_with("\n")?; },
 				Some('t') => text.push('\t'),
 				Some('r') => text.push('\r'),
 				Some('0') => text.push('\0'),
