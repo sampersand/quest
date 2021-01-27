@@ -3,7 +3,7 @@ use crate::{Literal, ShallowClone, DeepClone};
 use std::fmt::{self, Debug, Formatter};
 
 /// A type that represents any value in Quest.
-// 000...000 0000 = false (so it can be converted to `false` easily)
+// 000...000 0000 = FALSE (so it can be converted to `false` easily)
 // XXX...XXX X000 = Allocated
 // XXX...XXX XXX1 = SmallInt
 // 000...000 0010 = TRUE

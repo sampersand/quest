@@ -33,7 +33,7 @@ impl BuiltinFn {
 	pub fn new(name: Literal, func: Func) -> Self {
 		let builtinfn = Self(func);
 
-		if FUNCTIONS.read().values().find(|&&x| x == name).is_some() {
+		if FUNCTIONS.read().values().any(|&x| x == name) {
 			panic!("Cannot add name '{}' in twice!", name);
 		}
 
@@ -88,7 +88,7 @@ impl Eq for BuiltinFn {}
 impl PartialEq for BuiltinFn {
 	fn eq(&self, rhs: &Self) -> bool {
 		// if two functions have the same address, we define them as the same BuiltinFn.
-		(self.0 as u64) == (rhs.0 as u64)
+		(self.0 as usize) == (rhs.0 as usize)
 	}
 }
 
@@ -101,7 +101,7 @@ unsafe impl ValueType for BuiltinFn {
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.
 		unsafe {
-			Value::from_bits_unchecked(((self.0 as u64) << BUILTINFN_SHIFT) | BUILTINFN_TAG)
+			Value::from_bits_unchecked(((self.0 as usize as u64) << BUILTINFN_SHIFT) | BUILTINFN_TAG)
 		}
 	}
 

@@ -47,7 +47,7 @@ impl SmallInt {
 	}
 
 	/// Unwraps `self` and returns its enclosed value.
-	pub fn into_inner(self) -> i64 {
+	pub const fn into_inner(self) -> i64 {
 		self.0
 	}
 

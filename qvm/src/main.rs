@@ -16,7 +16,8 @@ fn main() {
 
 
 	let value = Value::new(List::new(vec![
-		Value::new(Text::new("abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg")),
+		Value::new(Text::new("abcdef")),
+		Value::new(BigNum::new(128i64)),
 		Value::new(Custom(34))]));
 
 	println!("{:?}", value.shallow_clone());
