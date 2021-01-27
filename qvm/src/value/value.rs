@@ -291,9 +291,9 @@ mod name {
 			}
 
 			if i & 0b111 == 0b110 {
-				assert_eq!(value.downcast_copy(), Some(f32::from_bits(i as u32 >> 3)));
+				assert_eq!(value.downcast_copy(), Some(Float::new(f32::from_bits(i as u32 >> 3))));
 			} else {
-				assert_eq!(value.downcast_copy::<f32>(), None);
+				assert_eq!(value.downcast_copy::<Float>(), None);
 			}
 
 			std::mem::forget(value); // in case its allocated.
@@ -313,13 +313,11 @@ mod name {
 
 	#[test]
 	fn allocated_has_lower_3_bits_zero() {
-		#[derive(Debug, PartialEq, Eq)]
+		#[derive(Debug, PartialEq, Eq, Named)]
+		#[quest(crate_name="crate")]
 		struct Custom(u32);
 
 		impl ExternType for Custom {}
-		impl NamedType for Custom {
-			const TYPENAME: &'static str = "Custom";
-		}
 
 		impl ShallowClone for Custom {
 			fn shallow_clone(&self) -> crate::Result<Self> {
@@ -387,10 +385,10 @@ mod name {
 
 	#[test]
 	fn f32_starts_with_six() {
-		let value = Value::new(12.34);
+		let value = Value::new(Float::new(12.34));
 
 		assert_eq!(value.0 & 0b111, 0b110);
-		assert_eq!(value.downcast_copy::<f32>(), Some(12.34));
+		assert_eq!(value.downcast_copy::<Float>(), Some(Float::new(12.34)));
 	}
 }
 

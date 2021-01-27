@@ -1,4 +1,4 @@
-use crate::value::{Value, Literal, ValueType, NamedType};
+use crate::value::{Value, Literal, ValueType};
 use std::fmt::{self, Debug, Display, Pointer, Formatter};
 use std::hash::{Hash, Hasher};
 use std::collections::hash_map::{HashMap, Entry};
@@ -7,8 +7,9 @@ use parking_lot::RwLock;
 type Func = fn(&Value, &[&Value]) -> crate::Result<Value>;
 
 /// All functions written within rust should be sent through this type.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Named)]
 #[repr(transparent)]
+#[quest(crate_name="crate")]
 pub struct BuiltinFn(fn(&Value, &[&Value]) -> crate::Result<Value>);
 
 lazy_static::lazy_static! {
@@ -89,10 +90,6 @@ impl PartialEq for BuiltinFn {
 		// if two functions have the same address, we define them as the same BuiltinFn.
 		(self.0 as u64) == (rhs.0 as u64)
 	}
-}
-
-impl NamedType for BuiltinFn {
-	const TYPENAME: &'static str = "BuiltinFn";
 }
 
 const BUILTINFN_TAG: u64   = 0b0100;

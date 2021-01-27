@@ -498,8 +498,18 @@ dependencies = [
  "libc",
  "page_size",
  "parking_lot",
+ "qvm-derive",
  "static_assertions",
  "tracing",
+]
+
+[[package]]
+name = "qvm-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

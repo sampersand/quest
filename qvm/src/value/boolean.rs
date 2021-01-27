@@ -1,8 +1,9 @@
-use crate::value::{Value, ValueType, Literal, QuestConvertible, NamedType};
+use crate::value::{Value, ValueType, Literal, QuestConvertible};
 
 /// The Boolean type.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Named)]
 #[repr(transparent)]
+#[quest(crate_name="crate")]
 pub struct Boolean(pub bool);
 
 impl Boolean {
@@ -14,10 +15,6 @@ impl Boolean {
 	// Note: It's defined as `0` so it can easily be cast to false in Rust.
 	pub(super) const FALSE_BITS: u64 = 0b0000;
 	pub(super) const TRUE_BITS: u64 =  0b0010;
-}
-
-impl NamedType for Boolean {
-	const TYPENAME: &'static str = "Boolean";
 }
 
 unsafe impl ValueType for Boolean {

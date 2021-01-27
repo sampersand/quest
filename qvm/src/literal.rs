@@ -27,7 +27,8 @@ pub fn initialize() {
 
 /// Literals are used to represent identifiers within Quest.
 // NOTE: Literals must start at one; a literal with id 0 is actually a different type's representation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Named)]
+#[quest(crate_name="crate")]
 pub struct Literal(u32);
 
 impl Literal {
@@ -93,10 +94,6 @@ impl Display for Literal {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		Display::fmt(&self.repr(), f)
 	}
-}
-
-impl NamedType for Literal {
-	const TYPENAME: &'static str = "Literal";
 }
 
 const LITERAL_TAG: u64   = 0b0010;

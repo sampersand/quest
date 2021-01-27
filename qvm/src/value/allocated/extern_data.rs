@@ -281,66 +281,8 @@ impl crate::TryPartialEq for Extern {
 	}
 }
 
-unsafe impl AllocatedType for Extern {
-	fn into_alloc(self) -> Allocated {
-		Allocated::new(AllocType::Extern(self))
-	}
-
-	fn is_alloc_a(alloc: &Allocated) -> bool {
-		matches!(alloc.inner().data, AllocType::Extern(_))
-	}
-
-	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
-		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
-
-		if let AllocType::Extern(ref externdata) = alloc.inner().data {
-			externdata
-		} else {
-			std::hint::unreachable_unchecked()
-		}
-	}
-
-	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
-		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
-
-		if let AllocType::Extern(ref mut externdata) = alloc.inner_mut().data {
-			externdata
-		} else {
-			std::hint::unreachable_unchecked()
-		}
-	}
-}
-
-unsafe impl ValueTypeRef for Extern {
-	#[inline]
-	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
-		debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
-		let mut allocated = Allocated::value_into_unchecked(*value);
-
-		match (*allocated.0.as_ptr()).data {
-			AllocType::Extern(ref externdata) => externdata,
-			#[cfg(debug_assertions)]
-			ref other => unreachable!("`is_a` and `value_into_unchecked` do not match up? {:?}", other),
-			#[cfg(not(debug_assertions))]
-			_ => std::hint::unreachable_unchecked()
-		}
-	}
-
-	#[inline]
-	unsafe fn value_as_mut_unchecked<'a>(value: &'a mut Value) -> &'a mut Self {
-		debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
-		let mut allocated = Allocated::value_into_unchecked(*value);
-
-		match (*allocated.0.as_ptr()).data {
-			AllocType::Extern(ref mut externdata) => externdata,
-			#[cfg(debug_assertions)]
-			ref other => unreachable!("`is_a` and `value_into_unchecked` do not match up? {:?}", other),
-			#[cfg(not(debug_assertions))]
-			_ => std::hint::unreachable_unchecked()
-		}
-	}
-}
-
+impl_allocated_type!(for Extern);
+impl_allocated_value_type_ref!(for Extern);
 
 unsafe impl<T: ExternType> AllocatedType for T {
 	fn into_alloc(self) -> Allocated {
@@ -383,16 +325,13 @@ unsafe impl<T: ExternType> ValueTypeRef for T {
 }
 
 
-
 #[test]
 fn testit() {
-	#[derive(Debug, PartialEq, Eq)]
+	#[derive(Debug, PartialEq, Eq, Named)]
+	#[quest(crate_name="crate",name="test::Custom")]
 	struct Custom(u32);
 
 	impl ExternType for Custom {}
-	impl NamedType for Custom {
-		const TYPENAME: &'static str = "Custom";
-	}
 
 	impl ShallowClone for Custom {
 		fn shallow_clone(&self) -> crate::Result<Self> {

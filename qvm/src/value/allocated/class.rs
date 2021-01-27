@@ -4,7 +4,8 @@ use std::fmt::{self, Debug, Formatter};
 
 /// A Class is really just an instance of an object, but with
 /// the data value being `*mut ()`.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Hash, Named)]
+#[quest(crate_name="crate")]
 pub struct Class {
 	name: &'static str,
 }
@@ -22,43 +23,8 @@ impl Class {
 	}
 }
 
-impl NamedType for Class {
-	const TYPENAME: &'static str = "Class";
-}
-
-unsafe impl AllocatedType for Class {
-	#[inline]
-	fn into_alloc(self) -> Allocated {
-		Allocated::new(AllocType::Class(self))
-	}
-
-	#[inline]
-	fn is_alloc_a(alloc: &Allocated) -> bool {
-		matches!(alloc.inner().data, AllocType::Class(_))
-	}
-
-	#[inline]
-	unsafe fn alloc_as_ref_unchecked(alloc: &Allocated) -> &Self {
-		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
-
-		if let AllocType::Class(ref class) = alloc.inner().data {
-			class
-		} else {
-			std::hint::unreachable_unchecked()
-		}
-	}
-
-	#[inline]
-	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self {
-		debug_assert!(Self::is_alloc_a(alloc), "invalid value given: {:#?}", alloc);
-
-		if let AllocType::Class(ref mut class) = alloc.inner_mut().data {
-			class
-		} else {
-			std::hint::unreachable_unchecked()
-		}
-	}
-}
+impl_allocated_type!(for Class);
+impl_allocated_value_type_ref!(for Class);
 
 impl crate::ShallowClone for Class {
 	fn shallow_clone(&self) -> crate::Result<Self> {

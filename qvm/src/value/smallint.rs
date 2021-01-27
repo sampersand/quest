@@ -1,9 +1,10 @@
-use crate::value::{Value, ValueType, Literal, NamedType};
+use crate::value::{Value, ValueType, Literal};
 use std::fmt::{self, Display, Formatter};
 
 /// A small number in Quest, ie fittable within a [`Value`].
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Named)]
 #[repr(transparent)]
+#[quest(crate_name="crate", name="Number")]
 pub struct SmallInt(i64);
 
 impl SmallInt {
@@ -50,10 +51,6 @@ impl SmallInt {
 		self.0
 	}
 
-}
-
-impl NamedType for SmallInt {
-	const TYPENAME: &'static str = "Number";
 }
 
 const SMALLINT_TAG:   u64 = 0b0001;

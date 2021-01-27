@@ -1,12 +1,9 @@
-use crate::value::{Value, ValueType, Literal, NamedType};
+use crate::value::{Value, ValueType, Literal};
 
 /// The null type.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Named)]
+#[quest(crate_name="crate")]
 pub struct Null;
-
-impl NamedType for Null {
-	const TYPENAME: &'static str = "Null";
-}
 
 pub(super) const NULL_BITS: u64 = 0b0100;
 
