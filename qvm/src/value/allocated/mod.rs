@@ -1,9 +1,9 @@
 #[macro_use]
 mod macros;
 
-mod text;
+mod text2;
 mod list;
-mod extern_data;
+mod r#extern;
 mod class;
 mod bignum;
 mod regex;
@@ -14,9 +14,9 @@ pub use class::*;
 pub use bignum::*;
 pub use regex::*;
 pub use map::*;
-pub use text::*;
+pub use text2::*;
 pub use list::*;
-pub use extern_data::*;
+pub use r#extern::*;
 pub(crate) use paging::initialize;
 
 use crate::{Literal, ShallowClone, DeepClone};
@@ -126,6 +126,10 @@ enum AllocType {
 	Class(Class),
 	Extern(Extern)
 }
+
+/// Some types in Quest rely on the size of `AllocType` for optimization.
+const ALLOC_TYPE_SIZE: usize = 64;
+
 
 // TODO: allocate pages, and use those, instead of allocating individual pointers.
 impl Allocated {

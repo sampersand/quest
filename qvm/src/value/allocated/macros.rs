@@ -39,11 +39,15 @@ macro_rules! impl_allocated_value_type_ref {
 		unsafe impl $crate::value::ValueTypeRef for $ty {
 			#[inline]
 			unsafe fn value_as_ref_unchecked(value: &$crate::value::Value) -> &Self {
+				#[allow(unused)]
+				use $crate::value::allocated::{AllocType, Allocated};
+				use $crate::value::ValueType;
+
 				debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
-				let mut allocated = $crate::value::allocated::Allocated::value_into_unchecked(*value);
+				let mut allocated = Allocated::value_into_unchecked(*value);
 
 				match (*allocated.0.as_ptr()).data {
-					$crate::value::allocated::AllocType::$variant(ref data) => data,
+					AllocType::$variant(ref data) => data,
 					#[cfg(debug_assertions)]
 					ref other => unreachable!("`is_a` and `value_into_unchecked` do not match up? {:?}", other),
 					#[cfg(not(debug_assertions))]
@@ -53,11 +57,13 @@ macro_rules! impl_allocated_value_type_ref {
 
 			#[inline]
 			unsafe fn value_as_mut_unchecked<'a>(value: &'a mut $crate::value::Value) -> &'a mut Self {
+				use $crate::value::allocated::{Allocated, AllocType};
+				use $crate::value::ValueType;
 				debug_assert!(value.is_a::<Self>(), "invalid value given: {:?}", value);
-				let mut allocated = $crate::value::allocated::Allocated::value_into_unchecked(*value);
+				let mut allocated = Allocated::value_into_unchecked(*value);
 
 				match (*allocated.0.as_ptr()).data {
-					$crate::value::allocated::AllocType::$variant(ref mut data) => data,
+					AllocType::$variant(ref mut data) => data,
 					#[cfg(debug_assertions)]
 					ref other => unreachable!("`is_a` and `value_into_unchecked` do not match up? {:?}", other),
 					#[cfg(not(debug_assertions))]

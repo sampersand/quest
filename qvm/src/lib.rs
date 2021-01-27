@@ -5,8 +5,7 @@
 extern crate qvm_derive;
 pub use qvm_derive::*;
 
-#[macro_use]
-extern crate static_assertions;
+extern crate static_assertions as sa;
 
 #[macro_use]
 extern crate tracing;

@@ -5,6 +5,7 @@ use crate::value::{NamedType, HasAttrs, ValueType, ValueTypeRef};
 use crate::value::allocated::{Allocated, AllocatedType, AllocType};
 use crate::lmap::LMap;
 
+
 // #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
 pub(crate) struct Extern {
 	parents: Vec<Value>,

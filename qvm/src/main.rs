@@ -14,7 +14,10 @@ fn main() {
 		}
 	}
 
-	let value = Value::new(Custom(34));
+
+	let value = Value::new(List::new(vec![
+		Value::new(Text::new("abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg")),
+		Value::new(Custom(34))]));
 
 	println!("{:?}", value.shallow_clone());
 	/*

@@ -105,7 +105,7 @@ pub fn derive_quest_type(input: TokenStream) -> TokenStream {
 			quote! {
 				impl #traitname for #ident {
 					// note that this only works for clonable types
-					fn shallow_clone(&self) -> #result { self.clone() }
+					fn shallow_clone(&self) -> #result { Ok(self.clone()) }
 				}
 			}
 		};
@@ -119,7 +119,7 @@ pub fn derive_quest_type(input: TokenStream) -> TokenStream {
 			quote! {
 				impl #traitname for #ident {
 					// note that this only works for clonable types
-					fn deep_clone(&self) -> #result { self.clone() }
+					fn deep_clone(&self) -> #result { Ok(self.clone()) }
 				}
 			}
 		};
