@@ -1,4 +1,4 @@
-use crate::value::NamedType;
+use crate::value::{Value, SmallInt, SmallFloat};
 use std::cmp::Ordering;
 use std::borrow::Cow;
 
@@ -18,19 +18,22 @@ enum Internal {
 	Complex(Complex),
 }
 
-impl BigNum {
-	#[inline]
-	pub fn new<T: Into<Self>>(data: T) -> Self {
-		data.into()
-	}
-}
+// impl BigNum {
+// 	#[inline]
+// 	pub fn new<T: Into<Self>>(data: T) -> Self {
+// 		data.into()
+// 	}
+// }
 
 // all smaller numbers should go through `smallint`.
 // i64 is included here because smallint is `i63`.
-impl From<i64> for BigNum {
-	#[inline]
+impl From<i64> for Value {
 	fn from(val: i64) -> Self {
-		BigInt::from(val).into()
+		if let Some(smallint) = SmallInt::new(val) {
+			smallint.into()
+		} else {
+			BigNum(Internal::BigInt(val.into())).into()
+		}
 	}
 }
 

@@ -5,9 +5,9 @@ use crate::value::{Value, Literal, ValueType};
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Named)]
 #[repr(transparent)]
 #[quest(crate_name="crate", name="Number")]
-pub struct Float(f32);
+pub struct SmallFloat(f32);
 
-impl Float {
+impl SmallFloat {
 	pub const fn new(float: f32) -> Self {
 		Self(float)
 	}
@@ -17,7 +17,7 @@ const FLOAT_TAG: u64   = 0b0110;
 const FLOAT_MASK: u64  = 0b0111;
 const FLOAT_SHIFT: u64 =      3;
 
-unsafe impl ValueType for Float {
+unsafe impl ValueType for SmallFloat {
 	#[inline]
 	fn into_value(self) -> Value {
 		// SAFETY: This is the definition of a valid float.
@@ -39,16 +39,16 @@ unsafe impl ValueType for Float {
 	}
 }
 
-impl From<f32> for Float {
+impl From<f32> for SmallFloat {
 	#[inline]
 	fn from(float: f32) -> Self {
 		Self(float)
 	}
 }
 
-impl From<Float> for f32 {
+impl From<SmallFloat> for f32 {
 	#[inline]
-	fn from(float: Float) -> Self {
+	fn from(float: SmallFloat) -> Self {
 		float.0
 	}
 }

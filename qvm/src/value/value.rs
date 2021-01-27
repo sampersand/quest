@@ -17,8 +17,8 @@ pub struct Value(u64);
 
 impl Value {
 	/// Creates a new [`Value`] for the given built-in type `T`.
-	pub fn new<T: ValueType>(data: T) -> Self {
-		data.into_value()
+	pub fn new<T: Into<Self>>(data: T) -> Self {
+		data.into()
 	}
 
 	/// Get the bits of the [`Value`].
@@ -48,8 +48,8 @@ impl Value {
 			Boolean::TYPENAME
 		} else if  self.is_a::<SmallInt>() {
 			SmallInt::TYPENAME
-		} else if  self.is_a::<Float>() {
-			Float::TYPENAME
+		} else if  self.is_a::<SmallFloat>() {
+			SmallFloat::TYPENAME
 		} else if let Some(alloc) = self.downcast_copy::<Allocated>() {
 			alloc.typename()
 		} else {
@@ -133,7 +133,7 @@ impl Debug for Value {
 			Debug::fmt(&boolean, f)
 		} else if let Some(integer) = self.downcast_copy::<SmallInt>() {
 			Debug::fmt(&integer, f)
-		} else if let Some(float) = self.downcast_copy::<Float>() {
+		} else if let Some(float) = self.downcast_copy::<SmallFloat>() {
 			Debug::fmt(&float, f)
 		} else if let Some(alloc) = self.downcast_copy::<Allocated>() {
 			Debug::fmt(&alloc, f)
@@ -169,49 +169,55 @@ impl DeepClone for Value {
 	}
 }
 
-unsafe impl ValueType for Value {
+impl<T: ValueType> From<T> for Value {
 	#[inline]
-	fn into_value(self) -> Value {
-		self
-	}
-
-	#[inline]
-	fn is_value_a(value: &Value) -> bool {
-		true
-	}
-
-	#[inline]
-	fn try_value_into(value: Value) -> Result<Self, Value>  {
-		Ok(value)
-	}
-
-	#[inline]
-	unsafe fn value_into_unchecked(value: Value) -> Self {
-		value
+	fn from(valuetype: T) -> Self {
+		valuetype.into_value()
 	}
 }
+// unsafe impl ValueType for Value {
+// 	#[inline]
+// 	fn into_value(self) -> Value {
+// 		self
+// 	}
 
-unsafe impl ValueTypeRef for Value {
-	#[inline]
-	fn try_value_as_ref(value: &Value) -> Option<&Self>  {
-		Some(value)
-	}
+// 	#[inline]
+// 	fn is_value_a(value: &Value) -> bool {
+// 		true
+// 	}
 
-	#[inline]
-	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
-		value
-	}
+// 	#[inline]
+// 	fn try_value_into(value: Value) -> Result<Self, Value>  {
+// 		Ok(value)
+// 	}
 
-	#[inline]
-	fn try_value_as_mut(value: &mut Value) -> Option<&mut Self> {
-		Some(value)
-	}
+// 	#[inline]
+// 	unsafe fn value_into_unchecked(value: Value) -> Self {
+// 		value
+// 	}
+// }
 
-	#[inline]
-	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
-		value
-	}
-}
+// unsafe impl ValueTypeRef for Value {
+// 	#[inline]
+// 	fn try_value_as_ref(value: &Value) -> Option<&Self>  {
+// 		Some(value)
+// 	}
+
+// 	#[inline]
+// 	unsafe fn value_as_ref_unchecked(value: &Value) -> &Self {
+// 		value
+// 	}
+
+// 	#[inline]
+// 	fn try_value_as_mut(value: &mut Value) -> Option<&mut Self> {
+// 		Some(value)
+// 	}
+
+// 	#[inline]
+// 	unsafe fn value_as_mut_unchecked(value: &mut Value) -> &mut Self {
+// 		value
+// 	}
+// }
 
 impl HasAttrs for Value {
 	fn get_attr(&self, _: Literal) -> Option<&Value> {
@@ -291,9 +297,9 @@ mod name {
 			}
 
 			if i & 0b111 == 0b110 {
-				assert_eq!(value.downcast_copy(), Some(Float::new(f32::from_bits(i as u32 >> 3))));
+				assert_eq!(value.downcast_copy(), Some(SmallFloat::new(f32::from_bits(i as u32 >> 3))));
 			} else {
-				assert_eq!(value.downcast_copy::<Float>(), None);
+				assert_eq!(value.downcast_copy::<SmallFloat>(), None);
 			}
 
 			std::mem::forget(value); // in case its allocated.
@@ -385,10 +391,10 @@ mod name {
 
 	#[test]
 	fn f32_starts_with_six() {
-		let value = Value::new(Float::new(12.34));
+		let value = Value::new(SmallFloat::new(12.34));
 
 		assert_eq!(value.0 & 0b111, 0b110);
-		assert_eq!(value.downcast_copy::<Float>(), Some(Float::new(12.34)));
+		assert_eq!(value.downcast_copy::<SmallFloat>(), Some(SmallFloat::new(12.34)));
 	}
 }
 

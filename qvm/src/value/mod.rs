@@ -1,7 +1,7 @@
 //! The types that are built in to Quest.
 
 mod value;
-mod float;
+mod smallfloat;
 mod boolean;
 mod smallint;
 mod null;
@@ -10,12 +10,11 @@ mod allocated;
 
 pub use value::*;
 pub use null::*;
-pub use float::*;
+pub use smallfloat::*;
 pub use smallint::*;
 pub use boolean::*;
 pub use builtinfn::*;
 pub use allocated::*;
-pub use allocated::ExternType;
 pub use crate::Literal;
 
 /// A Trait that represents the ability for something to have a name.
