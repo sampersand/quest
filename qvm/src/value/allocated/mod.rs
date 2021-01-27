@@ -1,7 +1,7 @@
 #[macro_use]
 mod macros;
 
-mod text2;
+mod text;
 mod list;
 mod r#extern;
 mod class;
@@ -14,7 +14,7 @@ pub use class::*;
 pub use bignum::*;
 pub use regex::*;
 pub use map::*;
-pub use text2::*;
+pub use text::*;
 pub use list::*;
 pub use r#extern::*;
 pub(crate) use paging::initialize;
