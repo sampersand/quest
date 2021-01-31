@@ -39,17 +39,14 @@ pub trait QuestConvertible : ValueType {
 /// 
 /// # Safety
 /// The implementor must ensure that:
-/// - Every [`into_value()`] produces a unique [`Value`], which no other implementation will return.
+/// - Every [`<T as Into<Value>>::into()`] produces a valid [`Value`].
 /// - [`is_value_a()`] will always return `true` if the value was constructed via [`into_value`] and `false` otherwise.
 /// - [`try_value_into()`] must return `Ok(Self)` when the given `value` was constructed via [`Self::into_value()`], and
 ///   return the original [`Value`] if the value isn't a `Self`.
 /// - [`value_into_unchecked()`] must return valid results for any [`Value`] constructed via `Self::into_value`.
 ///
 /// If left unchanged, the default implementation of [`ValueType`] does all this correctly.
-pub unsafe trait ValueType : std::fmt::Debug + Sized {
-	/// Convert `self` into a [`Value`].
-	fn into_value(self) -> Value;
-
+pub unsafe trait ValueType : std::fmt::Debug + Sized + Into<Value> {
 	/// Checks to see if a [`Value`] is a `self`.
 	fn is_value_a(value: &Value) -> bool;
 

@@ -17,19 +17,21 @@ impl Boolean {
 	pub(super) const TRUE_BITS: u64 =  0b0010;
 }
 
-unsafe impl ValueType for Boolean {
+impl From<Boolean> for Value {
 	#[inline]
-	fn into_value(self) -> Value {
+	fn from(boolean: Boolean) -> Self {
 		// SAFETY: This is the definition of a valid boolean.
 		unsafe {
-			if self.0 {
-				Value::from_bits_unchecked(Self::TRUE_BITS)
+			if boolean.0 {
+				Value::from_bits_unchecked(Boolean::TRUE_BITS)
 			} else {
-				Value::from_bits_unchecked(Self::FALSE_BITS)
+				Value::from_bits_unchecked(Boolean::FALSE_BITS)
 			}
 		}
 	}
+}
 
+unsafe impl ValueType for Boolean {
 	#[inline]
 	fn is_value_a(value: &Value) -> bool {
 		// just little optimization :D

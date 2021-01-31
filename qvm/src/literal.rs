@@ -100,15 +100,18 @@ const LITERAL_TAG: u64   = 0b0010;
 const LITERAL_MASK: u64  = 0b0111;
 const LITERAL_SHIFT: u64 = 3;
 
-unsafe impl ValueType for Literal {
-	fn into_value(self) -> Value {
-		debug_assert_ne!(self.0, 0);
+impl From<Literal> for Value {
+	#[inline]
+	fn from(lit: Literal) -> Self {
+		debug_assert_ne!(lit.0, 0);
 		// SAFETY: we're defining what it means to be a literal here.
 		unsafe {
-			Value::from_bits_unchecked(((self.0 as u64) << LITERAL_SHIFT) | LITERAL_TAG)
+			Value::from_bits_unchecked(((lit.0 as u64) << LITERAL_SHIFT) | LITERAL_TAG)
 		}
 	}
+}
 
+unsafe impl ValueType for Literal {
 	fn is_value_a(value: &Value) -> bool {
 		// dbg!(value.bits());
 		// dbg!((value.bits() & LITERAL_MASK) == LITERAL_TAG, value.bits() != LITERAL_TAG);

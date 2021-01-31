@@ -7,15 +7,17 @@ pub struct Null;
 
 pub(super) const NULL_BITS: u64 = 0b0100;
 
-unsafe impl ValueType for Null {
+impl From<Null> for Value {
 	#[inline]
-	fn into_value(self) -> Value {
+	fn from(_: Null) -> Self {
 		// SAFETY: This is the definition of a valid float.
 		unsafe {
 			Value::from_bits_unchecked(NULL_BITS)
 		}
 	}
+}
 
+unsafe impl ValueType for Null {
 	#[inline]
 	fn is_value_a(value: &Value) -> bool {
 		value.bits() == NULL_BITS

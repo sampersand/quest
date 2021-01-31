@@ -57,18 +57,20 @@ const SMALLINT_TAG:   u64 = 0b0001;
 const SMALLINT_MASK:  u64 = 0b0001;
 const SMALLINT_SHIFT: u64 = 1;
 
+impl From<SmallInt> for Value {
+	#[inline]
+	fn from(smallint: SmallInt) -> Self {
+		// SAFETY: We are defining what it means to be a valid smallint here.
+		unsafe {
+			Value::from_bits_unchecked(((smallint.0 as u64) << SMALLINT_SHIFT) | SMALLINT_TAG)
+		}
+	}
+}
+
 // SAFETY: The way this is stored internally is by shifting the `i64` one left and `OR`ing it with `1`.
 // This works because all of the allocated objects are pointers, which haven an alignment of 8, and thus cannot have a
 // least-significant-bit of `1`. No other types are defined to have odd values.
 unsafe impl ValueType for SmallInt {
-	#[inline]
-	fn into_value(self) -> Value {
-		// SAFETY: We are defining what it means to be a valid smallint here.
-		unsafe {
-			Value::from_bits_unchecked(((self.0 as u64) << SMALLINT_SHIFT) | SMALLINT_TAG)
-		}
-	}
-
 	fn is_value_a(value: &Value) -> bool {
 		value.bits() & SMALLINT_MASK == SMALLINT_TAG
 	}

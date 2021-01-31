@@ -1,11 +1,14 @@
 macro_rules! impl_allocated_type {
 	(for $ty:ident) => { impl_allocated_type!(for $ty, $ty); };
 	(for $ty:ty, $variant:ident) => {
-		unsafe impl $crate::value::allocated::AllocatedType for $ty {
-			fn into_alloc(self) -> $crate::value::allocated::Allocated {
-				$crate::value::allocated::Allocated::new($crate::value::allocated::AllocType::$variant(self))
+		impl From<$ty> for $crate::value::allocated::Allocated {
+			#[inline]
+			fn from(data: $ty) -> Self {
+				Self::new($crate::value::allocated::AllocType::$variant(data))
 			}
+		}
 
+		unsafe impl $crate::value::allocated::AllocatedType for $ty {
 			fn is_alloc_a(alloc: &$crate::value::allocated::Allocated) -> bool {
 				matches!(alloc.inner().data, $crate::value::allocated::AllocType::$variant(_))
 			}

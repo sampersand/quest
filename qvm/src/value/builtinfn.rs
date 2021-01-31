@@ -96,15 +96,17 @@ const BUILTINFN_TAG: u64   = 0b0100;
 const BUILTINFN_MASK: u64  = 0b0111;
 const BUILTINFN_SHIFT: u64 = 3; // temporary until i can ensure functions are 8-bit aligned.
 
-unsafe impl ValueType for BuiltinFn {
+impl From<BuiltinFn> for Value {
 	#[inline]
-	fn into_value(self) -> Value {
+	fn from(builtinfn: BuiltinFn) -> Self {
 		// SAFETY: This is the definition of a valid float.
 		unsafe {
-			Value::from_bits_unchecked(((self.0 as usize as u64) << BUILTINFN_SHIFT) | BUILTINFN_TAG)
+			Value::from_bits_unchecked(((builtinfn.0 as usize as u64) << BUILTINFN_SHIFT) | BUILTINFN_TAG)
 		}
 	}
+}
 
+unsafe impl ValueType for BuiltinFn {
 	#[inline]
 	fn is_value_a(value: &Value) -> bool {
 		(value.bits() & BUILTINFN_MASK) == BUILTINFN_TAG && value.bits() != BUILTINFN_TAG

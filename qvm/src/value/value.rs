@@ -169,12 +169,6 @@ impl DeepClone for Value {
 	}
 }
 
-impl<T: ValueType> From<T> for Value {
-	#[inline]
-	fn from(valuetype: T) -> Self {
-		valuetype.into_value()
-	}
-}
 // unsafe impl ValueType for Value {
 // 	#[inline]
 // 	fn into_value(self) -> Value {

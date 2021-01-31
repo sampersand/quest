@@ -285,11 +285,14 @@ impl crate::TryPartialEq for Extern {
 impl_allocated_type!(for Extern);
 impl_allocated_value_type_ref!(for Extern);
 
-unsafe impl<T: ExternType> AllocatedType for T {
-	fn into_alloc(self) -> Allocated {
-		Allocated::new(AllocType::Extern(Extern::new(self)))
+impl<T: ExternType> From<T> for Allocated {
+	#[inline]
+	fn from(externtype: T) -> Self {
+		Extern::new(externtype).into()
 	}
+}
 
+unsafe impl<T: ExternType> AllocatedType for T {
 	fn is_alloc_a(alloc: &Allocated) -> bool {
 		Extern::try_alloc_as_ref(alloc).map_or(false, Extern::is_a::<Self>)
 	}

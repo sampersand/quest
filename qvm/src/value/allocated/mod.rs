@@ -43,10 +43,7 @@ use std::ptr::NonNull;
 ///   [`alloc_as_mut_unchecked`])'s safety invariants should be satisfied.
 ///
 /// If left unchanged, the default implementation of [`AllocatedType`] does all this correctly.
-pub unsafe trait AllocatedType : Debug + Sized {
-	/// Converts `self` into an [`Allocated`].
-	fn into_alloc(self) -> Allocated;
-
+pub unsafe trait AllocatedType : Debug + Sized + Into<Allocated> {
 	/// Checks to see if `alloc` is a `Self`.
 	///
 	/// See the safety on the trait itself for requirements.
@@ -86,11 +83,14 @@ pub unsafe trait AllocatedType : Debug + Sized {
 	unsafe fn alloc_as_mut_unchecked(alloc: &mut Allocated) -> &mut Self;
 }
 
-unsafe impl<T: AllocatedType + ShallowClone> ValueType for T {
-	fn into_value(self) -> Value {
-		self.into_alloc().into_value()
+impl<T: AllocatedType> From<T> for Value {
+	#[inline]
+	fn from(alloctype: T) -> Self {
+		alloctype.into().into()
 	}
+}
 
+unsafe impl<T: AllocatedType + ShallowClone> ValueType for T {
 	fn is_value_a(value: &Value) -> bool {
 		value.downcast_copy::<Allocated>().map_or(false, |t| Self::is_alloc_a(&t))
 	}
@@ -178,14 +178,17 @@ const ALLOC_TAG: u64   = 0b0000;
 const ALLOC_MASK: u64  = 0b0111;
 const ALLOC_SHIFT: u64 = 0;
 
-unsafe impl ValueType for Allocated {
-	fn into_value(self) -> Value {
+impl From<Allocated> for Value {
+	fn from(alloc: Allocated) -> Value {
 		// SAFETY: This is the definition of a valid pointer.
 		unsafe {
-			Value::from_bits_unchecked(((self.0.as_ptr() as u64) << ALLOC_SHIFT) | ALLOC_TAG)
+			Value::from_bits_unchecked(((alloc.0.as_ptr() as u64) << ALLOC_SHIFT) | ALLOC_TAG)
 		}
 	}
+}
 
+
+unsafe impl ValueType for Allocated {
 	fn is_value_a(value: &Value) -> bool {
 		value.bits() != 0 && (value.bits() & ALLOC_MASK) == ALLOC_TAG
 	}

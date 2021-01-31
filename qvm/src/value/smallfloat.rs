@@ -17,20 +17,23 @@ const FLOAT_TAG: u64   = 0b0110;
 const FLOAT_MASK: u64  = 0b0111;
 const FLOAT_SHIFT: u64 =      3;
 
-unsafe impl ValueType for SmallFloat {
+impl From<SmallFloat> for Value {
 	#[inline]
-	fn into_value(self) -> Value {
+	fn from(smallfloat: SmallFloat) -> Self {
 		// SAFETY: This is the definition of a valid float.
 		unsafe {
-			Value::from_bits_unchecked(((self.0.to_bits() as u64) << FLOAT_SHIFT) | FLOAT_TAG)
+			Value::from_bits_unchecked(((smallfloat.0.to_bits() as u64) << FLOAT_SHIFT) | FLOAT_TAG)
 		}
 	}
+}
 
+unsafe impl ValueType for SmallFloat {
 	#[inline]
 	fn is_value_a(value: &Value) -> bool {
 		(value.bits() & FLOAT_MASK) == FLOAT_TAG
 	}
 
+	#[inline]
 	unsafe fn value_into_unchecked(value: Value) -> Self {
 		debug_assert!(value.is_a::<Self>());
 		debug_assert_eq!(0, (value.bits() >> FLOAT_SHIFT) & !(u32::MAX as u64));
