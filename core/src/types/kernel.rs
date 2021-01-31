@@ -162,6 +162,15 @@ impl Kernel {
 		std::process::exit(code as i32)
 	}
 
+	#[instrument(name="Kernel::abort", level="trace")]
+	pub fn qs_abort(args: Args) -> crate::Result<Object> {
+		if let Some(message) = args.arg(0) {
+			eprintln!("{}", message.call_downcast::<Text>()?.as_ref());
+		};
+
+		std::process::exit(1);
+	}
+
 	#[instrument(name="Kernel::system", level="trace")]
 	pub fn qs_system(cmd: &Object, args: Args) -> crate::Result<Object> {
 		use std::process::Command;
@@ -299,7 +308,9 @@ for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristin
 	"unlessl" => method Self::qs_unlessl,
 	"disp" => function Self::qs_disp,
 	"dispn" => function Self::qs_dispn,
+	"print" => function Self::qs_disp,
 	"quit" => function Self::qs_quit,
+	"abort" => function Self::qs_abort,
 	"system" => method Self::qs_system,
 	"rand" => function Self::qs_rand,
 	"prompt" => function Self::qs_prompt,
