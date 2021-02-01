@@ -134,7 +134,7 @@ impl Regex {
 	#[inline]
 	#[instrument(name="Regex::@regex", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_at_regex(this: &Object, _: Args) -> crate::Result<Object> {
-		thsi.clone()
+		Ok(this.clone())
 	}
 
 	/// Inspects the [`Regex`].
@@ -230,7 +230,7 @@ impl Regex {
 impl_object_type!{
 for Regex [(parents super::Basic) (convert "@regex")]:
 	"@regex" => method Self::qs_at_regex,
-	"@text" => method Self::qs_inspect,
+	"@text" => method Self::qs_at_text,
 	"inspect" => method Self::qs_inspect,
 	"==" => method Self::qs_eql,
 	"match?" => method Self::qs_match_q,
