@@ -288,6 +288,7 @@ for Kernel [(parents super::Basic)]: // todo: do i want its parent to be pristin
 	"Boolean" => const super::Boolean::mapping().clone(),
 	"BoundFunction" => const super::BoundFunction::mapping().clone(),
 	"Function" => const super::Function::mapping().clone(),
+	"RustClosure" => const super::RustClosure::mapping().clone(),
 	"Kernel" => const Kernel::mapping().clone(),
 	"List" => const super::List::mapping().clone(),
 	"Null" => const super::Null::mapping().clone(),
