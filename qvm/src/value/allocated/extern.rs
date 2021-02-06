@@ -234,12 +234,8 @@ impl HasAttrs for Extern {
 		self.attrs.has(attr)
 	}
 
-	fn get_attr(&self, attr: Literal) -> Option<&Value> {
-		self.attrs.get(attr)
-	}
-
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value> {
-		self.attrs.get_mut(attr)
+	fn get_attr(&self, attr: Literal) -> Option<Value> {
+		self.attrs.get(attr).copied()
 	}
 
 	fn set_attr(&mut self, attr: Literal, value: Value) {

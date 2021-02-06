@@ -85,8 +85,7 @@ impl Literal {
 		}
 	}
 
-	#[cfg(test)]
-	pub(crate) fn bits(&self) -> u32 { self.0 }
+	pub const fn bits(&self) -> u32 { self.0 }
 }
 
 

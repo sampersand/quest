@@ -2,9 +2,9 @@
 # the `<`, `<=`, `>`, `>=` functions in terms of `<=>`
 
 Person = {
-	__parents__.push(Comparable);
+	:0.inherit(Comparable);
 	
-	'()' = (class, name, age) -> {__parents__ = [class]; :0 };
+	'()' = (class, name, age) -> { :0.becomes(class) };
 
 	'<=>' = (lhs, rhs) -> { lhs.age <=> rhs.age };
 

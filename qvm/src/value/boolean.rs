@@ -57,23 +57,3 @@ impl Boolean {
 	}
 }
 
-// mod fns {
-// 	use super::*;
-
-// 	pub fn at_bool(value: &Value, args: &[&Value]) -> crate::Result<Value> {
-// 		if let Some(boolean) = value.downcast_call::<Self>() {
-// 			return Ok(Value::new(boolean))
-
-// 		}
-// 	}
-
-// 		if let _ = value, Self, "invalid `self` given.") {
-
-// 		}
-// 		// strict_arguments_check!(value: Null);
-
-// 		panic!();
-// 	}
-// }
-
-// }

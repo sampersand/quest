@@ -3,6 +3,8 @@
 use qvm::{*, value::*};
 
 fn main() {
+	println!("{:#?}", Boolean::new(true).get_attr(Literal::AT_TEXT));
+}/*
 	#[derive(Debug, Clone, Copy, PartialEq, QuestType)]
 	#[quest(typename="MyCustomName", skip("DeepClone"))]
 	struct Custom(u32);
@@ -55,3 +57,4 @@ fn main() {
 	// println!("{:?}", Value::new(value::Null));
 	// println!("{:?}", Value::new_custom("foo"));
 }
+*/

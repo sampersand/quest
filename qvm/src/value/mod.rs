@@ -1,5 +1,8 @@
 //! The types that are built in to Quest.
+// #[macro_use]
+// mod macros;
 
+mod attrs;
 mod value;
 mod smallfloat;
 mod boolean;
@@ -8,6 +11,7 @@ mod null;
 mod builtinfn;
 mod allocated;
 
+pub use attrs::Attributes;
 pub use value::*;
 pub use null::*;
 pub use smallfloat::*;
@@ -163,18 +167,14 @@ pub unsafe trait ValueTypeRef : ValueType {
 /// A trait that indicates a type has attributes.
 pub trait HasAttrs {
 	/// Checks to see if the value, or one of its parents, has the given attribute.
-	///
-	/// The default implementation simply checks to see if `get_attr` returns `Some`.
+	#[inline]
 	fn has_attr(&self, attr: Literal) -> bool {
 		self.get_attr(attr).is_some()
 	}
 
-	/// Returns a reference the value associated with `attr`, defined either on `self` itself, or one of its parents.
-	fn get_attr(&self, attr: Literal) -> Option<&Value>;
-
-	/// Returns a mutable reference the value associated with `attr`, defined either on `self` itself, or one of its
-	/// parents.
-	fn get_attr_mut(&mut self, attr: Literal) -> Option<&mut Value>;
+	/// Returns the value associated with `attr`, defined either on `self` itself, or one of its parents.
+	#[inline]
+	fn get_attr(&self, attr: Literal) -> Option<Value>;
 
 	/// Deletes the given `attr` on `self`, returning the value associated with it, if it existed.
 	fn del_attr(&mut self, attr: Literal) -> Option<Value>;
@@ -186,7 +186,46 @@ pub trait HasAttrs {
 	fn call_attr(&self, attr: Literal, args: &[&Value]) -> crate::Result<Value> {
 		todo!()
 		// self.get_attr(attr)
-		// 	.expect("todo: return value error")
+		// 	.expect("todo: re`turn value error")
 		// 	.call_attr(Literal::OP_CALL, args)
+	}
+}
+
+
+/// A trait that indicates that a type doesn't have any attributes of its own: Rather, it relies on its type.
+///
+/// Most things implement this, as it requires `Attributes`. But not all---for example, [`Object`]s and and [`Extern`]s
+/// contain attributes themselves.
+pub trait UnboxedType {
+	/// Initializes this type.
+	fn initialize();
+
+	/// Fetches the attributes defined on this type.
+	fn attrs() -> &'static Attributes;
+}
+
+impl<T: UnboxedType> HasAttrs for T {
+	/// Checks to see if the value, or one of its parents, has the given attribute.
+	#[inline]
+	fn has_attr(&self, attr: Literal) -> bool {
+		Self::attrs().has_attr(attr)
+	}
+
+	/// Returns the value associated with `attr`, defined either on `self` itself, or one of its parents.
+	#[inline]
+	fn get_attr(&self, attr: Literal) -> Option<Value> {
+		Self::attrs().get_attr(attr)
+	}
+
+	/// Deletes the given `attr` on `self`, returning the value associated with it, if it existed.
+	#[inline]
+	fn del_attr(&self, attr: Literal) -> Option<Value> {
+		Self::attrs().del_attr(attr)
+	}
+
+	/// Sets the attribute `attr` for `self` to `value`.
+	#[inline]
+	fn set_attr(&self, attr: Literal, value: Value) {
+		Self::attrs().set_attr(attr, value)
 	}
 }

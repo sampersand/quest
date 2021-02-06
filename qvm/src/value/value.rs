@@ -214,19 +214,15 @@ impl DeepClone for Value {
 // }
 
 impl HasAttrs for Value {
-	fn get_attr(&self, _: Literal) -> Option<&Value> {
+	fn get_attr(&self, _: Literal) -> Option<Value> {
 		todo!()
 	}
 
-	fn get_attr_mut(&mut self, _: Literal) -> Option<&mut Value> {
+	fn del_attr(&self, _: Literal) -> Option<Value> {
 		todo!()
 	}
 
-	fn del_attr(&mut self, _: Literal) -> Option<Value> {
-		todo!()
-	}
-
-	fn set_attr(&mut self, _: Literal, _: Value) {
+	fn set_attr(&self, _: Literal, _: Value) {
 		todo!()
 	}
 }
