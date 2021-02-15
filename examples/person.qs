@@ -1,4 +1,4 @@
-# Create a person class. Classes are created by executing a block that returns
+# Create a person class. Classes are created via the `object` function.
 # `:0` (which is the same as `self`/`this` in other languages).
 
 Person = object() {
