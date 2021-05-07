@@ -32,13 +32,13 @@ Person = {
 	:0
 }();
 
-sam = Person("Sam", "W");
+sam = Person("Sam", "Persand");
 
 print(Person); # => Person
-print(sam); # => Sam W
+print(sam); # => Sam Persand
 print(sam.class == Person); # => true
 
 # Tests
 assert(Person.@text() == "Person");
-assert(sam.@text() == "Sam W");
+assert(sam.@text() == "Sam Persand");
 assert(sam.class == Person);

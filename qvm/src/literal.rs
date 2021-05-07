@@ -32,7 +32,7 @@ pub fn initialize() {
 pub struct Literal(u32);
 
 impl Literal {
-	const fn is_builtin(self) -> bool {
+	pub const fn is_builtin(self) -> bool {
 		self.0 < Self::ONE_PAST_MAX_BUILTIN
 	}
 

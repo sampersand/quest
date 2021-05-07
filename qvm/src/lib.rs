@@ -29,6 +29,10 @@ pub use error::*;
 
 /// Initializes Quest. This should be run before any other function is called, and may be repeatedly called.
 pub fn initialize() {
+	use value::UnboxedType;
+
 	literal::initialize();
 	value::initialize();
+
+	value::Boolean::initialize();
 }

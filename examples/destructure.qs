@@ -1,4 +1,4 @@
-# Helper functions to support destructuring.
+	# Helper functions to support destructuring.
 Text.'*@' = self -> { self.__splat__ = true; self };
 Text.':' = (self, value) -> { self.__default__ = value; self };
 

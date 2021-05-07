@@ -182,7 +182,7 @@ Tokenizer = class() {
 				(?:[-+*\/%]|\*\*)=?|  # mathematic operators
 				(?:[&|^]|>>|<<)=?|    # bitwise operators
 				(?:[=!<>]=?)|         # comparison operators and assignment
-				[!~] 								  # remaining unary operators
+				[!~] 						 # remaining unary operators
 			/x)
 			.and_then(Token::Operator)
 	};

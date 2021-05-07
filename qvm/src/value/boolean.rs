@@ -1,4 +1,4 @@
-use crate::value::{Value, ValueType, Literal, QuestConvertible};
+use crate::value::{Value, ValueType, Literal, QuestConvertible, UnboxedType};
 
 /// The Boolean type.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Named)]
@@ -50,6 +50,11 @@ impl QuestConvertible for Boolean {
 	const CONVERT_FUNCTION: Literal = Literal::AT_BOOL;
 }
 
+impl UnboxedType for Boolean {
+	fn initialize() {
+		todo!();
+	}
+}
 
 impl Boolean {
 	pub fn at_bool(&self, args: &[&Value]) -> crate::Result<Value> {
