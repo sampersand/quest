@@ -16,7 +16,7 @@ Number.fibonacci = {
 	# hide the `memo` object so no one else can interact with it.
 	n -> {
 		# if `n` is zero, then just return 0.
-		(n == 0).then(n.return);
+		n.else(n.return);
 
 		# Get the `n` attribute from memo, or `null` if it doesn't exist.
 		# if it doesn't exist, then execute the block.

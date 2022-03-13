@@ -10,11 +10,11 @@ throw = exception -> {
 
 	while ({ !frame.__keys__(false).include?('__try__') }) {
 		i += 1;
-		:1.frame = __stack__.get(i);
+		:1.frame = __stack__[i];
 	};
 
 	frame.__try__ = false;
-	exception.return(__stack__.get(i - 2));
+	exception.return(__stack__[i - 2]);
 };
 
 handler = block -> {
