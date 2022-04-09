@@ -21,12 +21,13 @@ handler = block -> {
 	print(trycatch(block) { "Exception: " + _0 });
 };
 
-handler({
+handler() {
 	return("Hello, world!");
 	assert(false);
-});
+};
 
-handler({
+handler() {
 	throw("Hello, exception!");
 	assert(false);
-});
+};
+

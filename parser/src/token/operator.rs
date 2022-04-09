@@ -19,7 +19,7 @@ macro_rules! operator_enum {
 		[$lhs, rhs][($lhs < rhs) as usize]
 	}};
 
-	(; ASSOC ) => { operator_enum!(; ASSOC LeftToRight ); };
+	(; ASSOC ) => { operator_enum!(; ASSOC LeftToRight ) };
 	(; ASSOC $which:ident ) => { Associativity::$which };
 	(; TRY_PARSE $_repr:literal ()) => { None };
 	(; TRY_PARSE $repr:literal) => { Some($repr) };

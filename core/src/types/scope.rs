@@ -63,7 +63,7 @@ for Scope {
 	"@text" => method Self::qs_at_text,
 	"super" => method Self::qs_super,
 	"__should_be_bound__" => const false,
-	"set_scope" => method |_, args| {
+	"replace_stackframe_with" => method |_, args| {
 		Ok(crate::Binding::set_binding(args.try_arg(0)?.clone()).into())
 	}
 }

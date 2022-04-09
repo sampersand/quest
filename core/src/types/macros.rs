@@ -147,7 +147,7 @@ macro_rules! impl_object_type {
 		vec![$(<$init_parent as $crate::types::ObjectType>::mapping().clone()),+]
 	};
 	(@SET_PARENT $class:ident (parents $parent:path) $($_rest:tt)*) => {
-		impl_object_type!(@SET_PARENT $class (init_parent $parent));
+		impl_object_type!(@SET_PARENT $class (init_parent $parent))
 	};
 
 	(@SET_PARENT $class:ident $_b:tt $($rest:tt)*) => {
@@ -192,7 +192,7 @@ macro_rules! impl_object_type {
 				const INIT: bool = true;
 				static INITIALIZE: AtomicBool = AtomicBool::new(UNINIT);
 
-				if INITIALIZE.compare_and_swap(UNINIT, INIT, Ordering::SeqCst) == INIT {
+				if INITIALIZE.compare_exchange(UNINIT, INIT, Ordering::SeqCst, Ordering::SeqCst).map_or(false, |x| x == INIT) {
 					return Ok(());
 				}
 

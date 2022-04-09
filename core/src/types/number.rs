@@ -1284,7 +1284,7 @@ impl_object_type!{
 	"even?" => method Self::qs_even_q,
 	"odd?" => method Self::qs_odd_q,
 	"one?" => method Self::qs_one_q,
-	"zero?" => method Self::qs_one_q,
+	"zero?" => method Self::qs_zero_q,
 	"positive?" => method Self::qs_positive_q,
 	"negative?" => method Self::qs_negative_q,
 

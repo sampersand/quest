@@ -215,7 +215,7 @@ impl Internal {
 	fn get_lit<L: ?Sized>(&self, attr: &L) -> crate::Result<Option<Value>>
 	where
 		Literal: Borrow<L>,
-		L: Hash + Eq
+		L: Hash + Eq + ToString
 	{
 		self.attrs.get_lit(attr)
 	}
@@ -296,9 +296,18 @@ impl Object {
 	fn get_value_lit<L: ?Sized>(&self, attr: &L) -> crate::Result<Option<Value>>
 	where
 		Literal: Borrow<L>,
-		L: Hash + Eq
+		L: Hash + Eq + ToString
 	{
-		self.0.get_lit(attr)
+		if let Some(value) = self.0.get_lit(attr)? {
+			Ok(Some(value))
+		} else if self.has_attr_lit::<Literal>(&Literal::__ATTR_MISSING__)? {
+			// there's an inf recusion issue here but i cba to figure it out.
+			self.call_attr_lit::<Literal, _>(&Literal::__ATTR_MISSING__, &[
+				&attr.to_string().into()
+			]).map(Value::Object).map(Some)
+		} else {
+			Ok(None)
+		}
 	}
 
 	/// Fetches the attribute `attr`, returning a [`KeyError`] if it doesn't exist.
@@ -344,7 +353,7 @@ impl Object {
 	}
 
 	/// Calls an attribute with the given args.
-	pub fn call_attr_lit<'s, 'o: 's, A, L>(&'o self, attr: &L, args: A) -> crate::Result<Self>
+	pub fn call_attr_lit<'s, 'o: 's, L, A>(&'o self, attr: &L, args: A) -> crate::Result<Self>
 	where
 		Literal: Borrow<L>,
 		L: Hash + Eq + ToString + ?Sized,
@@ -367,7 +376,15 @@ impl Object {
 	/// Gets the attribute `attr`, returning `None` if it didn't exist
 	#[inline]
 	pub(crate) fn get_value(&self, attr: &Self) -> crate::Result<Option<Value>> {
-		self.0.get(attr)
+		if let Some(value) = self.0.get(attr)? {
+			Ok(Some(value))
+		} else if self.has_attr_lit(&Literal::__ATTR_MISSING__)? {
+			self.call_attr_lit(&Literal::__ATTR_MISSING__, &[attr])
+				.map(Value::Object)
+				.map(Some)
+		} else {
+			Ok(None)
+		}
 	}
 
 	/// Gets an attribute, returning a [`KeyError`] if it doesn't exist.

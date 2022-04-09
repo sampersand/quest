@@ -1,6 +1,7 @@
 # `Comparable` is a mixin that's defined by default. It implements
 # the `<`, `<=`, `>`, `>=` functions in terms of `<=>`
 
+
 Person = object(Comparable) {
 	'()' = (class, name, age) -> {
 		:0.becomes(class)

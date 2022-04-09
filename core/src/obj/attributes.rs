@@ -111,7 +111,7 @@ impl Attributes {
 	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Result<Option<Value>>
 	where
 		Literal: Borrow<L>,
-		L: Hash + Eq
+		L: Hash + Eq + ToString
 	{
 		if key == Literal::__ID__.borrow() {
 			return Ok(Some(Object::from(self.id()).into()))

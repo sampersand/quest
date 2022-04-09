@@ -188,14 +188,23 @@ impl Iter {
 		Self::from_fn(move || {
 			let mut args = Vec::with_capacity(zippers.len());
 
+			let mut any_valid = false;
 			for zip in &mut zippers {
-				match zip.next()? {
-					Ok(value) => args.push(value),
-					Err(err) => return Some(Err(err))
+				match zip.next() {
+					Some(Ok(value)) => {
+						any_valid = true;
+						args.push(value)
+					},
+					Some(Err(err)) => return Some(Err(err)),
+					None => args.push(Default::default())
 				}
 			}
 
-			Some(Ok(args.into()))
+			if any_valid {
+				Some(Ok(args.into()))
+			} else {
+				None
+			}
 		})
 	}
 

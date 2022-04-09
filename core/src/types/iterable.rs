@@ -112,7 +112,7 @@ impl Iterable {
 	#[instrument(name="Iterable::zip", level="trace", skip(this, args), fields(self=?this, ?args))]
 	pub fn qs_zip(this: &Object, args: Args) -> crate::Result<Object> {
 		// if we have nothing to zip, just return the original thing.
-		if args.len() <= 1 {
+		if args.len() < 1 {
 			return Ok(this.clone());
 		}
 

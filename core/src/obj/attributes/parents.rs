@@ -180,7 +180,7 @@ impl Parents {
 	pub fn get_lit<L: ?Sized>(&self, key: &L) -> Result<Option<Value>>
 	where
 		Literal: Borrow<L>,
-		L: Hash + Eq
+		L: Hash + Eq + ToString
 	{
 		self.with_iter(|iter| {
 			for parent in iter {
