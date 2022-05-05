@@ -185,6 +185,23 @@ where
 		};
 	}
 
+	if oper == Operator::DeferedEndl {
+		this = match this {
+			Expression::Operator(BoundOperator { args, this, oper }) =>
+				match *args {
+					OperArgs::Binary(rhs) => Expression::Operator(BoundOperator { this, oper, args:
+						Box::new(OperArgs::Binary(Expression::Block(crate::Block {
+							lines: vec![crate::block::Line::Single(rhs)],
+							paren_type: ParenType::Curly,
+							context: Default::default()
+						})))
+					}),
+					args => panic!("{:?}", args)//Expression::Operator(BoundOperator { args: Box::new(args), this, oper })
+				},
+			other => panic!("{:?}", other)
+		};
+	}
+
 	if oper == Operator::Call {
 		// a hack to convert to function call.
 

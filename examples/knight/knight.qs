@@ -1,3 +1,13 @@
+Number.'=' = (self, value) -> {
+	__stack__
+		.get(1)
+		.__set_attr__("foo" + self.@text(), value);
+}
+
+1 = 2;
+print(foo1);
+
+
 Text.take_while = (self, fn) -> {
 	acc = '';
 
@@ -12,8 +22,8 @@ Text.next_ident = self -> {
 	/^[a-z_]/.match(self).then(self.take_while << /^[a-z\d_]/.match)
 };
 
-Text.next_cmd = self -> {
-	/^[A-Z]/.match(self).then(self.take_while << /^[A-Z_\d]/.match)
+Text.next_keyword = self -> {
+	/^[A-Z]/.match(self).then(self.take_while << /^[A-Z_]/.match)
 };
 
 Text.next_num = self -> {
@@ -29,6 +39,8 @@ Text.next_text = self -> {
 	})
 };
 
+
+/*
 knight = func -> { func.next_expr()() };
 
 functions = { :0 }();
@@ -103,7 +115,7 @@ Text.next_expr = self -> {
 	(null != (num = self.next_num())).then(num.itself.return);
 	(null != (text = self.next_text())).then(text.itself.return);
 
-	cmd = self.next_cmd().else(self.shift);
+	cmd = self.next_keyword().else(self.shift);
 
 	(functions::(cmd))(self)
 };
@@ -129,3 +141,4 @@ if(:0.__has_attr__('_1'), {
 	});
 	knight(t);
 });
+*/

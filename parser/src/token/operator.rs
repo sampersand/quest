@@ -74,6 +74,7 @@ macro_rules! operator_enum {
 operator_enum!{
 	// 3 characters
 	PowAssign("**=" 16 RightToLeft) LshAssign("<<=" 16 RightToLeft) RshAssign(">>=" 16 RightToLeft) Cmp("<=>" 13)
+	DeferedEndl(";;" 17)
 
 	// 2 characters
 	AddAssign("+=" 16 RightToLeft) SubAssign("-=" 16 RightToLeft) MulAssign("*=" 16 RightToLeft)

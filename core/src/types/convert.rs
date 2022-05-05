@@ -46,7 +46,7 @@ impl Object {
 
 		if converted.is_a::<T>() {
 			// SAFETY: Since we know the `converted` is a `T` already, then we're able to transmute.
-			// This is needed because the compiler isn't smar tenough to know that the two opaque `impl` types are actually
+			// This is needed because the compiler isn't smart enough to know that the two opaque `impl` types are actually
 			// the same.
 			let dc = unsafe {
 				let cdc = converted.downcast::<T>().expect("bad downcast");

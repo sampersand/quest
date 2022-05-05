@@ -378,10 +378,6 @@ impl Object {
 	pub(crate) fn get_value(&self, attr: &Self) -> crate::Result<Option<Value>> {
 		if let Some(value) = self.0.get(attr)? {
 			Ok(Some(value))
-		} else if self.has_attr_lit(&Literal::__ATTR_MISSING__)? {
-			self.call_attr_lit(&Literal::__ATTR_MISSING__, &[attr])
-				.map(Value::Object)
-				.map(Some)
 		} else {
 			Ok(None)
 		}
@@ -389,9 +385,13 @@ impl Object {
 
 	/// Gets an attribute, returning a [`KeyError`] if it doesn't exist.
 	pub fn get_attr(&self, attr: &Self) -> crate::Result<Self> {
-		self.get_value(attr)?
-			.map(Self::from)
-			.ok_or_else(|| KeyError::DoesntExist { attr: attr.clone(), obj: self.clone() }.into())
+		if let Some(attr) = self.get_value(attr)?.map(Self::from) {
+			Ok(attr) 
+		} else if self.has_attr_lit(&Literal::__ATTR_MISSING__)? {
+			self.call_attr_lit(&Literal::__ATTR_MISSING__, &[attr])
+		} else {
+			Err(KeyError::DoesntExist { attr: attr.clone(), obj: self.clone() }.into())
+		}
 	}
 
 	/// Sets the attribute `attr` to `value`.

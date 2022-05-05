@@ -234,9 +234,11 @@ for Basic [(parents super::Pristine)]:
 	"return" => function super::Kernel::qs_return,
 	"assert" => method super::Kernel::qs_assert,
 
+	";" => method |_, args| Ok(args.try_arg(0)?.clone()),
+	";;" => method |_, args| args.try_arg(0)?.call_attr_lit("()", &[]),
 	"then" => method super::Kernel::qs_if, 
 	"else" => method super::Kernel::qs_unless, 
-	"then_into" => method |this, args| {
+	"and_then" => method |this, args| {
 		let func = args.try_arg(0)?;
 		if this.call_downcast::<super::Boolean>()?.into_inner() {
 			func.call_attr_lit("()", &[this])
@@ -244,7 +246,7 @@ for Basic [(parents super::Pristine)]:
 			Ok(this.clone())
 		}
 	},
-	"else_into" => method |this, args| {
+	"or_else" => method |this, args| {
 		let func = args.try_arg(0)?;
 		if !this.call_downcast::<super::Boolean>()?.into_inner() {
 			func.call_attr_lit("()", &[this])

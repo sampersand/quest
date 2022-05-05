@@ -1156,6 +1156,15 @@ impl Number {
 		Ok((this < Self::ZERO).into())
 	}
 
+	/// Checks to see if `this` is one.
+	#[instrument(name="Number::divides?", level="trace", skip(this), fields(self=?this))]
+	pub fn qs_divides_q(this: &Object, args: Args) -> crate::Result<Object> {
+		let this = *this.try_downcast::<Self>()?;
+		let rhs = *args.try_arg(0)?.call_downcast::<Self>()?;
+
+		Ok((rhs % this == 0).into())
+	}
+
 	/// Checks to see if `this` is even.
 	#[instrument(name="Number::even?", level="trace", skip(this), fields(self=?this))]
 	pub fn qs_even_q(this: &Object, _: Args) -> crate::Result<Object> {
@@ -1287,6 +1296,7 @@ impl_object_type!{
 	"zero?" => method Self::qs_zero_q,
 	"positive?" => method Self::qs_positive_q,
 	"negative?" => method Self::qs_negative_q,
+	"divides?" => method Self::qs_divides_q,
 
 	"chr" => method |this, _| {
 		Ok((u8::try_from(this.try_downcast::<Self>()?.floor()).unwrap() as char)
