@@ -103,7 +103,7 @@ impl Kernel {
 	pub fn qs_disp(args: Args) -> crate::Result<Object> {
 		display(args.as_ref(), true)?;
 
-		Ok(Object::default())
+		Ok(args.arg(0).cloned().unwrap_or_default())
 	}
 
 	#[instrument(name="Kernel::dispn", level="trace")]
