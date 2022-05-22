@@ -36,27 +36,6 @@ jobs:
       - name: Run doctests
         run: cargo test --workspace --doc --verbose
 
-  # install flamegraph
-  flamegraph:
-    name: FlameGraph
-
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-
-      - name: Install flamegraph
-        run: |
-          flamegraph -o quest0.svg ./quest test0
-          flamegraph -o quest0.svg ./quest test1
-
-
   # Ensure clippy doesn't complain.
   clippy:
     name: Clippy
@@ -77,4 +56,57 @@ jobs:
           components: clippy
 
       - name: Lint with clippy
-        run: cargo clippy --all-targets --workspace --verbose # -- -D warnings <-- freaking 
+        run: cargo clippy --all-targets --workspace --verbose -- -D warnings
+
+  # build a flamegraph
+  flamegraph:
+    name: Flamegraph
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Build
+        run: cargo build --workspace --all-targets --verbose
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: '5.32'
+
+      - name: Clone (perl) flamegraph
+        run: git clone https://github.com/brendangregg/FlameGraph
+
+      - name: Run flamegraph
+        run: |
+          echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+          echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+          cd examples/squire
+          perf record -- ../../target/debug/quest -f main.qs
+          #../../FlameGraph/stackcollapse-perf.pl out.perf > $file.folded
+          ls *.out
+
+#      - name: Install flamegraph
+#        run: cargo install flamegraph
+        
+      # set the paranoid flag
+#      - name: Run flamegraph
+#        run: |
+#          flamegraph_bin=$(which flamegraph)
+#          echo $flamegraph
+#          echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+#          for file in $(find -type f -iname "*.qs")
+#          do
+#            echo $file 
+#            sudo $flamegraph_bin -o $file.svg -- ./target/debug/quest -f $file || true
+#          done
+#          find -type f -iname "*.svg"
